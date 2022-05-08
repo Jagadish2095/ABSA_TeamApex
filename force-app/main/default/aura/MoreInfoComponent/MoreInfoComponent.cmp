@@ -1,0 +1,83 @@
+<!--
+* Lightning Component for Credit application required more info
+* @author  Almas Aleem: Absa
+* @version v1.0
+* @since   2020-07-30
+
+*
+-->
+
+
+<aura:component implements="force:appHostable,flexipage:availableForRecordHome,force:hasRecordId" access="global"  
+               controller="SanctioningApprovalController" >
+    <!--Attribute Decleration -->
+    <aura:attribute name="recordId" type="Id" />  <!--Opportunity Id-->
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="dfieldname" type="String" default="Name"/>
+    <aura:attribute name="showInfo" type ="Boolean" default="false"/>
+    <aura:attribute name="simpleRecord" type="Object"/>
+    
+   <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.handleLoad}" />
+    
+    <aura:attribute name="listviewID" type ="Id" />
+    
+    <lightning:workspaceAPI aura:id="workspace"/>    
+  
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    
+    
+    <!--loading spinner start-->
+    <div class="exampleHolder">
+        <lightning:spinner aura:id="mySpinner" class="slds-hide" alternativeText="Loading..." variant="brand"
+                           size="large" />
+    </div>
+    <!-- Loading spinner end-->
+    
+    <!--Read record-->    
+    <aura:attribute name="oppRecord" type="Object"/>
+    
+    
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="More_Info_Comment__c,More_Info_Decision__c,Id"
+                      targetFields="{!v.oppRecord}"
+                      />
+    
+    <!-- <lightning:button  type="submit" name="showInfo" label="" aura:id="decisionbutton" onclick="{!c.showInfo}" >
+        <lightning:icon iconName="action:info" alternativeText="Require More Info" title="More Info"  size="large"/>
+    </lightning:button> -->
+    
+    
+    <div class="c-container">
+        
+        <!--<aura:if isTrue ="{!v.showInfo}"> -->
+            <lightning:recordEditForm aura:id="recordHandler"
+                                      recordId="{!v.recordId}" objectApiName="Opportunity" onsubmit="{!c.handleSuccess}" onsuccess="{!c.updateComment}" > 
+                <lightning:layout multipleRows="true" > 
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <p>Comment</p><lightning:inputfield aura:id="MoreInfoComment" fieldName="More_Info_Comment__c" variant="label-hidden" disabled="{!v.oppRecord.More_Info_Decision__c}" />   
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-p-top_large">      
+                    </lightning:layoutItem>  
+                    
+                    <lightning:layoutItem size="6" class="slds-p-top_large"> 
+                    </lightning:layoutItem> 
+                    
+                    <lightning:layoutItem size="6"  class="slds-p-top_large">     
+                        <lightning:inputfield aura:id="MoreInfoDecisionConfirmation" fieldName="More_Info_Decision__c"   variant="label-hidden"   disabled="{!v.oppRecord.More_Info_Decision__c}"/> 
+                        <p>I understand that requesting more info removes this opportunity from the sanctioner queue and returns it to the banker.</p>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        
+                    </lightning:layoutItem>    
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <lightning:button variant="brand" type="submit" name="save" label="Request More Info" aura:id="decisionbutton"    disabled="{!v.oppRecord.More_Info_Decision__c}"/>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:recordEditForm>   
+        <!-- </aura:if> -->
+    </div>
+</aura:component>

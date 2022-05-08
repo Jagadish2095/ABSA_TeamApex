@@ -1,0 +1,307 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes,force:appHostable" controller="QuotingProcessController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="quote" type="Quote" default="{sobjectType:'Quote'}"/>
+    <aura:attribute name="quoteLineItems" type="QuoteLineItem[]"/>
+    <aura:attribute name="pricingMatrix" type="EPP_Pricing_Matrix__c" default="{sobjectType:'EPP_Pricing_Matrix__c'}"/>
+    <aura:attribute name="spouseDOB" type="Date"/>
+    <aura:attribute name="spouseAge" type="Double"/>
+    <aura:attribute name="totalPremiumLbl" type="String" default="Total Premium: R0.00"/>
+    <aura:attribute name="executorFeePremiumLbl" type="String" default="Premium (Main Member): R0.00"/>
+    <aura:attribute name="estateBridgingPremiumLbl" type="String" default="Premium (Main Member): R0.00"/>
+    <aura:attribute name="funeralFeePremiumLbl" type="String" default="Premium: R0.00"/>
+    <aura:attribute name="executorFeePremiumSpouseLbl" type="String" default=""/>
+    <aura:attribute name="estateBridgingPremiumSpouseLbl" type="String" default=""/>
+    <aura:attribute name="totalPremium" type="Double" default="0.00"/>
+    <aura:attribute name="policyFee" type="Double" default="0.00"/>
+    <aura:attribute name="executorFeePremium" type="Double" default="0.00"/>
+    <aura:attribute name="estateBridgingPremium" type="Double" default="0.00"/>
+    <aura:attribute name="funeralFeePremium" type="Double" default="0.00"/>
+    <aura:attribute name="executorFeePremiumSpouse" type="Double" default="0.00"/>
+    <aura:attribute name="estateBridgingPremiumSpouse" type="Double" default="0.00"/>
+    <aura:attribute name="firstYearCommission" type="Double" default="0.00"/>
+    <aura:attribute name="secondYearCommission" type="Double" default="0.00"/>
+    <aura:attribute name="totalPremiumCommissionScreen" type="Double" default="0.00"/>
+    <aura:attribute name="quoteOnSpouseExecutorFee" type="boolean" default="false"/>
+    <aura:attribute name="quoteOnSpouseEstateBridging" type="boolean" default="false"/>
+    <aura:attribute name="quoteOnSpouseFuneralBenefit" type="boolean" default="false"/>
+    <aura:attribute name="executorFeeOptions" type="List"/>
+    <aura:attribute name="selectedExecutorFee" type="String"/>
+    <aura:attribute name="estateBridgingOptions" type="List"/>
+    <aura:attribute name="selectedEstateBridging" type="String"/>
+    <aura:attribute name="funeralBenefitOptions" type="List"/>
+    <aura:attribute name="selectedFuneralBenefit" type="String"/>
+    <aura:attribute name="emailOptions" type="List"/>
+    <aura:attribute name="selectedEmail" type="String"/>
+    <aura:attribute name="isSpouseAdded" type="boolean" default="false"/>
+    <aura:attribute name="quoteTotal" type="String"/>
+    <aura:attribute name="mainLifeExecutor" type="String"/>
+    <aura:attribute name="mainLifeBridging" type="String"/>
+    <aura:attribute name="mainLifeFuneral" type="String"/>
+    <aura:attribute name="mainLifePremium" type="String"/>
+    <aura:attribute name="spouseExecutor" type="String"/>
+    <aura:attribute name="spouseBridging" type="String"/>
+    <aura:attribute name="spousePremium" type="String"/>
+    <aura:attribute name="showSpousePremium" type="Boolean" default="true"/>
+    <aura:attribute name="policyFeeSummary" type="String"/>
+    <aura:attribute name="showQuoteScreen" type="boolean" default="true"/>
+    <aura:attribute name="showCommissionScreen" type="boolean" default="false"/>
+    <aura:attribute name="showSpouseScreen" type="boolean" default="false"/>
+    <aura:attribute name="showAlternativeEmail" type="boolean" default="false"/>
+    <aura:attribute name="alternativeEmailSelected" type="boolean" default="false"/>
+    <aura:attribute name="alternativeEmail" type="String"/>
+    <aura:attribute name="currentCheckbox" type="String"/>
+    <aura:attribute name="policySession" type="String"/>
+    <aura:attribute name="spouseMinAge" type="Decimal" default="18"/>
+    <aura:attribute name="spouseMaxAge" type="Decimal" default="70"/>
+    <aura:attribute name="accountNotValid" type="boolean" default="true"/>
+    <aura:attribute name="accountInValidReason" type="String"/>
+
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+
+    <aura:attribute name="showSpinner2" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner2}">
+        <lightning:spinner aura:id="spin" variant="brand" size="small"/>
+    </aura:if>
+
+    <center style="z-index:99">
+       <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+   	</center>
+
+    <aura:if isTrue="{!v.showQuoteScreen}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <h2 class="slds-section__title">New EPP Quote</h2>
+            </lightning:layoutItem>
+
+        	<lightning:layoutItem padding="around-small" size="12">
+				<b><ui:outputText value="{!v.totalPremiumLbl}"/></b>
+        	</lightning:layoutItem>
+
+            <lightning:layoutItem padding="around-small" size="8">
+				<lightning:select aura:id="executorsSelect" name="executorsFeePolicy" label="Executors Fee Policy" value="{!v.selectedExecutorFee}" onchange="{!c.onPicklistExecutorFeeChange}" required="true">
+                    <aura:iteration items="{!v.executorFeeOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+        	</lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="4">
+                <ui:inputCheckbox aura:id="executorsCheckbox" label="Quote on Spouse?" change="{!c.onExecutorsCheck}"/>
+        	</lightning:layoutItem>
+        	<lightning:layoutItem class="slds-p-left_small" size="3">
+				<ui:outputText value="{!v.executorFeePremiumLbl}"/>
+        	</lightning:layoutItem>
+        	<lightning:layoutItem class="slds-p-left_small" size="3">
+				<ui:outputText value="{!v.executorFeePremiumSpouseLbl}"/>
+        	</lightning:layoutItem>
+
+        	<lightning:layoutItem padding="around-small" size="8">
+                <lightning:select aura:id="estateBridgingSelect" name="estateBridgingBenefit" label="Estate Bridging Benefit" value="{!v.selectedEstateBridging}" onchange="{!c.onPicklistEstateBridgingChange}">
+                    <aura:iteration items="{!v.estateBridgingOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="4">
+                <ui:inputCheckbox aura:id="estateBridgingCheckbox" label="Quote on Spouse?" change="{!c.onEstateBridgingCheck}"/>
+        	</lightning:layoutItem>
+        	<lightning:layoutItem class="slds-p-left_small" size="3">
+				<ui:outputText value="{!v.estateBridgingPremiumLbl}"/>
+        	</lightning:layoutItem>
+        	<lightning:layoutItem class="slds-p-left_small" size="3">
+				<ui:outputText value="{!v.estateBridgingPremiumSpouseLbl}"/>
+        	</lightning:layoutItem>
+
+        	<lightning:layoutItem padding="around-small" size="8">
+                <lightning:select aura:id="funeralSelect" name="funeralBenefit" label="Funeral Benefit" value="{!v.selectedFuneralBenefit}" onchange="{!c.onPicklistFuneralBenefitChange}">
+                    <aura:iteration items="{!v.funeralBenefitOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>
+             <lightning:layoutItem padding="around-small" size="4">
+                <ui:inputCheckbox aura:id="funeralBenefitCheckbox" label="Add Spouse?" change="{!c.onFuneralBenefitCheck}"/>
+        	</lightning:layoutItem>
+        	<lightning:layoutItem class="slds-p-left_small" size="12">
+				<ui:outputText value="{!v.funeralFeePremiumLbl}"/>
+        	</lightning:layoutItem>
+
+        	<lightning:layoutItem size="12" padding="around-small">
+                <lightning:textarea aura:id="quoteForm" label="Comment" value="{!v.quote.Description}" />
+            </lightning:layoutItem>
+
+            <lightning:layoutItem size="12">
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Quote Summary" onclick="{!c.createNewQuote}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+
+    <aura:if isTrue="{!v.showCommissionScreen}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <h2 class="slds-section__title">New EPP Quote</h2>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <h3>Finished Confirmation</h3>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem size="12">
+                <h2 class="slds-section__title">Quote Details</h2>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <table style="width:100%" class="slds-table slds-table_cell-buffer slds-table_bordered">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title=""></div></th>
+                            <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Executor">Executor</div></th>
+                            <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Bridging">Bridging</div></th>
+                            <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Funeral">Funeral</div></th>
+                            <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Premium">Premium</div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="slds-hint-parent">
+                            <td data-label=""><div class="slds-truncate" title="Main Life">Main Life</div></td>
+                            <td data-label="Executor"><div class="slds-truncate" title="Executor">R{!v.mainLifeExecutor}</div></td>
+                            <td data-label="Bridging"><div class="slds-truncate" title="Bridging">R{!v.mainLifeBridging}</div></td>
+                            <td data-label="Funeral"><div class="slds-truncate" title="Funeral">R{!v.mainLifeFuneral}</div></td>
+                            <td data-label="Premium"><div class="slds-truncate" title="Premium">R{!v.mainLifePremium}</div></td>
+                        </tr>
+                        <aura:if isTrue="{!v.showSpousePremium}">
+                            <tr class="slds-hint-parent">
+                                <td data-label=""><div class="slds-truncate" title="Spouse">Spouse</div></td>
+                                <td data-label="Executor"><div class="slds-truncate" title="Executor">R{!v.spouseExecutor}</div></td>
+                                <td data-label="Bridging"><div class="slds-truncate" title="Bridging">R{!v.spouseBridging}</div></td>
+                                <td data-label="Funeral"><div class="slds-truncate" title="Funeral">N/A</div></td>
+                                <td data-label="Premium"><div class="slds-truncate" title="Premium">R{!v.spousePremium}</div> </td>
+                            </tr>
+                        </aura:if>
+                        <tr class="slds-hint-parent">
+                            <td data-label=""><div class="slds-truncate" title="Policy Fee">Policy Fee</div></td>
+                            <td data-label="Executor"><div class="slds-truncate" title="Executor">N/A</div></td>
+                            <td data-label="Bridging"><div class="slds-truncate" title="Bridging">N/A</div></td>
+                            <td data-label="Funeral"><div class="slds-truncate" title="Funeral">N/A</div></td>
+                            <td data-label="Premium"><div class="slds-truncate" title="Premium">R{!v.policyFeeSummary}</div></td>
+                        </tr>
+                        <tr class="slds-hint-parent">
+                            <td data-label=""><div class="slds-truncate" title="Total"><b>Total</b></div></td>
+                            <td data-label="Executor"><div class="slds-truncate" title="Executor"></div></td>
+                            <td data-label="Bridging"><div class="slds-truncate" title="Bridging"></div></td>
+                            <td data-label="Funeral"><div class="slds-truncate" title="Funeral"></div></td>
+                            <td data-label="Premium"><div class="slds-truncate" title="Premium"><b>R{!v.quoteTotal}</b></div></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem class="slds-p-top_small slds-p-bottom_small" size="12">
+                <p>Based on the options selected, the following commission will be applicable:</p>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem size="12">
+				<ui:outputText value="{!'First year: R' + v.firstYearCommission}"/>
+        	</lightning:layoutItem>
+
+             <lightning:layoutItem size="12">
+				<ui:outputText value="{!'Second year: R' + v.secondYearCommission}"/>
+        	</lightning:layoutItem>
+
+            <!-- <lightning:layoutItem class="slds-p-top_small slds-p-bottom_small" size="12">
+				<b><ui:outputText value="{!'Total Premium (including Policy Fee): R' + v.totalPremiumCommissionScreen}"/></b>
+        	</lightning:layoutItem> -->
+
+            <lightning:layoutItem size="12">
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="New Quote" onclick="{!c.newQuoteProcess}"/>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem size="12">
+                <hr/>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem size="12">
+                <h2 class="slds-section__title">Send Quote</h2>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem padding="around-small" size="8">
+                <lightning:select aura:id="emailSelect" name="SelectEmail" label="Select Email" value="{!v.selectedEmail}" onchange="{!c.onPicklistEmailChange}" required="true">
+                    <aura:iteration items="{!v.emailOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem size="1">
+            </lightning:layoutItem>
+
+            <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                <ui:inputCheckbox aura:id="completedCheckbox" value ="{!v.alternativeEmailSelected}" class="slds-float--right" label="Use Alternative Email?" change="{!c.onCompletedCheck}"/>
+            </lightning:layoutItem>
+
+            <aura:if isTrue="{!v.showAlternativeEmail}">
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="altEmail" value="{!v.alternativeEmail}" label="Alternative Email" type="email" required="true"/>
+                </lightning:layoutItem>
+            </aura:if>
+
+            <lightning:layoutItem size="12">
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Email Quote" onclick="{!c.emailQuote}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+
+    <aura:if isTrue="{!v.showSpouseScreen}">
+        <!--###### MODAL BOX Start######-->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeConfirmation}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Close Confirmation</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem size="12">
+                            <lightning:input aura:id="spouseDOB" type="date" label="Date of Birth" value="{!v.spouseDOB}" required="true"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{!c.closeConfirmation}"/>
+                    <lightning:button variant="brand"
+                                      label="Confirm"
+                                      title="Confirm"
+                                      onclick="{!c.confrimAndClose }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+    </aura:if>
+
+    <aura:if isTrue="{!v.accountNotValid}">
+        <lightning:layout multipleRows="true" class="slds-notify slds-notify_toast slds-theme_error">
+            <div class="slds-notify__content">
+                <h6 class="slds-text-heading_small">Error Message </h6>
+                <br/>
+                <p class="slds-align_absolute-center">{!v.accountInValidReason}</p>
+            </div>
+            <lightning:layoutItem size="12">
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Refresh" onclick="{!c.doInit}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+
+</aura:component>

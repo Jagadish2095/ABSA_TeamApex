@@ -1,0 +1,79 @@
+<!--
+* Lightning Component for Principal Financials (PrincipalFinancials)
+*
+* @author  Ephetehe Mokgopanyane
+* @version v1.0
+* @since   2020-09-01
+*
+-->
+
+<aura:component access="global" 
+                controller="PrincipalFinancialsCtrl"
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome">
+    
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.selectedClient}" action="{!c.onClientSelection}"/>
+    
+    <!-- Attribute Declaration -->
+	<aura:attribute name="clientNames" type="String[]" default="" access="private"/>
+    <aura:attribute name="selectedClient" type="String" default="" access="private"/>
+    <aura:attribute name="clientType" type="String" default="" access="private"/>
+    <aura:attribute name="clientCIF" type="String" default="" access="private"/>
+    <aura:attribute name="clientIdNumber" type="String" default="" access="private"/>
+    <aura:attribute name="opportunityId" type="String" default="" access="public"/>
+    <aura:attribute name="accountId" type="String" default="" access="private"/>
+    <aura:attribute name="disableClientChange" type="boolean" default="false" access="public"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false" access="private"/>
+    
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="large" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    <div class="slds-grid slds-wrap slds-gutters_medium">
+        <div class="slds-col slds-size_6-of-12 slds-text-align_left">
+            <p class=""><b>Financial Statements</b></p>
+            <p class="">The following financial details were referenced in processing this application</p><br/>
+            <table>
+                <aura:if isTrue="{!v.disableClientChange}">
+                    <tr>
+                        <td colspan="2">
+                            Please save changes before changing clients.
+                        </td>
+                    </tr>
+                </aura:if>
+            	<tr>
+                    
+                	<td rowspan="2">
+                        <lightning:select aura:id="clientSelect" name="selectClientName" label="Client Name" required="false" value="{!v.selectedClient}" disabled="{!v.disableClientChange}">
+                            <option value="">Select an option</option>
+                            <aura:iteration items="{!v.clientNames}" var="clientName">
+                                <option value="{!clientName.Name}" text="{!clientName.Name}"></option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </td>
+                    <td style="padding-left: 32px;">
+                        <ui:outputText value="Client CIF"/>
+                    </td>
+                </tr>
+                <tr>
+                	<td style="padding-left: 32px;">
+                        <ui:outputText value="{!v.clientCIF}"/>
+                    </td>
+                </tr>
+            </table><br/>
+            
+            <aura:if isTrue="{!v.clientType=='Individual'}">
+                <c:PrincipalFinancialsIndividual opportunityId="{!v.opportunityId}" accountId="{!v.accountId}" idNumber="{!v.clientIdNumber}" clientName="{!v.selectedClient}" disableClientChange="{!v.disableClientChange}"/>
+                <aura:set attribute="else">
+                    <aura:if isTrue="{!v.clientType=='Business'}">
+                        <c:ApplicationFinancialsUpload oppId="{!v.opportunityId}"/>
+                    </aura:if>
+                </aura:set>
+            </aura:if>
+        </div>
+    </div>
+</aura:component>

@@ -1,0 +1,220 @@
+<!--
+* Lightning Component for Customer Salary Account Details
+*
+* @author  Clifford Willers : ABSA (IQ Business)
+* @version v1.0
+* @since 2020-10-20
+*
+-->
+
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global"
+                controller="BranchApplicationController" >
+    <aura:attribute name="paymentPlanRecordId" type="String" />
+    <aura:attribute name="financialAccountRecordId" type="String" />
+    <aura:attribute name="bankOptions" type="List" />
+    <aura:attribute name="salaryAccountOptions" type="List" />
+    <aura:attribute name="paymentAccountOptions" type="List" />
+
+    <aura:attribute name="salaryBankName" type="String" />
+    <aura:attribute name="salaryAccountName" type="String" />
+    <aura:attribute name="salaryAccountNumber" type="String" />
+    <aura:attribute name="salaryAccountType" type="String" />
+
+    <aura:attribute name="paymentBankName" type="String" />
+    <aura:attribute name="paymentAccountName" type="String" />
+    <aura:attribute name="paymentAccountNumber" type="String" />
+    <aura:attribute name="paymentAccountType" type="String" />
+
+    <aura:attribute name="showPopUp" type="Boolean" default="false"/>
+    <aura:attribute name="showSalaryAccount" type="Boolean" default="false"/>
+    <aura:attribute name="showPaymentAccount" type="Boolean" default="false"/>
+    <aura:attribute name="useSalaryAccount" type="Boolean" default="false" />
+    <aura:attribute name="salaryAccountLoaded" type="Boolean" default="false"/>
+    <aura:attribute name="paymentAccountLoaded" type="Boolean" default="false"/>
+    <aura:attribute name="salaryError" type="String" default=""/>
+    <aura:attribute name="paymentError" type="String" default=""/>
+
+    <aura:attribute name="updating" type="Boolean" default="true"/>
+    <!-- BranchDialog -->
+    <aura:attribute name="showDialog" type="boolean" default="false"/>
+    <aura:attribute name="heading" type="string" default="attribute: heading"/>
+    <aura:attribute name="message" type="string" default="attribute: message"/>
+
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+
+    <lightning:recordEditForm aura:id= "SalaryAccountDetail"
+                            recordId="{! v.financialAccountRecordId }"
+                            objectApiName="Application_Financial_Account__c"
+                            density= "comfy"
+                            onload="{! c.salaryRecordLoaded }"
+                            onsubmit="{! c.salaryRecordSubmit }"
+                            onerror="{! c.salaryRecordError }"
+                            onsuccess="{! c.salaryRecordSuccess }">
+        <lightning:inputField fieldName="Institution_Name__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Account_Holder_Name__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Account_Number__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Account_Type__c" class="hidden_field"/>
+        <button id="{! globalId + '_financialAccount_submit' }" type="submit" class="hidden_field"/>
+    </lightning:recordEditForm>
+    <lightning:recordEditForm aura:id= "PaymentOptionsDetail"
+                            recordId="{! v.paymentPlanRecordId }"
+                            objectApiName="Payment_Plan__c"
+                            density= "comfy"
+                            onload="{! c.paymentRecordLoaded }"
+                            onsubmit="{! c.paymentRecordSubmit }"
+                            onerror="{! c.paymentRecordError }"
+                            onsuccess="{! c.paymentRecordSuccess }">
+        <lightning:inputField fieldName="Bank_Name__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Account_Holder_Name__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Account_Number__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Account_Type__c" class="hidden_field"/>
+        <button id="{! globalId + '_paymentPlan_submit' }" type="submit" class="hidden_field"/>
+    </lightning:recordEditForm>
+
+    <aura:if isTrue="{! v.showPopUp }">
+        <section role="dialog"
+                    tabindex="-1"
+                    aria-labelledby="modal-heading-01"
+                    aria-modal="true"
+                    aria-describedby="modal-content-id-1"
+                    class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="customSectionButton"><b>Account Errors</b></h2>
+                </header>
+                <div  class="content slds-theme_default" style="height: 300px">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem padding="around-small"  size="12" >
+                            <lightning:tabset >
+                                <aura:if isTrue="{! v.showSalaryAccount }">
+                                    <lightning:tab label="Salary Account" title="Salary Account Details">
+                                        <c:BranchMessage mediaBody="{! v.salaryError }" iconVariant="error"/>
+                                        <lightning:layout>
+                                            <lightning:layoutitem size="6" >
+                                                <div id="{! globalId + '_SalaryAccountHolderName' }" class="slds-var-p-around_x-small" >
+                                                    <label for="SalaryAccountHolderName" >Account holder name</label>
+                                                    <lightning:input aura:id="SalaryAccountHolderName"
+                                                                        value="{! v.salaryAccountName }"
+                                                                        required="true"
+                                                                        variant="label-hidden"
+                                                                        pattern="[a-zA-Z -]+" />
+                                                </div>
+                                                <div id="{! globalId + '_SalaryAccountNumber' }" class="slds-var-p-around_x-small" >
+                                                    <label for="SalaryAccountNumber" >Account number</label>
+                                                    <lightning:input aura:id="SalaryAccountNumber"
+                                                                        value="{! v.salaryAccountNumber }"
+                                                                        required="true"
+                                                                        variant="label-hidden"
+                                                                        pattern="[0-9]+" />
+                                                </div>
+                                            </lightning:layoutitem>
+                                            <lightning:layoutitem size="6" >
+                                                <div id="{! globalId + '_SalaryBankName' }" class="slds-var-p-around_x-small" >
+                                                    <label for="SalaryBankName" >Banks name</label>
+                                                    <lightning:select aura:id="SalaryBankName"
+                                                                        name="SalaryBankName"
+                                                                        label=""
+                                                                        class="label-hidden"
+                                                                        value="{! v.salaryBankName }"
+                                                                        required="true" >
+                                                        <option value="">please select...</option>
+                                                        <aura:iteration items="{! v.bankOptions }" var="banks">
+                                                            <option value="{!banks}" selected="{!banks==v.salaryBankName}">{!banks}</option>
+                                                        </aura:iteration>
+                                                    </lightning:select>
+                                                </div>
+                                                <div id="{! globalId + '_SalaryAccountType' }" class="slds-var-p-around_x-small" >
+                                                    <label for="SalaryAccountType" >Account type</label>
+                                                    <lightning:select aura:id="SalaryAccountType"
+                                                                        name="SalaryAccountType"
+                                                                        label=""
+                                                                        class="label-hidden"
+                                                                        value="{! v.salaryAccountType }"
+                                                                        required="true" >
+                                                        <option value="">please select...</option>
+                                                        <aura:iteration items="{! v.salaryAccountOptions }" var="salaryAccType">
+                                                            <option value="{!salaryAccType}" selected="{!salaryAccType==v.salaryAccountType}">{!salaryAccType}</option>
+                                                        </aura:iteration>
+                                                    </lightning:select>
+                                                </div>
+                                            </lightning:layoutitem>
+                                        </lightning:layout>
+                                    </lightning:tab>
+                                </aura:if>
+                                <aura:if isTrue="{! v.showPaymentAccount }">
+                                    <lightning:tab label="Debit Account" title="Debit Order Account Details">
+                                        <c:BranchMessage mediaBody="{! v.paymentError }" iconVariant="error"/>
+                                        <lightning:layout>
+                                            <lightning:layoutitem size="6" >
+                                                <div id="{! globalId + '_PaymentAccountHolderName' }" class="slds-var-p-around_x-small" >
+                                                    <label for="PaymentAccountHolderName" >Account holder name</label>
+                                                    <lightning:input aura:id="PaymentAccountHolderName"
+                                                                        value="{! v.paymentAccountName }"
+                                                                        required="true"
+                                                                        variant="label-hidden"
+                                                                        pattern="[a-zA-Z -]+" />
+                                                </div>
+                                                <div id="{! globalId + '_PaymentAccountNumber' }" class="slds-var-p-around_x-small" >
+                                                    <label for="PaymentAccountNumber" >Account number</label>
+                                                    <lightning:input aura:id="PaymentAccountNumber"
+                                                                        value="{! v.paymentAccountNumber }"
+                                                                        required="true"
+                                                                        variant="label-hidden"
+                                                                        pattern="[0-9]+" />
+                                                </div>
+                                            </lightning:layoutitem>
+                                            <lightning:layoutitem size="6" >
+                                                <div id="{! globalId + '_PaymentBankName' }" class="slds-var-p-around_x-small" >
+                                                    <label for="PaymentBankName" >Banks name</label>
+                                                    <lightning:select aura:id="PaymentBankName"
+                                                                        name="PaymentBankName"
+                                                                        label=""
+                                                                        class="label-hidden"
+                                                                        value="{! v.paymentBankName }"
+                                                                        required="true" >
+                                                        <option value="">please select...</option>
+                                                        <aura:iteration items="{! v.bankOptions }" var="banks">
+                                                            <option value="{!banks}" selected="{!banks==v.paymentBankName}">{!banks}</option>
+                                                        </aura:iteration>
+                                                    </lightning:select>
+                                                </div>
+                                                <div id="{! globalId + '_PaymentAccountType' }" class="slds-var-p-around_x-small" >
+                                                    <label for="PaymentAccountType" >Account type</label>
+                                                    <lightning:select aura:id="PaymentAccountType"
+                                                                        name="PaymentAccountType"
+                                                                        label=""
+                                                                        class="label-hidden"
+                                                                        value="{! v.paymentAccountType }"
+                                                                        required="true" >
+                                                        <option value="">please select...</option>
+                                                        <aura:iteration items="{! v.paymentAccountOptions }" var="paymentAccType">
+                                                            <option value="{!paymentAccType}" selected="{!paymentAccType==v.paymentAccountType}">{!paymentAccType}</option>
+                                                        </aura:iteration>
+                                                    </lightning:select>
+                                                </div>
+                                            </lightning:layoutitem>
+                                        </lightning:layout>
+                                    </lightning:tab>
+                                </aura:if>
+                            </lightning:tabset>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button class="slds-float_left" variant="brand" label="Cancel" onclick="{! c.cancelClose }" />
+                    <lightning:button class="slds-float_right" variant="brand" label="Update" onclick="{! c.updateClose }" />
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <aura:if isTrue="{! v.updating }">
+        <lightning:spinner alternativeText="Loading" size="small" />
+    </aura:if>
+    <aura:if isTrue="{! v.showDialog }">
+        <c:BranchDialog showDialog="{! v.showDialog }"
+                        heading="{! v.heading }"
+                        message="{! v.message }"/>
+    </aura:if>
+</aura:component>

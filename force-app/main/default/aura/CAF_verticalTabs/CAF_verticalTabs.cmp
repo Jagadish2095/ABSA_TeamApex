@@ -1,0 +1,212 @@
+<!--
+* Lightning Component for maintaining Origination vertical tab structure
+* <c:originationVerticalTabs/>
+* @author  Lesibe : Absa
+* @version v1.0
+* @since   2020-12-22
+* @UserStory W:000000
+-->
+<aura:component
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+    access="global"
+    controller="cafApplicationController"
+>
+    <aura:attribute name="recordId" type="string" />
+    <aura:attribute name="oppId" type="string" />
+    <aura:attribute name="asyncValidation" type="Boolean" />
+    <aura:attribute name="hasBeenEdited" type="Boolean" />
+    <aura:attribute name="selectedItem" type="String" />
+    <aura:attribute name="activeItem" type="String" />
+    <aura:attribute name="resultData" type="List" />
+    <aura:attribute name="discription" type="string" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="isEditable" type="boolean" default="false" />
+    <aura:attribute name="isEditableHasRun" type="boolean" default="false" />
+    <aura:attribute name="oppOwnerId" type="string" />
+    <aura:attribute name="oppApprover" type="string" />
+    <aura:attribute name="caseOwner" type="string" />
+    <aura:attribute name="caseNoExist" type="Boolean" default="false"/>
+    <aura:attribute name="agreeTermsAndConditions" type="string" />
+    <aura:attribute
+        name="activeSections"
+        type="List"
+        default="['caf_ApplicationOpportunity','CAF_ApplicationDetails', 'AssetDetailsCAF', 'CAF_ShortTermInsurance', 'CAF_ContractDetails', 'CAF_ContractExtras', 'CAF_ValueAddedProducts', 'CAF_LandlordWaiver', 'CAF_DealerDetails', 'CAF_Structure', 'CAF_CreditApplicationDetails', 'CAF_ProductionInformation', 'CAF_SaveApplications', 'CAF_SAP_Information', 'CAF_RequestContractApp', 'CAF_SubmitForFulfilment']"
+    />
+
+    <aura:attribute name="fireInit" type="Boolean" default="false"/>
+
+    <aura:attribute name="selectedApp" type="List"/>
+
+    <aura:attribute name="activeSections1" type="List" default="['caf_AgreementCheckpoint','caf_SanctioningSummary']" />
+    <aura:attribute name="dataList" type="Object" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="isOpen" type="boolean" default="false" />
+    <aura:attribute name="showAppList" type="boolean" default="false" />
+    <aura:attribute name="isNotCase" type="boolean" default="false" />
+    <aura:attribute name="recId" type="string" />
+    <aura:attribute name="appId" type="string" />
+    <aura:attribute name="extrasQty" type="string" default="" />
+    <aura:attribute name="vapsQty" type="string" default="" />
+    <aura:attribute name="termsInMonth" type="String" />
+    <aura:attribute name="applicationData" type="Object" />
+    <aura:attribute name="accAndOppData" type="Object" />
+    <aura:attribute name="companyTurnoverCategory" type="String" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="salesBranch" type="String" default="" />
+    <aura:attribute name="isCreateBtnDisabled" type="boolean" default="true" />
+    <aura:attribute name="isReqConFromSSCBtnDisabled" type="boolean" default="false" />
+    <aura:attribute name="sectionRefresher" type="boolean" default="true" />
+
+
+    <!-- aura handler for init -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <!-- Register Application Event
+    <aura:registerEvent name="creditOriginationEvent" type="c:creditOriginationEvent"/> -->
+    <!-- Handle Application Event -->
+    <div aura:id="oppVerticalTabs" class="caf_verticalTabs">
+        <lightning:layout multipleRows="true">
+            <aura:if isTrue="{!v.isNotCase}">
+            <lightning:layoutItem padding="around-small p-t-0" size="2">
+                <lightning:verticalNavigation selectedItem="{! v.selectedItem }">
+                    <lightning:verticalNavigationSection>
+                        <lightning:verticalNavigationItemIcon label="Applications" iconName="custom:custom24" name="TabOne" onclick="{!c.toggleClass}" />
+                        <lightning:verticalNavigationItemIcon label="Sanctioning" iconName="custom:custom24" name="creditCard" onclick="{!c.toggleClass}" />
+                    </lightning:verticalNavigationSection>
+                </lightning:verticalNavigation>
+            </lightning:layoutItem>
+            <br />
+     </aura:if>
+            <lightning:layoutItem padding="around-small tabsContents" size="10">
+                 <div aura:id="div1" class="slds-grid slds-wrap slds-gutters_medium p-lr-20"  style="border: 1px solid #eee; background-color: #fafafa">
+                    
+                    <div class="slds-col slds-size_1-of-1 align-inner-right p-tr-20">
+                        <aura:if isTrue="{!v.isNotCase}">
+                        <lightning:button variant="brand-outline" label="New application" onclick="{! c.newApplication }" disabled="{!v.isEditable}"/>
+                        <!--<aura:if isTrue="{!v.appId != null}">
+                            <lightning:button variant="brand-outline" label="Clone prior application" onclick="{! c.openClonePriorAppModel }" />
+                        </aura:if>-->
+                            </aura:if>
+                    </div>
+                    <c:CAF_ClonePriorApp isOpen="{!v.isOpen}" appProdCafId="{!v.appId}" oId="{! v.recordId }" /> 
+
+                    <aura:if isTrue="{!v.appId != null}">
+                        <!--Start\-->
+                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections}" aura:id="accordion">
+                            <lightning:recordEditForm
+                                                      objectApiName="Application_Product_CAF__c"
+                                                      density="comfy"
+                                                      recordId="{!v.appId}"
+                                                      onsubmit="{!c.handleOnSubmit}"
+                                                      onload="{!c.handleOnload}"
+                                                      onsuccess="{!c.handleSuccess}"
+                                                      onerror="{!c.handleError}"
+                                                      aura:id="apcRecordForm">
+                                
+                                <lightning:messages />
+                                 <aura:if isTrue="{!v.isNotCase}">
+                                <h3 class="slds-accordion__summary-heading p-title">Application History</h3>
+                                     <aura:set attribute="else">
+                                     
+                                  <h3 class="slds-accordion__summary-heading p-title">Application Summary</h3>   
+                                     </aura:set>
+                                     </aura:if>
+                                <!-- BASIC GRID EXAMPLE -->
+                                <div class="slds-grid slds-wrap slds-gutters_medium p-lr-20">
+                                    <aura:if isTrue="{!v.showAppList}"> 
+                                        <div class="slds-col slds-size_1-of-1 p-t-15">
+                                            <lightning:datatable
+                                                keyField="Id"
+                                                data="{! v.dataList }"
+                                                columns="{! v.columns }"
+                                                hideCheckboxColumn="true"
+                                                onrowaction="{!c.handleRowAction}"
+                                            />
+                                        </div>
+                                    </aura:if>
+                                </div>
+                                <aura:if isTrue="{!v.sectionRefresher}">
+                                    <c:CAF_ApplicationDetails applicationData="{!v.applicationData}" recId="{! v.recId }" appId="{!v.appId}" />
+                                </aura:if>
+                                <aura:if isTrue="{!v.sectionRefresher}">
+                                    <aura:if isTrue="{!v.isNotCase}">
+                                        <c:AssetDetailsCAF recordId="{! v.recordId }" applicationData="{!v.applicationData}" appId="{!v.appId}" />
+                                        <aura:set attribute="else"> 
+                                            <c:AssetDetailsCAF recordId="{! v.oppId }" applicationData="{!v.applicationData}" appId="{!v.appId}" />
+                                        </aura:set>
+                                    </aura:if>
+                                </aura:if>
+                                <aura:if isTrue="{!v.sectionRefresher}">
+                                    <c:CAF_ShortTermInsurance recordId="{!v.appId}" aura:id="CAF_ShortTermInsurance" />
+                                    <c:CAF_ContractDetails applicationData="{!v.applicationData}" methodFromParentCMP="{!c.handleOnSubmitFromChild}" />
+                                </aura:if>
+                                    <aura:if isTrue="{!and(v.recId != undefined, v.isEditableHasRun == true)}">
+                                    <c:CAF_ContractExtras
+                                                          oppId="{! v.recordId }"
+                                                          recId="{! v.recId }"
+                                                          extraslength="{!v.extrasQty}"
+                                                          aura:id="IdContractExtras"
+                                                          isEditable="{! v.isEditable }"
+                                    />
+                                    <c:CAF_ValueAddedProducts
+                                                              fieldsData="{!v.fieldsData}"
+                                                              oppId="{! v.recordId }"
+                                                              recId="{! v.recId }"
+                                                              vaplength="{!v.vapsQty}"
+                                                              aura:id="IdValueAddedProducts"
+                                                              isEditable="{! v.isEditable }"
+                                                              />
+                                </aura:if>
+                                <aura:if isTrue="{!v.sectionRefresher}">
+                                <c:CAF_LandlordWaiver applicationData="{!v.applicationData}" />
+                                <c:CAF_DealerDetails aura:id="CAF_DealerDetails" />
+                                <c:CAF_Structure applicationData="{!v.applicationData}" aura:id="CAF_Structure" />
+                                    <c:CAF_CreditApplicationDetails
+                                                                    applicationData="{!v.applicationData}"
+                                                                    fieldsData="{!v.fieldsData}"
+                                                                    companyTurnoverCategory="{!v.companyTurnoverCategory}"
+                                                                    aura:id="CAF_CreditApplicationDetails"
+                                                                    calculateCreditAppResult="{!v.agreeTermsAndConditions}"
+                                                                    />
+                                <c:CAF_ProductionInformation aura:id="CAF_ProductionInformation" salesBranch="{!v.salesBranch}" /> 
+                                <aura:if isTrue="{!v.isEditableHasRun == true}">
+                                <c:CAF_SaveApplications oppId="{! v.recordId }" aura:id="CAF_SaveApplications" errorMessage="{!v.errorMessage}" isEditable="{! v.isEditable }" /> 
+                                <c:CAF_SAP_Information recordId="{!v.recordId}" appId="{!v.appId}" aura:id="CAF_SAP_Information" isEditable="{! v.isEditable }" caseNoExist="{! v.caseNoExist}" isCreateBtnDisabled="{!v.isCreateBtnDisabled}" isReqConFromSSCBtnDisabled="{!v.isReqConFromSSCBtnDisabled}" /> 
+                                <aura:if isTrue="{!v.isNotCase}">
+                                <c:CAF_RequestContractApp oppId="{!v.recordId}" appId="{!v.appId}" aura:id="CAF_RequestContract" isEditable="{! v.isEditable }" isReqConFromSSCBtnDisabled="{!v.isReqConFromSSCBtnDisabled}"/> 
+                                <c:CAF_SubmitToSSC oppId="{!v.recordId}" appId="{!v.appId}" aura:id="CAF_SubmitToSSC" isEditable="{! v.isEditable }"/> 
+                                  </aura:if>
+                                    </aura:if>
+                                 <!--
+                                <c:CAF_SubmitForFulfilment oppId="{!v.recordId}" appId="{!v.appId}" aura:id="CAF_submitForFulfilment" />
+                               
+                                <c:AssetDetailsCAF recordId="{! v.recId }" fieldsData="{!v.fieldsData}" appId="{!v.appId}"/>
+                            -->
+                                <!-- Error Message -->
+                                <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                                    <div class="recordError">
+                                        <br />
+                                        <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+                                        <br />
+                                    </div>
+                                </aura:if>
+                                </aura:if>
+                            </lightning:recordEditForm>
+                        </lightning:accordion>
+                    </aura:if>
+                </div>
+                <div aura:id="creditCard" class="slds-hide">
+                    <!--Start-->
+                    <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections1}" aura:id="accordion1">
+                        <c:CAF_AgreementCheckpoint oppId="{! v.recordId }" appId="{!v.appId}" />
+                        <!--<c:CAF_SanctioningSummary oppId="{! v.recordId }"/>-->
+                    </lightning:accordion>
+                </div>
+
+                <aura:if isTrue="{!v.showSpinner}">
+                    <lightning:spinner alternativeText="Loading" size="medium" />
+                </aura:if>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </div>
+</aura:component>

@@ -1,0 +1,187 @@
+<!--
+  @description       : 
+  @author            : Manish.battu@absa.africa
+  @last modified on  : 2021-08-18
+  @last modified by  : Manish.battu@absa.africa
+-->
+<aura:component
+	controller="ProductOnboardingAuthSignatoryCtrl"
+	implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+	access="global"
+>
+	<!-- Event Handler Decleration -->
+	<aura:handler name="init" value="{! this }" action="{! c.initialize }" />
+	<!-- aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}" / -->
+
+	<!-- Attribute Decleration -->
+	<aura:attribute name="recordId" type="String" default="" access="public" />
+	<aura:attribute name="productContactSignatoryId" type="String" default="" />
+	<!--  <aura:attribute name="applicationProductMerchantId" type="String" default=""/>
+    <aura:attribute type="Application_Product_Merchant__c[]" name="appProdMerchList"/>-->
+	<aura:attribute name="activeSections" type="List" default="['CardsInfo']" />
+	<aura:attribute name="isButtonActive" type="Boolean" default="true" />
+	<aura:attribute name="isDelButtonActive" type="Boolean" default="true" />
+	<aura:attribute name="v.recIdToDel" type="String" default="" />
+	<aura:attribute name="options" type="List" default="" />
+	<!-- options for the radio group -->
+	<aura:attribute name="optionsNotEmpty" type="boolean" default="true" />
+	<!-- emptyOoptions for the radio group -->
+	<aura:attribute name="emailMap" type="Map" default="{}" />
+	<!-- contacts details Map -->
+	<aura:attribute name="mobileMap" type="Map" default="{}" />
+	<!-- contacts details Map -->
+	<aura:attribute name="mycolumns" type="List" default="" />
+	<!-- selected contact -->
+	<aura:attribute name="selectedRows" type="List" default="" />
+	<aura:attribute name="opportunityProductMap" type="Map" default="{}" />
+	<aura:attribute name="nameOfProductsAdded" type="List" default="" />
+	<aura:attribute name="selectedValue" type="String" /><!-- selected product from dropdown -->
+	<aura:attribute name="selectedSignatoryName" type="String" />
+	<!-- selected Contact Name on Datatable  -->
+	<aura:attribute name="selectedRecordRelationshipId" type="String" />
+	<aura:attribute name="existingSignatorylist" type="List" default="" />
+	<aura:attribute name="existingSignatoryHeader" type="List" default="" />
+	<aura:attribute name="parentAccountRecord" type="Object" />
+	<aura:attribute name="productOnboardingROA" type="Boolean" default="false" /><!--added by Manish for W-012357-->
+
+	<lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true">
+		<lightning:accordionSection name="CardsInfo" label="Authorize Signatories">
+			<aura:if isTrue="{!v.optionsNotEmpty }">
+				<lightning:recordEditForm
+					aura:id="authorisedSignatoriesForm"
+					objectApiName="ProductContactSignatoryRelationship__c"
+					recordId="{!v.productContactSignatoryId}"
+					onload="{!c.onload}"
+					onsubmit="{!c.handleOnSubmit}"
+					onsuccess="{!c.handleSuccess}"
+				>
+					<!-- Datatable for Already Added Signatory  -->
+
+					<div class="slds-p-top_x-small"></div>
+					<div class="slds-section-title--divider">
+						<h1><b> Existing Signatories </b></h1>
+					</div>
+					<lightning:datatable
+						data="{! v.existingSignatorylist }"
+						columns="{! v.existingSignatoryHeader }"
+						keyField="Id"
+						hideCheckboxColumn="false"
+						maxRowSelection="1"
+						onrowselection="{!c.UpdateSelectedRowsExist}"
+						selectedRows="{! v.selectedRows }"
+					/>
+					<div class="slds-size_1-of-1">
+						<lightning:button
+							aura:id="delbtn"
+							type="submit"
+							label="Delete"
+							variant="brand"
+							disabled="{!v.isDelButtonActive}"
+							onclick="{!c.deleteRecords}"
+							class="slds-align_absolute-center slds-m-top_xx-small"
+						/>
+					</div>
+					<div class="slds-p-top_x-large"></div>
+					<div class="slds-section-title--divider">
+						<h1><b> Nominate New Signatories </b></h1>
+					</div>
+					<!-- Datatable for Related Party which should be selected for new Signatory  -->
+					<lightning:datatable
+						data="{! v.options }"
+						columns="{! v.mycolumns }"
+						keyField="Id"
+						hideCheckboxColumn="false"
+						maxRowSelection="1"
+						onrowselection="{!c.UpdateSelectedRows}"
+						selectedRows="{! v.selectedRows }"
+					/>
+
+					<div class="slds-size_1-of-3">
+						<lightning:inputField
+							aura:id="authorisedSignatory"
+							fieldName="Authorised_Signatory__c"
+							label="Authorised Signatory"
+							class="slds-hide"
+						/>
+					</div>
+					<div class="slds-grid slds-wrap slds-gutters_medium">
+						<!--div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <lightning:inputField fieldName="SigningAuthorityFromDate__c" aura:id="signAuthfromDate" required="true" />
+                    </span></div-->
+						<!--div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <lightning:inputField fieldName="Signing_Instructions__c" aura:id="signInstructions" required="true" />
+                    </span></div-->
+						<aura:if isTrue="{!!v.productOnboardingROA}">
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:select name="mySelect" label="Select Product:" aura:id="iproductID" onchange="{!c.selectProductforSignatory}">
+										<!--value="{!v.selectedValue}"-->
+										<aura:iteration items="{!v.nameOfProductsAdded}" var="item">
+											<option text="{!item}" value="{!item}" selected="{!item.selected}" />
+										</aura:iteration>
+									</lightning:select>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Group_No__c" aura:id="groupNo" required="true" />
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Compulsory_Signature__c" aura:id="compulsorySignature" required="true" />
+								</span>
+							</div>
+						</aura:if>
+						<!--div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <lightning:inputField fieldName="In_terms_of_Resolution_date__c" aura:id="intermsofResolutiondate"  />
+                    </span></div-->
+
+						<!--div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <lightning:inputField fieldName="Number_of_Signatories_for_account__c" aura:id="numberofSignatoriesforaccount" required="true" />
+                    </span></div-->
+
+						<!--div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <lightning:inputField fieldName="Special_Instruction__c" aura:id="spclInstructions"/>
+                    </span></div-->
+
+						<!--div class="slds-col slds-size_1-of-1">
+                    <span>
+                        <lightning:inputField fieldName="Signing_Purpose__c" aura:id="signingPurpose" required="true" />
+                    </span></div-->
+
+						<aura:If isTrue="{!v.isButtonActive}">
+							<div class="slds-size_1-of-1 slds-var-p-around_medium">
+								Please note that the selected signatory does not have valid email and/or mobile number details.
+							</div>
+						</aura:If>
+
+						<div class="slds-size_1-of-1">
+							<lightning:button
+								aura:id="savebtn"
+								type="submit"
+								label="Save"
+								variant="brand"
+								disabled="{!v.isButtonActive}"
+								class="slds-align_absolute-center slds-m-top_xx-small"
+							/>
+						</div>
+					</div>
+				</lightning:recordEditForm>
+				<aura:set attribute="else">
+					<div class="slds-size_1-of-1 slds-var-p-around_medium">
+						Please note that there no valid signatories for this client.<br />
+						Operational Role for valid signatories is only - Individual with authority to act, Managing Director, Shareholder/Controller.
+					</div>
+				</aura:set>
+			</aura:if>
+		</lightning:accordionSection>
+	</lightning:accordion>
+</aura:component>

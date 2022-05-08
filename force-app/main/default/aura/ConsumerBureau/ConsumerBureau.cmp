@@ -1,0 +1,678 @@
+<!--
+* Lightning Component for Commercial Bureau (CommercialBureau)
+*
+* @author  Ephetehe Mokgopanyane
+* @version v1.0
+* @since   2020-11-17
+*
+-->
+
+<aura:component access="global"
+                controller="ConsumerBureauCtrl"
+    			implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome">
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <!--aura:handler name="change" value="{!v.consBureauData}" action="{!c.onRender}"/-->
+    <aura:registerEvent name="creditOriginationEvent" type="c:creditOriginationEvent"/>
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="recordId" type="String" default=""/>
+    <aura:attribute name="opportunityId" type="String" default=""/>
+	<aura:attribute name="consBureauData" type="Map[]" default=""/>
+    <aura:attribute name="headerColSpan" type="Integer" default="1" access="private"/>
+    <aura:attribute name="bureauDataChanged" type="boolean" default="false" access="private"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false" access="private"/>
+
+    <div>
+        <div class="slds-grid slds-wrap slds-gutters_medium">
+            <div class="slds-col slds-size_12-of-12 slds-text-align_left">
+                <aura:if isTrue="{!v.showSpinner}">
+                    <lightning:spinner aura:id="spinner" variant="brand" size="large" alternativeText="Loading...." />
+                </aura:if>
+                <table class="slds-table slds-table_cell-buffer slds-table_striped tableStyle">
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Consumer Bureau Header</th>
+                    </tr>
+                    <tr id="{!'pcceIdConsumer' + v.opportunityId}">
+                        <td>Entity / Client Unique PCCE ID</td>
+                    </tr>
+                    <tr id="{!'clientNameConsumer' + v.opportunityId}">
+                        <td>Client Name</td>
+                    </tr>
+                    <tr id="{!'idRegNumConsumer' + v.opportunityId}">
+                        <td>ID Registration Number</td>
+                    </tr>
+                    <tr id="{!'cifCodeConsumer' + v.opportunityId}">
+                        <td>CIF Code</td>
+                    </tr>
+                    <tr id="{!'enquiryDateConsumer' + v.opportunityId}">
+                        <td>Enquiry Date</td>
+                    </tr>
+                    <tr id="{!'timeConsumer' + v.opportunityId}">
+                        <td>Time</td>
+                    </tr>
+                    <tr id="{!'callTypeConsumer' + v.opportunityId}">
+                        <td>Call Type</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Bureau Summary</th>
+                    </tr>
+                    <tr id="{!'creditBureauReport1Consumer' + v.opportunityId}">
+                        <td>Credit Bureau Report 1</td>
+                    </tr>
+                    <tr id="{!'creditBureauReport2Consumer' + v.opportunityId}">
+                        <td>Credit Bureau Report 2</td>
+                    </tr>
+                    <tr id="{!'worstReportConsumer' + v.opportunityId}">
+                        <td>Worst Report</td>
+                    </tr>
+                    <tr id="{!'everBeenInsolventConsumer' + v.opportunityId}">
+                        <td>Ever Been Insolvent</td>
+                    </tr>
+                    <tr id="{!'debtCounsellingCodeConsumer' + v.opportunityId}">
+                        <td>Debt Counselling Code</td>
+                    </tr>
+                    <tr id="{!'disputeIndicatorConsumer' + v.opportunityId}">
+                        <td>Dispute Indicator</td>
+                    </tr>
+                    <tr id="{!'deceasedIndicatorConsumer' + v.opportunityId}">
+                        <td>Deceased Indicator</td>
+                    </tr>
+                    <tr id="{!'idVerifiedConsumer' + v.opportunityId}">
+                        <td>ID Verified</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow" id="{!'payProfSummary' + v.opportunityId}">
+                        <th>Payment Profile Summary</th>
+                    </tr>
+                    <tr id="{!'currentBalActiveAbsaConsumer' + v.opportunityId}">
+                        <td>Current Balance Active Absa</td>
+                    </tr>
+                    <tr id="{!'currentBalActiveNonAbsaConsumer' + v.opportunityId}">
+                        <td>Current Balance Active Non-Absa</td>
+                    </tr>
+                    <tr id="{!'currentBalActiveAllConsumer' + v.opportunityId}">
+                        <td>Current Balance Active All</td>
+                    </tr>
+                    <tr>
+                        <td class="emptyRow"></td>
+                    </tr>
+                    <tr id="{!'totInstalmentsAbsaConsumer' + v.opportunityId}">
+                        <td>Total Instalments Absa</td>
+                    </tr>
+                    <tr id="{!'totInstalmentsNonAbsaConsumer' + v.opportunityId}">
+                        <td>Total Instalments Non-Absa</td>
+                    </tr>
+                    <tr id="{!'totInstalmentsAllConsumer' + v.opportunityId}">
+                        <td>Total Instalments All</td>
+                    </tr>
+                    <tr>
+                        <td class="emptyRow"></td>
+                    </tr>
+                    <tr id="{!'worstArrearsLevelLast3MnthsConsumer' + v.opportunityId}">
+                        <td>Worst Arrears Level Last 3 Months</td>
+                    </tr>
+                    <tr id="{!'worstArrearsLevelLast6MnthsConsumer' + v.opportunityId}">
+                        <td>Worst Arrears Level Last 6 Months</td>
+                    </tr>
+                    <tr id="{!'worstArrearsLevelLast12MnthsConsumer' + v.opportunityId}">
+                        <td>Worst Arrears Level Last 12 Months</td>
+                    </tr>
+                    <tr id="{!'worstEverArrearsConsumer' + v.opportunityId}">
+                        <td>Worst Ever Arrears</td>
+                    </tr>
+                    <tr id="{!'worstEverArrearsOpenPayProfConsumer' + v.opportunityId}">
+                        <td>Worst Ever Arrears Open Payment Profiles</td>
+                    </tr>
+                    <tr id="{!'worstEverArrearsClosedPayProfConsumer' + v.opportunityId}">
+                        <td>Worst Ever Arrears Closed Payment Profiles</td>
+                    </tr>
+                    <tr id="{!'worstStatusActiveAccLast6MnthsConsumer' + v.opportunityId}">
+                        <td>Worst Status Active Accounts Last 6 Months</td>
+                    </tr>
+                    <tr id="{!'worstStatusActiveAccLast12MnthsConsumer' + v.opportunityId}">
+                        <td>Worst Status Active Accounts Last 12 Months</td>
+                    </tr>
+                    <tr id="{!'numTimes3PlusArrearsConsumer' + v.opportunityId}">
+                        <td>Number of Times 3 Plus Arrears</td>
+                    </tr>
+                    <tr>
+                        <td class="emptyRow"></td>
+                    </tr>
+                    <tr id="{!'ageMostRecentFacilityRevokedPayProfConsumer' + v.opportunityId}">
+                        <td>Age Most Recent Facility Revoked Payment Profile</td>
+                    </tr>
+                    <tr id="{!'ageMostRecentHandedOverPayProfConsumer' + v.opportunityId}">
+                        <td>Age Most Recent Handed Over Payment Profile</td>
+                    </tr>
+                    <tr id="{!'ageMostRecentRepoPayProfConsumer' + v.opportunityId}">
+                        <td>Age Most Recent Repossessed Payment Profile</td>
+                    </tr>
+                    <tr id="{!'ageMostRecentWrittenOffPayProfConsumer' + v.opportunityId}">
+                        <td>Age Most Recent Written Off Payment Profile</td>
+                    </tr>
+                    <tr>
+                        <td class="emptyRow"></td>
+                    </tr>
+                    <tr id="{!'dateMostRecentPaymentProfileOpenedConsumer' + v.opportunityId}">
+                        <td>Days Most Recent Payment Profile Opened</td>
+                    </tr>
+                    <tr id="{!'numClosedPaymentProfilesConsumer' + v.opportunityId}">
+                        <td>Number of Closed Payment Profiles</td>
+                    </tr>
+                    <tr>
+                        <td class="emptyRow"></td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Non-Absa Instalments Summary</th>
+                    </tr>
+                    <tr id="{!'totAssetFinRepaymentsConsumer' + v.opportunityId}">
+                        <td>Total Asset Finance Repayments</td>
+                    </tr>
+                    <tr id="{!'totMortgageBondsRepaymentsConsumer' + v.opportunityId}">
+                        <td>Total Mortgage Bonds Repayments</td>
+                    </tr>
+                    <tr id="{!'totCreditCardRepaymentsConsumer' + v.opportunityId}">
+                        <td>Total Credit Card Repayments</td>
+                    </tr>
+                    <tr id="{!'totEduRepaymentsConsumer' + v.opportunityId}">
+                        <td>Total Educational Repayments</td>
+                    </tr>
+                    <tr id="{!'totInsurancePremConsumer' + v.opportunityId}">
+                        <td>Total Insurance Premiums</td>
+                    </tr>
+                    <tr id="{!'totOverdraftLoanRepaymentsConsumer' + v.opportunityId}">
+                        <td>Total Overdraft &amp; Loan Repayments</td>
+                    </tr>
+                    <tr id="{!'totOtherDebtRepaymentsConsumer' + v.opportunityId}">
+                        <td>Total Other Debt Repayments</td>
+                    </tr>
+                    <tr id="{!'totRetailAccRepaymentsConsumer' + v.opportunityId}">
+                        <td>Total Retail Account Repayments</td>
+                    </tr>
+                    <tr id="{!'totSecurityRepaymentsConsumer' + v.opportunityId}">
+                        <td>Total Security Repayments</td>
+                    </tr>
+                    <tr id="{!'totalTelRepaymentsConsumer' + v.opportunityId}">
+                        <td>Total Telephone Repayments</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Payment Profile Details: Other - Asset Finance</th>
+                    </tr>
+                    <tbody id="{!'payProfDetailsOtherAssetFinConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Payment Profile Details: Other - Mortgage Bonds</th>
+                    </tr>
+                    <tbody id="{!'payProfDetailsOtherMrtgBondsConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Payment Profile Details: Other - Credit Cards</th>
+                    </tr>
+                    <tbody id="{!'payProfDetailsOtherCrdtCrdsConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Payment Profile Details: Other - Education</th>
+                    </tr>
+                    <tbody id="{!'payProfDetailsOtherEduConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Payment Profile Details: Other - Insurance</th>
+                    </tr>
+                    <tbody id="{!'payProfDetailsOtherInsConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Payment Profile Details: Other - Loan Overdraft</th>
+                    </tr>
+                    <tbody id="{!'payProfDetailsOtherLoanODConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Payment Profile Details: Other - Debt Repayment</th>
+                    </tr>
+                    <tbody id="{!'payProfDetailsOtherDbtRepayConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Payment Profile Details: Other - Retail Accounts</th>
+                    </tr>
+                    <tbody id="{!'payProfDetailsOtherRetAccConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Payment Profile Details: Other - Security</th>
+                    </tr>
+                    <tbody id="{!'payProfDetailsOtherScrtyConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Payment Profile Details: Other - Telecomm</th>
+                    </tr>
+                    <tbody id="{!'payProfDetailsOtherTelecomConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Fraud indicator</th>
+                    </tr>
+                    <tbody id="{!'fraudIndicatorDetailsConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Notices Summary</th>
+                    </tr>
+                    <tr id="{!'dateSinceMostRecentNoticeConsumer' + v.opportunityId}">
+                        <td>Date Since Most Recent Notice</td>
+                    </tr>
+                    <tr id="{!'mostRecentNoticeAmtConsumer' + v.opportunityId}">
+                        <td>Most Recent Notice Amount</td>
+                    </tr>
+                    <tr id="{!'numNoticesConsumer' + v.opportunityId}">
+                        <td>Number Of Notices</td>
+                    </tr>
+                    <tr id="{!'numNoticesLast3MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Notices Last 3 Months</td>
+                    </tr>
+                    <tr id="{!'numNoticesLast6MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Notices Last 6 Months</td>
+                    </tr>
+                    <tr id="{!'numNoticesLast12MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Notices Last 12 Months</td>
+                    </tr>
+                    <tr id="{!'numNoticesLast24MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Notices Last 24 Months</td>
+                    </tr>
+                    <tr id="{!'worstNoticeTypeConsumer' + v.opportunityId}">
+                        <td>Worst Notice Type</td>
+                    </tr>
+                    <tr id="{!'mostRecentNoticeTypeConsumer' + v.opportunityId}">
+                        <td>Most Recent Notice Type</td>
+                    </tr>
+                    <tr id="{!'mntshSinceLastWorstNoticeTypeConsumer' + v.opportunityId}">
+                        <td>Months Since Worst Notice Type</td>
+                    </tr>
+                    <tr id="{!'mnthsSinceMostRecentNoticeTypeConsumer' + v.opportunityId}">
+                        <td>Days Since Most Recent Notice Type</td>
+                    </tr>
+                    <tr id="{!'numRehabConsumer' + v.opportunityId}">
+                        <td>Number Of Rehabilitation Type Notices</td>
+                    </tr>
+                    <tr id="{!'numAdminOrderConsumer' + v.opportunityId}">
+                        <td>Number Of Administration Order Type Notices</td>
+                    </tr>
+                    <tr id="{!'numAdminOrderAbandonmentConsumer' + v.opportunityId}">
+                        <td>Number Of Administration Order Abandonment Type Notices</td>
+                    </tr>
+                    <tr id="{!'numIntentToSurrenderConsumer' + v.opportunityId}">
+                        <td>Number Of Intent to Surrender Type Notices</td>
+                    </tr>
+                    <tr id="{!'numFinalSequestrationConsumer' + v.opportunityId}">
+                        <td>Number Of Final Sequestration Type Notices</td>
+                    </tr>
+                    <tr id="{!'numProvisionalSequestrationConsumer' + v.opportunityId}">
+                        <td>Number Of Provisional Sequestration Type Notices New Line</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Notices Detail</th>
+                    </tr>
+                    <tbody id="{!'noticesDetailConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Judgement Summary</th>
+                    </tr>
+                    <tr id="{!'numJudgementsConsumer' + v.opportunityId}">
+                        <td>Number Of Judgements</td>
+                    </tr>
+                    <tr id="{!'totValueJudgementsConsumer' + v.opportunityId}">
+                        <td>Total Value Of Judgements</td>
+                    </tr>
+                    <tr id="{!'highestJudgementAmtConsumer' + v.opportunityId}">
+                        <td>Highest Judgement Amount</td>
+                    </tr>
+                    <tr id="{!'dateSinceMostRecentJudgementConsumer' + v.opportunityId}">
+                        <td>Date Since Most Recent Judgement</td>
+                    </tr>
+                    <tr id="{!'mostRecentJudgementAmtConsumer' + v.opportunityId}">
+                        <td>Most Recent Judgement Amount</td>
+                    </tr>
+                    <tr id="{!'mnthsSinceMostRecentJudgementConsumer' + v.opportunityId}">
+                        <td>Months Since Most Recent Judgement</td>
+                    </tr>
+                    <tr id="{!'numJudgementsLast3MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Judgements Last 3 Months</td>
+                    </tr>
+                    <tr id="{!'numJudgementsLast6MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Judgements Last 6 Months</td>
+                    </tr>
+                    <tr id="{!'numJudgementsLast12MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Judgements Last 12 Months</td>
+                    </tr>
+                    <tr id="{!'numJudgementsLast24MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Judgements Last 24 Months</td>
+                    </tr>
+                    <tr id="{!'numJudgementsLast36MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Judgements Last 36 Months</td>
+                    </tr>
+                    <tr id="{!'numJudgementsLast48MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Judgements Last 48 Months</td>
+                    </tr>
+                    <tr id="{!'numJudgementsLast60MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Judgements Last 60 Months</td>
+                    </tr>
+                    <tr id="{!'valJudgementsLast3MntshConsumer' + v.opportunityId}">
+                        <td>Value Of Judgements Last 3 Months</td>
+                    </tr>
+                    <tr id="{!'valJudgementsLast6MntshConsumer' + v.opportunityId}">
+                        <td>Value Of Judgements Last 6 Months</td>
+                    </tr>
+                    <tr id="{!'valJudgementsLast12MntshConsumer' + v.opportunityId}">
+                        <td>Value Of Judgements Last 12 Months</td>
+                    </tr>
+                    <tr id="{!'valJudgementsLast24MntshConsumer' + v.opportunityId}">
+                        <td>Value Of Judgements Last 24 Months</td>
+                    </tr>
+                    <tr id="{!'totJudgement6To18MnthsConsumer' + v.opportunityId}">
+                        <td>Total Judgement 6 To 18 Months</td>
+                    </tr>
+                    <tr id="{!'totJudgement18To24MnthsConsumer' + v.opportunityId}">
+                        <td>Total Judgement 18 To 24 Months</td>
+                    </tr>
+                    <tr id="{!'totJudgement18To36MnthsConsumer' + v.opportunityId}">
+                        <td>Total Judgement 18 To 36 Months</td>
+                    </tr>
+                    <tr id="{!'totJudgement24To36MnthsConsumer' + v.opportunityId}">
+                        <td>Total Judgement 24 To 36 Months</td>
+                    </tr>
+                    <tr id="{!'totJudgementGrantedLast36MnthsConsumer' + v.opportunityId}">
+                        <td>Total Judgement Granted Last 36 Months</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Judgement Detail</th>
+                    </tr>
+                    <tbody id="{!'judgementDetailConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Enquiries Summary</th>
+                    </tr>
+                    <tr id="{!'numEnquiriesEverConsumer' + v.opportunityId}">
+                        <td>Number Of Enquiries Ever: All</td>
+                    </tr>
+                    <tr id="{!'numEnquiriesOverLast3MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Enquiries Over The Last 3 Months: All</td>
+                    </tr>
+                    <tr id="{!'numEnquiriesOverLast6MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Enquiries Over The Last 6 Months: All</td>
+                    </tr>
+                    <tr id="{!'numEnquiriesOverLast9MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Enquiries Over The Last 9 Months: All</td>
+                    </tr>
+                    <tr id="{!'numEnquiriesOverLast12MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Enquiries Over The Last 12 Months: All</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Enquiry Detail</th>
+                    </tr>
+                    <tbody id="{!'enquiryDetailConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Write-Offs Summary</th>
+                    </tr>
+                    <tr id="{!'numOfWriteupsAllConsumer' + v.opportunityId}">
+                        <td>Number Of Write-ups: All</td>
+                    </tr>
+                    <tr id="{!'numMostRecentWriteOffsAllConsumer' + v.opportunityId}">
+                        <td>Number Most Recent Write-Offs: All</td>
+                    </tr>
+                    <tr id="{!'numMostRecentWriteOffsOtherCPAConsumer' + v.opportunityId}">
+                        <td>Number Most Recent Write-Offs: Other: CPA</td>
+                    </tr>
+                    <tr id="{!'numMostRecentWriteOffsOtherNLRConsumer' + v.opportunityId}">
+                        <td>Number Most Recent Write-Offs: Other: NLR</td>
+                    </tr>
+                    <tr id="{!'totValueOfWriteOffsConsumer' + v.opportunityId}">
+                        <td>Total Value Of Write-Offs: All</td>
+                    </tr>
+                    <tr id="{!'highestWriteOffAmountConsumer' + v.opportunityId}">
+                        <td>Highest Write-Off Amount: All</td>
+                    </tr>
+                    <tr id="{!'dateSinceHighestWriteOffConsumer' + v.opportunityId}">
+                        <td>Date Since Highest Write-Off: All</td>
+                    </tr>
+                    <tr id="{!'mntshSinceHighestWriteOffConsumer' + v.opportunityId}">
+                        <td>Months Since Highest Write-Off: All</td>
+                    </tr>
+                    <tr id="{!'mostRecentWriteOffConsumer' + v.opportunityId}">
+                        <td>Most Recent Write-Off Amount: All</td>
+                    </tr>
+                    <tr id="{!'dateSinceMostRecentWriteOffConsumer' + v.opportunityId}">
+                        <td>Date Since Most Recent Write-Off: All</td>
+                    </tr>
+                    <tr id="{!'mnthsSinceMostRecentWriteOffConsumer' + v.opportunityId}">
+                        <td>Months Since Most Recent Write-Off: All</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Adverse Record Summary</th>
+                    </tr>
+                    <tr id="{!'numAdverseRecordsConsumer' + v.opportunityId}">
+                        <td>Number Of Adverse Records</td>
+                    </tr>
+                    <tr id="{!'totValueAdverseRecordsConsumer' + v.opportunityId}">
+                        <td>Total Value Of Adverse Records</td>
+                    </tr>
+                    <tr id="{!'highestAdverseRecordsAmtConsumer' + v.opportunityId}">
+                        <td>Highest Adverse Records Amount</td>
+                    </tr>
+                    <tr id="{!'daysSinceHighestAdverseRecordsConsumer' + v.opportunityId}">
+                        <td>Days Since Highest Adverse Records</td>
+                    </tr>
+                    <tr id="{!'mnthsSinceHighestAdverseRecordsConsumer' + v.opportunityId}">
+                        <td>Months Since Highest Adverse Records</td>
+                    </tr>
+                    <tr id="{!'mnthsSinceMostRecentAdverseRecordConsumer' + v.opportunityId}">
+                        <td>Months Since Most Recent Adverse Record</td>
+                    </tr>
+                    <tr id="{!'mostRecentAdverseRecordAmountConsumer' + v.opportunityId}">
+                        <td>Most Recent Adverse Record Amount</td>
+                    </tr>
+                    <tr id="{!'dateSinceMostRecentAdverseRecordConsumer' + v.opportunityId}">
+                        <td>Date Since Most Recent Adverse Record</td>
+                    </tr>
+                    <tr id="{!'numAdverseRecordLast3MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Adverse Records Last 3 Months</td>
+                    </tr>
+                    <tr id="{!'numAdverseRecordLast6MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Adverse Records Last 6 Months</td>
+                    </tr>
+                    <tr id="{!'numAdverseRecordLast12MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Adverse Records Last 12 Months</td>
+                    </tr>
+                    <tr id="{!'numAdverseRecordLast24MnthsConsumer' + v.opportunityId}">
+                        <td>Number Of Adverse Records Last 24 Months</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Trace Alerts</th>
+                    </tr>
+                    <tbody id="{!'traceAlertsConsumer' + v.opportunityId}">
+
+                    </tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr id="{!'traceAlertTotEverConsumer' + v.opportunityId}">
+                        <td>Trace Alert Total Ever</td>
+                    </tr>
+                    <tr id="{!'traceAlertLast90DaysConsumer' + v.opportunityId}">
+                        <td>Trace Alert Last 90 Days</td>
+                    </tr>
+                    <tr id="{!'traceAlertLast180DaysConsumer' + v.opportunityId}">
+                        <td>Trace Alert Last 180 Days</td>
+                    </tr>
+                    <tr id="{!'traceAlertLast1YearConsumer' + v.opportunityId}">
+                        <td>Trace Alert Last 1 Year</td>
+                    </tr>
+                    <tr id="{!'traceAlertLast2YearsConsumer' + v.opportunityId}">
+                        <td>Trace Alert Last 2 Years</td>
+                    </tr>
+                </table><br/><br/>
+
+                <!--
+                <table class="slds-table slds-table_cell-buffer slds-table_striped tableStyle">
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Collection Detail</th>
+                    </tr>
+                    <tbody id="collectionDetailConsumer">
+
+                    </tbody>
+                </table><br/><br/>-->
+            </div>
+        </div>
+    </div>
+</aura:component>

@@ -1,0 +1,417 @@
+<aura:component controller="ClientProductController" implements="flexipage:availableForRecordHome,force:hasRecordId"
+    access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.initComp}" />
+    <!--declare attributes-->
+    <aura:attribute name="recordId" type="String" />
+    <!--Account Id-->
+    <aura:attribute name="selectedRecord" type="sObject" default="{}"
+        description="Use,for store SELECTED product Record" />
+    <aura:attribute name="listOfSearchRecords" type="List"
+        description="Use,for store the list of search records which returns from apex class" />
+    <aura:attribute name="displayList" type="List" />
+    <aura:attribute name="SearchKeyWord" type="string" />
+    <aura:attribute name="IconName" type="string" default="" />
+    <aura:attribute name="label" type="string" default="" />
+    <aura:attribute name="dselectedAbsaProduct" type="string" default=""
+        description="Use,for storing bank Name from parent comp " />
+    <aura:attribute name="Message" type="String" default="" />
+    <aura:attribute name="clientProductSize" type="Integer" />
+    <aura:attribute name="isOpen" type="boolean" default="false" />
+    <aura:attribute name="selectedProduct" type="string" default="" />
+    <aura:attribute name="oProduct" type="sObject" />
+    <aura:attribute name="isProductOpen" type="boolean" default="false" />
+    <aura:attribute name="accountDetails" type="Object" />
+    <aura:attribute name="financialInformation" type="Object" />
+    <aura:attribute name="columnList" type="List" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+
+    <div class="slds-card slds-card_boundary">
+
+        <header class="slds-card__header slds-grid">
+            <div class="slds-media slds-media--center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <lightning:icon iconName="standard:product" alternativeText="Absa Products" size="small" />
+                </div>
+                <div class="slds-media__body slds-truncate">
+                    <h2>
+                        <a href="javascript:void(0);" class="slds-text-link--reset">
+                            <span class="slds-text-heading--small">Absa Products</span>
+                            <span class="slds-card__header-title slds-shrink-none slds-m-right--xx-small"
+                                title="(0)">({!v.clientProductSize})</span>
+                        </a>
+                    </h2>
+                </div>
+            </div>
+            <div class="slds-no-flex">
+                <button onclick="{!c.openModel}" class="slds-button slds-button--neutral slds-col--bump-left">View All
+                    Products</button>
+            </div>
+        </header>
+
+        <div onmouseleave="{!c.onblur}" aura:id="searchRes" class="slds-form-element slds-lookup slds-is-close"
+            data-select="single" size="6">
+            <label class="slds-form-element__label" for="lookup-348">{!v.label}</label>
+
+            <!--This part is for display search bar for lookup-->
+            <div class="slds-form-element__control" size="6">
+
+                <div class="slds-input-has-icon slds-input-has-icon--right">
+                    <lightning:icon class="slds-input__icon slds-show" iconName="utility:search" size="x-small"
+                        alternativeText="search" />
+                    <!-- This markup is for when an record is selected -->
+                    <div aura:id="lookup-pill" class="slds-pill-container slds-hide">
+                        <lightning:pill class="pillSize" label="{!v.selectedRecord}" name="{!v.selectedRecord}"
+                            onremove="{! c.clear }">
+                            <aura:set attribute="media">
+                                <lightning:icon iconName="{!v.IconName}" size="x-small"
+                                    alternativeText="{!v.IconName}" />
+                            </aura:set>
+                        </lightning:pill>
+                    </div>
+                    <div aura:id="lookupField" class="slds-show slds-align_absolute-center">
+                        <span class="slds-icon_container  slds-combobox__input-entity-icon" title="record">
+                            <lightning:icon class="slds-icon slds-icon slds-icon_small slds-icon-text-default"
+                                iconName="{!v.IconName}" size="x-small" alternativeText="icon" />
+                            <span class="slds-assistive-text"></span>
+                        </span>
+                        <!---->
+                        <ui:inputText click="{!c.onfocus}" updateOn="keyup" keyup="{!c.keyPressController}"
+                            class="slds-lookup__search-input slds-input leftPaddingClass" value="{!v.SearchKeyWord}"
+                            placeholder="Search Absa Products" />
+                    </div>
+                </div>
+            </div>
+
+            <!--This part is for Display typehead lookup result List-->
+            <ul style="min-height:40px;  margin-top:0px !important"
+                class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds"
+                role="listbox">
+                <center> {!v.Message}</center>
+                <aura:iteration items="{!v.displayList}" var="singleRec">
+                    <c:customLookupResultAbsaProducts oRecord="{!singleRec}" IconName="{!v.IconName}" />
+                    <!-- <input value = "{!singleRec.product}"></input> -->
+                    <span class="slds-media__body">
+                        <!--<span class="slds-listbox__option-text slds-listbox__option-text_entity">{!singleRec.product}</span> -->
+                    </span>
+                </aura:iteration>
+            </ul>
+
+        </div>
+
+        <aura:if isTrue="{!v.isOpen}">
+
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container container-details">
+                    <header class="slds-modal__header">
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">View All Products
+                        </h2>
+                    </header>
+
+
+                    <!--Datatable for displaying products list-->
+                    <aura:if isTrue="{!v.displayList.length>0}">
+                        <aura:if isTrue="{!v.showSpinner}">
+                            <lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+                            </aura:if>
+                        <div style="height:400px">
+                            <lightning:datatable data="{!v.displayList}" columns="{!v.columnList}" keyField="Id"
+                                hideCheckboxColumn="true" onrowaction="{!c.handleRowAction}" />
+                        </div>
+                    </aura:if>
+
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" label="Close" title="Close" onclick="{! c.closeModel }" />
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open" style="height:1000px"></div>
+
+        </aura:if>
+
+    </div>
+
+    <!-- product details pop up -->
+    <aura:if isTrue="{!v.isProductOpen}">
+
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container container-details">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Basic Account Details
+                    </h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <!--Display the basic account details-->
+                    <table>
+                        <tr>
+                            <td>
+                                <lightning:input name="Account Number" value="{!v.oProduct.accNor}"
+                                    label="Account Number" maxlength="10" readonly="true" />
+                            </td>
+
+                            <td>
+                                <lightning:input name="Branch" value="{!v.oProduct.branch}" label="Branch"
+                                    maxlength="10" readonly="true" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <lightning:input name="Product" value="{!v.oProduct.product}" label="Product"
+                                    maxlength="10" readonly="true" />
+                            </td>
+
+                            <td>
+                                <lightning:input name="Product Type" value="{!v.oProduct.productType}"
+                                    label="Product Type" maxlength="10" readonly="true" />
+                            </td>
+                        </tr>
+
+                        <aura:if isTrue="{!v.oProduct.product == 'AVAF'}">
+
+                            <!--Display the additional avaf account details-->
+                            <aura:if isTrue="{!v.showSpinner}">
+                                <lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading"
+                                    variant="brand" size="medium" />
+                            </aura:if>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.financialInformation.ARBAL}"
+                                        label="Arrears Balance" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="1st Payment Date" value="{!v.accountDetails.ISTPAYDT}"
+                                        label="1st Installment Date" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Inta" value="{!v.accountDetails.INSTAL_AMT}"
+                                        label="Installment Amount" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.REMAINING_TERM}"
+                                        label="Remaining Term" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.EXPIRY_DATE}"
+                                        label="Contract Expiry Date" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.ORIGINAL_TERM}"
+                                        label="Original Term" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.DEPOSIT_ATM}"
+                                        label="Deposit Amount" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.LAST_PAYMT_DATE}"
+                                        label="Last Installment Date" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.LAST_PAYMT_AMT}"
+                                        label="Last Payment Amount" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.CT_LIFE_INS_TYPE}"
+                                        label="Credit Life Indicator" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.RISK_TYPE}"
+                                        label="Risk Type" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.SCHED_PAY_AMT}"
+                                        label="Next Installment Amount" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.DO_ACC_TYPE}"
+                                        label="Debit Order Type" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.GL_DIVISION_CODE}"
+                                        label="Division Code" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.CURR_RATE}"
+                                        label="Current Interest Rate" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.NID}" label="NID"
+                                        maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.ARTICLE_DESC}"
+                                        label="Make Description" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.CHASSIS_NUM}"
+                                        label="Chassis Number" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.ENGINE_NUM}"
+                                        label="Engine Number" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.DATE_SOLD}"
+                                        label="Date Sold" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.DATE_BOOKED}"
+                                        label="Date Booked into store" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.SOLD_AMNT}"
+                                        label="Sell Price" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.VALUATION_AMT}"
+                                        label="Valuation Amount" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.OFFER_ACCPT_DATE}"
+                                        label="Offer Accepted Date" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.NEXT_BILL_DATE}"
+                                        label="Next Installment Date" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.RESIDUAL_VALUE}"
+                                        label="Residual Value(Current residual)" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.CURR_DELINQ}"
+                                        label="Number of Days Deliquent(NDD)" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.DATE_WOF}"
+                                        label="Write-off Date" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.KUNNR}"
+                                        label="Consumer (BP) Number" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.PAY_METHOD}"
+                                        label="Payment Method" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.PREV_RATE}"
+                                        label="Previous Interest Rate" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.RATE_TYPE}"
+                                        label="Rate Type" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.PRINDEBT}"
+                                        label="Original Capital" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.ORIG_RATE}"
+                                        label="Original Interest" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.ADV_CAP_AMT}"
+                                        label="Advanced Capitalised Amount" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.ADV_CAP_DATE}"
+                                        label="Advances capitalised Date" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.AIP_DESCR}" label="AIP"
+                                        maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.CVR_DESCR}"
+                                        label="Cover-Sure Company" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.CLI_DESCR}"
+                                        label="CLI company" maxlength="10" readonly="true" />
+                                </td>
+
+                                <td>
+                                    <lightning:input name="Product Type" value="{!v.accountDetails.WAR_DESCR}"
+                                        label="Warrantees Company" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <lightning:input name="Product" value="{!v.accountDetails.ZMSF}"
+                                        label="Service Fees" maxlength="10" readonly="true" />
+                                </td>
+                            </tr>
+
+                        </aura:if>
+                    </table>
+
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                        onclick="{! c.closeProductModel }" />
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" style="height:1000px"></div>
+
+    </aura:if>
+</aura:component>

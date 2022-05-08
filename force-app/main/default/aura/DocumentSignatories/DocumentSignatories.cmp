@@ -1,0 +1,124 @@
+<!-- Generic Coponent used to Add Signatories for Documents  -->
+
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="DocumentSignatoriesController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <aura:attribute name="isRefresh" type="boolean" default="false"/>
+    <aura:attribute name="signatoriesOutput" type="List"/>
+    <aura:attribute name="columns2" type="List"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/>
+    <aura:attribute name="isButtonSignatureDisabled" type="boolean" default="false"/>
+    <aura:attribute name="isButtonSignatureShow" type="boolean" default="false"/>
+    <aura:attribute name="isButtonSaveSignatoriesDisabled" type="boolean" default="false"/>
+    <aura:attribute name="isButtonSaveSignatoriesShow" type="boolean" default="false"/>
+    <aura:attribute name="signatoryId" type="String"/>
+    <aura:attribute name="showSignatoryUpdatePanel" type="boolean" default="false"/>
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="adviserName" type="String" default=""/>
+    <aura:attribute name="oppOwnerName" type="String" default=""/>
+    <aura:attribute name="data1" type="List"/>
+    <aura:attribute name="selectedEmailSharing" type="String"/>
+    <aura:attribute name="emailOptionsSharing" type="List"/>
+    <aura:attribute name="documentId" type="String"/>
+    <aura:attribute name="selectedEmail" type="String" default=""/>
+    <aura:attribute name="returnMap" type="Map" />
+    <aura:attribute name="emailOptions" type="List"/>
+    <aura:attribute name="selectedMobile" type="String"/>
+    <aura:attribute name="mobileOptions" type="List"/>
+    <aura:attribute name="methodOptions" type="List"/>
+    <aura:attribute name="inProgressOrSignedRequestExists" type="boolean" default="false"/>
+    <aura:attribute name="showESignatureDataTable" type="boolean" default="false"/>
+    <aura:attribute name="processName" type="String"/>
+    <aura:attribute name="docTemplateName" type="String"/>
+    <aura:attribute name="selectedAccts" type="List"/>
+    <aura:attribute name="applicationRecordId" type="Id" />
+
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:method name="getDocumentType" action="{!c.doAction}"
+                 description="Get Document Template selected under Generate Document"> 
+        <aura:attribute name="documentTemplateName" type="String" /> 
+    </aura:method>
+
+    <aura:registerEvent name="setSignatureRequestEvent" type="c:SetDocumentSignatories"/>
+
+    <aura:attribute name="signatureRequest" type="List" access="public"/>
+    <aura:attribute name="method" type="Aura.action"/>
+
+    <aura:attribute name="absa4060options" type="List" default="[
+    {'label': 'Option 1 - NEW', 'value': 'NEW'},
+    {'label': 'Option 2 - EXITING', 'value': 'EXISTING'}
+    ]"/>
+    <aura:attribute name="absa4060value" type="String" default=""/>
+    <aura:attribute name="showAbsa4060Options" type="boolean" default="false" />
+
+    <!-- Lightning Spinner -->
+    <center style="z-index:99">
+        <lightning:spinner aura:id="theSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+
+    <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+        <lightning:card title="Signatories" iconName="standard:document" class="slds-m-left_small">
+            <aura:set attribute="actions">
+                <lightning:button label="Refresh Signatories" disabled="{!v.isRefresh}" onclick="{!c.refreshSignatories}" aura:id="refreshBtn"/>
+            </aura:set>
+            <aura:if isTrue="{!not(empty(v.signatoriesOutput)) }" >
+                <lightning:datatable keyField="Id"
+                                     aura:id="signatoriesTable"
+                                     onrowselection="{!c.handleSelect}"
+                                     data="{!v.signatoriesOutput}"
+                                     columns="{!v.columns2}"
+                                     draftValues="{!v.draftValues}"
+                                     onsave="{!c.handleSave}"
+                                     hideCheckboxColumn="false"
+                                     sortable="false"
+                                     minColumnWidth="75"></lightning:datatable>
+            </aura:if>
+
+            <aura:if isTrue="{!v.showAbsa4060Options}">
+                <lightning:recordEditForm
+                    aura:id="absa4060OptionsForm"
+                    recordId="{!v.applicationRecordId}"
+                    objectApiName="Application__c"
+                    onload="{!c.onloadAbsa4060Options}"
+                >
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Total_Number_Of_Accounts__c" aura:id="totalNumberOfAccounts"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:radioGroup name="absa4060radioGroup"
+                                    label="Please choose for New or Existing Mandated Officials option"
+                                    options="{! v.absa4060options }"
+                                    value="{! v.absa4060value }"
+                                    onchange="{! c.handleabsa4060radioGroupChange }"
+                                    type="radio" required="true"/>
+                            </span>
+                            <lightning:inputField fieldName="New_or_Existing_Mandated_Official__c" aura:id="newOrExistingMandatedOfficial" class="slds-hide"/>
+                        </div>
+                    </div>
+                </lightning:recordEditForm>
+            </aura:if>
+
+            <aura:if isTrue="{!empty(v.signatoriesOutput)}">
+                <p>No signatories found for this document type.</p>
+            </aura:if>
+            <br/>
+            <aura:if isTrue="{!v.isButtonSignatureDisabled}">
+                Please ensure that related contacts for the Account/Opportunity have valid Roles, Salutation, email address and/or mobile number.
+            </aura:if><br/>
+
+            <aura:if isTrue="{!v.isButtonSignatureShow}">
+                <button class="slds-button slds-button_brand" onclick="{!c.sendForSignature}" disabled= "{!v.isButtonSignatureDisabled}" >Send for Signature</button>
+            </aura:if>
+
+            <aura:if isTrue="{!v.isButtonSaveSignatoriesShow}">
+                <button class="slds-button slds-button_brand" onclick="{!c.createRecords}" >Save Signatories</button>
+            </aura:if>
+        </lightning:card>
+    </article>
+</aura:component>

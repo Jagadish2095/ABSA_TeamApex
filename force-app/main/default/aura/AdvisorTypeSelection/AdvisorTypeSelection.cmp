@@ -1,0 +1,243 @@
+<!--
+* Advisor type selection and customer ID and Verification.
+*
+* @authors  Poornima Aduru,Himanshu Yadav,Venkatesh Kanukuntla
+* @since   2020-12-02
+-->
+
+<aura:component controller="BrokerNoteProcessController" implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes,lightning:availableForFlowActions" access="global" >
+    <aura:attribute name="statusVal" type="Boolean" />
+    <aura:attribute name="accObj" type="Account" default="{'sobjectType':'Account'}" />
+    <aura:attribute name="loaded" type="Boolean" default="false" />
+    <aura:attribute name="upsertedAccId" type="String" />
+    <aura:attribute name="AdvisorCheck" type="String" />
+    <aura:attribute name="userName" type="String" />    
+    <aura:attribute name="cifNumber" type="String" />
+    <aura:attribute name="isVerificationSuccess" type="Boolean"  />
+    <aura:attribute name="isIdTypeSAId" type="Boolean" /> 
+    <aura:attribute name="isCheckboxEnabled" type="Boolean" />
+    <aura:attribute name="isInvalidUser" type="Boolean" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="caseFields" type="Object"/>
+    <aura:attribute name="caseRecord" type="Object"/>
+    <aura:attribute name="caseFieldsVerification" type="Object"/>
+    <aura:attribute name="caseRecordVerification" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <aura:attribute name="isIDVEnabled" type="boolean" default="false"/>
+    <aura:attribute name="isSubmitEnabled" type="boolean" default="true"/>
+    <aura:attribute name="fields" type="String[]" default="['ID_Number__c','Full_Name_Checkbox__c','Email_Address__c',
+                                                           'Postal_Address_Checkbox__c','Physical_Address_Checkbox__c']" />
+    <aura:attribute name="Advisors" type="List" default="[
+                                                         {'label': 'Face2Face Advisor', 'value': 'FA'},
+                                                         {'label': 'Virtual Advisor', 'value': 'VA'}
+                                                         ]"/>
+    
+      <force:recordData aura:id="recordLoaderVerification"
+    				  recordId="{!v.recordId}"
+   					  fields="Customer_Full_Name__c"
+    				  targetFields="{!v.caseFieldsVerification}"
+    				  targetRecord="{!v.caseRecordVerification}"
+                      recordUpdated="{!c.recordUpdated}"
+                    />
+    <aura:registerEvent name="buttonNotificationEvent" type="c:buttonNotificationEvent"/>
+    <aura:registerEvent name="advisorTypeChangeEvent" type="c:advisorTypeChangeEvent"/>
+    
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="{!v.fields}"
+                      targetFields="{!v.caseFields}"
+                      targetRecord="{!v.caseRecord}"
+                      targetError="{!v.recordLoadError}"
+                      recordUpdated="{!c.handleRecordLoad}"
+                      mode="EDIT"                
+                      />
+    
+    <lightning:card>
+        <lightning:layout multiplerows="true">
+            <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="radio" aura:id="accordion" >
+                <div>
+                     
+                    <lightning:accordionSection  name="radio" label="Do You Want to Continue With Virtual Advisor Or Face2Face Advisor?" >
+                       	<img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment2"/> 
+                        <lightning:layoutItem padding= "around-small" >
+                           <!-- disabled="{!v.isCheckboxEnabled}" -->
+                            <lightning:radioGroup name="Advisors" 
+                                                  disabled="{!v.statusVal}"
+                                                  options="{! v.Advisors }"
+                                                  value="{! v.AdvisorCheck }"
+                                                  type="radio"
+                                                  class="customRadioCls"
+                                                  onchange="{!c.handleChange}"
+                                                  />
+                        </lightning:layoutItem>
+                    </lightning:accordionSection>
+                </div>
+            </lightning:accordion>
+        </lightning:layout>
+        
+        <aura:if isTrue="{! v.loaded }">
+             <lightning:spinner alternativeText="Loading" />
+        </aura:if>
+        
+        
+        <div class="{!v.isIDVEnabled ? 'slds-show' : 'slds-hide'}">
+            <lightning:layout>
+                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="A" aura:id="accordion" >
+                    <lightning:accordionSection name="A" label="Customer Verification">
+                      	<img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment3"/> 
+  
+                        <lightning:layout multiplerows="true">
+                            <lightning:layoutItem size="8" padding="around-small">
+                                <div class="VerificationFont">
+                                    Please verify and check the ID Number/Passport and any two of the other
+                                    <lightning:button variant="base" label="verification questions" title="verification questions" onclick="{!c.openModel}"/>
+                                    the customer gets correct to submit verification.
+                                </div> 
+                            </lightning:layoutItem>
+                            <lightning:layoutitem size="4" padding="around-small">
+                                <div style="text-align:right"> <lightning:button variant="neutral"
+                                                                                 label="Verification Script"
+                                                                                 title="Verification Script"
+                                                                                 onclick="{!c.openModel }" /></div>
+                            </lightning:layoutitem>
+                            
+                        </lightning:layout>
+                        
+                        <lightning:card>
+                            <div class="slds-grid">
+                                <div class="slds-col alignment"> <lightning:input type="checkbox" label=""  disabled="{!v.isCheckboxEnabled}" checked="{!v.caseFields.ID_Number__c}"  onchange="{!c.handleCheckbox}"/>   <img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment1"/>  <label class="slds-form-element__label" for="textareaSample2" style="display: inline;" >ID Number / Passport </label>
+                                </div>
+                            </div><br/>
+                            <div class="CheckboxPad">
+                                <lightning:input type="checkbox" label="Full Name or Maiden Name" disabled="{!v.isCheckboxEnabled}" checked="{!v.caseFields.Full_Name_Checkbox__c}" onchange="{!c.handleCheckbox}"/><br/>
+                                <lightning:input type="checkbox" label="Email Address" disabled="{!v.isCheckboxEnabled}" checked="{!v.caseFields.Email_Address__c}" onchange="{!c.handleCheckbox}"/><br/>
+                                <lightning:input type="checkbox" label="Postal Address" disabled="{!v.isCheckboxEnabled}" checked="{!v.caseFields.Postal_Address_Checkbox__c}" onchange="{!c.handleCheckbox}"/><br/>
+                                <lightning:input type="checkbox" label="Physical Address" disabled="{!v.isCheckboxEnabled}" checked="{!v.caseFields.Physical_Address_Checkbox__c}" onchange="{!c.handleCheckbox}"/>
+                            </div>
+                            
+                            <div class="slds-float_right" >
+                                <lightning:button label="Submit Verification" variant="brand" disabled="{!v.isSubmitEnabled}" onclick="{!c.handleSaveRecord}" />
+                            </div>
+                        </lightning:card> 
+                         <div class="ConfirmationPad"/>
+                         <div class="ConfirmationPad"/>
+                          <aura:if isTrue="{!v.isInvalidUser}"> 
+                              <div style="color:red">
+                           Invalid User : Can't find the User. Please make sure CIF number or ID number is correct to continue with the Case.
+                        </div>
+                      
+                              </aura:if>  
+                        
+              
+                        
+                        <aura:if isTrue="{!v.isVerificationSuccess}">
+                      
+                            
+                            <lightning:card>
+                                <lightning:layout multiplerows="true">
+                                    <lightning:layoutItem size="2">
+                                        <div class="slds-align_absolute-center" style="height:5rem">
+                                            <lightning:icon iconName="action:approval" alternativeText="Approved" title="Approved" />
+                                        </div>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem size="10">
+                                        <div class="Custom">
+                                            <lightning:formattedRichText class="Normal"  value="{!$Label.c.Verification}">
+                                            </lightning:formattedRichText>
+                                        </div>
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </lightning:card>
+                            
+                        </aura:if>
+                        
+                    </lightning:accordionSection>
+                </lightning:accordion>
+            </lightning:layout>
+        </div>
+    </lightning:card>
+    
+    
+    
+    <div class="slds-m-around_xx-large">
+        
+        <!--Use aura:if tag to display/hide popup based on isModalOpen value-->  
+        <aura:if isTrue="{!v.isModalOpen}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Verification Script</h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div>
+                            {!v.userName}, before I continue with the call I need to confirm I am speaking to the correct person- would you kindly verify the following.
+                        </div>
+                        <br/>
+                   
+                        <aura:if isTrue="{!v.isIdTypeSAId}">
+                                 <div style="color:red">
+                            5 Verification questions of which 3 questions must be asked ({!$Label.c.ID_Number} is mandatory)
+                        </div>
+                        <br/>
+                        <div>
+                            1. <b>{!$Label.c.ID_Number} - </b> {!$Label.c.ID_Number_Verification_Script} <h5 style="color:red">(Most important question)</h5>
+                        </div>
+                            
+                            <aura:set attribute="else">
+    						       <div style="color:red">
+                            5 Verification questions of which 3 questions must be asked ({!$Label.c.Passport} is mandatory)
+                        </div>
+                        <br/>
+                        <div>
+                            1. <b>{!$Label.c.Passport} - </b> {!$Label.c.Passport_Verification_Script} <h5 style="color:red">(Most important question)</h5>
+                        </div>
+    						</aura:set>
+                            </aura:if> 
+                        <br/>
+                        <div>
+                            2. <b>Full names or maiden name - </b>please verify your full names or maiden
+                            name?
+                        </div>
+                        <br/>
+                        <div>
+                            3. <b>Email address - </b>please confirm your email address i.e. to what email
+                            address do you receive your Absa statements?
+                        </div>
+                        <br/>
+                        <div>
+                            4. <b>Postal address - </b>please confirm your postal address
+                        </div>
+                        <br/>
+                        <div>
+                            5. <b>Physical address - </b>please confirm your physical address
+                        </div>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Close"
+                                          title="Close"
+                                          onclick="{! c.closeModel }"/>
+                        
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </div>
+    
+    
+</aura:component>

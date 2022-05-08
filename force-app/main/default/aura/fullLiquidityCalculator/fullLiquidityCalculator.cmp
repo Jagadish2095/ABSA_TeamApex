@@ -1,0 +1,352 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="LiquidityCalculatorController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!--Copado Test-->
+    <aura:attribute name="fna" type="Financial_Needs_Analysis__c" default="{sobjectType:'Financial_Needs_Analysis__c'}"/>
+    <aura:attribute name="showAssets" type="boolean" />
+    <aura:attribute name="showLiabilities" type="boolean" />
+    <aura:attribute name="showResults" type="boolean" />
+    <aura:attribute name="showInitialSelect" type="boolean"/>
+    <aura:attribute name="showShortAssets" type="boolean" />
+    <aura:attribute name="showShortResults" type="boolean" />
+    <aura:attribute name="showMotivation" type="boolean" />
+    <aura:attribute name="showTotalAssets" type="boolean" default="false" />
+    <aura:attribute name="showTotalLiabilities" type="boolean" default="false"/>
+    
+    <aura:attribute name="mustComment" type="boolean" />
+    
+    <aura:attribute name="options" type="List" default="[
+        {'label': 'Full Liquidity Calculator', 'value': 'fullLiqCalc'},
+        {'label': 'Short Liquidity Calculator', 'value': 'shortLiqCalc'}
+        ]"/>
+    <aura:attribute name="selectedCalculator" type="String" default="fullLiqCalc"/>
+    
+    <aura:attribute name="bankActionOptions" type="List" />
+    <aura:attribute name="lispSharesActionOptions" type="List" />
+    <aura:attribute name="fixedPropertiesActionOptions" type="List" />
+    <aura:attribute name="lifePoliciesActionOptions" type="List" />
+    <aura:attribute name="otherAssetsOptions" type="List" />
+    
+    <aura:attribute name="selectedBankValue" type="String" />
+    <aura:attribute name="selectedLispSharesValue" type="String" />
+    <aura:attribute name="selectedFixedPropertyValue" type="String" />
+    <aura:attribute name="selectedLifePoliciesValue" type="String" />
+    <aura:attribute name="selectedOtherAssetsValue" type="String" />
+    <aura:attribute name="oppRecordType" type="String" default="Unknown"/>
+    
+    <aura:attribute name="fnaRecordId" type="string" />
+    
+    <aura:attribute name="showConfirmation" type="boolean" default="false"/>
+    
+    <center style="z-index:99">
+       <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+   	</center>
+    
+    <aura:if isTrue="{!v.showInitialSelect}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <h3 class="slds-section__title">New Needs Analysis</h3>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <lightning:radioGroup name="radioGroupRequired"
+                                      label="Select Calculator"
+                                      options="{!v.options}"
+                                      value="{!v.selectedCalculator}"
+                                      type="radio"
+                                      required="true"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <lightning:button label="Cancel" class="slds-m-top--medium slds-float--left" variant="brand" onclick="{!c.cancelFunc}"/>
+                <lightning:button label="Next" class="slds-m-top--medium slds-float--right" variant="brand" onclick="{!c.newFna}" />
+            </lightning:layoutItem>
+        </lightning:layout>	
+    </aura:if>
+    <aura:if isTrue="{!v.showMotivation}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <h3 class="slds-section__title">Capture Assets</h3>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12" class="slds-p-top_small slds-p-bottom_small">
+                <lightning:formattedText value="Please motivate why a new liquidity calculation is being captured."></lightning:formattedText>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <lightning:textarea aura:id="motivationForm" label="Motivation" value="{!v.fna.Comment__c}"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem class="slds-p-top_small" size="12">
+                <lightning:button label="Cancel" class="slds-float--left" variant="brand" onclick="{!c.openConfirmation}"/>
+                <lightning:button label="Next" class="slds-float--right" variant="brand" onclick="{!c.navigateToAssetsAfterMotivation}" />
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+    <aura:if isTrue="{!v.showAssets}">
+        <!-- NEW FORM Capture Assets-->
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="6">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12">
+                        <h3 class="slds-section__title">Capture Assets</h3>
+                    </lightning:layoutItem>
+                    <aura:if isTrue="{!v.showTotalAssets}">
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <lightning:input value="{!v.fna.Assets__c }" label="Total Assets" formatter="currency" type="number" readonly="true"/>
+                        </lightning:layoutItem>
+                    </aura:if>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <ui:inputCurrency value="{!v.fna.Cash__c}" label="Bank Investment" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select name="bankAction" label="Bank Action" aura:id="assetForm" value="{!v.selectedBankValue}" onchange="{!c.onPicklistBankActionChange}" required="true">
+                            <aura:iteration items="{!v.bankActionOptions}" var="item">
+                                <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <ui:inputCurrency aura:id="assetForm" value="{!v.fna.Investment__c}" label="Lisp or Shares" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select name="lispSharesAction" label="LISP or Shares Action" aura:id="assetForm" value="{!v.selectedLispSharesValue}" onchange="{!c.onPicklistLispSharesActionChange}" required="true">
+                            <aura:iteration items="{!v.lispSharesActionOptions}" var="item">
+                                <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <ui:inputCurrency aura:id="assetForm" value="{!v.fna.Fixed_Properties__c}" label="FIXED Property" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select name="fixedPropertiesAction" label="Fixed Properties Action" aura:id="assetForm" value="{!v.selectedFixedPropertyValue}" onchange="{!c.onPicklistFixedPropertiesActionChange}" required="true">
+                            <aura:iteration items="{!v.fixedPropertiesActionOptions}" var="item">
+                                <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <ui:inputCurrency aura:id="assetForm" value="{!v.fna.Life_Policies__c}" label="Life Policies" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select name="lifePoliciesAction" label="Life Policies Action" aura:id="assetForm" value="{!v.selectedLifePoliciesValue}" onchange="{!c.onPicklistLifePoliciesActionChange}" required="true">
+                            <aura:iteration items="{!v.lifePoliciesActionOptions}" var="item">
+                                <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <ui:inputCurrency aura:id="assetForm" value="{!v.fna.Other_Assets__c}" label="Other Assets" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select name="otherAssetsAction" label="Other Assets Action" aura:id="assetForm" value="{!v.selectedOtherAssetsValue}" onchange="{!c.onPicklistOtherAssetsActionChange}" required="true">
+                            <aura:iteration items="{!v.otherAssetsOptions}" var="item">
+                                <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <ui:inputCurrency aura:id="assetForm" value="{!v.fna.lump_sum_Assets_Capture__c}" label="Lump sum pay outs" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem size="1">
+                <div style="border-left: 1px solid lightgrey; height: 500px; margin: auto; width: 10%;"></div>
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem size="5">
+                 <lightning:layout multipleRows="true">
+                     <lightning:layoutItem size="12">
+                         <h3 class="slds-section__title">Capture Liabilities</h3>
+                     </lightning:layoutItem>
+                     <aura:if isTrue="{!v.showTotalLiabilities}">
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <lightning:input value="{!v.fna.Liabilities__c }" label="Total Liabilities" formatter="currency" step="0.01" type="number" readonly="true"/>
+                        </lightning:layoutItem>
+                    </aura:if>
+                     <lightning:layoutItem padding="around-small" size="6" >
+                         <ui:inputCurrency aura:id="assetForm" value="{!v.fna.Vehicle_Finances__c}" label="Vehicle Finances" />
+                     </lightning:layoutItem>
+                     <lightning:layoutItem padding="around-small" size="6">
+                         <ui:inputCurrency aura:id="assetForm" value="{!v.fna.Credit_Cards__c}" label="Credit Cards" />
+                     </lightning:layoutItem>
+                     <lightning:layoutItem padding="around-small" size="6" >
+                         <ui:inputCurrency aura:id="assetForm" value="{!v.fna.Personal_Loans__c}" label="Personal Loans" />
+                     </lightning:layoutItem>
+                     <lightning:layoutItem padding="around-small" size="6" >
+                         <ui:inputCurrency aura:id="assetForm" value="{!v.fna.Over_Drafts__c}" label="Over Drafts" />
+                     </lightning:layoutItem>
+                     <lightning:layoutItem padding="around-small" size="6">
+                         <ui:inputCurrency aura:id="assetForm" value="{!v.fna.Mortgages__c}" label="Mortgages" />
+                     </lightning:layoutItem>
+                     <lightning:layoutItem padding="around-small" size="6">
+                         <ui:inputCurrency aura:id="assetForm" value="{!v.fna.Other_liabilities__c}" label="Other Liabilities" />
+                     </lightning:layoutItem>
+                 </lightning:layout>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+ 				<aura:if isTrue="{!v.mustComment}">
+     				<lightning:button label="Previous" class="slds-m-top--medium slds-float--left" variant="brand" onclick="{!c.navigateToMotivation}"/>
+                </aura:if>                
+                <lightning:button label="Next" class="slds-m-top--medium slds-float--right" variant="brand" onclick="{!c.saveFna}"/>            
+            </lightning:layoutItem>
+        </lightning:layout>  
+    </aura:if>
+    <aura:if isTrue="{!v.showResults}">
+        <lightning:recordViewForm recordId="{!v.fna.Id}" objectApiName="Financial_Needs_Analysis__c">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6">
+                    <h3 class="slds-section__title">Results</h3>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6">
+                    <lightning:button label="Edit FNA" class="slds-m-top--medium slds-float--right" variant="brand" onclick="{!c.createNewFna}"/>            
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12">
+                    <u><b><h4 class="slds-section__title">Summary</h4></b></u>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Liquidity_Needed__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Standard_Executor_fee_plus_VAT__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12">
+                    <hr/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="12">
+                    <u><b><h4 class="slds-section__title">Calculation Results</h4></b></u>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Assets__c" />
+                    <lightning:outputField fieldName="Standard_Provision_for_Admin_Costs__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Deemed_Assets__c" />
+                    <lightning:outputField fieldName="Standard_Provision_for_property_transfer__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Liabilities__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Standard_Executor_fee_plus_VAT__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12">
+                    <hr/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="12">
+                    <u><b><h4 class="slds-section__title">Gross Calculation Results</h4></b></u>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Gross_Assets__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Gross_Assets_Deductions__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Total_Deductions_Estate__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Net_Estate__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12">
+                    <hr/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="12">
+                    <u><b><h4 class="slds-section__title">Scoring Results</h4></b></u>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Available_Cash__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Bequeathed_to_charity__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Estate_Duty_Payable__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <lightning:outputField fieldName="Net_Estate__c" />
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:recordViewForm>
+    </aura:if>
+    <aura:if isTrue="{!v.showShortAssets}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <h3 class="slds-section__title">Capture Assets</h3>
+            </lightning:layoutItem>
+            <lightning:layoutItem >
+                <lightning:input aura:id="shortAssetForm" value="{!v.fna.lump_sum_Assets_Capture__c}" label="Total Assets" type="number" min="0" messageWhenRangeUnderflow="Value cannot be negative" required="true"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12" class="slds-p-top_small slds-p-bottom_small">
+                <lightning:formattedText value="Please motivate why a full liquidity calculator was not performed."></lightning:formattedText>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <lightning:textarea aura:id="shortAssetForm" label="Motivation" value="{!v.fna.Comment__c}" required="true" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <lightning:button label="Cancel" class="slds-m-top--medium slds-float--left" variant="brand" onclick="{!c.openConfirmation}"/>
+                <lightning:button label="Next" class="slds-m-top--medium slds-float--right" variant="brand" onclick="{!c.saveShortFna}" />   
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+    <aura:if isTrue="{!v.showShortResults}">
+        <lightning:recordViewForm recordId="{!v.fna.Id}" objectApiName="Financial_Needs_Analysis__c">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6">
+                    <h3 class="slds-section__title">Results</h3>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6">
+                    <lightning:button label="Edit FNA" class="slds-m-top--medium slds-float--right" variant="brand" onclick="{!c.createNewShortFna}"/>            
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12">
+                    <u><b><h4 class="slds-section__title">Summary</h4></b></u>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12">
+                    <lightning:outputField fieldName="Assets__c" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12">
+                    <lightning:outputField fieldName="Standard_Executor_fee_plus_VAT__c" />
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:recordViewForm>
+    </aura:if>
+    <aura:if isTrue="{!v.showConfirmation}">
+        <!--###### MODAL BOX Start######--> 
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeConfirmation}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Close Confirmation</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:icon size="medium" iconName="action:approval" alternativeText="Approved" />
+    				Are you sure you want to cancel the current process?
+                </div>
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{!c.closeConfirmation}"/>
+                    <lightning:button variant="brand" 
+                                      label="Confirm"
+                                      title="Confirm"
+                                      onclick="{!c.confrimAndClose }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+            
+    </aura:if>
+</aura:component>

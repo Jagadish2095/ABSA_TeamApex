@@ -1,0 +1,216 @@
+<aura:component
+	controller="RegulatoryFinancialAccountListContr"
+	implements="flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+	access="global"
+>
+	<aura:attribute name="recordId" type="String" />
+	<aura:attribute name="productList" type="List" />
+	<aura:attribute name="productCount" type="List" />
+	<aura:attribute name="message" type="String" default="" />
+	<aura:attribute name="showMessage" type="boolean" default="false" />
+	<aura:attribute name="columnNames" type="List" />
+	<aura:attribute name="errors" type="Object" default="[]" />
+	<aura:attribute name="draftValues" type="Object" default="[]" />
+	<aura:attribute name="showEditProductModal" type="Boolean" default="false" />
+	<aura:attribute name="productEditRecId" type="String" />
+	<aura:attribute type="Boolean" name="showAccCalculator" default="false" />
+	<aura:attribute name="isProductAvail" type="Boolean" default="false" />
+	<aura:attribute name="productRecord" type="Regulatory_Financial_Account__c" default="{ 'sobjectType': 'Regulatory_Financial_Account__c' }" />
+
+	<aura:handler name="init" value="{!this}" action="{!c.init}" />
+
+	<aura:if isTrue="{!v.showMessage}">
+		<ui:outputText value="{!v.message}" />
+		{!message}
+		<aura:set attribute="else">
+			<lightning:accordion>
+				<lightning:accordionSection name="Product" label="Account Details">
+					<lightning:datatable
+						columns="{! v.columnNames }"
+						data="{! v.productList }"
+						keyField="Id"
+						errors="{! v.errors }"
+						draftValues="{! v.draftValues }"
+						onrowaction="{! c.handleRowAction }"
+						hideCheckboxColumn="true"
+					/>
+				</lightning:accordionSection>
+			</lightning:accordion>
+		</aura:set>
+	</aura:if>
+
+	<aura:if isTrue="{!v.showEditProductModal}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeEditProductModal }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Edit Product Details</h2>
+				</header>
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<lightning:recordEditForm
+							aura:id="editProductForm"
+							objectApiName="Regulatory_Financial_Account__c"
+							recordId="{!v.productEditRecId}"
+							onload="{!c.handleOnLoad}"
+						>
+							<lightning:layout multipleRows="true">
+								<lightning:layoutItem padding="around-small" size="12">
+									<lightning:inputField fieldName="Product_Type__c" disabled="true" />
+									<lightning:inputField fieldName="Account_Number__c" disabled="true" />
+									<lightning:inputField fieldName="Purpose_of_Account__c" aura:id="purposeOfAcc" onchange="{!c.showPurposeOfAcctText}" />
+									<lightning:inputField fieldName="Purpose_of_Account_Text__c" aura:id="purposeOfAcctText" />
+									<lightning:inputField fieldName="Source_of_Funds__c" />
+									<lightning:inputField fieldName="Account_Activity_Calculator__c" aura:id="accountActivityCalcField" />
+									<lightning:buttonIcon
+										iconName="utility:settings"
+										variant="border-filled"
+										onclick="{! c.openAccountActivity}"
+										alternativeText="Account Activity Calculator"
+										title="Account Activity Calculator"
+									/>
+								</lightning:layoutItem>
+							</lightning:layout>
+						</lightning:recordEditForm>
+					</p>
+				</div>
+				<footer class="slds-modal__footer">
+					<lightning:button class="slds-float_left" variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeEditProductModal }" />
+					<lightning:button variant="brand" label="Save" title="Save" onclick="{! c.editProductRecord}" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+	</aura:if>
+
+	<!-- Modal for calculating Account Activity -->
+	<aura:if isTrue="{!v.showAccCalculator}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeAccActivty }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Account Activity Calculator</h2>
+				</header>
+				<div class="slds-scrollable">
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+						<p>
+							<lightning:recordEditForm aura:id="showAccCalcu" objectApiName="Regulatory_Financial_Account__c" recordId="{!v.productEditRecId}">
+								<lightning:layout multipleRows="true">
+									<lightning:layoutItem padding="around-small" flexibility="auto">
+										<aura:if isTrue="{!v.isProductAvail}">
+											<lightning:layoutItem padding="around-small" flexibility="auto">
+												<lightning:inputField
+													fieldName="Expected_Number_of_Credits_per_Month__c"
+													label="Expected Credit Per Month"
+													aura:id="expectedNumOfCredit"
+												/>
+											</lightning:layoutItem>
+											<lightning:layoutItem padding="around-small" flexibility="auto">
+												<lightning:inputField
+													fieldName="Rand_Value_of_Credits_per_Month__c"
+													label="Rand Value of Credits Per Month"
+													aura:id="randValueOfCredit"
+												/>
+											</lightning:layoutItem>
+											<lightning:layoutItem padding="around-small" flexibility="auto">
+												<lightning:inputField
+													fieldName="Credits_Received_via_EFT_Cash_etc__c"
+													label="Credits received via (EFT, Cash etc.)"
+													aura:id="creditsReceivedVia"
+												/>
+											</lightning:layoutItem>
+											<lightning:layoutItem padding="around-small" flexibility="auto">
+												<lightning:inputField
+													fieldName="Where_will_the_Credits_be_Coming_from__c"
+													label="Where will the credits be coming from"
+													aura:id="whereWilltheCreditCome"
+												/>
+											</lightning:layoutItem>
+											<aura:set attribute="else">
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Credits_Received_via_EFT_Cash_etc__c"
+														label="Credits received via (EFT, Cash etc.)"
+														aura:id="creditsReceivedVia"
+													/>
+												</lightning:layoutItem>
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Where_will_the_Credits_be_Coming_from__c"
+														label="Where will the credits be coming from"
+														aura:id="whereWilltheCreditCome"
+													/>
+												</lightning:layoutItem>
+
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Number_of_Staff_Members__c"
+														label="Number of staff members"
+														aura:id="numberOfStaffMembers"
+													/>
+												</lightning:layoutItem>
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Payment_Date_of_Staff__c"
+														label="Payment date of staff"
+														aura:id="paymentDateOfStaffMembers"
+													/>
+												</lightning:layoutItem>
+
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Where_are_the_Suppliers_Located__c"
+														label="Where are the suppliers located"
+														aura:id="wheretheSuppLocated"
+													/>
+												</lightning:layoutItem>
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Reason_for_Debit_Orders__c"
+														label="Reason for debit orders"
+														aura:id="reasonForDebit"
+													/>
+												</lightning:layoutItem>
+											</aura:set>
+										</aura:if>
+									</lightning:layoutItem>
+								</lightning:layout>
+							</lightning:recordEditForm>
+						</p>
+					</div>
+				</div>
+				<footer class="slds-modal__footer">
+					<lightning:button class="slds-float_left" variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeAccActivty}" />
+					<lightning:button variant="brand" label="Submit" title="Submit Request" onclick="{! c.generateAccActivty}" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+	</aura:if>
+</aura:component>

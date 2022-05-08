@@ -1,0 +1,167 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="ProductSummaryController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:attribute name="account" type="Account" default="{sobjectType:'Account'}"/>
+    <aura:attribute name="spouse" type="Opportunity_Party__c" default="{sobjectType:'Opportunity_Party__c'}"/>
+    
+    <aura:attribute name="quoteTotal" type="String"/>
+    
+    <aura:attribute name="mainLifeExecutor" type="String"/>
+    <aura:attribute name="mainLifeBridging" type="String"/>
+    <aura:attribute name="mainLifeFuneral" type="String"/>
+    <aura:attribute name="mainLifePremium" type="String"/>
+
+    <aura:attribute name="spouseExecutor" type="String"/>
+    <aura:attribute name="spouseBridging" type="String"/>
+    <aura:attribute name="spousePremium" type="String"/>
+    
+    <aura:attribute name="showSpousePremium" type="Boolean" default="true"/>
+    
+    <aura:attribute name="policyFee" type="String"/>
+
+    <aura:attribute name="dataBeneficiaries" type="Object"/>
+    <aura:attribute name="columnsBeneficiaries" type="List"/>
+    <aura:attribute name="dataDependants" type="Object"/>
+    <aura:attribute name="columnsDependants" type="List"/>
+    
+    <aura:attribute name="showSpouseDetails" type="boolean" default="false"/>
+    <aura:attribute name="showQuoteDetails" type="boolean" default="false"/>
+    <aura:attribute name="showBeneficiaryDetails" type="boolean" default="false"/>
+    <aura:attribute name="showDependantDetails" type="boolean" default="false"/>
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container" style="z-index: 99; position: fixed;">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem size="6">
+            <lightning:layoutItem size="12">
+                <h2 class="slds-section__title">Main Life Assured</h2>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <p>{!v.account.Name}</p>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <p>ID Number: {!v.account.ID_Number__pc}</p>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <p>{!v.account.unknown_custom_field}</p>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <p>{!v.account.PersonMobilePhone}</p>
+            </lightning:layoutItem>
+        </lightning:layoutItem>
+        
+        <aura:if isTrue="{!v.showSpouseDetails}">
+            <lightning:layoutItem size="6">
+                <lightning:layoutItem size="12">
+                    <h2 class="slds-section__title">Spouse Details</h2>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12">
+                    <ui:outputText value="{!v.spouse.First_Name__c + ' ' + v.spouse.Last_Name__c}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12">
+                    <p>ID Number: {!v.spouse.RSA_ID_Number__c}</p>
+                </lightning:layoutItem>
+            </lightning:layoutItem>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.showQuoteDetails}">
+            <lightning:layoutItem size="12">
+                <hr/>
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem size="12">
+                <h2 class="slds-section__title">Quote Details</h2>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <table style="width:100%" class="slds-table slds-table_cell-buffer slds-table_bordered">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title=""></div></th>
+                            <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Executor">Executor</div></th>
+                            <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Bridging">Bridging</div></th>
+                            <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Funeral">Funeral</div></th>
+                            <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Premium">Premium</div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="slds-hint-parent">
+                            <td data-label=""><div class="slds-truncate" title="Main Life">Main Life</div></td>
+                            <td data-label="Executor"><div class="slds-truncate" title="Executor">R{!v.mainLifeExecutor}</div></td>
+                            <td data-label="Bridging"><div class="slds-truncate" title="Bridging">R{!v.mainLifeBridging}</div></td>
+                            <td data-label="Funeral"><div class="slds-truncate" title="Funeral">R{!v.mainLifeFuneral}</div></td>
+                            <td data-label="Premium"><div class="slds-truncate" title="Premium">R{!v.mainLifePremium}</div></td>
+                        </tr>
+                        <aura:if isTrue="{!v.showSpousePremium}">
+                            <tr class="slds-hint-parent">
+                                <td data-label=""><div class="slds-truncate" title="Spouse">Spouse</div></td>
+                                <td data-label="Executor"><div class="slds-truncate" title="Executor">R{!v.spouseExecutor}</div></td>
+                                <td data-label="Bridging"><div class="slds-truncate" title="Bridging">R{!v.spouseBridging}</div></td>
+                                <td data-label="Funeral"><div class="slds-truncate" title="Funeral">N/A</div></td>
+                                <td data-label="Premium"><div class="slds-truncate" title="Premium">R{!v.spousePremium}</div> </td>
+                            </tr>
+                        </aura:if>
+                        <tr class="slds-hint-parent">
+                            <td data-label=""><div class="slds-truncate" title="Policy Fee">Policy Fee</div></td>
+                            <td data-label="Executor"><div class="slds-truncate" title="Executor">N/A</div></td>
+                            <td data-label="Bridging"><div class="slds-truncate" title="Bridging">N/A</div></td>
+                            <td data-label="Funeral"><div class="slds-truncate" title="Funeral">N/A</div></td>
+                            <td data-label="Premium"><div class="slds-truncate" title="Premium">R{!v.policyFee}</div></td>
+                        </tr>
+                        <tr class="slds-hint-parent">
+                            <td data-label=""><div class="slds-truncate" title="Total">Total</div></td>
+                            <td data-label="Executor"><div class="slds-truncate" title="Executor"></div></td>
+                            <td data-label="Bridging"><div class="slds-truncate" title="Bridging"></div></td>
+                            <td data-label="Funeral"><div class="slds-truncate" title="Funeral"></div></td>
+                            <td data-label="Premium"><div class="slds-truncate" title="Premium">R{!v.quoteTotal}</div></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </lightning:layoutItem>
+        </aura:if>
+
+        <aura:if isTrue="{!v.showBeneficiaryDetails}">
+            <lightning:layoutItem size="12">
+                <hr/>
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem size="12">
+                <h2 class="slds-section__title">Beneficiary Details</h2>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <div>
+                    <lightning:datatable
+                    	columns="{!v.columnsBeneficiaries}"
+                        data="{!v.dataBeneficiaries}"
+                        keyField="id"
+                        hideCheckboxColumn="true"/>
+                </div>
+            </lightning:layoutItem>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.showDependantDetails}">
+            <lightning:layoutItem size="12">
+                <hr/>
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem size="12">
+                <h2 class="slds-section__title">Dependant Details</h2>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+                <div>
+                    <lightning:datatable
+                    	columns="{!v.columnsDependants}"
+                        data="{!v.dataDependants}"
+                        keyField="id"
+                        hideCheckboxColumn="true"/>
+                </div>
+            </lightning:layoutItem>
+        </aura:if>
+    </lightning:layout>
+	
+</aura:component>

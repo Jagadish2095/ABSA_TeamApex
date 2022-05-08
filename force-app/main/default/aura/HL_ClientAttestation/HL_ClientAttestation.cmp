@@ -1,0 +1,594 @@
+<!--
+  @description       : 
+  @author            : muvhuso.nekhubvi@absa.africa
+  @last modified on  : 2021-11-29
+  @last modified by  : muvhuso.nekhubvi@absa.africa
+-->
+<aura:component controller="HL_clientAttestation"
+                implements="lightning:isUrlAddressable,lightning:hasPageReference,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName"
+                access="global">
+    <aura:attribute name="stages" type="list" default="[
+                                                       {sno:1,name:'Review Client Details',completed:false},
+                                                       {sno:2,name:'Perform Attestation',completed:false},
+                                                       {sno:3,name:'Confirmation',completed:false}
+                                                       ]"/>
+    
+    <aura:attribute name="currentStep" type="Integer" default="1"/>
+    <aura:attribute name="variant" type="String" default="non-linear"/>    
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Telephonic attestation', 'value': 'option1'},
+                                                        {'label': 'Email', 'value': 'option2'}
+                                                        ]"/>
+    
+    <aura:attribute name="value" type="String"/>   
+    <aura:attribute name="Email" type="string" />     
+    <aura:attribute name="showviewform" type="boolean" default="true"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="missingDocuments" type="List"/>
+    <aura:attribute name="jointsParentCode" type="String" />
+    <aura:attribute name="missingData" type="List"/>
+    <aura:attribute name="healthStatus" type="String"/>        
+    <aura:attribute name="daysDue" type="String"/>
+    <aura:attribute name="objclientAttestation" type="HL_clientAttestation"/>
+    <aura:attribute name="isError" type="boolean" default="false"/>
+    <aura:attribute name="attestationType" type="String"/>
+    <aura:attribute name="missingDocsList" type="List"/>
+    <aura:attribute name="myBool" type="Boolean" default="false"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.isRefreshed}" />
+
+    <c:AccountStage stages="{!v.stages}"/>
+    <c:HL_HighlightPanel recordId="{!v.recordId}"/>
+    <aura:if isTrue="{!v.showviewform}">
+        <div class="slds-m-around_medium">
+            <h1 class="slds-text-heading_small"><b>Review clients details</b></h1>
+        </div>
+        <lightning:accordion aura:id="accordion" activeSectionName="A">
+            <lightning:accordionSection name="A" label="Existing details">                
+                <lightning:recordViewForm recordId="{!v.recordId}" objectApiName="Account">                    
+                    <lightning:layout class=" slds-wrap custom-layout">                        
+                        
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="Name" class="output-element" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="ID_Number__pc" class="output-element"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="Occupation_Status__pc" class="output-element"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="Occupation_Category__pc" class="output-element"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="Income_Source__pc" class="output-element"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="DD_Source_of_Funds__pc" class="output-element"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Address Line 1</label>
+                            <lightning:outputField aura:id="aid" fieldName="ShippingStreet" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Address Line 2</label>
+                            <lightning:outputField aura:id="aid" fieldName="Business_Address_Line_2__c" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Suburb Town</label>
+                            <lightning:outputField aura:id="aid" fieldName="ShippingState" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">City</label>
+                            <lightning:outputField aura:id="aid" fieldName="ShippingCity" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Postal Code</label>
+                            <lightning:outputField aura:id="aid" fieldName="ShippingPostalCode" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                </lightning:recordViewForm>
+            </lightning:accordionSection>
+        </lightning:accordion>
+        
+        <lightning:accordion aura:id="accordion" activeSectionName="A">
+            <lightning:accordionSection name="A" label="Review">
+                
+                <lightning:radioGroup name="radioGroup"
+                                      label="Choose attestation method"
+                                      options="{!v.options }"
+                                      value="{!v.value }"
+                                      type="radio"
+                                      class="customRadioCls" aura:id="isTelephone" />                                                
+            </lightning:accordionSection>
+            
+            <lightning:layout class=" slds-wrap custom-layout"> 
+                <lightning:layoutItem size="6" padding="around-small">
+                    <div class="slds-float_left">
+                        <lightning:button class="slds-m-top_small" variant="brand" type="Cancel" name="update" label="Cancel" onclick="{!c.returnToaccount}"/>  
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <div class="slds-float_right">
+                        <aura:if isTrue="{!v.value}">
+                            <lightning:button class="slds-m-top_small" onclick="{!c.hideandshoesections}" variant="brand" type="next" name="next" label="Next" /> 
+                        </aura:if>
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>
+            
+        </lightning:accordion>   
+    </aura:if>
+    <aura:attribute name="showeditform" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showeditform}">
+        <div class="slds-m-around_medium">
+            <h1 class="slds-text-heading_small"><b>Perform telephonic attestation</b></h1>
+        </div>
+        <lightning:accordion aura:id="accordion" activeSectionName="A">
+            <lightning:accordionSection name="A" label="Client details">
+                
+                <lightning:recordEditForm recordId="{!v.recordId}" objectApiName="Account">
+                    <lightning:messages />
+                    
+                    <lightning:layout class=" slds-wrap custom-layout">
+                        
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="FirstName" class="output-element" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="LastName" class="input-element"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="ID_Number__pc" class="input-element"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <div class="slds-border_bottom">
+                                <lightning:inputField aura:id="aid"  fieldName="Occupation_Status__pc" class="inputColor1" required="true"/>
+                            </div>   
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <div class="slds-border_bottom">
+                                <lightning:inputField aura:id="aid"  fieldName="Occupation_Category__pc" class="inputColor" required="true"/>
+                            </div>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <div class="slds-border_bottom">
+                                <lightning:inputField aura:id="aid"  fieldName="Income_Source__pc" class="inputColor" required="true"/>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <div class="slds-border_bottom">
+                                <lightning:inputField aura:id="aid" fieldName="DD_Source_of_Funds__pc" class="inputColor" required="true"/>
+                            </div>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Address Line 1</label>
+                            <lightning:inputField aura:id="aid" fieldName="ShippingStreet" class="output-element" variant="label-hidden" required="true"/>
+                        </lightning:layoutItem>
+                        <!--
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Address Line 2</label>
+                            <lightning:inputField aura:id="aidN" fieldName="Business_Address_Line_2__c" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                         -->
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Suburb Town</label>
+                            <lightning:inputField aura:id="aidTwn" fieldName="ShippingState" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">City</label>
+                            <lightning:inputField aura:id="aid" fieldName="ShippingCity" class="output-element" variant="label-hidden" required="true"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Postal Code</label>
+                            <lightning:inputField type="number" aura:id="aidzip" fieldName="ShippingPostalCode" class="output-element" variant="label-hidden" required="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Is Address Changed ?</label><br/>
+                            <ui:inputCheckbox aura:id="checkbox" change="{!c.onCheck}"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <div class="slds-float_left">
+                                <lightning:button variant="brand" class="slds-m-top_large" type="Previous" name="update" label="Previous" onclick="{!c.backToclentDetails}" />  
+                            </div>
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <div class="slds-float_right">
+                                <!--  <lightning:button onclick="{!showSecondModel}" class="slds-m-top_small" variant="brand" type="submit" name="update" label="Submit" /> -->
+                                <lightning:button variant="brand" class="slds-m-top_large" type="submit" name="update" label="Submit" onclick="{!c.showSecondModel}"/>
+                            </div>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </lightning:recordEditForm>
+            </lightning:accordionSection> 
+        </lightning:accordion> 
+    </aura:if>
+    <!-- Pop Up View Form -->
+    <aura:attribute name="showClientform" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showClientform}">
+        <div class="slds-m-around_medium">
+            <h1 class="slds-text-heading_small"><b>Perform telephonic attestation</b></h1>
+        </div>
+        <lightning:accordion aura:id="accordion" activeSectionName="A">
+            <lightning:accordionSection name="A" label="Client details">   
+                <lightning:recordViewForm recordId="{!v.recordId}" objectApiName="Account">
+                    
+                    <lightning:layout class=" slds-wrap custom-layout">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="Name" class="output-element" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="ID_Number__pc" class="output-element"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="Occupation_Status__pc" class="output-element"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="Occupation_Category__pc" class="output-element"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="Income_Source__pc" class="output-element"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:outputField fieldName="DD_Source_of_Funds__pc" class="output-element"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Address Line 1</label>
+                            <lightning:outputField aura:id="aid" fieldName="ShippingStreet" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Address Line 2</label>
+                            <lightning:outputField aura:id="aid" fieldName="Business_Address_Line_2__c" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Suburb Town</label>
+                            <lightning:outputField aura:id="aid" fieldName="ShippingState" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">City</label>
+                            <lightning:outputField aura:id="aid" fieldName="ShippingCity" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Postal Code</label>
+                            <lightning:outputField aura:id="aid" fieldName="ShippingPostalCode" class="output-element" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <label for="aid">Is Address Changed ?</label><br/>
+                            <ui:outputCheckbox aura:id="checkbox" value="{!v.myBool}"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <aura:if isTrue="{!v.missingDocuments.length > 0}">
+                    <lightning:layout class=" slds-wrap custom-layout"> 
+                        <lightning:layoutItem size="6" padding="around-small">                                  
+                            <div class="slds-scoped-notification slds-scoped-notification_light slds-m-bottom_large site" role="status">
+                                <div class="slds-media">
+                                    <div class="slds-media__figure">
+                                        <lightning:icon iconName="utility:info" class="icon_clr" size="small" alternativeText="information" title="information" color="blue" />
+                                    </div>
+                                    <div class="slds-media__body">                                        
+                                        <p>Based on submission customer needs to email required documents:
+                                            <aura:iteration items="{!v.missingDocsList}" var="row">
+                                                <tr>
+                                                    <aura:iteration items="{!row}" var="cell">
+                                                       {!cell}
+                                                    </aura:iteration>
+                                                </tr>
+                                            </aura:iteration></p>
+                                    </div>
+                                </div>
+                            </div>                    
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    </aura:if>
+                    
+                </lightning:recordViewForm>
+            </lightning:accordionSection>
+        </lightning:accordion>
+        
+        <lightning:accordion aura:id="accordion" activeSectionName="A">
+            <lightning:layout class=" slds-wrap custom-layout"> 
+                <lightning:layoutItem size="6" padding="around-small">
+                    <div class="slds-float_left">
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <div class="slds-float_right">
+                        <lightning:button class="slds-m-top_small" onclick="{!c.finalNextbtn}" variant="brand" type="next" name="next" label="Next" />  
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordion>   
+    </aura:if>
+    <aura:attribute name="showModal" type="boolean" default="true"/>
+    <aura:if isTrue="{!v.showModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                 aria-modal="true" aria-describedby="modal-content-id-1" 
+                 class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.returnToaccount}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                        Channel confirmation</h2>
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p><b>Is this an email case? 
+                        </b>
+                    </p>
+                </div>
+                
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Yes"
+                                      title="Yes"
+                                      onclick="{!c.hideModel }" class="slds-float_left"/>
+                    <lightning:button variant="brand"
+                                      label="No"
+                                      title="OK"
+                                      onclick="{!c.saveDetails}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <aura:attribute name="IsEmailprocess" type="boolean" default="false"/>
+    
+     <aura:if isTrue="{!v.IsEmailprocess}">
+        <div class="slds-m-top_large"> 
+            <p class="field-title" title="SubField1"><b>Perform email attestation </b></p>  <br/><br/>
+        </div>
+        <p>  Fic Templete has been queued and will be sent to below email address. You can now complete customer service request.</p>
+        <lightning:recordEditForm recordId="{!v.recordId}" objectApiName="Account">
+            <lightning:layout class=" slds-wrap custom-layout"> 
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:inputField fieldName="PersonEmail" class="output-element" aura:id="emailidout" required="true" />
+                </lightning:layoutItem>
+            </lightning:layout>
+            
+             <aura:if isTrue="{!v.missingDocuments.length > 0}">
+                <lightning:layout class=" slds-wrap custom-layout"> 
+                    <lightning:layoutItem size="6" padding="around-small">                                  
+                        <div class="slds-scoped-notification slds-scoped-notification_light slds-m-bottom_large site" role="status">
+                            <div class="slds-media">
+                                <div class="slds-media__figure">
+                                    <lightning:icon iconName="utility:info" class="icon_clr" size="small" alternativeText="information" title="information" />
+                                </div>
+                                <div class="slds-media__body">
+                                    <p>Based on submission customer needs to email required documents:
+                                        <aura:iteration items="{!v.missingDocsList}" var="row">
+                                            <tr>
+                                                <aura:iteration items="{!row}" var="cell">
+                                                 {!cell}
+                                                </aura:iteration>
+                                            </tr>
+                                        </aura:iteration></p>
+                                </div>
+                            </div>
+                        </div>                    
+                    </lightning:layoutItem>
+                </lightning:layout>
+                </aura:if>
+        </lightning:recordEditForm>
+       
+        <lightning:layout class=" slds-wrap custom-layout"> 
+            <lightning:layoutItem size="6" padding="around-small">
+                <div class="slds-float_left">
+                    <lightning:button class="slds-m-top_small" variant="brand" type="Cancel" name="update" label="Cancel" onclick="{!c.returnToaccount}"/>  
+                </div>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <div class="slds-float_right">
+                    <lightning:button class="slds-m-top_small"  variant="brand" type="next" name="next" label="Next" onclick="{!C.IsEmailNext}" />  
+                </div>
+            </lightning:layoutItem>
+        </lightning:layout>
+             
+    </aura:if>
+
+    <aura:attribute name="emailConfirmed" type="boolean" default="false"/>
+    <!-- Start Confirmation screen for next btn -->
+    
+    <aura:if isTrue="{!v.emailConfirmed}">
+        <div class="slds-m-top_large">
+            <p class="field-title" title="SubField1"><b>Confirmation </b></p>  <br/><br/>
+        </div>
+        <aura:if isTrue="{!v.missingDocuments.length > 0}">
+            <aura:if isTrue="{!v.healthStatus !='PartialCompliant'}">
+                <p>    FIC template has been queued and will be sent to the below email address. Service request may not be completed until FIC status has been resolved.</p>
+            </aura:if>
+            <aura:if isTrue="{!v.healthStatus =='PartialCompliant'}">
+                <p>    FIC template has been queued and will be sent to the below email address. You can now complete customer service request.</p>
+            </aura:if>
+        <lightning:recordEditForm recordId="{!v.recordId}" objectApiName="Account">
+            <lightning:layout class=" slds-wrap custom-layout"> 
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:inputField fieldName="PersonEmail" class="output-element" aura:id="emailid" required="true" />
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:recordEditForm>
+        <lightning:layout class=" slds-wrap custom-layout">
+            <lightning:layoutItem size="6" padding="around-small">
+                <div class="slds-float_left">  
+                </div>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <div class="slds-float_right">
+                    <lightning:button class="slds-m-top_small"  variant="brand" type="next" name="next" label="Proceed to case" onclick="{!c.createcaseRecord}" /> 
+                    <!--  <lightning:button class="slds-m-top_small" variant="brand" type="close" name="Close" label="Close" onclick="{!C.telephoneAtstnEmailTrigger}"/> --> 
+                </div>
+            </lightning:layoutItem>
+            </lightning:layout>
+            
+            <aura:set attribute="else">                
+                <p> Details have successfully been updated.</p>
+                <lightning:layout class=" slds-wrap custom-layout">
+                    <lightning:layoutItem size="6" padding="around-small">
+                        <div class="slds-float_left">  
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="around-small">
+                        <div class="slds-float_right">
+                            <lightning:button class="slds-m-top_small" variant="brand" type="close" name="Close" label="Close" onclick="{!c.returnToaccount}"/>
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </aura:set>
+        </aura:if>
+    </aura:if>
+    
+    <!-- END Confirmation-->
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <!-- Second Pop Up Start-->
+    <div class="slds-m-around_xx-large">
+        <aura:if isTrue="{!v.isOpen}">
+            <!--###### MODAL BOX Start######--> 
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- ###### MODAL BOX HEADER Start ######-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{!c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"><b>Attestation Review</b></h2>
+                    </header>
+                    <!--###### MODAL BOX BODY Part Start######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p><b> Are you sure you want to update the customer profile with these details?</b> <br/><br/>
+                            <h1> Customer has confirmed that information as provided is the customer's latest details.</h1><br/><br/>
+                        </p>
+                    </div>
+                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" 
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeModel }" class="slds-float_left"/>
+                        <lightning:button variant="brand" 
+                                          label="Confirm"
+                                          title="Confirm"
+                                          onclick="{! c.ConfirmClientDetails}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+            <!--###### MODAL BOX Part END Here ######-->  
+        </aura:if>
+    </div>  
+    <!-- Second Pop Up End -->
+    <aura:attribute name="Emailconfirmation" type="boolean" default="false"/>
+    <aura:attribute name="upteemail" type="String"/>
+    
+    <aura:if isTrue="{!v.Emailconfirmation}">
+        <div class="slds-m-top_large">
+            <p class="field-title" title="SubField"><b>Confirmation</b></p>  <br/><br/>
+        </div>
+       <!-- <aura:if isTrue="{!v.missingDocuments.length > 0}"> -->
+        <aura:if isTrue="{!v.healthStatus !='PartialCompliant'}">
+            <p>    FIC template has been queued and will be sent to the below email address. Service request may not be completed until FIC status has been resolved.</p>
+        </aura:if>
+        <aura:if isTrue="{!v.healthStatus =='PartialCompliant'}">
+            <p>    FIC template has been queued and will be sent to the below email address. You can now complete customer service request.</p>
+        </aura:if>
+        <lightning:recordEditForm recordId="{!v.recordId}" objectApiName="Account">            
+            <lightning:layout class=" slds-wrap custom-layout">                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:inputField fieldName="PersonEmail" class="output-element" aura:id="emailidoutput" readonly="true" value="{!v.upteemail}"/>
+                </lightning:layoutItem>                
+            </lightning:layout>
+            <lightning:layout class=" slds-wrap custom-layout"> 
+                <lightning:layoutItem size="6" padding="around-small">
+                    <div class="slds-float_left">
+                        <lightning:button class="slds-m-top_small" variant="brand" type="Close" name="update" label="Close" onclick="{!c.returnToaccount}"/>  
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <div class="slds-float_right">
+                        <lightning:button class="slds-m-top_small"  variant="brand" type="next" name="next" label="Proceed to case" onclick="{!c.createcaseRecord}" />  
+                    </div>  
+                </lightning:layoutItem>
+            </lightning:layout>
+            </lightning:recordEditForm>
+        </aura:if>
+        
+   <!-- </aura:if> -->
+    
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    <!--component attributs -->
+    <aura:attribute name="spinner" type="boolean" default="FALSE"/>
+    <!--loading spinner start-->
+    <aura:if isTrue="{!v.spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading...</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    <!-- Loading spinner end--> 
+</aura:component>

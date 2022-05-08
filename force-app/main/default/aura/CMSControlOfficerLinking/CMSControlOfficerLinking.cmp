@@ -1,0 +1,206 @@
+<!--
+* Lightning Component for CMSControlOfficerLinking
+*
+* @author  Anka Ganta : Absa
+* @version v1.0
+* @since   2020-01-31
+*s
+-->
+<aura:component access="global" controller="CMSControlOfficerLinkingController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" >
+    <!--Attributes-->
+    <aura:attribute name="oppRecId" type="String" />
+    <aura:attribute name="contOffcRecId" type="String" />
+    <aura:attribute name="accountClientType" type="String" />
+    <aura:attribute name="contOffcRecord" type="CMS_Control_Officer_Linking__c" default="{'sobjectType': 'CMS_Control_Officer_Linking__c'}"/>
+    <aura:attribute name="contOffcList" type="Object" />
+    <aura:attribute name="showNewContOffcModal" type="Boolean" />
+
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="errors" type="Object" default="[]"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/>
+
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+    <aura:attribute name="maxRowSelection" type="Integer" default="10"/>
+    <aura:attribute name="preSelectedRows" type="List" default="[]"/>
+    <aura:attribute name="selectedRows" type="List" default="[]"/>
+    <aura:attribute name="selectedRow" type="Object"/>
+    <aura:attribute name="isFromEditRelatedParty" type="Boolean" default="false"/>
+    <aura:attribute name="isFromNonIndividualRelatedParty" type="Boolean" default="false"/>	
+    <aura:attribute name="showEditcontOffcModal" type="Boolean" default="false"/>
+    <aura:attribute name="contOffcEditRecId" type="String" />
+     <aura:attribute name="renderfields" type="boolean" default="false" />
+    <aura:attribute name="selectedRowsIdsList" type="List" default="[]"/>
+    
+  
+    <aura:attribute name="value" type="List" default=""/>
+    <aura:attribute name="oppStage" type="String" /> <!--W-08562-->
+
+     <!-- Lightning Spinner -->
+     <center style="z-index:99">
+        <lightning:spinner aura:id="ltngSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    <!-- Loading spinner end-->
+    
+    <aura:handler event="force:showToast" action="{!c.refreshRecords}"/>
+    
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+
+   
+        <!--CMS INFORMATION START   -->
+    <!-- the container element determine the height of the datatable -->
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="" size="12" smallDeviceSize="12" mediumDeviceSize="12">
+             <lightning:button class="slds-float_right"
+                              variant="brand"
+                              label="Delete"
+                              title="Delete"
+                              onclick="{! c.deleteRecords }"/>
+            
+           
+            <lightning:button class="slds-float_right"
+                              variant="brand"
+                              label="Submit"
+                              title="Submit for CMS Linking"
+                              onclick="{! c.submitforCMSLinking }"/>
+            
+            <lightning:button class="slds-float_right"
+                              variant="brand"
+                              label="Add"
+                              title="Add New Control Officer"
+                              onclick="{! c.openNewContOffcModal }"/>
+            
+           
+        </lightning:layoutItem>
+        
+        <lightning:layoutItem padding="" size="12" smallDeviceSize="12" mediumDeviceSize="12">
+            <div style="height: 300px">
+                <lightning:datatable aura:id="dtTable"
+                                     columns="{! v.columns }"
+                                     data="{! v.contOffcList }"
+                                     keyField="Id"
+                                     errors="{! v.errors }"
+                                     draftValues="{! v.draftValues }"
+                                     onsave="{! c.handleSave }"
+                                     maxRowSelection="{! v.maxRowSelection }"
+                                     hideCheckboxColumn="{!if(or(v.maxRowSelection == 0, v.isFormReadOnly), true, false)}"
+                                     onrowselection="{! c.handleRowSelectionChange }"
+                                     selectedRows="{! v.preSelectedRows }"
+                                     onrowaction="{! c.handleRowAction }" 
+                                     />
+            </div>
+        </lightning:layoutItem>
+    </lightning:layout>
+    <!--CMS INFORMATION END-->
+
+    <aura:if isTrue="{!v.showNewContOffcModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container" >
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeNewContOffcModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add New Control Officer Details</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <lightning:recordEditForm aura:id="newRecordForm"
+                                                  objectApiName="CMS_Control_Officer_Linking__c"
+                                                  recordId="{!v.contOffcRecId}"
+                                                  onload="{!c.handleOnLoad}">
+                            <lightning:layout multipleRows="true" >
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField fieldName="Control_Officer_Type__c" aura:id="ControlOfficerTypeNew" value="{!v.contOffcRecord.Control_Officer_Type__c}" required="true" onchange="{!c.renderFields}"/>
+                                    <lightning:inputField fieldName="Control_Officer_Number__c" value="{!v.contOffcRecord.Control_Officer_Number__c}" required="true" />
+                                    <lightning:inputField fieldName="Branch_Region_Site__c" value="{!v.contOffcRecord.Branch_Region_Site__c}" />
+                                    <lightning:inputField fieldName="Group_or_Individual__c" value="{!v.contOffcRecord.Group_or_Individual__c}" />
+                                    <lightning:inputField fieldName="Captured_by_Employee__c" value="{!v.contOffcRecord.Captured_by_Employee__c}" />
+                                     <aura:If isTrue="{!v.renderfields}">
+                                        <lightning:inputField fieldName="Overall_Site_Code__c" value="{!v.contOffcRecord.Overall_Site_Code__c}"  />
+                                        <lightning:inputField fieldName="Business_Segment_Indicator__c" value="{!v.contOffcRecord.Business_Segment_Indicator__c}"  />
+                                         <lightning:inputField fieldName="Business_Sub_Segment_Indicator__c" value="{!v.contOffcRecord.Business_Sub_Segment_Indicator__c}"  />
+                                         <lightning:inputField fieldName="Banking_Sector__c" value="{!v.contOffcRecord.Banking_Sector__c}"  />
+                                        <lightning:inputField fieldName="Franchise_Sector__c" value="{!v.contOffcRecord.Franchise_Sector__c}"  />
+                                        
+                                    </aura:If> 
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button class="slds-float_left"
+                                      variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeNewContOffcModal }"/>
+                    <lightning:button variant="brand"
+                                      label="Save"
+                                      title="Save"
+                                      onclick="{! c.createNewCntrOffcRecord}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+
+
+    </aura:if>
+    <aura:if isTrue="{!v.showEditcontOffcModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeContOffcModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Edit Control Officer Details</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <lightning:recordEditForm aura:id="editRecordForm"
+                                                  objectApiName="CMS_Control_Officer_Linking__c"
+                                                  recordId="{!v.contOffcEditRecId}"
+                                                  onload="{!c.handleOnLoad}"
+                                                  onsuccess="{!c.handleOnSuccess}">
+                            <lightning:layout multipleRows="true" >
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField fieldName="Control_Officer_Type__c" aura:id="ControlOfficerType" required="true" onchange="{!c.renderFields}"/>
+                                    <lightning:inputField fieldName="Control_Officer_Number__c" aura:id="ControlOfficerNumber" required="true" />
+                                    <lightning:inputField fieldName="Branch_Region_Site__c" aura:id="BranchRegionSite"  />
+                                    <lightning:inputField fieldName="Group_or_Individual__c" aura:id="GrouporIndividual"  />
+                                    <lightning:inputField fieldName="Captured_by_Employee__c" aura:id="CapturedbyEmployee"  />
+                                    <aura:If isTrue="{!v.renderfields}">
+                                        <lightning:inputField fieldName="Overall_Site_Code__c" aura:id="overallSiteCode" />
+                                        <lightning:inputField fieldName="Business_Segment_Indicator__c" aura:id="businessSegIndicator" />
+                                         <lightning:inputField fieldName="Business_Sub_Segment_Indicator__c" aura:id="businessSubSegIndicator" />
+                                         <lightning:inputField fieldName="Banking_Sector__c" aura:id="bankingSector" />
+                                        <lightning:inputField fieldName="Franchise_Sector__c" aura:id="franchiseSector" />
+                                        
+                                    </aura:If> 
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button class="slds-float_left"
+                                      variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeContOffcModal }"/>
+                    <lightning:button variant="brand"
+                                      label="Save"
+                                      title="Save"
+                                      onclick="{! c.editContOffcRecord}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+
+
+    </aura:if>
+</aura:component>

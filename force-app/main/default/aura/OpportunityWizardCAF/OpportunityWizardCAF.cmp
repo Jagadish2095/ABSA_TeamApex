@@ -1,0 +1,157 @@
+<!--
+    This is the opportunity wizard component for creating opportunities leveraging off the results of the client finder
+    component
+
+    @author Nelson Chisoko (Dariel)
+    @since 06/02/2019
+-->
+
+
+<aura:component description="OpportunityWizard"
+                controller="OpportunityWizardController"
+                implements="lightning:isUrlAddressable,lightning:hasPageReference,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global"
+                >
+    <!--WorkspaceID-->
+    <lightning:workspaceAPI aura:id="workspace"/>
+    
+    <!--Handlers-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="c:setClientInfo" action="{!c.handleClientSelectionEvent}"/>
+    <aura:handler event="c:setProductInfo" action="{!c.handleProductSelectionEvent}"/>
+    
+    <!--Attribute declarations-->
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="inActiveBrokerSelected" type="Boolean" default="true" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="accountData" type="Account"/>
+    <aura:attribute name="productData" type="ClientFinderProduct"/>
+    <aura:attribute name="productDataDetails" type="String"/>
+    <aura:attribute name="productDataBankingDetails" type="String"/>
+    <aura:attribute name="productDataAssetsLiabilities" type="String"/>
+    <aura:attribute name="createdClient" type="Account"/>
+    <aura:attribute name="opportunityRecordTypesList" type="List"/>
+    <aura:attribute name="selectedOpportunityRecordTypeId" type="String"/>
+    <aura:attribute name="selectedOpportunityRecordTypeName" type="String"/>
+    
+    <aura:attribute name="opportunityFields" type="String[]"/>
+    <aura:attribute name="recordFormSubmitted" type="Boolean" default="false"/>
+    <aura:attribute name="showClientFinder" type="Boolean" default="true"/>
+    <aura:attribute name="showOpportunitySummary" type="Boolean" default="false"/>
+    <aura:attribute name="showOppotunityRecordTypeSelection" type="Boolean" default="false"/>
+
+    <aura:attribute name="bodya" type="Aura.Component[]"/>
+    <aura:attribute name="bodyb" type="Aura.Component[]"/>
+    <aura:attribute name="selectedAdviserId" type="Id"/>
+    <aura:attribute name="selectedSiteId" type="Id"/>
+    <aura:attribute name="willTypeOptions" type="List" default="[
+                                                                {'label': 'Revision', 'value': 'Revision'}
+                                                                ]"
+                    />
+    <aura:attribute name="willTypeValue" type="String" default="Revision"/>
+    <aura:attribute name="showWillTypeSelection" type="boolean"/>
+    
+    <!--Custom Lookup Attributes-->
+    <aura:attribute name="selectedLookUpRecord" type="sObject" default="{}"/>
+    <aura:attribute name="selectedSiteRecord" type="Site__c" default="{}"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner alternativeText="theSpinner"/>
+    </aura:if>
+    
+    <div style="margin-bottom: 40px;">
+        
+        <lightning:card title="">
+            <aura:renderIf isTrue="{!v.showClientFinder}">
+                <!--Header-->
+                <div class="slds-page-header">
+                    <div class="slds-media">
+                        <div class="slds-media__body">
+                            
+                            <h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate">Opportunity Wizard 1 of 4</h1>
+                            <p class="slds-text-title--caps slds-line-height--reset">Client Search</p>
+                            
+                        </div>
+                    </div>
+                </div>
+            </aura:renderIf>
+            
+            <aura:if isTrue="{!v.showClientFinder}">
+                
+                <c:CAF_ClientFinder
+                                showCreateIndividualProspect="true"
+                                showCreateBusinessProspect="true"
+                                showProductSelection="true"
+                                showParticipantSelection="true" aura:id="clientFinderComponent"
+                                />
+                
+            </aura:if>
+            
+            <aura:if isTrue="{!v.showOppotunityRecordTypeSelection}">
+                <div class="creatOpp">
+                    <h2>Welcome to Commercial and Asset Finance Application</h2>
+                    <h4>Click next button below to create Opportunity for <strong>Application(s)</strong></h4>
+                </div>
+                <div class="slds-hide">
+                    
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small">
+                        <lightning:radioGroup
+                                              aura:id="opportunityRecordTypeGroup"
+                                              name="opportunityRecordTypeGroup"
+                                              label="Select a record type for this Opportunity"
+                                              options="{!v.opportunityRecordTypesList}"
+                                              value="{!v.selectedOpportunityRecordTypeId}"
+                                              onchange="{!c.handleChange}"
+                                              type="radio"
+                                              />
+                    </lightning:layoutItem>
+                </lightning:layout>
+                </div>
+            </aura:if>
+    
+            <aura:if isTrue="{!v.showOpportunitySummary}">
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small" size="3"/>
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <div class="creatOpp">
+                            <h2>Summary of new CAF opportunity</h2>
+                        </div>
+                        <lightning:recordForm
+                                              recordId="{!v.recordId}"
+                                              objectApiName="Opportunity"
+                                              layoutType="Compact"
+                                              columns="2"
+                                              mode="readonly"
+                                              >
+                        </lightning:recordForm>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3"/>
+                </lightning:layout>
+            </aura:if>
+            
+            <!--Navigation buttons-->
+            <div class="slds-grid  slds-grid--align-center">
+                <aura:if isTrue="{!v.showClientFinder}">
+                    
+                    <lightning:button variant="brand" label="Next" onclick="{!c.nextTab}"/>
+                    <button class="slds-button slds-button--brand" onclick="{!c.cancel}" >Cancel</button>
+                    
+                </aura:if>
+                <aura:if isTrue="{!v.showOppotunityRecordTypeSelection}">
+                    <button class="slds-button slds-button--brand" onclick="{!c.previousTab}" >Back</button>
+                    <lightning:button variant="brand" label="Next" onclick="{!c.nextTab}"/>
+                    <button class="slds-button slds-button--brand" onclick="{!c.cancel}" >Cancel</button>
+                </aura:if>
+
+                <aura:if isTrue="{!v.showOpportunitySummary}">
+                    <button class="slds-button slds-button--brand" onclick="{!c.previousTab}" >Back</button>
+                    <button class="slds-button slds-button--brand" onclick="{!c.finish}" >Finish</button>
+                    <button class="slds-button slds-button--brand" onclick="{!c.cancel}" >Cancel</button>
+                </aura:if>
+            </div>
+            
+        </lightning:card>
+    </div>
+    
+</aura:component>

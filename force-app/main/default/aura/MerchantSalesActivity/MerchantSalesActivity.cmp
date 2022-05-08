@@ -1,0 +1,258 @@
+<!--
+* Lightning Component for Onboarding Merchant - Sales Activity Section (MerchantSalesActivity)
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2020-04-02
+*
+-->
+<aura:component controller="MerchantSalesActivityController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global">
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!--aura:handler event="force:refreshView" action="{!c.doInit}" /-->
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}"/>
+
+    <!-- Parent Cmp Attribute Declaration -->
+    <aura:attribute name="cmpFormStatus" type="String" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="activeSections" type="List" default="['SalesActivityInfo']" />
+    <aura:attribute name="applicationProductMerchantId" type="String" default=""/>
+    <aura:attribute name="calulatedTotalExposure" type="String" default=""/>
+    <aura:attribute name="calulatedTotalPercentage" type="String" default=""/>
+    <aura:attribute name="calulatedGoodsServicesDeferredDelivery" type="String" default=""/>
+    <aura:attribute name="calulatedCardTurnoverDeferredDelivery" type="String" default=""/>
+    <aura:attribute name="calulatedGoodsDelivered1To7DaysExposure" type="String" default="0"/>
+    <aura:attribute name="calulatedGoodsDelivered8To14DaysExposure" type="String" default="0"/>
+    <aura:attribute name="calulatedGoodsDelivered15To30DaysExposure" type="String" default="0"/>
+    <aura:attribute name="calulatedGoodsDelivered30To60DaysExposure" type="String" default="0"/>
+    <aura:attribute name="calulatedGoodsDelivered60DaysExposure" type="String" default="0"/>
+    <aura:attribute name="deferredGoodsOrServicesField" type="Boolean" default="false" />
+    <aura:attribute name="isSubmitForApprovalButtonClicked" type="Boolean" default="false" />
+    <aura:attribute name="isShowSuccessToast" type="Boolean" />
+    <aura:attribute name="resetFieldsList" type="List" default="['annualBusinessTurnover','annualCardTurnover','avgCardTransactionValue','avgValueCredit','avgValueDebit']" />
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['productServiceSellMethods','annualBusinessTurnover','annualCardTurnover','avgCardTransactionValue','avgValueCredit','avgValueDebit','annualCardTurnoverRand','goodsAndServicesTakenAtPOS','purposeOfApplication','conductOfAccount','tradingActivity','groupStructure','commentsAndRecommendation','deferredGoodsOrServicesReason']" />
+    <aura:attribute name="errorMessage" type="String" default="" />
+    <aura:attribute name="opportunityRecord" type="object" default=""/> <!--J Quevauvilliers, D Booysen 2020/08/02-->
+    <aura:attribute name="dynamicFieldsVisible" type="Map" default="{}"/>
+    <aura:attribute name="dynamicFieldsRequired" type="Map" default="{}"/>
+
+    <!-- Method Declaration -->
+    <aura:method name="saveFormMethod" action="{!c.executeSaveFormMethod}" />
+
+    <!-- Start of Sales Activity section -->
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="SalesActivityInfo" label="Sales Activity" >
+
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="recordError">
+                    <br/>
+                    <h2 class="slds-section__title slds-align_absolute-left" style="color:red">{!v.errorMessage}</h2>
+                    <br/>
+                </div>
+            </aura:if>
+            <lightning:spinner aura:id="spinner" variant="brand" />
+
+            <!-- LDS start: salesActivityForm -->
+            <lightning:recordEditForm aura:id="salesActivityForm"
+                                      objectApiName="Application_Product_Merchant__c"
+                                      recordId="{!v.applicationProductMerchantId}"
+                                      onload="{!c.handleOnLoad}"
+                                      onsubmit="{!c.handleSubmit}"
+                                      onsuccess="{!c.handleSuccess}"
+                                      onerror="{!c.handleError}" >
+
+                <lightning:layout multipleRows="true">
+
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <label for="productServiceSellMethods"><sup style="color:red">* </sup>Product/Service to be sold &amp; selling methods</label>
+                        <lightning:inputField aura:id="productServiceSellMethods" fieldName="Product_Service_Sell_Methods__c" variant="label-hidden" required="true" disabled="{!v.isFormReadOnly}"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:inputField aura:id="annualBusinessTurnover" fieldName="Annual_Business_Turnover__c" required="true" disabled="{!v.isFormReadOnly}"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:inputField aura:id="annualCardTurnover" fieldName="Annual_Card_Turnover__c" required="true" disabled="{!v.isFormReadOnly}"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <label for="avgCardTransactionValue"><sup style="color:red">* </sup>Average Card Transaction Value Of The Business (accrual/est.)</label>
+                        <lightning:inputField aura:id="avgCardTransactionValue" fieldName="Average_Card_Transaction_Value__c" variant="label-hidden" required="true" disabled="{!v.isFormReadOnly}"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:inputField aura:id="avgValueCredit" fieldName="Average_Ticket_Value_On_Credit_Card__c" required="true" disabled="{!v.isFormReadOnly}"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:inputField aura:id="avgValueDebit" fieldName="Average_Ticket_Value_On_Debit_Card__c" required="true" disabled="{!v.isFormReadOnly}"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <label for="deferredGoodsOrServicesField" style="position:absolute ; float:right ; padding-left:1.5%" class="slds-form-element__label">Customers may receive (deferred) good/services at the time of payment</label>
+                        <lightning:inputField aura:id="deferredGoodsOrServicesField" fieldName="Deferred_Goods_Or_Services__c" variant="label-hidden" onchange="{!c.showDeferredDelivery}" disabled="{!v.isFormReadOnly}"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6" >
+                        <div class="{!if(or(v.deferredGoodsOrServicesField, not(v.dynamicFieldsVisible.Deferred_Goods_Or_Services_Reason__c)), 'slds-hide', '')}">
+                            <label for="deferredGoodsOrServicesReason"><sup style="color:red">* </sup>Reason if goods are not deferred</label>
+                            <lightning:inputField aura:id="deferredGoodsOrServicesReason" fieldName="Deferred_Goods_Or_Services_Reason__c" variant="label-hidden" required="{!and(v.dynamicFieldsRequired.Deferred_Goods_Or_Services_Reason__c, not(v.deferredGoodsOrServicesField))}" disabled="{!v.isFormReadOnly}"/>
+                        </div>
+                    </lightning:layoutItem>
+
+                    <!-- Exposure Calculation Matrix Section -->
+                    <div aura:id="exposureCalculationMatrix" class="{!if(v.deferredGoodsOrServicesField, '', 'slds-hide')}">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <span class="slds-page-header__title">
+                                    Exposure Calculation Matrix
+                                </span>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="annualCardTurnoverRand"><sup style="color:red">* </sup>Annual Card Turnover R</label>
+                                <lightning:inputField fieldName="Annual_Card_Turnover_R__c" aura:id="annualCardTurnoverRand" variant="label-hidden" onchange="{!c.calc}" required="{!v.deferredGoodsOrServicesField}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="goodsAndServicesTakenAtPOS"><sup style="color:red">* </sup>Percentage Of Goods And Services Taken Away At Point Of Sale</label>
+                                <lightning:inputField fieldName="Goods_And_Services_Taken_At_POS__c" aura:id="goodsAndServicesTakenAtPOS" variant="label-hidden" onchange="{!c.calc}" required="{!v.deferredGoodsOrServicesField}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="goodsServicesDeferredDelivery">Percentage Of Goods And Services With Deferred Delivery</label>
+                                <lightning:inputField fieldName="Goods_And_Services_Deferred_Delivery__c" readonly="true" aura:id="goodsServicesDeferredDelivery" variant="label-hidden" value="{!v.calulatedGoodsServicesDeferredDelivery}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="cardTurnoverDeferredDelivery">Monthly Card Turnover With Deferred Delivery</label>
+                                <lightning:inputField fieldName="Monthly_Card_Turnover_Deferred_Delivery__c" readonly="true" aura:id="cardTurnoverDeferredDelivery" variant="label-hidden" value="{!v.calulatedCardTurnoverDeferredDelivery}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <span class="slds-text-heading_small">
+                                    Deferred Delivery Sales Percentage
+                                </span>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <span class="slds-text-heading_small">
+                                    Deferred Delivery Sales Exposure
+                                </span>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="1To7DaysValue">Goods Delivered Within 1-7 Days Percentage</label>
+                                <lightning:inputField fieldName="Goods_Delivered_Within_1_7_Days__c" aura:id="1To7DaysValue" variant="label-hidden" onchange="{!c.calc}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="calcExp1To7Days">Goods Delivered Within 1-7 Days Exposure</label>
+                                <lightning:inputField fieldName="Goods_Delivered_Within_1_7_Days_R__c" aura:id="calcExp1To7Days" readonly="true" variant="label-hidden" value="{!v.calulatedGoodsDelivered1To7DaysExposure}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="8To14DaysValue">Goods Delivered Within 8-14 Days Percentage</label>
+                                <lightning:inputField fieldName="Goods_Delivered_Within_8_14_Days__c" aura:id="8To14DaysValue" variant="label-hidden" onchange="{!c.calc}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="calcExp8To14Days">Goods Delivered Within 8-14 Days Exposure</label>
+                                <lightning:inputField fieldName="Goods_Delivered_Within_8_14_Days_R__c" aura:id="calcExp8To14Days" readonly="true" variant="label-hidden" value="{!v.calulatedGoodsDelivered8To14DaysExposure}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="15To30DaysValue">Goods Delivered Within 15-30 Days Percentage</label>
+                                <lightning:inputField fieldName="Goods_Delivered_Within_15_30_Days__c" aura:id="15To30DaysValue" variant="label-hidden" onchange="{!c.calc}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="calcExp15To30Days">Goods Delivered Within 15-30 Days Exposure</label>
+                                <lightning:inputField fieldName="Goods_Delivered_Within_15_30_Days_R__c" aura:id="calcExp15To30Days" readonly="true" variant="label-hidden" value="{!v.calulatedGoodsDelivered15To30DaysExposure}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="30To60DaysValue">Goods Delivered 30-60 Days Percentage</label>
+                                <lightning:inputField fieldName="Goods_Delivered_30_60_Days__c" aura:id="30To60DaysValue" variant="label-hidden" onchange="{!c.calc}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="calcExp30To60Days">Goods Delivered 30-60 Days Exposure</label>
+                                <lightning:inputField fieldName="Goods_Delivered_30_60_Days_R__c" aura:id="calcExp30To60Days" readonly="true" variant="label-hidden" value="{!v.calulatedGoodsDelivered30To60DaysExposure}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="60DaysValue">Goods Delivered 60 Days+ Percentage</label>
+                                <lightning:inputField fieldName="Goods_Delivered_60_Days__c" aura:id="60DaysValue" variant="label-hidden" onchange="{!c.calc}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label for="calcExp60Days">Goods Delivered 60 Days+ Exposure</label>
+                                <lightning:inputField fieldName="Goods_Delivered_60_Days_R__c" aura:id="calcExp60Days" readonly="true" variant="label-hidden" value="{!v.calulatedGoodsDelivered60DaysExposure}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField fieldName="Total_Percentage__c" readonly="true" value="{!v.calulatedTotalPercentage}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField fieldName="Total_Exposure_R__c" readonly="true" value="{!v.calulatedTotalExposure}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+
+                        <!-- Superlight Application Section -->
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <span class="slds-page-header__title">
+                                    Credit Superlight Application
+                                </span>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField aura:id="purposeOfApplication" fieldName="Purpose_Of_Application__c" required="{!v.deferredGoodsOrServicesField}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField aura:id="securityOffered" fieldName="Security_Offered__c" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField aura:id="conductOfAccount" fieldName="Conduct_Of_Account__c" required="{!v.deferredGoodsOrServicesField}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField aura:id="tradingActivity" fieldName="Trading_Activity__c" required="{!v.deferredGoodsOrServicesField}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField aura:id="groupStructure" fieldName="Group_Structure__c" required="{!v.deferredGoodsOrServicesField}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField aura:id="commentsAndRecommendation" fieldName="Comments_And_Recommendation__c" required="{!v.deferredGoodsOrServicesField}" disabled="{!v.isFormReadOnly}"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </div>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:button aura:id="saveBtn" type="submit" label="Save" variant="brand" class="slds-align_absolute-center slds-m-top_x-large" disabled="{!or(empty(v.applicationProductMerchantId), v.isFormReadOnly)}" />
+                    </lightning:layoutItem>
+
+                </lightning:layout>
+            </lightning:recordEditForm>
+            <!-- LDS end: salesActivityForm -->
+
+            <!--J Quevauvilliers, D Booysen 2020/08/02-->
+            <!--Deferred Delivery Approval Process Section Start-->
+            <div aura:id="exposureCalculationMatrix" class="{!if(v.deferredGoodsOrServicesField, '', 'slds-hide')}">
+                <force:recordData aura:id="opportunityForm"
+                fields="Approval_Status__c, Trigger_Approval_Process__c"
+                recordId="{!v.recordId}"
+                targetFields ="{!v.opportunityRecord}"/>
+
+                <lightning:recordEditForm aura:id="opportunityEditForm"
+                                objectApiName="Opportunity"
+                                recordId="{!v.recordId}"
+                                onsuccess="{!c.handleOppSuccess}"
+                                onerror="{!c.handleOppError}">
+
+                    <lightning:messages />
+
+                    <lightning:layout multipleRows="true">
+                        <div class="{!if((and(not(empty(v.opportunityRecord.Approval_Status__c)), v.opportunityRecord.Trigger_Approval_Process__c == 'Deferred Delivery')), '', 'slds-hide')}">
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <div class="slds-grid slds-grid_align-spread">
+                                    Deferred Delivery Approval Status :<lightning:outputField fieldName="Approval_Status__c" aura:id="oppApprovalStatusOutput" variant="label-hidden"/>
+                                </div>
+                            </lightning:layoutItem>
+                        </div>
+
+                        <lightning:inputField fieldName="Approval_Status__c" aura:id="oppApprovalStatusInput" class="slds-hide"/>
+                        <lightning:inputField fieldName="Trigger_Approval_Process__c" aura:id="oppTrigApprovalProcessInput" class="slds-hide"/>
+
+                        <lightning:layoutItem size="12">
+                            <lightning:button aura:id="submitForApprovalBtn" onclick="{!c.submitForApproval}" label="Submit for Deferred Delivery Approval" variant="brand" disabled="{!or(empty(v.applicationProductMerchantId), v.isFormReadOnly)}" />
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </lightning:recordEditForm>
+            </div>
+            <!--Deferred Delivery Approval Process Section End-->
+
+        </lightning:accordionSection>
+    </lightning:accordion>
+    <!-- End of Sales Activity section -->
+</aura:component>

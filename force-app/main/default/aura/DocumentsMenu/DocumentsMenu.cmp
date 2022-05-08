@@ -1,0 +1,122 @@
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" controller="DocumentsMenuController"
+    access="global">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<!--<aura:handler event="force:refreshView" name="init" value="{!this}" action="{!c.doInit}" />-->
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="opportunity" type="Opportunity" />
+    <aura:attribute name="documentsList" type="List" />
+    <aura:attribute name="docListColumns" type="List" default="" />
+    <aura:attribute name="realetedPartydocumentsList" type="List" />
+    <aura:attribute name="realetedPartydocListColumns" type="List" default="" />
+    <aura:attribute name="docsSelected" type="String" default="" />
+    <aura:attribute name="displayDocsListFooter" type="boolean" default="false" />
+
+    <force:recordData aura:id="opportunityRecord" recordId="{!v.recordId}" 
+                      targetFields="{!v.opportunity}"
+        layoutType="FULL" />
+	
+    <div class="slds-card_boundary">
+        <lightning:card class="slds-card_boundary">
+
+            <aura:set attribute="title">
+                <div class="slds-box slds-theme_shade ">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-col">
+                            <span>
+                                <lightning:icon iconName="standard:opportunity" size="large" />
+                            </span>
+                        </div>
+                        <div class="slds-grid slds-col slds-size_12-of-12 slds-var-p-left_small">
+                            <div class="slds-col">
+                                <span>
+                                    <div class="slds-grid slds-grid_vertical">
+                                        <div class="slds-col slds-text-heading_small">
+                                            <span>
+                                                Documents Menu
+                                            </span>
+                                        </div>
+                                        <div class="slds-col slds-text-heading_medium">
+                                            <span>{! v.opportunity.Name} </span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div></div>
+            </aura:set>
+        </lightning:card>
+        <div class="x-accordion-heading">
+            <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="documentsMenu">
+                <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+                    <lightning:accordionSection name="documentsMenu" label="Documents Menu" aura:id="documentsMenu">
+                        <div>
+                            <lightning:button aura:id="refreshDocList" type="submit"
+                                label="Refresh" variant="brand"
+                                class="slds-align_absolute-center slds-var-m-top_xx-small"
+                                onclick="{! c.refreshDocumentsList }" />
+                        </div>
+                        <br/>
+                        <!--
+							currently hided selection of documents,once full functioanlity develop make it true
+                       -->
+                        <lightning:datatable data="{! v.documentsList }" columns="{! v.docListColumns }" keyField="Id"
+                            hideCheckboxColumn="true" onrowselection="{!c.UpdateSelectedRows}"
+                            selectedRows="{! v.selectedRows }" />
+                        <aura:if isTrue="{!v.displayDocsListFooter }">
+                            <div class="slds-grid">
+                                <div class="slds-grid slds-col slds-size_2-of-12">{!v.docsSelected}</div>
+                                
+                             <aura:if isTrue="{! not(v.opportunity.RecordTypeName__c == 'Credit_Maintenance') }">
+                                 <div class="slds-grid slds-col slds-size_2-of-12">
+                                    <lightning:button aura:id="sendForSignature" type="submit"
+                                        label="Send For Signature" variant="brand"
+                                        class="slds-align_absolute-center slds-var-m-top_xx-small"
+                                        onclick="{! c.sendForSignature }" />
+                                </div>
+                                </aura:if>    
+                                <div class="slds-grid slds-col slds-size_2-of-12">
+                                    <lightning:button aura:id="clearSelected" type="submit" label="Clear Selected"
+                                        variant="brand" class="slds-align_absolute-center slds-var-m-top_xx-small"
+                                        onclick="{! c.clearSelected }" />
+                                </div>
+                                <aura:if isTrue="{! not(v.opportunity.RecordTypeName__c == 'Credit_Maintenance') }">
+                    
+                                <div class="slds-grid slds-col slds-size_2-of-12">
+                                    <lightning:button aura:id="shareDocuments" type="submit" label="Share"
+                                        variant="brand" class="slds-align_absolute-center slds-var-m-top_xx-small"
+                                        onclick="{! c.shareDocuments }" />
+                                </div>
+                                </aura:if>     
+                            </div>
+                        </aura:if>
+                    </lightning:accordionSection>
+                    </article>
+               
+            </lightning:accordion>
+        </div>
+         <aura:if isTrue="{! not(v.opportunity.RecordTypeName__c == 'Credit_Maintenance') }">     
+      <div class="x-accordion-heading">
+            <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="documentsMenu">
+                <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+                    <lightning:accordionSection name="documentsMenu" label="Documents Menu" aura:id="documentsMenu">
+                        <div >
+                            <lightning:button aura:id="refreshBtnDoc" type="submit"
+                                label="Refresh Documents" variant="brand" 
+                                class="slds-align_absolute-center slds-var-m-top_xx-small "
+                                onclick="{! c.refreshDocuments }" />
+                        </div>
+                        <lightning:datatable data="{! v.realetedPartydocumentsList }" columns="{! v.realetedPartydocListColumns }" keyField="Id"
+                            hideCheckboxColumn="false"  onrowselection="{!c.UpdateSelectedRows}"
+                            selectedRows="{! v.selectedRows }" />
+                       
+                    </lightning:accordionSection>
+                    </article>
+               
+            </lightning:accordion>
+        </div>
+        </aura:if>      
+    </div>
+</aura:component>

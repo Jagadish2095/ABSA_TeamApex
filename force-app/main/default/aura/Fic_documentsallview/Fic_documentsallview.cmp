@@ -1,0 +1,75 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" controller="Fic_Case_DocumentViewerCtrl">
+    <aura:attribute name="Documents" type="List"/>
+    <aura:attribute name="caseId" type="String" default="{!v.recordId}" access="global" />  
+    <aura:attribute name="Editmode" type="boolean" default="false"/>
+    <aura:attribute name="IsAlldocs" type="boolean" default="true"/>
+    <aura:attribute name="isAOLRecordType" type="boolean" default="false"/>
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Yes', 'value': 'true'},
+                                                        {'label': 'No', 'value': 'false'}
+                                                        ]"/>
+    <aura:attribute name="fullFileURL" type="String" default="URL.getSalesforceBaseUrl().toExternalForm()"/>
+    <aura:attribute name="prefixURL" type="String" default="/sfc/servlet.shepherd/version/download/"/>
+    <aura:attribute name="pdfData" type="String" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="c:RefreshPassKYC" action="{!c.doInit}"/>
+    
+     <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+        <thead>
+            <aura:if isTrue="{!v.IsAlldocs}">
+                <tr class="slds-line-height_reset">
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="First Name">Name</div>
+                    </th>
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="last Name">Document Type</div>
+                    </th>
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="Confidence Level">Confidence Level</div>
+                    </th>
+                </tr>
+            </aura:if>
+        </thead>
+        <tbody>
+            <aura:iteration  items="{!v.Documents}" var="doc">
+                <aura:if isTrue="{!v.IsAlldocs}">
+                    <tr class="slds-hint-parent">
+                        <td data-label="File Name">
+                            <div class="slds-truncate" title=" Name">
+                                <a href="javascript:void(0);" onclick="{!c.Clicked}" data-value="{!doc.Id}">
+                                    {!doc.Name}
+                                </a>
+                            </div>
+                        </td>
+                        <td data-label="File Name">
+                            <div class="slds-truncate" title="Document Type">{!doc.Type__c}</div>
+                        </td>
+                        <td data-label="File Name">
+                            <div class="slds-truncate" title="Confidence Level">{!doc.ConfidenceLevel__c}</div>
+                        </td>
+                    </tr>
+                </aura:if>
+                <aura:if isTrue="{!v.Editmode}">
+                    <c:FIC_Case_OrderDocuments documentId="{!doc.Id}" recordId="{!v.caseId}" isAllDocs="{!v.IsAlldocs}" editMode="{!v.Editmode}"/>
+                    <aura:if isTrue="{!v.isAOLRecordType}">
+                        <div class="slds-modal__content slds-p-around--medium" style="height:1000px;">
+                                <c:pdfViewer pdfData="{!v.pdfData}" />
+                       </div>
+                    <!-- <div style="width: 50%; margin: 0 auto; text-align: left">
+                        <lightning:fileCard fileId="{!doc.File_Id__c}"/>
+                    </div>   <img src="{!v.prefixURL + doc.ContentVersionID__c}" width="1000" height="10000"/> -->
+                        <aura:set attribute="else">
+                             <iframe class="slds-m-top_small" style="border: 1px solid;" src="{!'/sfc/servlet.shepherd/version/download/'+doc.ContentVersionID__c}" width="100%" height="1000px;" type="application/pdf"/>
+                        </aura:set>
+                        
+                     </aura:if>
+                </aura:if>
+            </aura:iteration>
+        </tbody>
+    </table>
+</aura:component>

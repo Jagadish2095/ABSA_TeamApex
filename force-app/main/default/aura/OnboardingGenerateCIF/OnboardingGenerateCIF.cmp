@@ -1,0 +1,178 @@
+<!--
+* Lightning Component for Onboarding Generate CIF (Split from Onboarding Casa)
+*
+* @author  Tracy de Bruin : CloudSmiths
+* @version v1.0
+* @since   2020-08-14
+*
+-->
+<aura:component access="global"
+                controller="OnboardingGenerateCIFController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+    <!--Handlers-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <!--Attributes-->
+    <aura:attribute name="documentTypes" type="List" default=""/>
+    <aura:attribute name="showSpinner" type="Boolean" default="true"/>
+    <aura:attribute name="cifopt" type="Boolean" />
+    <aura:attribute name="showSubmitForCasa" type="Boolean" default="true"/> 
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="account" type="Account" default="{sobjectType:'Account'}"/>
+    <aura:attribute name="opportunityRecord" type="Opportunity" default="{sobjectType:'Opportunity'}"/>
+    <aura:attribute name="participantAccountList" type="List"/>
+    <aura:attribute name="tradingAsNameList" type="List"/>
+    <aura:attribute name="activeCasaSections" type="List" default="['casaScreening','casaScreeningResults']" />
+    <aura:attribute name="activeRiskSections" type="List" default="['RiskRating','RiskRatingResults']" />
+    <aura:attribute name="user" type="string" default=""/>
+    <aura:attribute name="operatorCode" type="string" default=""/>
+    <aura:attribute name="abNumber" type="string" default=""/>
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="data" type="List" default="" />
+    <aura:attribute name="siteCode" type="String" />
+    <aura:attribute name="selectedSiteRecord" type="sObject" />
+    <aura:attribute name="searchKeyWord" type="string"/>
+    <aura:attribute name="accRecordId" type="String" />
+    <aura:attribute name="currentUserId" type="String" />
+    <aura:attribute name="cifKey" type="String" default=""/>  
+    <aura:attribute name="record" type="Object"/>
+    <aura:attribute name="accountRecord" type="Object"/>
+    <aura:attribute name="recordError" type="String"/>
+    <aura:attribute name="accountName" type="String" />
+    <aura:attribute name="product" type="String" />
+    <aura:attribute name="respObject" type="object" />
+    <aura:attribute name="docList" type="List" default=""/>
+    
+    <aura:attribute name="showCasaScreen" type="boolean" default="true"/>
+    <aura:attribute name="showRiskButton" type="boolean" default="false"/>
+    <aura:attribute name="showGenerateCIFButton" type="boolean" default="false"/>
+    <aura:attribute name="showRiskResults" type="boolean" default="false"/>
+    <aura:attribute name="showFinishedScreen" type="boolean" default="false"/>
+    <aura:attribute name="hideSubmitButton" type="boolean" default="false"/>
+    <aura:attribute name="accountRecordType" type="String" />
+    <aura:attribute name="oppRecordType" type="String" />
+    <aura:attribute name="casaScreeningStatus" type="String" />
+    
+    <!--New attributes added for W-004683 -->
+    <aura:attribute name="Mandatorydocuments" type="Mandatory_Doc__mdt"/>
+   <aura:attribute name="documentsUploaded" type="Object"/>
+    <aura:attribute name="entitytype" type="List"/>
+    <aura:attribute name="entitytypestring" type="String"/>
+    
+    <aura:attribute name="relatedPartyManDocs" type="String"/>
+    <!-- W-005715 : Anka Ganta : 2020-08-18 -->
+    <aura:attribute name="relPartyInvalidStatusFlag" type="boolean" default="false"/>
+     <aura:attribute name="PrimaryClientMandDocs" type="String"/> <!-- W-005661-->
+    
+    <!--loading spinner start-->
+    <div class="exampleHolder">
+        <lightning:spinner aura:id="mySpinner" class="slds-hide" alternativeText="Loading..." variant="brand" size="large"/>
+    </div>
+    <!-- Loading spinner end--> 
+    
+    <!-- Design Attributes -->
+    <aura:attribute name="flowAccountRecId" type="String" access="global"/>
+    <aura:attribute name="ProcessName" type="String" default=""/>
+    
+    <aura:handler event="c:FraudRiskAppEvent" action="{!c.handleFraudApplicationEvent}"/>
+    
+    <aura:attribute name="opportunityRecord2" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="Case__c,QA_Complex_Approval_Status__c,Complex_Application__c,CheckMandatoryDocuments__c,Source_of_Wealth_Capitalization__c,Comments_on_Explanation_given_for_Source__c"
+                      targetFields="{!v.opportunityRecord2}"
+                      targetError="{!v.recordLoadError}"
+                      />
+	
+    <aura:if isTrue="{!v.opportunityRecord.RecordType.Name != 'Customer Remediation'}">
+        <aura:if  isTrue="{!v.accountRecord.CIF__c == null}" > 
+        <lightning:accordion>
+            <lightning:accordionSection name="GenerateCIF" label="Generate CIF">
+                <!--<aura:if isTrue="{!and(v.showGenerateCIFButton)}" > -->	<!--W-003717-09/01/2020 Manoj - Added extra condition-->
+                <aura:if  isTrue="{!and(v.opportunityRecord.IsClosed == false,  v.accountRecord.CIF__c == null)}" > 
+                        <lightning:input type="checkbox" name="submitCIFUpdate" label="I confirm the above information is correct to Generate CIF"  onchange="{! c.showButtonCIF }"/>
+                    </aura:if>
+                <!--</aura:if> -->
+                <div class="slds-hide" aura:id="CIFresultsDiv">
+                    <lightning:button variant="brand" 
+                                      class="slds-align_absolute-center slds-m-top_xx-large" 
+                                      label="Generate CIF" 
+                                      title="Generate CIF" 
+                                      disabled="{!v.opportunityRecord.Process_Type__c == 'Existing Customer'}"
+                                      onclick="{!c.createCIFHelper}" aura:id="submitButtonCIF"/>
+                </div>
+                <div class="slds-col slds-size_11-of-12 slds-text-heading_large slds-align_absolute-center " >
+                    
+                    <aura:if isTrue="{!v.cifopt}">
+                        <span>
+                            <lightning:icon iconName="action:approval" alternativeText="Approved" />
+                        </span>
+                        <br></br>
+                        <span>
+                            <p style="margin-right:10px;font-size: 19px;font-weight: bold;"><br/>The CIF number has been successfully generated.<br/> {!v.cifKey}</p>
+                        </span>
+                        
+                    </aura:if>
+                </div>
+            </lightning:accordionSection>
+        </lightning:accordion>
+     </aura:if>
+    </aura:if>
+        <!-- W-006976 - Remediate Existing Customer Onboarding -->
+        <aura:if isTrue="{!or(v.opportunityRecord.RecordType.Name == 'Customer Remediation', v.accountRecord.CIF__c != null)}">
+        <lightning:accordion>
+            <lightning:accordionSection name="UpdateCIF" label="Update CIF">
+                <!--<aura:if isTrue="{!and(v.showUpdateCIFButton)}" > -->
+                     <aura:if  isTrue="{!v.opportunityRecord.IsClosed == false}" > 
+                        <lightning:input type="checkbox" name="submitCIF" label="I confirm the above information is correct to Update CIF"  onchange="{! c.showButtonCIF }"/>
+                    </aura:if>
+                <!--</aura:if> -->
+                <div class="slds-hide" aura:id="CIFresultsDivUpdate">
+                    <aura:if isTrue="{!v.opportunityRecord.RecordType.Name == 'Short-Term Insurance'}">
+						<lightning:button variant="brand" 
+                                      class="slds-align_absolute-center slds-m-top_xx-large" 
+                                      label="Update CIF" 
+                                      title="Update CIF" 
+                                      onclick="{!c.updateCIFRemediateHelper}" aura:id="submitButtonCIFUpdate"/> 
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.opportunityRecord.RecordType.Name == 'Product Onboarding'}">
+                                <lightning:button variant="brand" 
+                                        class="slds-align_absolute-center slds-m-top_xx-large" 
+                                        label="Update CIF" 
+                                        title="Update CIF" 
+                                        onclick="{!c.updateCIFRemediateHelper}" aura:id="submitButtonCIFUpdate"/> 
+                                <aura:set attribute="else">
+                                    <lightning:button   variant="brand" 
+                                                        class="slds-align_absolute-center slds-m-top_xx-large" 
+                                                        label="Update CIF" 
+                                                        title="Update CIF" 
+                                                        disabled="{!and(v.opportunityRecord.Process_Type__c != 'Remediate Existing Customer', v.opportunityRecord.Process_Type__c != 'New to Bank Onboarding')}"
+                                                        onclick="{!c.updateCIFRemediateHelper}" aura:id="submitButtonCIFUpdate"/>
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                    
+                    
+                </div>
+                <div class="slds-col slds-size_11-of-12 slds-text-heading_large slds-align_absolute-center " >
+                    
+                    <aura:if isTrue="{!v.cifopt}">
+                        <span>
+                            <lightning:icon iconName="action:approval" alternativeText="Approved" />
+                        </span>
+                        <br></br>
+                        <span>
+                            <p style="margin-right:10px;font-size: 19px;font-weight: bold;"><br/>The CIF update call has been successfully Completed.<br/> {!v.cifKey}</p>
+                        </span>
+                        
+                    </aura:if>
+                </div>
+            </lightning:accordionSection>
+        </lightning:accordion>
+     </aura:if>
+</aura:component>

@@ -1,0 +1,94 @@
+<!--
+* Lightning Component for Merchant Onboarding Trading Address (MerchantOnboardingTradingAddress)
+*
+* @author  Lerato Matenzhe
+* @version v1.0
+* @since   2020-05-08
+*
+-->
+
+<aura:component access="global"
+                controller="MerchantSalesActivityController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+     <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}" />
+
+	<!-- Parent Cmp Attribute Declaration -->
+    <aura:attribute name="cmpFormStatus" type="String" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="applicationId" type="String" default="" />
+	<aura:attribute name="isShowSuccessToast" type="Boolean" />
+	<aura:attribute name="errorMessage" type="String" default=""/>
+    <aura:attribute name="activeSections" type="List" default="['TradingAddress']" />
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['tradingAddressField']" />
+    <aura:attribute name="maxRowSelection" type="Integer" default="1"/>
+    <aura:attribute name="preSelectedRows" type="List" default="[]"/>
+    <aura:attribute name="selectedRows" type="List" default="[]"/>
+    <aura:attribute name="opportunityRecord" type="Object" />
+
+    <!-- Method Declaration -->
+    <aura:method name="saveFormMethod" action="{!c.executeSaveFormMethod}" />
+
+    <force:recordData aura:id="recordViewer"
+                      fields="AccountId"
+                      recordId="{!v.recordId}"
+                      targetFields ="{!v.opportunityRecord}"
+                      mode="VIEW"/>
+
+    <lightning:recordEditForm aura:id="merchantOnboardTradingForm"
+                              objectApiName="Application__c"
+                              recordId="{!v.applicationId}"
+                              onload="{!c.handleLoad}"
+                              onsubmit="{!c.handleSubmit}"
+                              onsuccess="{!c.handleSuccess}"
+                              onerror="{!c.handleError}">
+
+    <lightning:accordion activeSectionName="{!v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="TradingAddress" label="Trading Address" >
+
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="recordError">
+                    <br/>
+                    <h2 class="slds-section__title slds-align_absolute-left" style="color:red">{!v.errorMessage}</h2>
+                    <br/>
+                </div>
+            </aura:if>
+
+            <lightning:layout multipleRows="true">
+
+                <lightning:inputField  aura:id="tradingAddressField" fieldName="Trading_Address__c" class="slds-hide"/>
+
+                <lightning:layoutItem padding="around-small" size="12">
+                    <aura:if isTrue="{!not(empty(v.opportunityRecord.AccountId))}">
+                        <c:OnboardingClientBusAdd aura:id="addressCmp" accRecId="{!v.opportunityRecord.AccountId}" isFormReadOnly="{!v.isFormReadOnly}" maxRowSelection="{!v.maxRowSelection}" preSelectedRows="{!v.preSelectedRows}" selectedRows="{!v.selectedRows}" />
+                        <aura:set attribute="else">
+                            <div class="recordError">
+                                <br/>
+                                <h2 class="slds-section__title slds-align_absolute-left" style="color:red">No account linked to the opportunity</h2>
+                                <br/>
+                            </div>
+                        </aura:set>
+                    </aura:if>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="12">
+                    <lightning:button aura:id="saveBtn" type="submit" label="Save" variant="brand" disabled="{!or(or(empty(v.applicationId), empty(v.opportunityRecord.AccountId)),v.isFormReadOnly)}"  class="slds-align_absolute-center slds-m-top_xx-large" />
+                </lightning:layoutItem>
+
+                <!--Document upload section-->
+                <lightning:layoutItem padding="around-small" size="6">
+                    <c:merchantOnboardingWebsiteURL recordId="{!v.recordId}" fileType="Proof of Trading Address"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <c:merchantOnboardingWebsiteURL recordId="{!v.recordId}" fileType="ABSA 3121 - Physical Site visit conducted for Verification Purposes Confirmation"/>
+                </lightning:layoutItem>
+
+            </lightning:layout>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </lightning:recordEditForm>
+</aura:component>

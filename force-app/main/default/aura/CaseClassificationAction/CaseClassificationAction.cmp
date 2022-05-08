@@ -1,0 +1,122 @@
+<!--
+* Type ahead functionallity and auto classification for Cases
+*
+* @author  Rudolf Niehaus : CloudSmiths
+* @since   2018-06-14
+-->
+<aura:component implements="flexipage:availableForRecordHome,force:lightningQuickAction,force:hasRecordId" access="global" controller="CaseClassificationActionExt">
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="change" value="{!v.serviceTypeId}" action="{!c.reLoad}"/>
+    <aura:handler name="change" value="{!v.productId}" action="{!c.getServiceTypesByProduct}"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="serviceGroupId" type="String" />
+    <aura:attribute name="objTypes" type="Service_Type__c" />
+    <aura:attribute name="isServiceRequest" type="Boolean" default="false"/>
+    <aura:attribute name="isClassifyServiceGroup" type="Boolean" default="false"/>
+    <aura:attribute name="serviceGroupRecord" type="Service_Group__c" />
+    <aura:attribute name="serviceTypeId" type="String" />
+    <aura:attribute name="productId" type="String" />
+    <aura:attribute name="serviceTypeOptions" type="List[]"/> 
+    <aura:attribute name="complimentServiceTypeOptions" type="List[]"/>
+    <aura:attribute name="productOptions" type="List[]"/> 
+    <aura:attribute name="caseRecordType" type="String"/> 
+    <!-- Poulami Added to store the Service Group Name for NBFS Service Group -->
+    <aura:attribute name="serviceGroupName" type="String"/>
+    <aura:attribute name="isNBFSServiceGroup" type="String" default="false" />
+    <!--Mbuyiseni Mbhokane added below attribute -->
+    <aura:attribute name="showSubClassification" type="String" default="false" />
+    
+    <!--Simangaliso Mathenjwa-->
+    <aura:attribute name="serviceGroupLookupCondition" type="String" default=""/>
+    <aura:attribute name="customServiceGroupRecordSearch" type="Service_Group__c" />
+    <aura:attribute name="customServiceGroupSearchId" type="String" />
+    <aura:attribute name="serviceGroupSearchLabel" type="String" default="Service Group Search" />
+    <aura:attribute name="serviceGroupSearchPlaceHolder" type="String" default="Search Service Groups... " />
+    <aura:handler name="change" value="{!v.customServiceGroupSearchId}" action="{!c.getServiceGroup}"/>
+
+    <!--Sub Type Search attributes-->
+    <aura:attribute name="subTypeSearchPlaceHolder" type="String" default="Search Sub Types... " />
+    <aura:attribute name="subTypeSearchLabel" type="String" default="Sub Type Search" />
+    <aura:attribute name="subTypeSearchGroupSearchId" type="String" />
+    <aura:attribute name="subTypeSearchRecord" type="Service_Sub_Type__c" />
+    <aura:attribute name="subTypeSearchLookupCondition" type="String" default=""/>
+    <!--Simangaliso Mathenjwa-->
+
+    
+    <center style="z-index:99">
+       <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    <lightning:recordEditForm aura:id="iUpdateCase" objectApiName="Case" recordId="{!v.recordId}" >
+         <!-- Poulami Added to display the fields for NBFS Service Group -->
+        <!-- <aura:renderIf isTrue="{!v.caseRecordType == 'NBFS Dispute Resolution'}">
+             <lightning:input aura:id="iNBFSProduct" label="Product / Channel Search" value="{!v.serviceGroupName}" disabled="true"/>
+             <label class="slds-form-element__label" for="iType">Service Type</label>
+             <lightning:inputField fieldName="Type" aura:id="iType" variant="label-hidden" onchange="{!c.reLoad}" class="customRequired"/>
+             <lightning:inputField fieldName="Secondary_Service_Sub_Type__c" aura:id="iSubType" class="customRequired"/>
+         <aura:set attribute="else">-->
+        <!-- Only display Service Group field if Orgiginal Service Group is CEO -->
+        <aura:If isTrue="{!v.isClassifyServiceGroup}">
+        	<!--<lightning:inputField fieldName="Service_Group_Search__c" aura:id="serviceGroupLookupSearch" onchange="{!c.getServiceGroup}"/> -->
+            
+            <c:LookUpField lookupSearchData="ServiceGroupLookupSearch" lookupSearchCondition="{!v.serviceGroupLookupCondition}" icon_name="custom:custom84" selectedRecord ="{!v.customServiceGroupRecordSearch}" recordIdString="{!v.customServiceGroupSearchId}" aura:id="customLookAuraId" label="{!v.serviceGroupSearchLabel}" placeHolder="{!v.serviceGroupSearchPlaceHolder}"/>
+        </aura:If>
+        <!--<lightning:inputField fieldName="Product_Search__c" aura:id="searchProduct" onchange="{!c.getServiceTypesByProduct}" />-->
+
+        <aura:renderIf isTrue="{!or(v.caseRecordType == 'NBFS Dispute Resolution',v.isNBFSServiceGroup)}"> 
+            <lightning:input aura:id="iNBFSProduct" label="Product / Channel Search" value="{!v.serviceGroupName}" disabled="true"/> 
+            <label class="slds-form-element__label" for="iType">Service Type</label>
+            <lightning:inputField fieldName="Type" aura:id="iType" variant="label-hidden" onchange="{!c.reLoad}" class="customRequired"/>
+            <lightning:inputField fieldName="Secondary_Service_Sub_Type__c" aura:id="iSubType" class="customRequired"/>
+            <aura:set attribute="else">
+                
+                <!--Short term changes -->
+                <aura:If isTrue="{!v.caseRecordType == 'Short Term Complaint'}">
+                    <lightning:input aura:id="iNBFSProduct" label="Product / Channel Search" value="{!v.serviceGroupName}" disabled="true"/> 
+                    <label class="slds-form-element__label" for="stype">Service Type</label>
+                    <lightning:inputField fieldName="Type" aura:id="stype" variant="label-hidden" onchange="{!c.reLoad}" class="customRequired"/>
+                    <lightning:inputField fieldName="Secondary_Service_Sub_Type__c" aura:id="sSubType" class="customRequired"/>
+                    <lightning:inputField fieldName="Product_Area__c" aura:id="sproduct"/>
+                    <lightning:inputField fieldName="Sub_Product_Area__c" aura:id="ssubproduct"/>
+                    <lightning:inputField fieldName="Classification__c" aura:id="sticlassification" disabled = "true"/>
+                    <aura:If isTrue = "{!v.showSubClassification}">
+                        <lightning:inputField fieldName="Sub_Classification__c" aura:id="subclassification"/>
+                    </aura:If>
+                    <aura:set attribute="else">
+                        <c:strike_picklist value="{!v.productId}" errorMessage="Invalid input" searchable="true" label="Product / Channel Search">
+                            <aura:iteration  items="{!v.productOptions}" var="selectOption" indexVar="index">
+                                <c:strike_option label="{!selectOption.name}" value="{!selectOption.id}" />
+                            </aura:iteration>
+                        </c:strike_picklist>
+                        <c:strike_picklist value="{!v.serviceTypeId}" errorMessage="Invalid input" searchable="true" label="Service Type Search">
+                            <aura:renderIf isTrue="{!v.caseRecordType == 'Compliment'}">
+                                <aura:iteration  items="{!v.complimentServiceTypeOptions}" var="selectOption" indexVar="index">
+                                    <c:strike_option label="{!selectOption.name}" value="{!selectOption.id}" />
+                                </aura:iteration>
+                                <aura:set attribute="else">
+                            <aura:iteration  items="{!v.serviceTypeOptions}" var="selectOption" indexVar="index">
+                                <c:strike_option label="{!selectOption.name}" value="{!selectOption.id}" />
+                            </aura:iteration>
+                        </aura:set>
+                    </aura:renderIf>
+                        </c:strike_picklist>
+                        <aura:if isTrue="{!or(or(v.caseRecordType =='Complaint', v.caseRecordType =='ATM'),v.caseRecordType =='Life Complaint')}">
+                            <c:LookUpField lookupSearchData="SubTypeSearchQuery" lookupSearchCondition="{!v.subTypeSearchLookupCondition}" icon_name="custom:custom84" selectedRecord ="{!v.subTypeSearchRecord}" recordIdString="{!v.subTypeSearchGroupSearchId}" aura:id="customLookAuraId2" label="{!v.subTypeSearchLabel}" placeHolder="{!v.subTypeSearchPlaceHolder}"/>
+                        </aura:if>
+                        <lightning:inputField fieldName="Subtype__c" aura:id="iSecond" disabled="true"/>
+                    </aura:set>
+                </aura:If>
+            </aura:set>
+        </aura:renderIf>
+        
+       <!-- </aura:set>
+        </aura:renderIf>-->
+        <!--<aura:If isTrue="{!not(v.caseRecordType == 'Short Term Complaint')}">-->
+            <lightning:inputField fieldName="Type__c" aura:id="iPrimary" disabled="true"/>
+            <lightning:inputField fieldName="Product__c" aura:id="iProduct" disabled="true"/>
+       <!-- </aura:If>-->
+       <br/>
+        <lightning:button variant="neutral" aura:id="cUpdate" label="Update" onclick="{!c.onUpdate}" />
+    </lightning:recordEditForm>
+</aura:component>

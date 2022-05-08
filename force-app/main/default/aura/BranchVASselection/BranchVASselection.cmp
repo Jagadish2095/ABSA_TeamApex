@@ -1,0 +1,204 @@
+<!--
+* Lightning Component for VAS Products
+*
+* @author  André Pietersen : ABSA (IQ Business)
+* @version v1.0
+* @since   2020-11-25
+*
+-->
+
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global"
+                controller="BranchVASselectionController">
+<aura:handler name="init" value="{! this }" action="{! c.init }" />
+<aura:handler name="vasFulfilmentEvent" event="c:BranchVASfulfilmentIndEvent" action="{!c.handlevasFulfilmentEvent}"/>
+<aura:attribute name="showSpinner" type="boolean" default="false"/>
+<aura:attribute name="opportunityId" type="String" />
+<aura:attribute name="recordId" type="String" />
+<aura:attribute name="CCApplicationNumber" type="String" />
+<aura:attribute name="hasMarketingList1" type="Boolean" default="False" />
+<aura:attribute name="hasMarketingList2" type="Boolean" default="False" />
+<aura:attribute name="consentMap" type="Map"/>
+<aura:attribute name="consentMap2" type="Map"/>
+<aura:attribute name="cons" type="Contact" default="{'sobjectType':'Contact',
+                                                    'PicklistValue': ''}"/>
+<aura:attribute name="cons2" type="Contact" default="{'sobjectType':'Contact',
+                                                    'PicklistValue': ''}"/>
+
+<aura:attribute name="qualifyFutureAnswerIsYes" type="Boolean" Default="false" />
+<aura:attribute name="newProductsAnswerIsNo" type="Boolean" Default="false" />
+<aura:attribute name="newProductsValue" type="string" Default = ""/>
+<aura:attribute name="newProductsOption" type="List" default = "[
+                                                                {'label': 'Yes', 'value': 'yes'},
+                                                                {'label': 'No', 'value': 'no'}
+                                                                ]"/>
+<aura:attribute name="qualifyFutureValue" type="string" Default = ""/>
+<aura:attribute name="qualifyFutureOption" type="List" default = "[
+                                                                    {'label': 'Yes', 'value': 'yes'},
+                                                                    {'label': 'No', 'value': 'no'}
+                                                                    ]"/>
+<aura:attribute name="digitalBankingInd" type="String" />
+<aura:attribute name="notifyMeInd" type="String" />
+<aura:attribute name="eStatementInd" type="String" />
+<aura:attribute name="rewardsInd" type="String" />
+<aura:attribute name="isOpen" type="boolean" default="false" />
+<aura:attribute name="emailAddress" type="String" />
+<aura:attribute name="cellphone" type="String" />
+<aura:attribute name="alternativeNumber" type="String" />
+<aura:attribute name="initialAnswerId" type="String" default='' />
+<aura:attribute name="productFamily" type="String" default="Cheque" />
+<aura:attribute name="internetBankingUserIdNumbers" type="String" default="" />
+<aura:attribute name="productCode" type="String" />
+<aura:attribute name="processType" type="String" />
+
+
+<aura:registerEvent name="vasFulfilmentEvent" type="c:BranchVASfulfilmentIndEvent"/>
+<aura:handler name="setUpSelectedUsersEvent" event="c:vasDigitalBankingSetUpEvent" action="{!c.handleSetUpSelectedUsersEvent}"/>
+<!-- Loading Spinner-->
+<aura:if isTrue="{!v.showSpinner}">
+    <center style="z-index:99">
+    <lightning:spinner aura:id="TheSpinner" variant="brand" size="large" />
+    </center>
+</aura:if>
+<lightning:layout multipleRows="true">
+    <lightning:layoutItem padding="horizontal-medium" class='overflow  slds-size_6-of-12' >
+        <lightning:layout>
+            <lightning:layoutitem size="12">
+                <div >
+                    <c:BranchMessage mediaBody='Customer&#8217;s VAS' iconName='standard:account' mediaTheme='' mediaBodyClass='slds-text-heading_small slds-var-p-vertical_medium' />
+                </div>
+            </lightning:layoutitem>
+        </lightning:layout>        
+        <!--VAS items here-->
+        <aura:if isTrue="{!or(v.initialAnswerId != 'SAVINGS_OR_INVESTMENT')}">
+            <c:BranchVasReward recordId="{!v.recordId}" opportunityId="{!v.opportunityId}" CCApplicationNumber="{!v.CCApplicationNumber}" />
+            <c:VAScellphoneBanking />
+        </aura:if>
+          <!-- Hloni Matsoso. Remove for voice TB. W-14318 -->
+          <aura:if isTrue="{!(v.processType !='Voice Sales Product Onboarding' )}">
+        <c:VASdigitalBanking
+            opportunityId='{!v.opportunityId}'
+            initialAnswerId="{!v.initialAnswerId}"
+            productCode="{!v.productCode}"/>
+        </aura:if>
+        <c:VASNotifyMe opportunityId='{!v.opportunityId}' productFamily='{!v.productFamily}'/>
+        <c:VASEStatementDelivery opportunityId='{!v.opportunityId}' productFamily='{!v.productFamily}'/>
+        <aura:if isTrue="{!or(v.initialAnswerId != 'SAVINGS_OR_INVESTMENT')}">
+        <lightning:layout>
+            <lightning:button class="slds-float_left slds-m-top_medium"
+                label="Edit Contact Details"
+                iconName="utility:add"
+                iconPosition="right"
+                onclick="{! c.editContactDetails }" />
+        </lightning:layout>
+    </aura:if>
+        <!--Marketing Consent-->
+        <aura:if isTrue="{!or(v.initialAnswerId != 'SAVINGS_OR_INVESTMENT')}">
+        <aura:if isTrue="{!and((v.hasMarketingList1), (v.hasMarketingList2))}">
+            <lightning:layout>
+                <lightning:layoutitem size="12">
+                    <div id="{! globalId + '_newProductsRadioGroup' }" class="slds-var-p-around_x-small" >
+                        <lightning:radioGroup aura:id="newProductsRadioGroup"
+                                                type="radio"
+                                                name="newProducts"
+                                                label="Be the first to hear about exciting new products, upgrade opportunities,
+                                                        fantastic offers and even more Rewards from Absa Group. Interested?"
+                                                options="{! v.newProductsOption }"
+                                                value="{! v.newProductsValue }"
+                                                onchange="{! c.handleNewProductsGroup }"
+                                                required="true"/>
+                        <aura:if isTrue="{!v.newProductsAnswerIsNo}">
+                            <lightning:layoutItem size="3">
+                                <div id="{! globalId + '_AnswerNoCheckBoxGroup' }" class="slds-var-p-around_x-small">
+                                    <lightning:checkboxGroup aura:id="AnswerNoCheckBoxGroup"
+                                                                name="AnswerNoCheckBox"
+                                                                label="Are you sure? You can choose just how you hear about our offers"
+                                                                options="{!v.consentMap2}"
+                                                                value="{!v.cons.PicklistValue}"
+                                                                />
+                                </div>
+                            </lightning:layoutItem>
+                        </aura:if>
+                    </div>
+                </lightning:layoutitem>
+            </lightning:layout>
+            <lightning:layout>
+                <lightning:layoutitem size="12">
+                    <div id="{! globalId + '_qualifyFutureRadioGroup' }" class="slds-var-p-around_x-small" >
+                        <lightning:radioGroup aura:id="qualifyFutureRadioGroup"
+                                                type="radio"
+                                                name="qualifyFuture"
+                                                label="You may qualify for future loans and limit increases from Absa Group. Would you like to hear about these?"
+                                                options="{! v.qualifyFutureOption }"
+                                                value="{! v.qualifyFutureValue }"
+                                                onchange="{! c.handleQualifyFutureGroup }"
+                                                required="true"/>
+                        <aura:if isTrue="{!v.qualifyFutureAnswerIsYes}">
+                            <lightning:layoutItem size="3">
+                                <div id="{! globalId + '_AnswerYesCheckBoxGroup' }" class="slds-var-p-around_x-small">
+                                    <lightning:checkboxGroup aura:id="AnswerYesCheckBoxGroup"
+                                                                name="AnswerYesCheckBox"
+                                                                label="Please contact me via:"
+                                                                options="{!v.consentMap}"
+                                                                value="{!v.cons2.PicklistValue}"
+                                                                onchange="{!c.onCheck}"
+                                                                />
+                                </div>
+                            </lightning:layoutItem>
+                        </aura:if>
+                    </div>
+                </lightning:layoutitem>
+            </lightning:layout>
+        </aura:if>
+    </aura:if>
+    </lightning:layoutItem>
+    <aura:if isTrue="{!v.isOpen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+          aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+          <div class="slds-modal__container">
+            <div class="slds-modal__header">
+              <h2 class="title slds-text-heading--medium">Contact Details</h2>
+            </div>
+            <div class="slds-modal__content slds-p-around--medium">
+              <lightning:layout multipleRows="true">
+                <lightning:layoutitem padding="around-small" flexibility="auto" size="12">
+                  <lightning:input label="Email Address"
+                    aura:id="emailAddress"
+                    value="{!v.emailAddress}"
+                    type="email" />
+                </lightning:layoutitem>
+                <lightning:layoutitem padding="around-small" flexibility="auto" size="12">
+                  <lightning:input label="Cellphone Number"
+                    aura:id="cellphone"
+                    value="{!v.cellphone}" />
+                </lightning:layoutitem>
+                <lightning:layoutitem padding="around-small" flexibility="auto" size="12">
+                  <lightning:input label="Alternative Number"
+                    aura:id="alternativeNumber"
+                    value="{!v.alternativeNumber}" />
+                </lightning:layoutitem>
+              </lightning:layout>
+              <lightning:layout horizontalAlign="center">
+                <lightning:layoutitem padding="around-small">
+                  <lightning:button label="Save" variant="brand" onclick="{!c.saveContactDetails}" />
+                </lightning:layoutitem>
+                <lightning:layoutitem padding="around-small">
+                  <lightning:button label="Cancel" variant="brand" onclick="{!c.cancelContactEdit}" />
+                </lightning:layoutitem>
+              </lightning:layout>
+            </div>
+          </div>
+        </section>
+    </aura:if>
+    <!--Load navigation after init-->
+    <aura:if isTrue="{!and((v.hasMarketingList1), (v.hasMarketingList2))}">
+        <lightning:layoutItem padding="horizontal-small" size="12">
+                <div>
+                    <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                        availableActions="{! v.availableActions }"
+                                        navigateFlowEvent="{! c.handleNavigate }"/>
+                </div>
+        </lightning:layoutItem>
+    </aura:if>
+    </lightning:layout>
+</aura:component>

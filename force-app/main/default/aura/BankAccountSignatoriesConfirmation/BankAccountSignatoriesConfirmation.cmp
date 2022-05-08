@@ -1,0 +1,144 @@
+<aura:component access="global"  Controller="BankAccSignConfirmController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:isUrlAddressable"  
+                >
+    
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    
+    <!--Account Selection Attribute -->
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="prodTypesList" type="List" />
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    <aura:attribute name="accNumList" type="List" />
+    <aura:attribute name="AccountName" type="String"  />
+    <aura:attribute name="AccountType" type="String" />
+    <aura:attribute name="selectedAccountNumber" type="String" default="4048017641"  /> <!--Need to Remove default default="4048017641" -->
+    <aura:attribute name="noofSignatories" type="String"  />
+    <aura:attribute name="transactionData" type="List" />
+    <aura:attribute name="templateName" type="String" default="ABSA 6994 - Bank Account Signatories Confirmation" />
+    <aura:attribute name="caseRecordId" type="String" access="global"/>
+    
+    <!-- Table Attribute -->
+    <aura:attribute name="data" type="Object" access="public"/>
+    <aura:attribute name="columns" type="List" access="public"/>
+    
+    
+    <!-- Flow Attribute -->
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" access="global"/>
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"  />
+    
+    <aura:attribute name="IsSpinner" type="Boolean"/>
+      <aura:if isTrue="{!v.IsSpinner}">
+       <lightning:spinner variant="brand"  size="large" />
+      </aura:if>
+    
+    <center style="z-index:999">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    <lightning:layout multipleRows="true">     
+        <!--Product type selected-->
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:input type="text"  class="select-auto-width" aura:id="myProductselection" 
+                             disabled="true" label="Select the Product Type" value="{!v.selectedProductValue}"></lightning:input>
+            
+        </lightning:layoutItem>   
+        <!-- Account Number Selected -->
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:input type="text"  value="{!v.selectedAccountNumberToFlow}" class="select-auto-width" aura:id="myAccountselection" 
+                             disabled="true" label="Select the Account"></lightning:input>
+            
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+    <lightning:layout multipleRows="true">
+        
+        <!--lightning:layoutItem padding="around-small" size="6" >
+            <B> Account Name :  </B><br />   
+            <ui:outputText value="{!v.AccountName}"/>
+        </lightning:layoutItem -->
+        
+        <lightning:layoutItem padding="around-small" size="6" >
+            <B> Account Type : </B><br />   
+            <ui:outputText value="{!v.selectedProductValue}"/>
+        </lightning:layoutItem>
+        
+        <lightning:layoutItem padding="around-small" size="6" >
+            <B> Account Number :  </B><br />   
+            <ui:outputText value="{!v.selectedAccountNumberToFlow}"/>
+        </lightning:layoutItem>   
+        
+        <lightning:layoutItem padding="around-small" size="6" >
+            <B> No. of Signatories required to operate on the account  : </B><br />   
+            <ui:outputText value="{!v.noofSignatories}"/>
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+    <!-- DataTable to show Signatories List  
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="around-small" >
+            <lightning:datatable
+                                 data="{!v.data}"
+                                 columns="{!v.columns}"
+                                 keyField="Id"
+                                 aura:id="SignatoriesconfirmationTable"
+                                 hideCheckboxColumn="true"
+                                 />
+            
+        </lightning:layoutItem>
+    </lightning:layout >
+    -->
+    
+    <!--Datatable for displaying Bank Account Signatories List -->
+    <div class="slds-table--header-fixed_container">
+        
+        <div class="slds-scrollable" style="width:100%;">
+            
+            <table class="slds-table slds-table_bordered slds-table--header-fixed">
+                <thead>
+                    <tr class="slds-text-title--caps">
+                        <th scope="col">
+                            <div class="slds-truncate">Number</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate">Name of Signatory</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate">Identity Type</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate">Identity Number</div>
+                        </th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.transactionData}"  var="rec" indexVar="index">
+                        <tr>
+                            <td scope="row">
+                                <div class="slds-truncate" >{!index +1}</div>
+                            </td>
+                            <td scope="row">
+                                <div class="slds-truncate" >{!rec.name}</div>
+                            </td>
+                            <td scope="row">
+                                <div class="slds-truncate" >{!rec.idType}</div>
+                            </td>
+                            <td scope="row">
+                                <div class="slds-truncate" >{!rec.idNbr}</div>
+                            </td>
+                            
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="around-small" size="4" >
+            <lightning:input aura:id="generateDoc" type="checkbox"  label="Attach Signatories"  onchange="{!c.generateDoc}"/>
+        </lightning:layoutItem> 
+    </lightning:layout>
+    
+</aura:component>

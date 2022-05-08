@@ -1,0 +1,268 @@
+<!--
+*@description Lightning Component for LDP Terms of Business
+*@author  Almas Aleem : Absa
+*@version v1.0
+*@since   2021-06-01
+
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" 
+                access="global"  controller="ProductTermsOfBusinessController">
+ <!-- Event Handler Decleration -->
+    
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />  
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <!-- Attribute Decleration --> 
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="appProdTobList" type="List" />
+  	<aura:attribute name="fieldWrapList" type="Object[]" />
+    <aura:attribute name="sanctionView" type="Boolean" default="false" />
+    <aura:attribute name="isDecisionMade" type="Boolean" default="true" />
+    <aura:attribute name="showDecline" type="Boolean" default="false" />
+    <aura:attribute name="acceptView" type="Boolean" default="false" />
+    <aura:attribute name="appTOB" type="Object" />
+    <aura:attribute name="recordUiCache" type="Object" />
+    <aura:attribute name="adjustedRequestedError" type="Boolean" default="false" />
+    <aura:attribute name="showApprove" type="Boolean" default="false" />
+     <!--Changes for approval sanctioner-->
+    <aura:attribute name="record" type="Object"
+                    description="The record object to be displayed"/>
+    <aura:attribute name="simpleRecord" type="Object"
+                    description="A simplified view record object to be displayed"/>
+    <aura:attribute name="recordError" type="String"
+                    description="An error message bound to force:recordData"/>
+    <force:recordData aura:id="record"
+                      fields="Id,Approval_Owner__c"
+                      recordId="{!v.recordId}"
+                      targetError="{!v.recordError}"
+                      targetRecord="{!v.record}"
+                      targetFields ="{!v.simpleRecord}"
+                      mode="VIEW"/>
+
+
+	 <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+ <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+
+    
+<!-- UI Section -->
+      <aura:iteration items="{!v.appProdTobList}" var="prodrec" >
+        <!-- Product Details -->
+        <lightning:accordion aura:id="accordion">
+            
+            <lightning:accordionSection name="productinfo" label="{!prodrec.appProductLabel}">
+     			<lightning:layout multipleRows="true" > 
+                     <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Bank Guarantee Account Number</p>
+                            <lightning:formattedText value="{!prodrec.LDPAccountNumber}"/>                   
+                        </lightning:layoutItem>
+							
+						<lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Bank Guarantee Unique ID</p>
+                            <!--<lightning:formattedText value="{!prodrec.ProductType}"/>    -->                   
+                        </lightning:layoutItem>
+                    
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <p>Maximum NCA Rate Type</p>
+                        <lightning:formattedText value="{!prodrec.MaximumNCARateType}" />
+                    </lightning:layoutItem>
+                   
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <p>NCA Appplicable</p>
+                        <lightning:formattedText value="{!prodrec.NCAAppplicable}"/>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <p>Agreement Category</p>
+                        <lightning:formattedText value="{!prodrec.AgreementCategory}" />
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <p>Maximum NCA Rate</p>
+                        <lightning:formattedText value="{!prodrec.MaximumNCARate}" />
+                    </lightning:layoutItem>
+                    <!--Added for W:013202 -->
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <p>NCA Quote Req</p>
+                        <lightning:formattedText value="{!prodrec.NCAQuoteReq}" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+                
+                 <!-- Terms Of Business--> 
+                <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+                                                            font-style: normal !important;
+                                                            font-size: 17px !important;
+                                                            text-align: left !important;
+                                                            background-color: rgb(240,235,235) !important;
+                                                            margin:4px !important;">
+                    
+                    <div class="slds-col">Terms Of Business</div>
+                    
+                </div>
+                 <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+                                                            font-style: normal !important;
+                                                            font-size: 17px !important;
+                                                            text-align: left !important;
+                                                            background-color: rgb(240,235,235) !important;
+                                                            margin:4px !important;">
+                    <div class="slds-col" style="width:350px !important;">Description</div> 
+                    <div class="slds-col"  style="width:350px !important;">Existing</div> 
+                    <div class="slds-col"  style="width:350px !important;" >Requested</div>
+                    <div class="slds-col" style="width:350px !important;">Offered</div> 
+                    <div class="slds-col" style="width:350px !important;">Final </div> 
+                     <aura:if isTrue="{!v.sanctionView}">
+                    <div class="slds-col" style="width:350px !important;">Adjusted </div>
+                    </aura:if>
+                    
+                    
+                </div>  
+                  <!-- tob edition-->
+                
+                <aura:iteration items="{!prodrec.TOBList}" var="tobrec" >
+  				<lightning:recordEditForm aura:id="tobEdit"  recordId="{!tobrec.Id}" objectApiName="Terms_Of_Business__c" onload="{!c.onLoad}">
+                        <div class="slds-grid slds-gutters marginclass">
+                            <div class="slds-col" style="width:350px !important">
+                                <lightning:inputField  fieldName="Tob_Description__c" variant="label-hidden" readonly="true"/>
+                            </div>
+                            <div class="slds-col inputVal"> 
+                                <lightning:inputField fieldName="Existing_Account__c" aura:id="existValue" variant="label-hidden" readonly="true" />
+                            </div>
+                            <div class="slds-col inputVal">
+                                <lightning:inputField fieldName="Requested__c" aura:id="requestedValue" variant="label-hidden" readonly="true" />    
+                            </div>
+                            <div class="slds-col inputVal">                             
+                                <lightning:inputField fieldName="Offered_by_Powercurve__c" aura:id="powercurveValue" variant="label-hidden" readonly="true" />
+                            </div>
+                            <div class="slds-col inputVal">
+                                <lightning:inputField fieldName="Final_Offered__c" aura:id="finalofferedValue" variant="label-hidden" readonly="true" />    
+                            </div>
+                            
+                             <!--<aura:if isTrue="{ ! tobrec.Tob_Description__c == 'Limit' } {! not(tobrec.Tob_Description__c == 'Limit')}">-->
+                            <!--<aura:if isTrue="{!v.sanctionView}">-->
+                            <!--<aura:if isTrue="{ ! (tobrec.Tob_Description__c == 'Limit') }">-->
+                            <aura:if isTrue="{! and(v.sanctionView == true,tobrec.Tob_Description__c == 'Limit') }">
+                               <div class="slds-col inputVal">
+                    			 <lightning:inputField fieldName="Adjusted_Number__c" aura:id="AdjustedValue" variant="label-hidden" onchange="{!c.checkValidation}" />
+                                  
+                                 </div>
+                                   <aura:set attribute="else">
+                                    <div class="slds-col inputVal">
+                    			 		<lightning:inputField fieldName="Adjusted_by_Sanctioner__c" aura:id="AdjustedValue1" variant="label-hidden" readonly="true" />
+                                 
+                                 </div>
+                                    </aura:set> 
+                    		</aura:if>
+                        </div>
+
+                    </lightning:recordEditForm>
+                
+                </aura:iteration>
+            </lightning:accordionSection>
+            <!-- decision,History Component for sanctioner's view added for -->
+        <aura:if isTrue="{!v.sanctionView}">
+            
+             <lightning:accordionSection name="finaldecision" label="Final Decision">
+                
+                
+                <!-- Approve Product Button-->
+                <lightning:button  type="submit" name="ShowApprove" label="Approved" aura:id="Approvebutton" onclick="{!c.showDecision}" >
+                    <lightning:icon iconName="action:approval" alternativeText="Approved" title="Approved"  size="large" class="backColor"/>
+                </lightning:button> 
+                <!-- Decline Product Button--> 
+                <lightning:button  type="submit" name="ShowDecline" label="Decline" aura:id="decisionbutton" onclick="{!c.showDecision}">
+                    <lightning:icon iconName="action:close" alternativeText="Decline Application" title="Decline"  size="large"  />
+                </lightning:button>
+                
+                <!-- Approve Product -->
+                <aura:if isTrue="{!v.showApprove}">
+                    <lightning:recordEditForm aura:id="productEdit"  recordId="{!prodrec.appProdId}" objectApiName="Application_Product__c" onsuccess="{!c.handleSuccess}" >
+                        <lightning:inputField fieldName="Product_Status__c" variant="label-hidden" value="Accepted" hidden="true" />
+                        <lightning:inputField fieldName="Final_Decision__c" variant="label-hidden" value="Accepted" hidden="true" />
+                     	<lightning:inputField fieldName="Is_Sanctioning_Decision__c" variant="label-hidden" value="{!v.isDecisionMade}" hidden="true" />
+                  
+                        
+                        <lightning:layout multipleRows="true" > 
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <p>Reason</p> <lightning:inputfield aura:id="approveReason" fieldName="Accept_Decision_List__c" variant="label-hidden" /> 
+                                
+                            </lightning:layoutItem>   
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <p>Comment</p> 
+                                <lightning:inputfield aura:id="approveComment" fieldName="Approve_Comment__c" variant="label-hidden" /> 
+                                
+                            </lightning:layoutItem>   
+                            <lightning:layoutItem size="6"  class="slds-p-top_large">
+                                
+                                <lightning:inputfield aura:id="DecisionConfirmation" fieldName="Decision_Confirmation__c"  required="true"  variant="label-hidden"/> 
+                                <p>I understand that this decision cannot be changed once submitted.</p>
+                            </lightning:layoutItem>
+                            
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <lightning:button variant="brand" type="submit" name="save" label="Submit Decision" aura:id="decisionbutton"  />
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        
+                    </lightning:recordEditForm>
+                </aura:if>
+                
+                <!-- Decline Product -->
+                <aura:if isTrue="{!v.showDecline}">
+                    <lightning:recordEditForm aura:id="productEdit"  recordId="{!prodrec.appProdId}" objectApiName="Application_Product__c" 
+                                         onsuccess="{!c.handleSuccess}"     
+                                             >  
+                       <!-- <lightning:inputField fieldName="Sanctioning_Status__c" variant="label-hidden" value="Declined" hidden="true" />
+                        -->
+                        <lightning:inputField fieldName="Product_Status__c" variant="label-hidden" value="Declined" hidden="true" />
+                        <lightning:inputField fieldName="Final_Decision__c" variant="label-hidden" value="Declined" hidden="true" />
+                      	<lightning:inputField fieldName="Is_Sanctioning_Decision__c" variant="label-hidden" value="{!v.isDecisionMade}" hidden="true" />
+                  
+                        <lightning:layout multipleRows="true" > 
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <lightning:inputfield aura:id="DeclineCategory" fieldName="Decline_Category__c" /> 
+                            </lightning:layoutItem>   
+                            <lightning:layoutItem size="6"  class="slds-p-top_large">
+                                <lightning:inputfield aura:id="DeclineReason" fieldName="Decline_Reason__c" /> 
+                            </lightning:layoutItem>
+                            
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <lightning:inputfield aura:id="approveComment" fieldName="Approve_Comment__c" variant="label-hidden" /> 
+                                <p>Comment</p>
+                            </lightning:layoutItem> 
+                            <lightning:layoutItem size="6"  class="slds-p-top_large">
+                                
+                                <lightning:inputfield aura:id="DecisionConfirmation" fieldName="Decision_Confirmation__c"  required="true"  variant="label-hidden"/> 
+                                <p>I understand that this decision cannot be changed once submitted.</p>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <lightning:button variant="brand" type="submit" name="save" label="Submit Decision" aura:id="decisionbutton"  />
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        
+                        
+                    </lightning:recordEditForm>
+                </aura:if>   
+            </lightning:accordionSection>
+            
+        <lightning:accordionSection name="decision history" label="Decision History">
+                
+                <c:TOBDecisionHistory appProdId="{!prodrec.appProduct.Id}"/>
+                
+            </lightning:accordionSection> 
+        </aura:if>
+            
+            <aura:if isTrue="{!v.acceptView}" >
+            <c:AcceptTOBButton prodrec ="{!prodrec}" />
+            </aura:if>
+        
+         <!-- History Component for sanctioner's view-->
+          </lightning:accordion>
+    </aura:iteration>
+	
+</aura:component>

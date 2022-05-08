@@ -1,0 +1,45 @@
+<aura:component 
+                implements="lightning:isUrlAddressable,lightning:hasPageReference,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global" 
+                controller="DocumentController"
+>
+    <!-- attributes -->
+    <aura:attribute name="recordId" type="String"></aura:attribute>
+    <aura:attribute name="parentFieldName" type="String"></aura:attribute>
+    <aura:attribute name="data" type="Object"></aura:attribute>
+    <aura:attribute name="columns" type="List"></aura:attribute>
+    <aura:attribute name="noResults" type="String"></aura:attribute>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <!-- handlers-->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"></aura:handler>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+		<div class="slds-is-relative">
+			<lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+		</div>
+	</aura:if>
+
+    <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+        <lightning:card title="Documents" iconName="standard:document">
+            <aura:set attribute="actions">
+            	<lightning:button label="Refresh" onclick="{!c.refresh}"/>
+        	</aura:set>
+            <p><c:DocumentUploader recordId="{!v.recordId}" /></p>
+            <div class="slds-card__header slds-grid">
+                <aura:if isTrue="{!not(empty(v.data))}" >
+                    <!-- the container element determine the height of the datatable -->
+                    <lightning:datatable keyField="id"
+                            data="{! v.data }"
+                            columns="{! v.columns }"
+                            onrowaction="{!c.download}"
+                            hideCheckboxColumn="true"
+                            sortable="false"></lightning:datatable>
+                </aura:if>
+                <aura:if isTrue="{!empty(v.data)}" >
+                    <p>{!v.noResults}</p>
+                </aura:if>
+            </div>            
+        </lightning:card>
+    </article>
+    
+</aura:component>

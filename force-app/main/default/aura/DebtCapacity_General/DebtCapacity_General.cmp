@@ -1,0 +1,496 @@
+<aura:component
+                access="global"
+                controller="DebtCapacity_General_Controller"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                >
+    
+    <aura:attribute name="showGeneralModal" type="Boolean" default="false"/>
+    <aura:attribute name="GeneralInputData" type="DebtCapacity_General_Controller.GeneralDataStructure"/>
+    <aura:attribute name="debtLoanInputData" type="DebtCapacity_General_Controller.LoanDetailsDTO"/>
+    <aura:attribute name="GeneralTableData" type="List"/>
+    <aura:attribute name="GeneralResultsTableData" type="List"/>
+    <aura:attribute name="filteredResultTableData" type="List"/>
+    <aura:attribute name="ttcOptions" type="List"/>
+    <aura:attribute name="allStoredGeneralData" type="List"/>
+    <aura:attribute name="isDataEdit" type="Boolean" default="false"/>
+    <aura:attribute name="dataEditIndex" type="Integer"/>
+    <aura:attribute name="showBodySpinner" type="Boolean" default="false"/>
+    <aura:attribute name="showModalSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="customDate" type="String"/>
+    <aura:attribute name="isCalculateEnabled" type="Boolean" default="false"/>
+    <aura:attribute name="isCalculateSuccess" type="Boolean" default="false"/>
+    <aura:attribute name="displayAddNew" type="Boolean" default="true"/>
+    <aura:attribute name="showDebtCalResults" type="Boolean" default="false"/>
+    <aura:attribute name="opportunityId" type="String" default="" access="public"/>
+    <aura:attribute name="loanScenarioData" type="List"/>
+    <aura:attribute name="allStoredDebtData" type="List"/>
+    <aura:attribute name="loanTypes" type="List"/>
+    <aura:attribute name="showLoanInputModal" type="Boolean" default="false"/> 
+    <aura:attribute name="loanEditIndex" type="Integer"/>
+    <aura:attribute name="customLoanDate" type="String"/>
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    
+    <aura:method name="parentMethod" action="{!c.getCalcMessage}" access="public">
+        <aura:attribute name="successParam" type="Boolean" default="false"/> 
+    </aura:method>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>   
+    
+    <aura:if isTrue="{!v.showBodySpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.showBodySpinner == false}">
+        <!-- Loan Modal View -->
+        <div style="margin: 10px;">
+            <aura:if isTrue="{!v.showLoanInputModal == true}">
+                <div class="slds">
+                    <div aria-hidden="true" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open slds-modal_large" aura:id="modaldialog">
+                        <div class="slds-modal__container">
+                            <div class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"    
+                                                      variant="container" 
+                                                      alternativeText="Close"   
+                                                      class="slds-float_right" 
+                                                      title="Close"
+                                                      size="large"
+                                                      onclick="{!c.reloadData}">
+                                </lightning:buttonIcon>
+                                <h2 class="slds-text-heading--medium">Debt Capacity Loan Data</h2>
+                            </div>
+                            <div class="slds-modal__content slds-p-around--medium" style="padding-bottom: 90px">
+                                <div class="slds-p-around_medium">
+                                    <lightning:layout>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input step="1" aura:id="debtLoanInput" label="Term (Months)" value="{!v.debtLoanInputData.term}" type="number" required="true" min="0" />
+                                            <lightning:input step="0.01" aura:id="debtLoanInput" label="Amount" value="{!v.debtLoanInputData.loanAmount}" type="number" required="true" min="0" />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:combobox
+                                                                aura:id="debtLoanInput"
+                                                                name="loanTypes"
+                                                                label="Select Loan Category"
+                                                                value="{!v.debtLoanInputData.loanType}"
+                                                                placeholder="Select Loan Category"
+                                                                options="{!v.loanTypes}"
+                                                                required="true">
+                                            </lightning:combobox>
+                                            <lightning:input step="0.01" aura:id="debtLoanInput" label="Interest Rate" value="{!v.debtLoanInputData.intrestRate}" type="number" required="true" min="0" max="100" />
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                    <lightning:button label="Save"
+                                                      variant="brand" 
+                                                      class="slds-button slds-m-top--medium slds-float_right"
+                                                      onclick="{!c.saveLoanData}"/>
+                                    <div class="GeneralModalMargin"></div>
+                                    <aura:if isTrue="{!v.showModalSpinner}">
+                                        <div class="slds-spinner_container">
+                                            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+                                        </div>
+                                    </aura:if>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-backdrop slds-backdrop--open" aura:id="backdrop">
+                </div>
+            </aura:if>
+            
+            <aura:if isTrue="{!v.showGeneralModal == true}">
+                <div class="slds">
+                    <div aria-hidden="true" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-open slds-modal_large" aura:id="modaldialog">
+                        <div class="slds-modal__container">
+                            <div class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"    
+                                                      variant="container" 
+                                                      alternativeText="Close"   
+                                                      class="slds-float_right" 
+                                                      title="Close"
+                                                      size="large"
+                                                      onclick="{!c.hideModal}">
+                                </lightning:buttonIcon>
+                                <h2 class="slds-text-heading--medium">Add Financial Data</h2>
+                            </div>
+                            <div class="slds-modal__content slds-p-around--medium">
+                                <div class="slds-p-around_medium">
+                                    <lightning:layout>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input aura:id="GeneralInputs" label="Period of financial statements" value="{!v.GeneralInputData.debtCapacityInitialDTO.statementDate}" dateStyle="short" type="Date" displayDatePicker="true" format="dd-MM-yyyy" required="true" />
+                                            <!--
+                                            <ui:inputDate aura:id="GeneralInputsDate" label="Period of financial statements" value="{!v.customDate}" class="slds-input" displayDatePicker="true" format="dd-MM-yyyy" required="true" />
+                                            -->
+                                            <label class="slds-form-element__label"  style="margin-right: 0.5rem;">
+                                                <abbr class="slds-required" title="required">*</abbr>Number of months in financial statements</label>                                    
+                                            <lightning:helptext content="E.g. 12 months if annual, 6 months if semi-annual, etc" class="customIcon"/> 
+                                            <lightning:input aura:id="GeneralInputs" label="Number of months in financial statements" variant="label-hidden" value="{!v.GeneralInputData.debtCapacityInitialDTO.tenure}" type="number" required="true" min="0" />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:combobox aura:id="GeneralInputs"
+                                                                name="ttccategory"
+                                                                label="Select TTC DG Category"
+                                                                value="{!v.GeneralInputData.debtCapacityInitialDTO.currenctDGBucket}"
+                                                                placeholder="Select TTC DG Category"
+                                                                options="{!v.ttcOptions}"
+                                                                required="true">
+                                            </lightning:combobox>
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                    <h4 class="GeneralModalHeaders">Income Statement</h4>
+                                    <lightning:layout>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input aura:id="GeneralInputs" label="Turnover / Sales" value="{!v.GeneralInputData.incomeStatementDTO.saleAmount}" type="number" required="true" min="0" step="0.01" />
+                                            <lightning:input aura:id="GeneralInputs" label="Depreciation / Amortisation" value="{!v.GeneralInputData.incomeStatementDTO.depreciationAmortAmount}" type="number" required="true" min="0" step="0.01" />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem size="6" padding="around-small">                                            
+                                            <label class="slds-form-element__label"  style="margin-right: 0.5rem;">
+                                                <abbr class="slds-required" title="required">*</abbr>Earnings before interest and tax (EBIT) (+ / -)</label>                                    
+                                            <lightning:helptext content="EBIT Calculation. In this regard, extra-ordinary or non-recurring items (outside of the ordinary trade of the business) must be added to(+) and/or deducted from(-) the EBIT figure. For example: Loss(+)/profit(-) on disposal of assets; exchange rate gains(-)/losses(+); write down(+) of goodwill / intangibles; Upward(-)/Downward(+) revaluation amounts i.r.o assets; Restructuring profits(-)/losses(+); any non-cash items must be deducted." class="customIcon"/> 
+                                            <lightning:input aura:id="GeneralInputs" label="Earnings before interest and tax (EBIT) (+ / -)" variant="label-hidden" value="{!v.GeneralInputData.incomeStatementDTO.ebit}" type="number" required="true" step="0.01" />                                        
+                                            <lightning:input aura:id="GeneralInputs" label="Net Profit (+) / Loss (-)" value="{!v.GeneralInputData.incomeStatementDTO.netProfit}" type="number" required="true" step="0.01" />
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                    <h4 class="GeneralModalHeaders">Cash Flow Statement</h4>
+                                    <lightning:layout>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input aura:id="GeneralInputs" label="Interest paid (+) / Interest received (-)" value="{!v.GeneralInputData.cashflowStatementDTO.grossInterestPaid}" type="number" required="true" step="0.01" />
+                                            <lightning:input aura:id="GeneralInputs" label="Tax paid (+) / Tax received (-)" value="{!v.GeneralInputData.cashflowStatementDTO.taxPaidReceived}" type="number" required="true" step="0.01" />
+                                            <lightning:input step="0.01" aura:id="GeneralInputs" label="Receivables" value="{!v.GeneralInputData.cashflowStatementDTO.receivables}" type="number" required="true" />
+                                            <lightning:input step="0.01" aura:id="GeneralInputs" label="Payables" value="{!v.GeneralInputData.cashflowStatementDTO.payables}" type="number" required="true" />
+                                            <lightning:input step="0.01" aura:id="GeneralInputs" label="Inventory" value="{!v.GeneralInputData.cashflowStatementDTO.inventory}" type="number" required="true" />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input aura:id="GeneralInputs" label="Dividend paid (+) /Dividend received (-)" value="{!v.GeneralInputData.cashflowStatementDTO.divdendPaidRecieved}" type="number" required="true" step="0.01" />
+                                            <lightning:input aura:id="GeneralInputs" label="Capex (Maintain only; not Expand)" value="{!v.GeneralInputData.cashflowStatementDTO.capex}" type="number" required="true" min="0" step="0.01" />
+<!--                                             <lightning:input aura:id="GeneralInputs" label="Free Cash Flow (FCF)" value="{!v.GeneralInputData.cashflowStatementDTO.freeCashFlow}" type="number" required="true" min="0" step="0.01" />
+ -->                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                    <h4 class="GeneralModalHeaders">Minimum Annual Payments</h4>
+                                    <lightning:layout>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input step="0.01" min="0" aura:id="mbblInputs" label="Current Portion of Previous Years IBD" value="{!v.GeneralInputData.minimumAnnualPaymentsDTO.previousYearCurrentPortion}" type="number" required="true" />
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                    <h4 class="GeneralModalHeaders">Balance Sheet</h4>
+                                    <lightning:layout>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input aura:id="GeneralInputs" label="Intangible Assets" value="{!v.GeneralInputData.balanceSheetDTO.intangibleAssets}" type="number" required="true" min="0" step="0.01" />
+                                            <lightning:input aura:id="GeneralInputs" label="Total Assets" value="{!v.GeneralInputData.balanceSheetDTO.totalAssets}"  type="number" required="true" min="0" step="0.01" />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input aura:id="GeneralInputs" label="Cash" value="{!v.GeneralInputData.balanceSheetDTO.cash}" type="number" required="true" min="0" step="0.01" />
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                    <lightning:layout>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input aura:id="GeneralInputs" label="Loans" value="{!v.GeneralInputData.balanceSheetDTO.loans}" type="number" required="true" min="0" step="0.01" />
+                                            <lightning:input aura:id="GeneralInputs" label="CPF Bonds" value="{!v.GeneralInputData.balanceSheetDTO.cpfOfBonds}" type="number" required="true" min="0" step="0.01" />
+                                            <lightning:input aura:id="GeneralInputs" label="Inter-Co Loans" value="{!v.GeneralInputData.balanceSheetDTO.interCoLoans}" type="number" required="true" min="0" step="0.01" />
+                                            <lightning:input aura:id="GeneralInputs" label="Shareholder's Loans" value="{!v.GeneralInputData.balanceSheetDTO.shareholdersLoans}" type="number" required="true" min="0" step="0.01" />
+                                            <lightning:input step="0.01" min="0" aura:id="GeneralInputs" label="CAF" value="{!v.GeneralInputData.balanceSheetDTO.caf}" type="number" required="true" />
+                                            
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input aura:id="GeneralInputs" label="Overdrafts" value="{!v.GeneralInputData.balanceSheetDTO.overdrafts}" type="number" required="true" min="0" step="0.01" />
+                                            <lightning:input aura:id="GeneralInputs" label="Equity" value="{!v.GeneralInputData.balanceSheetDTO.equity}" type="number" required="true" min="0" step="0.01" />
+                                            <lightning:input aura:id="GeneralInputs" label="Other" value="{!v.GeneralInputData.balanceSheetDTO.other}" type="number" required="true" min="0" step="0.01" />
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                    <lightning:button label="Save"
+                                                      variant="brand" 
+                                                      class="slds-button slds-m-top--medium slds-float_right"
+                                                      onclick="{!c.saveFinData}"/>
+                                    <div class="GeneralModalMargin">                                    
+                                    </div>
+                                    <aura:if isTrue="{!v.showModalSpinner}">
+                                        <div class="slds-spinner_container">
+                                            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+                                        </div>
+                                    </aura:if>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-backdrop slds-backdrop--open" aura:id="backdrop">
+                </div>
+            </aura:if>
+            <aura:if isTrue="{!v.GeneralTableData}">
+                
+            </aura:if>
+            <aura:if isTrue="{!v.GeneralTableData.length > 0}">
+                <table class="tableBckColor slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                    <tr class="trHeight">
+                        <div class="slds-text-heading_medium">
+                            Debt Capacity Calculators  Input
+                        </div>                           
+                    </tr>
+                </table>
+                <table class="slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">   
+                    <tbody>
+                        <aura:iteration items="{!v.GeneralTableData}" var="item" indexVar="index">
+                            <aura:if isTrue="{!item.header == 'Financial Statement Period Ending'}">
+                                <tr class="row-head">
+                                    <th scope="row">
+                                        <div class="slds-truncate" title="{!item.header}" style="font-weight: bold;">{!item.header}</div>
+                                    </th>
+                                    <aura:iteration items="{!item.values}" var="dataValue">
+                                        <td style="width: 10%;">
+                                            <div class="slds-truncate" title="{!dataValue}" align="right">{!dataValue}</div>
+                                        </td>
+                                    </aura:iteration>
+                                </tr>
+                            </aura:if>
+                            <aura:if isTrue="{!item.isHeader == true}">
+                                <tr class="row-head">
+                                    <th scope="row" colspan="{!item.values.length + 1}">
+                                        <div class="slds-truncate" title="Header" style="font-weight: bold;">{!item.header}</div>
+                                    </th>
+                                </tr>
+                            </aura:if>
+                            <aura:if isTrue="{!item.isHeader != true}">
+                                <aura:if isTrue="{!item.header != 'Financial Statement Period Ending'}">
+                                    <aura:if isTrue="{!item.header != 'Include In Calculation'}">
+                                        <tr>
+                                            <th scope="row">
+                                                <div class="slds-truncate" title="{!item.header}">{!item.header}</div>
+                                            </th>
+                                            <aura:iteration items="{!item.values}" var="dataValue">
+                                                <td style="width: 10%;">
+                                                    <div class="slds-truncate" title="{!dataValue}" align="right"><aura:if isTrue="{!item.header == 'Tenor (Months)' || item.header == 'TTC DG Category'}">
+                                                        {!dataValue}
+                                                        <aura:set attribute="else">
+                                                            <lightning:formattedNumber value="{!dataValue}" minimumFractionDigits="2"  style="decimal"/>
+                                                        </aura:set>
+                                                        </aura:if>
+                                                    </div>
+                                                </td>
+                                            </aura:iteration>
+                                        </tr>
+                                    </aura:if>
+                                </aura:if>
+                            </aura:if>
+                            <aura:if isTrue="{!item.header == 'Include In Calculation'}">
+                                <tr>
+                                    <th scope="row">
+                                        <div class="slds-truncate" title="{!item.header}">{!item.header}</div>
+                                    </th>
+                                    <aura:iteration items="{!item.values}" var="dataValue" indexVar="itemIndex">
+                                        <td style="width: 10%;">
+                                            <div align="center">
+                                                <ui:inputCheckbox class="myCheckbox" 
+                                                                  aura:id="checkbox" 
+                                                                  name="{!itemIndex}"
+                                                                  change="{!c.clickIncludeCheck}" 
+                                                                  value="{!dataValue=='true'}"/>
+                                            </div>
+                                        </td>
+                                    </aura:iteration>
+                                </tr>
+                            </aura:if>
+                            <aura:if isTrue="{!item.header == 'Include In Calculation'}">
+                                <tr>
+                                    <th scope="row" >
+                                        <div class="slds-truncate" title="Operation"></div>
+                                    </th>
+                                    <aura:iteration items="{!item.values}" var="dataValue" indexVar="itemIndex">
+                                        <td style="width: 10%;">
+                                            <div align="center">
+                                                <lightning:buttonIcon iconName="utility:edit"    
+                                                                      name="{!itemIndex}"
+                                                                      variant="container" 
+                                                                      alternativeText="Edit"   
+                                                                      class="slds-m-left_xx-small" 
+                                                                      title="Edit"
+                                                                      size="x-small"
+                                                                      onclick="{!c.clickEdit}">
+                                                </lightning:buttonIcon>
+                                                <!--<lightning:buttonIcon iconName="utility:delete"
+                                                                  name="{!itemIndex}"
+                                                                  variant="container" 
+                                                                  alternativeText="Delete"   
+                                                                  class="slds-m-left_xx-small" 
+                                                                  title="Delete"
+                                                                  size="x-small"
+                                                                  onclick="{!c.clickDelete}">
+                                            </lightning:buttonIcon>-->
+                                            </div>
+                                        </td>
+                                    </aura:iteration>
+                                </tr>
+                            </aura:if>                        
+                        </aura:iteration>
+                    </tbody>
+                </table>
+                <aura:if isTrue="{!v.loanScenarioData.length > 0}">
+                    <br/>
+                    <br/>
+                    <aura:if isTrue="{!v.allStoredGeneralData.length > 0}">
+                        <table class="tableBckColor slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                            <tr class="trHeight">
+                                <div class="slds-text-heading_medium">
+                                    New Loan Scenarios
+                                </div>                           
+                            </tr>
+                        </table>
+                        <table class="slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">   
+                            <thead>
+                                <tr class="row-head">
+                                    <th>
+                                        <div class="slds-truncate" title="Loan Type" style="font-weight: bold;">Loan Type</div>
+                                    </th>
+                                    <th>
+                                        <div class="slds-truncate" title="Amount" style="font-weight: bold;" align="right">Amount</div>
+                                    </th>
+                                    <th>
+                                        <div class="slds-truncate" title="Term" style="font-weight: bold;" align="right">Term (Months)</div>
+                                    </th>
+                                    <th>
+                                        <div class="slds-truncate" title="Interest Rate" style="font-weight: bold;" align="right">Interest Rate</div>
+                                    </th>
+                                    <th style="width: 10%;">
+                                        
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.loanScenarioData}" var="item" indexVar="index">
+                                    <aura:if isTrue="{!item.type == 'Normal'}">
+                                        <tr>
+                                            <aura:if isTrue="{!item.loanType == '1'}">
+                                                <td>Term Loan</td>
+                                            </aura:if>
+                                            <aura:if isTrue="{!item.loanType == '2'}">
+                                                <td>CPF</td>
+                                            </aura:if>
+                                            <aura:if isTrue="{!item.loanType == '3'}">
+                                                <td>MBBL</td>
+                                            </aura:if>
+                                            <aura:if isTrue="{!item.loanType == '4'}">
+                                                <td>CAF</td>
+                                            </aura:if>
+                                            <td> <div align="right"><lightning:formattedNumber value="{!item.loanAmount}" minimumFractionDigits="2"  style="decimal"/></div></td>
+                                            <td> <div align="right"><lightning:formattedNumber value="{!item.term}" minimumFractionDigits="2"  style="decimal"/></div></td>
+                                            <td> <div align="right"><lightning:formattedNumber value="{!item.uiPercentage}" minimumFractionDigits="2" style="percent"/></div></td>
+                                            <td>
+                                                <div align="center">
+                                                    <lightning:buttonIcon iconName="utility:edit"    
+                                                                          name="{!index}"
+                                                                          variant="container" 
+                                                                          alternativeText="Edit"   
+                                                                          class="slds-m-left_xx-small" 
+                                                                          title="Edit"
+                                                                          size="x-small"
+                                                                          onclick="{!c.clickEditNormalLoan}">
+                                                    </lightning:buttonIcon>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </aura:if>
+                                    <aura:if isTrue="{!item.type == 'Overdraft'}">
+                                        <tr>
+                                            <td>Overdraft</td>
+                                            <td> <div align="right"><lightning:formattedNumber value="{!item.loanAmount}" minimumFractionDigits="2"  style="decimal"/></div></td>
+                                            <td> <div align="right"><lightning:formattedNumber value="{!item.term}" minimumFractionDigits="2"  style="decimal"/></div></td>
+                                            <td> <div align="right"><lightning:formattedNumber value="{!item.uiPercentage}" minimumFractionDigits="2"  style="percent"/></div></td>
+                                            <td>
+                                                <div align="center">
+                                                    <lightning:buttonIcon iconName="utility:edit"    
+                                                                          name="{!index}"
+                                                                          variant="container" 
+                                                                          alternativeText="Edit"   
+                                                                          class="slds-m-left_xx-small" 
+                                                                          title="Edit"
+                                                                          size="x-small"
+                                                                          onclick="{!c.clickEditOvrLoan}">
+                                                    </lightning:buttonIcon>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </aura:if>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.GeneralTableData.length > 0}">
+                            <div style="padding-top: 20px">
+                                <p>
+                                    <strong>No loan data is available</strong>
+                                </p>
+                            </div>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+                <br/>
+                <br/>
+            </aura:if>
+            <aura:if isTrue="{!v.GeneralTableData.length == 0}">
+                <p>No Debt Capacity General information available for this opportunity.</p>
+            </aura:if>
+            <br/>
+            <aura:if isTrue="{!lessthan(v.allStoredGeneralData.length,3)}">
+                <lightning:button label="Add Financial Data"
+                                  title="Add Financial Data"
+                                  class="slds-button slds-m-top--medium "
+                                  onclick="{!c.Adddata}" />
+            </aura:if>
+            <aura:if isTrue="{!v.GeneralTableData.length > 0}">
+                <lightning:button label="Add Loan Data"
+                                  title="Add Loan Data"
+                                  class="slds-button slds-m-top--medium "
+                                  onclick="{!c.openLoanData}" />
+                
+                <aura:if isTrue="{!v.isCalculateSuccess == true}">
+                    <lightning:button 
+                                      label="Reset Calculator"
+                                      title="Reset Calculator"
+                                      class="slds-button slds-m-top--medium slds-float_right"
+                                      onclick="{!c.resetCalculator}" />
+                </aura:if>
+                <aura:if isTrue="{!v.isCalculateEnabled == true}">
+                    <lightning:button 
+                                      variant="brand"
+                                      label="Calculate"
+                                      title="Calculate"
+                                      class="slds-button slds-m-top--medium slds-float_right"
+                                      disabled = "{!v.isCalculateSuccess}"
+                                      onclick="{!c.clickCalculate}" />
+                </aura:if>
+            </aura:if>
+            
+            <!-- <aura:if isTrue="{!v.displayAddNew}">
+            <lightning:button label="Add Financial Data"
+                              title="Add Financial Data"
+                              class="slds-button"
+                              onclick="{!c.Adddata}" />
+            <lightning:button label="Add Loan Data"
+                          title="Add Loan Data"
+                          class="slds-button slds-m-top-medium "
+                          onclick="{!c.openLoanData}" />
+        </aura:if>
+     <aura:if isTrue="{!v.isCalculateSuccess}">
+            <lightning:button 
+                              variant="brand"
+                              label="Reset Calculator" 
+                              title="Reset Calculator" 
+                              onclick="{! c.resetCalculator }" 
+                              class="slds-button slds-m-top-medium slds-float_right"/>
+        </aura:if>
+        <aura:if isTrue="{!v.isCalculateEnabled}">
+            <lightning:button variant="brand"
+                              label="Calculate"
+                              title="Calculate"
+                              class="slds-button slds-m-top-medium slds-float_right"
+                              onclick="{!c.clickCalculate}"
+                              disabled = "{!v.isCalculateSuccess}"/>
+        </aura:if> -->
+        </div>        
+        <br/><br/>
+        <aura:if isTrue="{!v.showDebtCalResults}">
+            <c:DebtCapacityCalculators parent="{!this}" allStoredGeneralData="{!v.filteredResultTableData}" oppId="{!v.opportunityId}" loanData='{!v.loanScenarioData}'/>
+            <!-- <c:DebtCapacityCalculators /> -->
+        </aura:if>
+    </aura:if>
+</aura:component>

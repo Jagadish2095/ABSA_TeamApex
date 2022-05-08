@@ -1,0 +1,127 @@
+<!--
+* Lightning Component for Extend SLA Quick Action
+*
+* @author  Tracy de Bruin : CloudSmiths
+* @version v1.0
+* @since   2018-07-20
+*
+-->
+
+<aura:component implements="force:lightningQuickAction,force:hasRecordId"  controller="CaseExtendSlaActionExt" >
+    <!--Attributes -->
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="caseRecord" type="Map" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="cssStyle" type="String"/>
+    <aura:unescapedHtml value="{!v.cssStyle}"/>
+    <aura:attribute name="isValid" type="Boolean" />
+    <aura:attribute name="isApprovalRequired" type="Boolean" />
+    <aura:attribute name="isAddToSLA" type="Boolean" />
+    <aura:attribute name="isSetNewSLA" type="Boolean" />
+    <aura:attribute name="newSlaDate" type="DateTime" />
+    <aura:attribute name="holidaysArray" type="List" default="[]"/>  
+     <!-- Added to display Upload document button for NBFS Case Record Type -->
+    <aura:attribute name="isNBFSServiceGroup" type="Boolean" default="false"/>
+    <aura:attribute name="isAbsaLinkInvest" type="Boolean" default="false"/>
+    <aura:attribute name="fileStr" type="String" default="No File(s) Selected." />
+    <aura:attribute name="fileIds" type="List" default="[]"/>
+    <aura:attribute name="uploadFormats" type="List" default="['.jpg','.jpeg','.png','.pdf','.msg','.xls','.doc','.Ppt','.xlsx','.docx','.Pptx','.zip','.txt','.wav','.aac','.m4a','.mp3','.wma']"/>
+    <aura:attribute name="parentId" type="String" />
+    <aura:attribute name="contentDocumentId" type="String" />
+    <aura:attribute name="fileName" type="String" default="No File Selected.." />
+    <aura:attribute name="isShortTermInsurance" type="Boolean" default="false"/>
+    
+    
+    <!-- Spinner -->
+    <center style="z-index:99"> 
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    <!-- Body -->
+    <aura:renderIf isTrue="{!v.isValid}">
+        <ui:message title="Case is currently in an Approval Process" severity="info" closable="false">
+            A Case can be in one Approval Process at a time. 
+        </ui:message>
+        <aura:set attribute="else">
+            <lightning:recordEditForm aura:id="iUpdateCase" objectApiName="Case" recordId="{!v.recordId}" >    
+                <div class="slds-text-heading_medium">
+                </div>
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col slds-size_1-of-1">
+                        <lightning:inputField fieldName="SLA_Extension_Reason__c" aura:id="iReason" disabled="{!v.isValid}" value=""/>
+                         <!-- Added to display Upload document button for NBFS Case Record Type -->
+                        <aura:if isTrue="{!or(v.isNBFSServiceGroup,v.isShortTermInsurance)}">
+                        <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:fileUpload aura:id="fileId" name="fileUploader" label= "" multiple="false" 
+                                                          accept="{!v.uploadFormats}" disabled="!v.isValid}"   
+                                                          recordId="{!v.recordId}" onuploadfinished="{!c.handleUploadFinished}" />
+                                    <div class="slds-text-body_small slds-text-color_error" aura:id="forensicFileText">{!v.fileStr}</div>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            </aura:if><br/>  
+                    </div>
+                </div>
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col slds-border_right" style="width: 8rem">
+                        <lightning:inputField fieldName="SLA_Extension_Quantity__c" aura:id="iQuantity" disabled="{!v.isValid}" />
+                        <lightning:inputField fieldName="SLA_Extension_Time_Measure__c" aura:id="iTimeMeasure" disabled="{!v.isValid}"/>
+                        
+                        <aura:if isTrue="{!v.isShortTermInsurance}">
+                        <lightning:inputField fieldName="Extend_SLA__c" aura:id="iExtendSLAConfirmation" disabled="{!v.isValid}" required="true"/>
+                        </aura:if>
+                        
+                        <br/> 
+                        <lightning:button label="Add to SLA" onclick="{!c.addToSLA}" variant="brand" aura:id="ibtnAddToSLA" disabled="{!v.isValid}"/>
+                    </div>
+                    <div class="slds-col .slds-border_left" style="width: 8rem">
+                        <lightning:inputField fieldName="SLA_Extension_Date__c" aura:id="iDateTime" disabled="{!v.isValid}" onchange="{!c.checkHolidays}" />
+                        <br/>  <br/> 
+                        <lightning:button label="Set New SLA" onclick="{!c.setNewSLA}" variant="brand" aura:id="ibtnSetNewSLA" disabled="{!v.isValid}"/>
+                    </div>
+                </div>
+            </lightning:recordEditForm>
+        </aura:set>
+    </aura:renderIf>
+    
+    <!-- Approval Process Modal -->
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.isOpen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Case Link</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                     <!--Added to show different message for NBFS Service Groups -->
+                    <aura:if isTrue="{!v.isNBFSServiceGroup}">
+                        <p><b>Extention of SLA requires approval.</b>
+                    </p>
+                    <aura:set attribute="else">
+                    <p><b>Maximum SLA Extension days have been reached. Approval is required
+                        </b>
+                    </p>
+                    </aura:set>
+                    </aura:if>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeModel }"/>
+                    <lightning:button variant="brand" 
+                                      label="Submit for Approval"
+                                      title="Submit for Approval"
+                                      onclick="{! c.extendSLA }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

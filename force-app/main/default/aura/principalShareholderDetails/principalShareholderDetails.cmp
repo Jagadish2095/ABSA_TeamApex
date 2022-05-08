@@ -1,0 +1,285 @@
+<aura:component access="global" controller="principalShareholderDetails"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:registerEvent name="updateAccount" type="c:clientDetailsSectionCreditEvent" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <aura:attribute name="savedInfo" type="String" default="0" />
+    <aura:handler name="change" value="{!v.savedInfo}" action="{!c.doInit}" />
+
+    <lightning:workspaceAPI aura:id="workspace" />
+    <lightning:navigation aura:id="navigationService" />
+
+    <!--Attributes-->
+    <aura:attribute name="accRecId" type="String" />
+    <aura:attribute name="mainShareholderId" type="Id" />
+    <aura:attribute name="data" type="List" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="selectedRows" type="List" />
+    <aura:attribute name="selectedPrincipal" type="Object" />
+    <aura:attribute name="maxNumberSelected" type="Integer" default="4" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="showSubmitCASAScreeningBtn" type="Boolean" default="false" />
+    <aura:attribute name="NumberOfYearInTheSpecificIndustry" type="String" />
+    <aura:attribute name="CapacityOfInvolvementInTheBusiness" type="String" />
+    <aura:attribute name="MonthsActivelyInvolvedInTheBusiness" type="String" />
+    <aura:attribute name="caseScreeningSuccess" type="Boolean" />
+    <aura:attribute name="isPrincipalInfoRequired" type="boolean" default="false" />
+    <aura:attribute name="isPrincipalInfoCorrect" type="boolean" default="false" />
+    <aura:attribute name="showSelectedPrincipal" type="boolean" default="false" />
+
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" alternativeText="Loading..." />
+    </center>
+
+    <lightning:accordion allowMultipleSectionsOpen="true">
+        <div class="slds-card">
+            <lightning:accordionSection name="PrincipalShareholderDetails" label="Principal/Shareholder Details">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="10" padding="around-medium">
+                        <article aura:id="gridContainer" style="max-width: 103%;" class="slds-card slds-card_boundary">
+                            <!-- slds-table slds-table_bordered slds-table_header-fixed slds-table_resizable-cols slds-table_fixed-layout -->
+                            <div class="slds-scrollable_x">
+                                <table class="slds-table slds-table--bordered">
+                                    <tr class="slds-text-title_caps">
+                                        <th scope="col">
+                                            <div class="slds-truncate" title=""></div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="PrincipalShareholderName">
+                                                Principal/Shareholder Name</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="Main">Main</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="CIF">CIF</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="IDNumber">ID Number</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="SharePercentage">Controlling Interest %
+                                            </div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="CASAReference">CASA Reference</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="CASAResult">CASA Result</div>
+                                        </th>
+                                    </tr>
+                                    <!--table body start,  Iterate contact list as a <tr> -->
+                                    <tbody>
+                                        <aura:iteration items="{!v.data}" var="con">
+                                            <tr>
+                                                <th scope="row">
+                                                    <!--ui:inputCheckbox aura:id="rowSelectionCheckboxId" text="{!con.Id}" change="{!c.onCheckedPrincipal}"/-->
+                                                    <lightning:input aura:id="rowSelectionCheckboxId" type="checkbox-button" name="{!con.Id}"
+                                                        disabled="{!con.ChkDisabled}" checked="{!con.ChkSelected}"
+                                                        onchange="{!c.onCheckedPrincipal}" />
+                                                </th>
+                                                <th scope="row">
+                                                    <div data-id="{!con.Id}" class="slds-truncate" name="{!con}" title="{!con.FullName}" onclick="{!c.showPrincipal}">
+                                                        {!con.FullName}
+                                                    </div>
+                                                </th>
+                                                <th scope="row">
+                                                    <ui:inputRadio aura:id="rowSelectionRadioId" text="{!con.Id}" name="prin" disabled="{!con.RadDisabled}"
+                                                        value="{!con.RadSelected}" change="{!c.onRadioChange}" />
+                                                </th>
+                                                <th scope="row">
+                                                    <div class="slds-truncate" title="{!con.CIF}">
+                                                        {!con.CIF}
+                                                    </div>
+                                                </th>
+                                                <th scope="row">
+                                                    <div class="slds-truncate" title="{!con.IDNumber}">
+                                                        {!con.IDNumber}
+                                                    </div>
+                                                </th>
+                                                <th scope="row">
+                                                    <div class="slds-truncate" title="{!con.SharePercentage}">
+                                                        {!con.SharePercentage}
+                                                    </div>
+                                                </th>
+                                                <th scope="row">
+                                                    <div class="slds-truncate" title="{!con.CASAReference}">
+                                                        {!con.CASAReferenceNumber}
+                                                    </div>
+                                                </th>
+                                                <th scope="row">
+                                                    <div class="slds-truncate" title="{!con.CASAResult}">
+                                                        {!con.CASAScreeningStatus}
+                                                    </div>
+                                                </th>
+                                            </tr>
+                                        </aura:iteration>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="6" padding="around-small">
+                        <ui:inputCheckbox aura:id="iSubmitCASAScreening" required="{!v.isPrincipalInfoRequired}"
+                            class="slds-float_left" label="&nbsp; I confirm the above information is correct"
+                            value="{!v.isPrincipalInfoCorrect}" change="{!c.showSubmitCASAScreeningBtn}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="around-small">
+                        <!--lightning:button class="slds-float_left"
+                                  variant="neutral"
+                                  label="Update this information on Customer Hub"
+                                  title="Update this information on Customer Hub"
+                                  onclick="{! c.updateInfoOnCustomerHub }"/-->
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" class="showSubmitCASAScreeningBtn">
+                        <!--aura:if isTrue="{!v.showSubmitCASAScreeningBtn}">
+                        <lightning:button  variant="brand" //Saurabh Removing Casa as per User Story W: 005585
+                                          label="Submit for CASA Screening"
+                                          title="Submit for CASA Screening"
+                                          onclick="{! c.submitForCasaScreening}"/>>
+                        <aura:set attribute="else">
+                        </aura:set>
+                    </aura:if -->
+                    </lightning:layoutItem>
+                </lightning:layout>
+
+                <aura:if isTrue="{!v.showSelectedPrincipal}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                        aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="modalContainer">
+
+                            <div class="slds-modal__content slds-var-p-around_medium" id="modal-content-id-1">
+                                <div class="clientName">
+                                    <h3><b>{!v.selectedPrincipal.FullName} - Prinipal of {!v.selectedPrincipal.ClientName}</b></h3>
+                                </div>
+                                <p>
+                                    <aura:if isTrue="{!v.showSpinner}">
+                                        <div class="slds-spinner_container">
+                                            <lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+                                        </div>
+                                    </aura:if>
+                                    <lightning:recordEditForm aura:id="iAccountContactRelationRecordModal" objectApiName="AccountContactRelation" recordId="{!v.applicationRecordId}">
+                                        <lightning:layout multipleRows="true">
+                                            <lightning:layoutItem size="12" class="identificationHeader">
+                                                <h2 class="slds-section__title"><b>Identification Info</b></h2>
+                                            </lightning:layoutItem>
+
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                                <p>Full Name: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.FullName}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                                <p>CIF: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.CIF}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                                <p>ID Number: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.IDNumber}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                                <p>ID Type: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.IdType}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                                <p>Nationality: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.Nationality}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                                <p>Date of Birth: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.Birthdate}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="inputFields">
+                                                <p>Highest Qualification: </p>
+                                                <ui:inputText value="{!v.selectedPrincipal.HighestQualification}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="inputFields">
+                                                <p>Residential Address: </p>
+                                                <ui:inputText value="{!v.selectedPrincipal.ResidentialAddress}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem class="checkBoxClientIsaNonSA">
+                                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client is a Non-SA Resident" aura:id="isNonSAResident"
+                                                    value="{!v.selectedPrincipal.isNonSAResident}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem class="checkBoxClientIsATemporary">
+                                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client is a Temporary Resident"
+                                                    aura:id="isTemporaryResident" value="{!v.selectedPrincipal.isTemporaryResident}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                                <p>Client Type: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.ClientType}" />
+                                            </lightning:layoutItem>
+
+                                            <lightning:layoutItem size="12" class="slds-var-p-top_large">
+                                                <h2 class="slds-section__title"><b>CASA Reference Info</b></h2>
+                                            </lightning:layoutItem>
+
+                                            <lightning:layoutItem size="6"
+                                                class="slds-var-p-top_large slds-var-m-bottom_small left-align">
+                                                <p>CASA Relationship Type: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.Roles}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large right-align">
+                                                <p>CASA Screening Date: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.CASAScreeningDate}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large left-align">
+                                                <p>CASA Reference Number: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.CASAReferenceNumber}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large slds-var-m-bottom_small left-align">
+                                                <p>CASA Screening Status: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.CASAScreeningStatus}" />
+                                            </lightning:layoutItem>
+
+                                            <lightning:layoutItem size="12" class="slds-var-p-top_large">
+                                                <h2 class="slds-section__title"><b>Business Context</b></h2>
+                                            </lightning:layoutItem>
+
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                                <p>Controlling: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.SharePercentage}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                                <!--p>Date Shareholding acquired:</p><ui:outputText value="{!v.selectedPrincipal.StartDate}"/-->
+                                                <lightning:input label="Date Shareholding acquired:" type="date" name="input2" value="{!v.selectedPrincipal.DateShareholdingAcquired}" required="true"/>
+                                                <!--<lightning:input label="Date Shareholding acquired:" aura:id="acqDate" value="{!v.dateAcquired}" onchange="{!c.getAcqDate}" type="date" name="input2" required="true" />-->
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                                <p>Months since shareholding: </p>
+                                                <ui:outputText value="{!v.selectedPrincipal.MonthsSinceShareholding}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="inputFields">
+                                                <p>Number of years in the specific Industry </p>
+                                                <ui:inputText
+                                                    value="{!v.selectedPrincipal.NumberOfYearInTheSpecificIndustry}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="inputFields">
+                                                <p>Capacity of involvement in the business </p>
+                                                <ui:inputText disabled="true" value="{!v.selectedPrincipal.Roles}" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem size="6" class="inputFields">
+                                                <p>Months actively involved in the Business </p>
+                                                <ui:inputText
+                                                    value="{!v.selectedPrincipal.MonthsActivelyInvolvedInTheBusiness}" />
+                                            </lightning:layoutItem>
+                                        </lightning:layout>
+                                    </lightning:recordEditForm>
+                                </p>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <lightning:button class="slds-float_left" variant="neutral" label="Cancel"
+                                    title="Cancel" onclick="{! c.closeSelectedPrincpalBox }" />
+                                <lightning:button variant="brand" label="Save and Close" title="Save and Close"
+                                    onclick="{! c.saveAndClose}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+            </lightning:accordionSection>
+        </div>
+    </lightning:accordion>
+</aura:component>

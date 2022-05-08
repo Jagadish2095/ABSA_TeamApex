@@ -1,0 +1,234 @@
+<!--This is the Absa  -->
+<!--@author  Bhanumurty Rayala-->
+<!--@since   2021-10-19-->
+<!--@UserStory: W-007153 -->
+<aura:component
+  controller="AbsaLifeGetPolicyScheduleCntrl"
+  implements="flexipage:availableForRecordHome,force:hasRecordId,lightning:availableForFlowScreens"
+  access="global"
+>
+  <!--Global Attributes-->
+  <aura:attribute name="caseIdFromFlow" type="String" access="global" />
+  <aura:attribute name="CaseAccountId" type="String" access="global" />
+  <aura:attribute
+    name="policyNumberFromFlow"
+    type="String"
+    default=""
+    access="global"
+  />
+
+  <!--Component Attributes-->
+  <aura:attribute name="policyName" type="String" />
+  <aura:attribute name="policyNumber" type="String" />
+  <aura:attribute name="status" type="String" />
+  <aura:attribute name="nextPremiumDate" type="String" />
+  <aura:attribute name="premiumDue" type="String" />
+  <aura:attribute name="errorMessage" type="String" default="" />
+  <aura:attribute name="showSpinner" type="Boolean" default="false" />
+  <aura:attribute name="showPreview" type="Boolean" default="false" />
+  <aura:attribute name="showBenefitType" type="Boolean" default="false" />
+  <aura:attribute name="isInForceStatus" type="Boolean" default="false" />
+  <aura:attribute name="selectedCommunicationType" type="String" />
+  <aura:attribute name="pdfData" type="String" />
+  <aura:attribute name="commButtonLabel" type="String" />
+  <aura:attribute name="accountDetails" type="Object"/>
+  
+
+  <!-- Modal attributes -->
+  <aura:attribute name="isShowModal" type="Boolean" default="false" />
+  <aura:attribute name="isShowPreviewModal" type="Boolean" default="false" />
+  <aura:attribute name="isPostCommunication" type="Boolean" default="false" />
+  <aura:attribute name="isEmailCommunication" type="Boolean" default="false" />
+    
+  <!--LDS attributes-->
+  <aura:attribute name="accountRecord" type="Object"/>
+  <aura:attribute name="recordLoadError" type="String"/>
+  <aura:attribute name="clientEmail" type="String"/>
+  <aura:attribute name="clientName" type="String"/>
+    
+  <!-- Datatable attributes -->
+  <aura:attribute name="benefitsData" type="List" />
+  <aura:attribute name="benefitsColumns" type="List" />
+
+  <!-- Radio group attributes -->
+  <aura:attribute
+    name="communicationOptions"
+    type="List"
+    default="[
+    {'label': 'Email', 'value': 'email'},
+    {'label': 'Post', 'value': 'post'}
+    ]"
+  />
+  <aura:attribute name="communicationValue" type="String" default="" />
+
+  <!--Component Handlers-->
+  <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+  <!-- Error Message -->
+  <aura:if isTrue="{!not(empty(v.errorMessage))}">
+    <div class="recordError">
+      <br />
+      <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+      <br />
+    </div>
+  </aura:if>
+  <article class="slds-card slds-card_boundary">
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.showSpinner}">
+      <center style="z-index: 99">
+        <lightning:spinner
+          variant="brand"
+          alternativeText="Busy"
+          size="large"
+        />
+      </center>
+    </aura:if>
+
+    <ltng:require styles="{!$Resource.GetPolicyScheduleModalCSS}" />
+
+    <lightning:layout multipleRows="true">
+      <lightning:layoutItem padding="around-small" size="6">
+        <lightning:input
+          disabled="true"
+          value="{!v.policyName}"
+          label="Policy Name"
+        />
+      </lightning:layoutItem>
+      <lightning:layoutItem padding="around-small" size="6">
+        <lightning:input
+          disabled="true"
+          value="{!v.policyNumber}"
+          label="Policy Number"
+        />
+      </lightning:layoutItem>
+      <lightning:layoutItem padding="around-small" size="6">
+        <lightning:input disabled="true" value="{!v.status}" label="Status" />
+      </lightning:layoutItem>
+      <lightning:layoutItem padding="around-small" size="6">
+        <lightning:input
+          disabled="true"
+          value="{!v.nextPremiumDate}"
+          label="Next Premium Date"
+        />
+      </lightning:layoutItem>
+      <lightning:layoutItem padding="around-small" size="6">
+        <lightning:input
+          disabled="true"
+          value="{!v.premiumDue}"
+          label="Premium Due"
+        />
+      </lightning:layoutItem>
+      <lightning:layoutItem
+        padding="around-small"
+        size="6"
+        class="slds-align_absolute-center"
+      >
+       
+      </lightning:layoutItem>
+    </lightning:layout>
+    <!--aura:if isTrue="{!v.showBenefitType}"-->
+        
+      <lightning:layout multipleRows="true">
+          <lightning:layoutItem padding="around-small" size="12">
+          <h1>Benefit Type Details:</h1>
+              </lightning:layoutItem>
+             
+        <lightning:layoutItem padding="around-small" size="12">
+          <lightning:datatable
+            keyField="id"
+            data="{! v.benefitsData }"
+            columns="{! v.benefitsColumns }"
+            hideCheckboxColumn="true"
+          />
+        </lightning:layoutItem>
+      </lightning:layout>
+    <!--/aura:if-->
+    <lightning:layout multipleRows="true">
+      <lightning:layoutItem padding="around-small" size="12">
+        <lightning:radioGroup
+          aura:id="communicationTypeRequired"
+          label="How do you want your policy schedule to send"
+          options="{! v.communicationOptions }"
+          value="{! v.communicationValue }"
+          type="radio"
+          onchange="{! c.handleCommunicationType }"
+          required="true"
+        />
+      </lightning:layoutItem>
+      <aura:if isTrue="{!and(v.showPreview,v.isInForceStatus)}">
+        <lightning:layoutItem padding="around-small" size="12">
+          <lightning:button
+            variant="success"
+            label="Preview"
+            title="Preview"
+            onclick="{! c.handlePreview }"
+          />
+        </lightning:layoutItem>
+      </aura:if>
+    </lightning:layout>
+
+    <!--The document preview modal starts here-->
+    <!--div class="slds-m-around_xx-large"-->
+    <aura:if isTrue="{!v.isShowModal}">
+      <!--Preview Modal Box Start-->
+      <div
+        role="dialog"
+        class="slds-modal slds-fade-in-open slds-m-around_xx-large"
+      >
+        <div class="slds-modal__container">
+          <aura:if isTrue="{!v.isShowPreviewModal}">
+            <!--Modal Box Content Preview Document Start-->
+            <div class="slds-modal__content slds-p-around--medium slds-fade-in-open">
+              <c:pdfViewer pdfData="{!v.pdfData}" />
+            </div>
+            <!--Modal Box Content Preview Document End-->
+          </aura:if>
+          <!--Modal Box Content Posting Document Start-->
+            <!--lightning:recordEditForm objectApiName="Account" recordId="{!v.CaseAccountId}" onload="{!c.handleCreateLoad}"-->
+            <aura:if isTrue="{!v.isPostCommunication}">
+                <div class="slds-modal__content slds-p-around--medium slds-fade-in-open">
+                    
+                    <p>Please confirm the address details before downloading the document.</p>
+                    <lightning:recordEditForm objectApiName="Account" recordId="{!v.CaseAccountId}" >
+                        <lightning:inputField fieldName="ShippingAddress" readonly="true"/>
+                    </lightning:recordEditForm>
+                </div>
+            </aura:if>
+            <!--Modal Box Content Posting Document End-->
+            <!--Modal Box Content Emailing Document Start-->
+            <aura:if isTrue="{!v.isEmailCommunication}">
+              <div class="slds-modal__content slds-p-around--medium slds-fade-in-open">
+                  <p>Please confirm the email address before sending the email.</p>
+                  <lightning:recordEditForm objectApiName="Account" recordId="{!v.CaseAccountId}" onload="{!c.handleOnLoad}">
+                        <lightning:inputField aura:id="nameField" fieldName="Name" readonly="true" class="slds-hide"/>
+                        <lightning:inputField aura:id="clientEmailAddress" fieldName="PersonEmail" readonly="true" />
+                  </lightning:recordEditForm>
+                  
+              </div>
+            </aura:if>
+                <!--/lightning:recordEditForm-->
+            <!--Modal Box Content Emailing Document End-->
+          
+          <!--Modal Box Button Start-->
+          <footer class="slds-modal__footer">
+            <lightning:button
+              name="Close"
+              label="Close"
+              onclick="{!c.handleCloseModal}"
+            />
+            <lightning:button
+              variant="brand"
+              name="Communication Action"
+              label="{!v.commButtonLabel}"
+              onclick="{!c.communicationTypeAction}"
+            />
+          </footer>
+          <!--Preview Modal Box Button End-->
+        </div>
+      </div>
+      <div class="slds-backdrop slds-fade-in-open" aura:id="myModal-Back"></div>
+    </aura:if>
+    <!--/div-->
+    <!--Document Preview End-->
+  </article>
+</aura:component>

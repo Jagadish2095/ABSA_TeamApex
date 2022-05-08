@@ -1,0 +1,832 @@
+<aura:component
+    implements="flexipage:availableForAllPageTypes,force:appHostable,force:lightningQuickAction,force:hasRecordId"
+    access="global"
+    controller="DocumentManagementControler"
+>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <aura:attribute name="dataAudit" type="Object" />
+    <aura:attribute name="columnsAudit" type="List" />
+    <aura:attribute name="fileType" type="String" />
+    <aura:attribute name="picklistValues" type="Object" />
+    <aura:attribute name="contentRequest" type="Object" />
+    <!--Newly added attributes for Signed Document Sned Document Start-->
+    <aura:attribute name="show2Initials" type="Boolean" />
+    <aura:attribute name="oppBoolean" type="Boolean" />
+    <aura:attribute name="personAccList" type="Object[]" />
+    <aura:attribute name="selectefPersonAcc" type="Object" />
+    <aura:attribute name="selectedFirstName" type="Object" />
+    <aura:attribute name="applicationRecordArray" type="Object[]" />
+    <aura:attribute name="applicationRecordDetail" type="Object" />
+    <aura:attribute name="applicationRecordId" type="Id" />
+    <aura:attribute name="recordTypeId" type="String" />
+    <aura:attribute name="showsitevisit" type="String" />
+    <aura:attribute name="showResolution" type="String" />
+    <aura:attribute name="showUSPersons" type="String" />
+    <aura:attribute name="showDebtCounselling" type="String" />
+    <aura:attribute name="showOtherUSPersons" type="String" />
+    <aura:attribute name="showAnnualCreditLimitIncrease" type="String" />
+    <aura:attribute name="employeenumber" type="String" />
+
+    <aura:attribute name="signatureRequestRecords" type="Object[]" />
+    <aura:handler event="c:SetDocumentSignatories" action="{!c.setSelectedSignatoreRequests}" />
+    <aura:attribute name="showSignatoriesCmp" type="Boolean" default="false" />
+    <aura:attribute name="showverifyaddress" type="Boolean" default="false" />
+
+    <aura:attribute name="showTelephonicEngagementBlock" type="String" />
+    <aura:attribute name="showIdentificationOfGrantorField" type="Boolean" />
+    <aura:attribute name="PersonSpokenTo" type="String" default="" />
+    <aura:attribute name="NumberDialled" type="String" default="" />
+    <aura:attribute name="callStart" type="String" default="" />
+    <aura:attribute name="callEnd" type="String" default="" />
+    <aura:attribute name="ExtensionDailedFrom" type="String" default="" />
+    <aura:attribute name="AbsaUserID" type="String" default="" />
+    <aura:attribute name="BriefDescription" type="String" default="" />
+    <aura:attribute name="mycolumn" type="Object[]" />
+    <aura:attribute type="Task[]" name="callsList" />
+    <aura:attribute name="conlist" type="List" />
+
+    <!-- Added by Prashanth Boeni -->
+    <aura:attribute name="isCAFApplication" type="Boolean" default="false" />
+    <aura:attribute name="columnsAuditCAF" type="List" />
+    <aura:attribute name="opportunityRecord2" type="Opportunity" default="{sobjectType:'Opportunity'}" />
+
+    <aura:attribute name="sortDirection" type="String" default="asc" />
+    <aura:attribute name="defaultSortDirection" type="String" default="asc" />
+    <aura:attribute name="sortedBy" type="String" />
+    <aura:attribute name="pdfData" type="String" />
+    <aura:attribute name="isShowPreview" type="Boolean" />
+    <aura:attribute name="deleteDocument" type="String" />
+    <aura:attribute name="documentGenerated" type="String" />
+    <aura:attribute name="idVsIsSalesforceFileMap" type="Map"/>
+    <aura:attribute name="docIdVSFileId" type="Map"/>
+
+    <!--Newly added attributes for Signed Document Sned Document End-->
+    <!--Declare Spinner-->
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <!--Attributes declared by Himani-->
+    <aura:attribute name="Mandatorydocuments" type="Mandatory_Doc__mdt" />
+    <aura:attribute name="documentsUploaded" type="Object" />
+    <aura:attribute name="PrimaryClientMandDocs" type="String" />
+    <!-- W-005661-->
+    <aura:attribute name="errorMessageViewDocuments" type="String" />
+    <!--Attributes declared by Chandra dated 24/08/2021-->
+    <aura:attribute name="documentTemplateName" type="String" access="global" default="{!$Label.c.Voice_Contract_Document_Template_Name}" />
+    <aura:attribute name="emailAddress" type="String" />
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+        </div>
+    </aura:if>
+    <lightning:accordion allowMultipleSectionsOpen="true">
+        <aura:if isTrue="{!(v.processType != 'Voice Sales Product Onboarding')}">
+        <!--Document Prepopulation section added by Diksha for W-4255-->
+        <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+            <lightning:accordionSection name="DocumentPrepopulation" label="Document Prepopulation" aura:id="form">
+                <lightning:recordEditForm aura:id="Docform" recordId="{!v.applicationRecordId}" recordTypeId="{!v.recordTypeId}" objectApiName="Application__c">
+                    <!-- the messages component is for error messages -->
+                    <lightning:messages />
+
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <lightning:inputField fieldName="Signed_at__c" aura:id="Signedat" />
+                            </span>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <lightning:inputField fieldName="Signed_on__c" aura:id="Signedon" />
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span> <!-- New lookup field  -->
+                                <lightning:inputField fieldName="For_whom_are_you_generating_the_document__c" aura:id="forWhom" />
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="globalapplicationform">Do you require SF to populate the global application form</label>
+                                <lightning:inputField fieldName="global_application_form__c" aura:id="globalapplicationform" variant="label-hidden" />
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="StandardAbsaresolutionforyou">Do you require SF to populate the standard Absa resolution for you</label>
+                                <lightning:inputField
+                                    fieldName="Standard_Absa_resolution_for_you__c"
+                                    aura:id="StandardAbsaresolutionforyou"
+                                    variant="label-hidden"
+                                    onchange="{!c.showResolution}"
+                                />
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="Absamandateandindemnity">Do you require SF to populate the Absa mandate and indemnity</label>
+                                <lightning:inputField fieldName="Absa_mandate_and_indemnity__c" aura:id="Absamandateandindemnity" variant="label-hidden" />
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="StandardAbsasitevisitforyou">Do you require SF to populate the standard Absa site visit for you</label>
+                                <lightning:inputField
+                                    fieldName="Standard_Absa_site_visit_for_you__c"
+                                    aura:id="StandardAbsasitevisitforyou"
+                                    variant="label-hidden"
+                                    onchange="{!c.showSiteVisit}"
+                                />
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="StandardAbsapowerofattorneyforyou">Do you require SF to populate the standard Absa power of attorney (ABSA 2235) for you</label>
+                                <lightning:inputField
+                                    fieldName="Standard_Absa_power_of_attorney_for_you__c"
+                                    aura:id="StandardAbsapowerofattorneyforyou"
+                                    variant="label-hidden"
+                                    onchange="{!c.showIdentificationOfGrantor}"
+                                />
+                                <aura:if isTrue="{!v.showIdentificationOfGrantorField}">
+                                	<lightning:inputField fieldName="Identification_of_Grantor__c" aura:id="iIdentificationOfGrantor" />
+                                </aura:if>
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="Recordoftelephonicengagement">Record of telephonic engagement required</label>
+                                <lightning:inputField
+                                    fieldName="Record_of_telephonic_engagement__c"
+                                    aura:id="Recordoftelephonicengagement"
+                                    variant="label-hidden"
+                                    onchange="{!c.showTelephonicEngagement}"
+                                />
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="Arealltherelatedparties"
+                                    >Are all the related parties (excluding sureties) to the primary client natural persons (used to determine if a shareholder
+                                    confirmation is required)</label
+                                >
+                                <lightning:inputField fieldName="Are_all_the_related_parties__c" aura:id="Arealltherelatedparties" variant="label-hidden" />
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="Istheremorethanonenaturalperson"
+                                    >Is there more than one natural person related party (used to determine if a resolution is required)</label
+                                >
+                                <lightning:inputField
+                                    fieldName="Is_there_more_than_one_natural_person__c"
+                                    aura:id="Istheremorethanonenaturalperson"
+                                    variant="label-hidden"
+                                />
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="ForeignExchangeAuthorityFormforyou"
+                                    >Do you require SF to populate the Foreign Exchange Authority Form for you</label
+                                >
+                                <lightning:inputField
+                                    fieldName="Foreign_Exchange_Authority_Form_for_you__c"
+                                    aura:id="ForeignExchangeAuthorityFormforyou"
+                                    variant="label-hidden"
+                                />
+                            </span>
+                        </div>
+                        &nbsp;
+
+                        <!-- W-007969 - Tinashe M Shoko -->
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="USPersonsInfoforyou">Do you require SF to populate the US Persons information for ABSA 6280 for you</label>
+                                <lightning:inputField
+                                    fieldName="Standard_Absa_US_Person_for_you__c"
+                                    aura:id="USPersonsInfoforyou"
+                                    variant="label-hidden"
+                                    onchange="{!c.showUSPersons}"
+                                />
+                            </span>
+                        </div>
+                        &nbsp;
+                        <!-- W-007969 - Tinashe M Shoko -->
+
+                        <!-- W-008163 - ABSA 5713 additional fields - Tinashe M Shoko -->
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="debtCounsellingforyou">Do you require SF to populate the Debt Counselling Queries for you</label>
+                                <lightning:inputField
+                                    fieldName="Standard_Absa_Debt_Counselling_for_you__c"
+                                    aura:id="debtCounsellingforyou"
+                                    variant="label-hidden"
+                                    onchange="{!c.showDebtCounselling}"
+                                />
+                            </span>
+                        </div>
+                        &nbsp;
+                        <!-- W-008163 - ABSA 5713 additional fields - Tinashe M Shoko -->
+                        <!-- ABSA 5713-->
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <span class="required">* </span>
+                                <label for="AnnualCreditLimitIncreaseForYou"
+                                    >Do you require SF to populate the Annual Credit Limit Increase Queries for you</label
+                                >
+                                <lightning:inputField
+                                    fieldName="Standard_Absa_Annual_Credit_Limit_Incre__c"
+                                    aura:id="AnnualCreditLimitIncreaseForYou"
+                                    variant="label-hidden"
+                                    onchange="{!c.showAnnualCreditLimitIncrease}"
+                                />
+                            </span>
+                        </div>
+                        &nbsp;
+                        <!-- ABSA 5713-->
+                        <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center;">
+                                <lightning:button type="submit" label="Submit" variant="brand" onclick="{!c.submit}" />
+                            </span>
+                        </div>
+                    </div>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </article>
+        <!-- End Document Prepopulation -->
+
+        <!--Site Visit Form section added by Diksha for W-4257-->
+        <aura:if isTrue="{!v.showsitevisit}">
+            <lightning:accordionSection name="SITE VISIT" label="Site Visit" aura:id="form">
+                <lightning:recordEditForm
+                    aura:id="Docform"
+                    recordId="{!v.applicationRecordId}"
+                    recordTypeId="{!v.recordTypeId}"
+                    objectApiName="Application__c"
+                    onsubmit="{c.submitSiteVisitDetails}"
+                >
+                    <!-- the messages component is for error messages -->
+                    <lightning:messages />
+
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <h1><b>Site Visit Details</b></h1>
+                            </span>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <lightning:inputField fieldName="Settlement_type__c" aura:id="settlementtype" onchange="{!c.handleAddressVerify}" />
+                            </span>
+                        </div>
+                        <!--Manoj Document Management-->
+                        <aura:if isTrue="{!v.showverifyaddress}">
+                            <div class="slds-col slds-size_1-of-1">
+                                <span>
+                                    <lightning:inputField fieldName="verify_the_address_and_or_Trade_Name__c" aura:id="verifyaddress" />
+                                </span>
+                            </div>
+                        </aura:if>
+                        <!--Manoj Document Management-->
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <lightning:inputField fieldName="Site_visit_date__c" aura:id="sitevisitdate" />
+                            </span>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <lightning:inputField fieldName="Address_type__c" aura:id="addresstype" />
+                            </span>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <h1><b>Contact Person</b></h1>
+                            </span>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="First_Name__c" aura:id="firstname" />
+                            </span>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Surname__c" aura:id="surname" />
+                            </span>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <h1><b>Completed By</b></h1>
+                            </span>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <lightning:inputField fieldName="Completed_By__c" aura:id="completedby" />
+                            </span>
+                        </div>
+
+                        <!--div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <lightning:input name="Employee Number" label="Employee Number" value="{!v.employeenumber}" />
+                            </span>
+                        </div-->
+                        &nbsp;
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center;">
+                                <lightning:button type="submit" label="Submit" variant="brand" onclick="{!c.submitSiteVisitDetails}" />
+                            </span>
+                        </div>
+                    </div>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </aura:if>
+        <!-- End Site Visit Form-->
+
+        <aura:if isTrue="{!v.showTelephonicEngagementBlock}">
+            <lightning:accordionSection name="TelephonicEngagement" label="Call Report" aura:id="form">
+                <lightning:recordEditForm aura:id="Docform">
+                    <!-- the messages component is for error messages -->
+                    <lightning:messages />
+
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-1">
+                            <lightning:datatable data="{!v.callsList }" columns="{!v.mycolumn }" keyField="id" hideCheckboxColumn="false" />
+                            <br /><br />
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:select aura:id="relatedParties" label="Select Person Spoken To" onchange="{!c.getParty}">
+                                <option aura:id="relatedParty" value="">---None---</option>
+                                <aura:iteration items="{!v.conlist}" var="party">
+                                    <Aura:If isTrue="{!party.FirstName != null}">
+                                        <option value="{!party.ContactId}">{!party.FirstName} &nbsp; {!party.LastName}</option>
+                                    </Aura:If>
+                                    <Aura:If isTrue="{!party.FirstName == null}">
+                                        <option value="{!party.Id}">{!party.AccountId}</option>
+                                    </Aura:If>
+                                </aura:iteration>
+                            </lightning:select>
+                            <lightning:input type="hidden" aura:id="PersonSpokenTo" value="{!v.PersonSpokenTo}" />
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <!--<lightning:inputField fieldName="Number_Dialled__c" aura:id="NumberDialled"/>-->
+                            <lightning:input aura:id="NumberDialled" label="Number Dialled" value="{!v.NumberDialled}" />
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <!--<lightning:inputField fieldName="Date_of_Call__c" aura:id="DateofCall"/>-->
+                            <lightning:input type="datetime" aura:id="callStart" label="Start of Call" value="{!v.callStart}" />
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <!--<lightning:inputField fieldName="Time_of_Call__c" aura:id="TimeofCall"/>-->
+                            <lightning:input type="datetime" aura:id="callEnd" label="End of Call" value="{!v.callEnd}" />
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <!--<lightning:inputField fieldName="Extension_Dailed_From__c" aura:id="ExtensionDailedFrom"/>-->
+                            <lightning:input type="text" aura:id="ExtensionDailedFrom" label="Extension Dailed From" value="{!v.ExtensionDailedFrom}" />
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <!--<lightning:inputField fieldName="Absa_User_ID__c" aura:id="AbsaUserID"/>-->
+                            <lightning:input aura:id="AbsaUserID" label="Absa User ID" value="{!v.AbsaUserID}" />
+                        </div>
+                        <div class="slds-col slds-size_1-of-1">
+                            <!--<lightning:inputField fieldName="Brief_Description__c" aura:id="BriefDescription"/>-->
+                            <lightning:textarea aura:id="BriefDescription" label="Brief Description" value="{!v.BriefDescription}" />
+                        </div>
+                        <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center;">
+                                <br />
+                                <lightning:button type="button" label="Add" variant="brand" onclick="{!c.addCallRecordingDetails}" />
+                            </span>
+                        </div>
+                    </div>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </aura:if>
+        <!-- End Telephonic Engagement Form-->
+
+        <!--Resolution Form section added by Diksha for W-6603-->
+        <aura:if isTrue="{!v.showResolution}">
+            <lightning:accordionSection name="Resolution Section" label="Resolution Section" aura:id="form">
+                <lightning:recordEditForm
+                    aura:id="Docform"
+                    recordId="{!v.applicationRecordId}"
+                    recordTypeId="{!v.recordTypeId}"
+                    objectApiName="Application__c"
+                    onsubmit="{c.submitResolutionSectionDetails}"
+                >
+                    <!-- the messages component is for error messages -->
+                    <lightning:messages />
+
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <h1><b>Resolution Section Details</b></h1>
+                            </span>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <label for="individualsisareauthorisedtoact"
+                                    >Any (insert Number) of the individual(s) is(are) authorized to represent the client</label
+                                >
+                                <lightning:inputField
+                                    fieldName="individual_s_is_are_authorised_to_act__c"
+                                    aura:id="individualsisareauthorisedtoact"
+                                    variant="label-hidden"
+                                />
+                            </span>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center;">
+                                <lightning:button type="submit" label="Submit" variant="brand" onclick="{!c.submitResolutionDetails}" />
+                            </span>
+                        </div>
+                    </div>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </aura:if>
+        <!-- End Resolution Form-->
+
+        <!--US Persons Form section added by Diksha for W-6603-->
+        <aura:if isTrue="{!v.showUSPersons}">
+            <lightning:accordionSection name="US Persons Section" label="US Persons Section" aura:id="form">
+                <lightning:recordEditForm
+                    aura:id="Docform"
+                    recordId="{!v.applicationRecordId}"
+                    recordTypeId="{!v.recordTypeId}"
+                    objectApiName="Application__c"
+                    onload="{!c.onloadUSPersons}"
+                    onsuccess="{!c.handleUSPersonsSuccess}"
+                    onerror="{!c.handleUSPersonsError}"
+                >
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <h1><b>US Persons Section Details</b></h1>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label for="saAccSaResNotUSPerson">
+                                    Please tick this box if you are opening a SA Account, you are solely a SA Resident, for tax purposes and you are not an US
+                                    Person.</label
+                                >
+                                <lightning:inputField
+                                    fieldName="SA_Account_SA_Resident_Not_US_Person__c"
+                                    aura:id="saAccSaResNotUSPerson"
+                                    variant="label-hidden"
+                                />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label for="USPerson"> Please tick this box if you are a US Person.</label>
+                                <lightning:inputField
+                                    fieldName="Tick_this_box_if_you_are_a_US_person__c"
+                                    aura:id="USPerson"
+                                    variant="label-hidden"
+                                    onchange="{!c.showOtherUSPersons}"
+                                />
+                            </span>
+                        </div>
+                        <aura:if isTrue="{!v.showOtherUSPersons}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <label for="USPersonCountry"> Please enter the US Person Country.</label>
+                                    <lightning:inputField fieldName="US_Person_Country__c" aura:id="USPersonCountry" variant="label-hidden" />
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <label for="USPersonTIN"> Please enter the US Person Tax identification Number.</label>
+                                    <lightning:inputField fieldName="US_Person_Tax_Identification_Number__c" aura:id="USPersonTIN" variant="label-hidden" />
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <label for="USPersonTaxNotAvail"> Please indicate if the US Person Tax Number not available.</label>
+                                    <lightning:inputField
+                                        fieldName="US_Person_Tax_number_not_available__c"
+                                        aura:id="USPersonTaxNotAvail"
+                                        variant="label-hidden"
+                                    />
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <label for="USPersonTaxReason"> Please enter the reason why the US Person Tax Number not available.</label>
+                                    <lightning:inputField
+                                        fieldName="Reason_tax_number_not_available_Supply__c"
+                                        aura:id="USPersonTaxReason"
+                                        variant="label-hidden"
+                                    />
+                                </span>
+                            </div>
+                        </aura:if>
+                        <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center;">
+                                <lightning:button type="submit" label="Submit" variant="brand" />
+                            </span>
+                        </div>
+                    </div>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </aura:if>
+        <!-- End US Persons Form-->
+
+        <!--Debt Counselling section added by Tinashe for W-008163-->
+        <aura:if isTrue="{!v.showDebtCounselling}">
+            <lightning:accordionSection name="Debt Counselling Section" label="Debt Counselling Section" aura:id="form">
+                <lightning:recordEditForm
+                    aura:id="debtCounsellingform"
+                    recordId="{!v.applicationRecordId}"
+                    recordTypeId="{!v.recordTypeId}"
+                    objectApiName="Application__c"
+                    onload="{!c.onloadDebtCounselling}"
+                    onsuccess="{!c.handleDebtCounsellingSuccess}"
+                    onerror="{!c.handleDebtCounsellingError}"
+                >
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <h1><b>Debt Counselling Section Details</b></h1>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label for="pendingDebtCounsellingApp"> Do you have a pending debt counselling application? [Y/N].</label>
+                                <lightning:inputField
+                                    fieldName="Pending_Debt_Counselling_Application__c"
+                                    aura:id="pendingDebtCounsellingApp"
+                                    variant="label-hidden"
+                                />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label for="dateOfApp"> If “Yes”, date of application (dd/mm/ccyy).</label>
+                                <lightning:inputField fieldName="Date_of_Application__c" aura:id="dateOfApp" variant="label-hidden" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label for="currentlyUnderDebtCounselling"> Are you currently undergoing debt counselling? [Y/N].</label>
+                                <lightning:inputField
+                                    fieldName="Currently_Undergoing_Debt_Counselling__c"
+                                    aura:id="currentlyUnderDebtCounselling"
+                                    variant="label-hidden"
+                                />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label for="nameOfCounsellor"> If “Yes”, name of debt counsellor.</label>
+                                <lightning:inputField fieldName="Name_of_Debt_Counsellor__c" aura:id="nameOfCounsellor" variant="label-hidden" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label for="everUnderGoneDebtCounselling"> Have you ever undergone debt counselling? [Y/N].</label>
+                                <lightning:inputField
+                                    fieldName="Ever_Undergone_Debt_Counselling__c"
+                                    aura:id="everUnderGoneDebtCounselling"
+                                    variant="label-hidden"
+                                />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label for="clearanceDate"> If “Yes”, provide debt counselling clearance date (dd/mm/ccyy).</label>
+                                <lightning:inputField fieldName="Debt_Counselling_Clearance_Date__c" aura:id="clearanceDate" variant="label-hidden" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center;">
+                                <lightning:button type="submit" label="Submit" variant="brand" />
+                            </span>
+                        </div>
+                    </div>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </aura:if>
+        <!-- End Debt Counselling Form-->
+
+        <!--Debt Counselling section added by Tinashe for W-008163-->
+        <aura:if isTrue="{!v.showAnnualCreditLimitIncrease}">
+            <lightning:accordionSection name="Annual Credit Limit Increase Section" label="Annual Credit Limit Increase Section" aura:id="form">
+                <lightning:recordEditForm
+                    aura:id="annualCreditLimitIncreaseform"
+                    recordId="{!v.applicationRecordId}"
+                    recordTypeId="{!v.recordTypeId}"
+                    objectApiName="Application__c"
+                    onload="{!c.onloadAnnualCreditLimitIncrease}"
+                    onsuccess="{!c.handleAnnualCreditLimitIncreaseSuccess}"
+                    onerror="{!c.handleAnnualCreditLimitIncreaseError}"
+                >
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <h1><b>Annual Credit Limit Increase Section Details</b></h1>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label for="annualCreditLintIncreaseFld"> Annual Credit Limit Increases. (For credit facilities only)</label>
+                                <lightning:inputField
+                                    fieldName="Annual_Credit_Limit_Increase__c"
+                                    aura:id="annualCreditLintIncreaseFld"
+                                    variant="label-hidden"
+                                />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center;">
+                                <lightning:button type="submit" label="Submit" variant="brand" />
+                            </span>
+                        </div>
+                    </div>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </aura:if>
+        <!-- End Debt Counselling Form-->
+    </aura:if>
+
+        <!-- Generate document  -->
+        <lightning:accordionSection name="Generate_Documents" label="Generate Documents">
+            <lightning:select
+                aura:id="generateFileType"
+                name="generateFileType"
+                label="Select the type of document to generate."
+                required="true"
+                value="{!v.fileType}"
+                onchange="{!c.setDocumentTemplate}"
+            >
+                <option value="">Choose one...</option>
+                <aura:iteration items="{!v.picklistValues}" var="item">
+                    <option value="{!item.value}">
+                        <!--selected="{!v.fileType}"-->
+                        {!item}
+                    </option>
+                </aura:iteration>
+            </lightning:select>
+            <br />
+            <aura:if isTrue="{!v.showSignatoriesCmp}">
+                <c:DocumentSignatories aura:id="documentSignatoriesCmp" recordId="{!v.recordId}" processName="Select Signatories" />
+                <br />
+            </aura:if>
+
+            <button class="slds-button slds-button_brand" onclick="{!c.doNewGenerate}">Generate</button>
+        </lightning:accordionSection>
+
+        <aura:if isTrue="{!(v.processType != 'Voice Sales Product Onboarding')}">
+
+        <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+            <lightning:card title="Upload Documents" iconName="standard:document" class="slds-m-left_small">
+                <c:DocumentUploader recordId="{!v.recordId}" />
+            </lightning:card>
+        </article>
+    </aura:if>
+
+        <!-- Document list -->
+        <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+            <lightning:card title="View Documents" iconName="standard:document" class="slds-m-left_small">
+                <aura:set attribute="actions">
+                    <lightning:button label="Refresh" disabled="{!v.isRefresh}" onclick="{!c.refreshDocuments}" aura:id="refreshBtn" />
+                </aura:set>
+
+                <aura:if isTrue="{!v.isCAFApplication == true}">
+                    <lightning:datatable
+                        columns="{! v.columnsAuditCAF }"
+                        data="{! v.dataAudit }"
+                        keyField="id"
+                        onrowaction="{!c.handleRowAction}"
+                        hideCheckboxColumn="true"
+                        minColumnWidth="100"
+                    />
+                </aura:if>
+
+                <aura:if isTrue="{!v.isCAFApplication == false}">
+                    <lightning:datatable
+                        columns="{! v.columnsAudit }"
+                        data="{! v.dataAudit }"
+                        keyField="id"
+                        onrowaction="{!c.handleRowAction}"
+                        hideCheckboxColumn="true"
+                        minColumnWidth="100"
+                        defaultSortDirection="{!v.defaultSortDirection}"
+                                     sortedDirection="{!v.sortDirection}"
+                                     sortedBy="{!v.sortedBy}"
+                                     onsort="{!c.handleSort}"
+                    />
+                </aura:if>
+
+                <!-- Error Message -->
+                <aura:if isTrue="{!not(empty(v.errorMessageViewDocuments))}">
+                    <div class="recordError">
+                        <br />
+                        <h2 class="slds-section__title" style="color: red">{!v.errorMessageViewDocuments}</h2>
+                        <br />
+                    </div>
+                </aura:if>
+            </lightning:card>
+        </article>
+
+        <!--Changes by chandra against W-012497-->
+        <aura:if isTrue="{!(v.processType == 'Voice Sales Product Onboarding')}">
+            <lightning:input type="checkbox" 
+                             label="You hereby accept this contract and all terms and conditions associated with it." 
+                             name="consnetCheck"
+                             aura:id="consnetCheckBox"
+                             checked="false"
+                             onchange="{! c.handleCheckBoxChange}"/>
+            <lightning:button aura:id="acceptButton" variant="brand" label="Accept" title="accept" onclick="{! c.handleAccept }" disabled="true" />
+        </aura:if>
+    </lightning:accordion>
+    <!-- Validation for Upload Documents -->
+    <aura:attribute name="opportunityRecord" type="Object" />
+    <aura:attribute name="recordLoadError" type="String" />
+    <aura:attribute name="processType" type="String" />
+    <!--Added a field Process Type and email field in record loader by chandra dated 11/08/2021-->
+    <force:recordData
+        aura:id="recordLoader"
+        recordId="{!v.recordId}"
+        fields="Entity_Type__c,Case__c,QA_Complex_Approval_Status__c,Complex_Application__c,Process_Type__c,Email__c"
+        targetFields="{!v.opportunityRecord}"
+        targetError="{!v.recordLoadError}"
+        recordUpdated="{!c.handleRecordUpdated}"
+    />
+
+    <!--Confirm Dialog Started-->
+    <div class="slds-m-around_xx-large">
+        <aura:if isTrue="{!v.isShowPreview}">
+            <!--Modal Box Start-->
+            <div role="dialog" class="slds-modal slds-fade-in-open ">
+                <div class="slds-modal__container">
+                    <!--Modal Box Content Start-->
+                    <div class="slds-modal__content slds-p-around--medium">
+                        <c:pdfViewer pdfData="{!v.pdfData}" />
+                    </div>
+                    <!--Modal Box Content End-->
+
+                    <!--Modal Box Button Start-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button name='Close' label='Close' onclick='{!c.handleCloseModal}'/>
+                    </footer>
+                    <!--Modal Box Button End-->
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop--open"></div>
+        </aura:if>
+    </div>
+    <aura:html tag="style">
+        .slds-modal__container{
+        width : 100vh !important;
+        max-width: 100vh !important;
+        }
+        .slds-modal__content{
+        height : 100vh !important;
+        max-height: 100vh !important;
+        }
+    </aura:html>
+    <!--Confirm Dialog End-->
+</aura:component>

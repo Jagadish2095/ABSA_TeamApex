@@ -1,0 +1,85 @@
+<!--
+* Lightning Component for Credit Onboarding Attestation for Bankers
+*
+* @author  Saurabh Pandey : Absa
+* @version v1.0
+* @since   2020-05-05
+*
+-->
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" controller="CobAttestationPopUpController" access="global" >
+
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:attribute name="showAttestationModal" type="boolean" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="datetime" type="DateTime"/>
+    <aura:attribute name="oppRecord" type="Object" />
+    <aura:attribute name="oppRecordLDS" type="Object" />
+
+
+    <force:recordData aura:id="loadOppData"
+    layoutType="FULL"
+    fields="Name,OwnerId,Owner.Name"
+    recordId="{!v.recordId}"
+    targetError="{!v.recordError}"
+    targetRecord="{!v.record}"
+    targetFields ="{!v.oppRecordLDS}"
+    mode="EDIT" />
+
+
+     <lightning:input label="Owner Name" aura:id="OwnerId" value="{!v.oppRecordLDS.OwnerId}" class="slds-hide"/>
+    <aura:if isTrue="{!v.showAttestationModal}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.closeAttestationModal }"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"/>
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Security Disclaimer</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>
+                                    <lightning:recordEditForm aura:id="attestModal" objectApiName="Opportunity" recordId="{!v.recordId}" onsubmit="{!c.submitAttestation}">
+                                        <lightning:layout multipleRows="true" >
+                                            <lightning:layoutItem padding="around-medium" size="12" >
+                                                <label for="OwnerName">Collegue Name </label>
+                                               <p><lightning:formattedText value="{!v.oppRecord.Owner.Name}" /></p>
+                                                <lightning:outputField fieldName="Owner.Name" aura:id="OwnerName" required="true" variant="label-hidden"/>
+                                            </lightning:layoutItem>
+
+                                            <lightning:layoutItem padding="around-small" size="12" >
+                                                <lightning:inputField fieldName="Site__c" aura:id="SiteCode" required="true"/>
+                                                <div class="slds-hide">
+                                                <lightning:inputField fieldName="Attestation_History__c" aura:id="attestHistory" />
+                                                </div>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-medium" size="12" >
+                                                 <label for="oDateTime">Date : </label>
+                                               <ui:outputDateTime aura:id="oDateTime" value=""  />
+                                             </lightning:layoutItem>
+
+                                            <lightning:layoutItem padding="around-large" size="12" >
+                                               <ui:outputText value="Access to this system has been granted to you in line with your responsibility and competencies. Abuse of this access through the manipulation or capturing of incorrect/fictitious information could result in disciplinary action."/>
+                                            </lightning:layoutItem>
+                                        </lightning:layout>
+                                    </lightning:recordEditForm>
+                                </p>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <lightning:button class="slds-float_left"
+                                                  variant="neutral"
+                                                  label="Cancel"
+                                                  title="Cancel"
+                                                  onclick="{! c.closeAttestationModal }"/>
+                                <lightning:button variant="brand"
+                                                  label="Accept"
+                                                  title="Accept"
+                                                  onclick="{! c.submitAttestation}"/>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+</aura:component>

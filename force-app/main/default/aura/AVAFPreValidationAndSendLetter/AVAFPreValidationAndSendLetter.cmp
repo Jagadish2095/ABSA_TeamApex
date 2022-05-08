@@ -1,0 +1,87 @@
+<!--
+* Lightning Container Component for all AVAF Pre-Validation And Send Letter (AVAFPreValidationAndSendLetter)
+*
+* @author  Chandra Bhushan Singh : Absa
+* @version v1.0
+* @since   2020-11-17
+*
+-->
+<aura:component controller="AVAFPreValidAndSendLetterController"
+	implements="lightning:availableForFlowScreens,force:appHostable,force:hasRecordId" access="global">
+	<!--Attribute Initializations-->
+	<aura:attribute name="indicator" type="String" />
+	<aura:attribute name="caseAccountId" type="String" access="global" />
+	<aura:attribute name="caseId" type="String" access="global" />
+	<aura:attribute name="SelectedAccNumberFromFlow" type="String" access="global" />
+	<aura:attribute name="SelectedServiceTypeFromFlow" type="String" access="global" />
+	<aura:attribute name="isCaseCloseShow" type="Boolean" default="false" />
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+
+	<!--Handler Declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<!-- changes made for Ford/Avaf Indicator by Mradul  W-014878 for Paid Up Letter, Copy Natis && Settlement Quotation -->
+	<!-- changes made for Ford/Avaf Indicator by Mradul  W-016021 for Cross Border Letter-->
+	<c:FordAvafIndicator aura:id="fordAvaf" caseId="{!v.caseId}" accountNumber="{!v.SelectedAccNumberFromFlow}" />
+
+
+	<!--Body Start-->
+	<lightning:card>
+		<h3 class="slds-section__title">
+			<span class="slds-truncate slds-button slds-section__title-action"
+				title="{!v.SelectedServiceTypeFromFlow}">{!v.SelectedServiceTypeFromFlow}</span>
+		</h3>
+
+		<!-- Spinner -->
+		<aura:if isTrue="{!v.showSpinner}">
+			<lightning:spinner variant="brand" alternativeText="Busy" size="large" />
+		</aura:if>
+
+		<!-- Error Message -->
+		<aura:if isTrue="{!not(empty(v.errorMessage))}">
+			<div class="recordError">
+				<br />
+				<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+				<br />
+			</div>
+		</aura:if>
+
+		<aura:if isTrue="{! and(v.SelectedServiceTypeFromFlow == 'Cross Border Letter', v.indicator == 'Y' )}">
+			<c:AVAFCrossBorderLetterRequest caseAccountId="{!v.caseAccountId}"
+				SelectedAccNumberFromFlow="{!v.SelectedAccNumberFromFlow}" isCaseCloseShow="{!v.isCaseCloseShow}" />
+			<aura:set attribute="else">
+				<aura:if isTrue="{! and(v.SelectedServiceTypeFromFlow == 'Paid Up Letter', v.indicator == 'Y' )}">
+					<c:AvafPaidUpLetterRequest caseAccountId="{!v.caseAccountId}"
+						SelectedAccNumberFromFlow="{!v.SelectedAccNumberFromFlow}"
+						isCaseCloseShow="{!v.isCaseCloseShow}" />
+					<aura:set attribute="else">
+						<aura:if
+							isTrue="{! and(v.SelectedServiceTypeFromFlow == 'Settlement Quotation', v.indicator == 'Y')}">
+							<c:AvafSettlementQuote caseAccountId="{!v.caseAccountId}"
+								SelectedAccNumberFromFlow="{!v.SelectedAccNumberFromFlow}"
+								isCaseCloseShow="{!v.isCaseCloseShow}" />
+							<!-- Added by Bhanumurty for W-009261 task -->
+							<aura:set attribute="else">
+								<aura:if
+									isTrue="{! and(v.SelectedServiceTypeFromFlow == 'Copy NATIS', v.indicator == 'Y')}">
+									<c:AVAFCopyNatisRequest caseAccountId="{!v.caseAccountId}"
+										SelectedAccNumberFromFlow="{!v.SelectedAccNumberFromFlow}"
+										isCaseCloseShow="{!v.isCaseCloseShow}" />
+								</aura:if>
+							</aura:set>
+							<!-- End of W-009261 task -->
+						</aura:if>
+					</aura:set>
+				</aura:if>
+			</aura:set>
+		</aura:if>
+
+		<aura:if isTrue="{! or(v.isCaseCloseShow, v.indicator == 'N' )}">
+			<lightning:layoutItem size="12" padding="around-small">
+				<lightning:button class="slds-float--center" variant="brand" label="Close Case" title="Close"
+					onclick="{!c.caseClose}" aura:id="close" />
+			</lightning:layoutItem>
+		</aura:if>
+	</lightning:card>
+</aura:component>

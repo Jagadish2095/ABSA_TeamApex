@@ -1,0 +1,131 @@
+<!--Sales Onboarding Products Information -->
+<!--@author  Koketso Mpshane-->
+<!--@since   30-08-2021-->
+<!--@Work Id: W-012492 -->
+<aura:component controller="SalesOnboardingProductsInformation" implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction,lightning:availableForFlowScreens" access="global" >
+    
+    <!--Attribute Declaration-->
+    <aura:attribute name="roaFeatureData" type="List" default="[]" />
+    <aura:attribute name="chequeProductList" type="List" default="[]" />
+    <aura:attribute name="showProductInformation" type="Boolean" default="false" />
+    <aura:attribute	name="productTypes"	type="List"	default="['Transactional Cheque']" />
+    <aura:attribute name="selectedProductType" type="String" default="" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" default="" />
+    
+    <!--Handler Declaration-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <!--Error Message-->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <ui:message title="Error" severity="error" closable="true"> {!v.errorMessage} </ui:message>
+    </aura:if>
+    
+    <!-- Lightning Spinner -->
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+    </aura:if>
+    
+    <div class="slds-card__body slds-card__body_inner">
+        <lightning:layout>
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:select
+                                  label="Product List"
+                                  aura:id="fProductTypes"
+                                  value="{!v.selectedProductType}"
+                                  required="false"
+                                  disabled="false"
+                                  >
+                    <option text="Please select" value="" />
+                    <aura:iteration items="{!v.productTypes}" var="product">
+                        <option text="{!product}" value="{!product}" />
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <br/>
+                <a href="javascript:void(0)" onclick="{!c.viewProductInformation}">
+                    View Product Information 
+                </a>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </div>    
+    
+    <aura:if isTrue="{!v.showProductInformation}">
+        <!--Product Information MODAL BOX Start-->
+        <section
+                 role="dialog"
+                 tabindex="-1"
+                 aria-labelledby="modal-heading-01"
+                 aria-modal="true"
+                 aria-describedby="modal-content-id-1"
+                 class="slds-modal slds-fade-in-open"
+                 >
+            <div class="slds-modal__container container-products">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon
+                                          iconName="utility:close"
+                                          onclick="{! c.closeProductInformation}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"
+                                          />
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!v.selectedProductType} Available Products</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <aura:if isTrue="{!not(empty(v.chequeProductList))}">
+                        <aura:iteration items="{!v.chequeProductList}" var="item">
+                            <div class="slds-card__body slds-card__body_inner">
+                                <article class="slds-card slds-card_boundary">
+                                    <div class="slds-card__body slds-card__body_inner">
+                                        <lightning:accordion aura:id="productInfoAccodion" allowMultipleSectionsOpen="true">
+                                            <lightning:accordionSection name="{!item.value}" label="{!item.label}">
+                                                <aura:set attribute="body">
+                                                    <aura:iteration items="{!v.roaFeatureData}" var="itemVal">
+                                                        <aura:if isTrue="{!itemVal.Product_Code__c == item.value}">
+                                                            <tr><h2><ui:outputText value="{!itemVal.Name}" /></h2></tr>
+                                                            <br/>
+                                                            <tr class="slds-list_horizontal slds-wrap">
+                                                                <td>Recommended Income:&nbsp;</td>
+                                                                <td style="width:20%;">
+                                                                    <b><ui:outputText value="{!itemVal.Recommended_Income__c}" /></b>
+                                                                </td>
+                                                                <td>Monthly Fee:&nbsp;</td>
+                                                                <td style="width:20%;">
+                                                                    <b><ui:outputText value="{!itemVal.Montly_Fee__c}" /></b>
+                                                                </td>
+                                                                <td>Features and Benefits:&nbsp;</td>
+                                                                <td>
+                                                                    <b>Retrenchment cover of R5 000</b><br/>
+                                                                    <b>Disability cover of R5 000</b><br/>
+                                                                    <b>R20 000 lump sum death benefit</b><br/>
+                                                                    <a href="{!itemVal.Pdf_Url__c}" target="_blank">
+                                                                        More features and benefits
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                            <hr/>
+                                                        </aura:if>
+                                                    </aura:iteration>
+                                                </aura:set>
+                                            </lightning:accordionSection>
+                                        </lightning:accordion>
+                                    </div>
+                                </article>
+                            </div>
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <ui:message title="" severity="info" closable="true">{!v.selectedProductType} products are currently not available in system!</ui:message>
+                        </aura:set>
+                    </aura:if>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Close" title="Close" aura:id="btnClose" onclick="{!c.closeProductInformation}" />
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!-- Product Information MODAL BOX END-->
+    </aura:if>
+    
+</aura:component>

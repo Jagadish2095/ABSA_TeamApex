@@ -1,0 +1,403 @@
+<!--Author : Mbuyiseni Mbhokane -->
+<aura:component controller="DebitCardOrderingController" implements="flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    
+    <!--START CARD ORDERING ATTRIBUTES -->
+    
+    <!--<aura:attribute name="productCode" type="String[]"/>--> <!--Not created, will work on how to populate the code based on the product  Account-->
+    <aura:attribute name="secondaryCardClientCode" type="String"/><!--Not yet Created	 -->
+    <aura:attribute name="clienttype" type="String"/><!--not yet created	 -->
+    <aura:attribute name="applicationProductRecordId" type="String" default = "" />
+    <aura:attribute name="applicationProduct" type="Application_Product__c" default="{ 'sobjectType': 'Application_Product__c','Card_Fee__c': 'N','Lost_Fee__c': 'N','Card_Delivery_Method__c': 'Branch','Card_Cash_Limit__c': '0','Card_Counter_Limit__c': '0','Card_POS_Limit__c': '0','Card_Transfer_Limit__c': '0','Savings_Cash_Limit__c': '0','Savings_POS_Limit__c': '0','Savings_Transfer_Limit__c': '0' }"/>
+    <aura:attribute name="accountRecord" type="Account" default="{ 'sobjectType': 'Account' }"/>
+    <aura:attribute name="addressRecord" type="Address__c" default="{ 'sobjectType': 'Address__c' }"/>
+    <aura:attribute name="relatedParties" type="List" />
+    <aura:attribute name="opportunityLineItemDetails" type="List" />
+    <aura:attribute name="selectedProductCode" type="String"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:attribute name="staticBrandColumns" type="List"/>
+    <aura:attribute name="productcolumns" type="List"/>
+    <aura:attribute name="productBrandColumns" type="List"/>
+    <aura:attribute name="products" type="List"/>
+    <aura:attribute name="staticBrandNums" type="List"/>
+    <aura:attribute name="productCodeList" type="List"/>
+    <aura:attribute name="productBrandList" type="List"/>
+    <aura:attribute name="selectedRowsCount" type="Integer" default="0"/>
+    <aura:attribute name="maxRowSelection" type="Integer" default="1"/>
+    <aura:attribute name="selectedRowId" type="String"/>
+    <aura:attribute name="isSelectedId" type="Boolean" default="false"/>
+    <aura:attribute name="selectedContactId" type="String"/>
+    <aura:attribute name="progressIndicatorFlag" type="String" />
+    <aura:attribute name="combiCardNumber" type="String" />
+    <aura:attribute name="deliveryFeeAmount" type="String" />
+    <aura:attribute name="cardFeeAmount" type="String" />
+    <aura:attribute name="clientAccNumber" type="String"/>
+    <aura:attribute name="clientCIF" type="String"/>
+    <aura:attribute name="currentRecord" type="Object"/>
+	<aura:attribute name="currentOppAccId" type="String"/>
+    <aura:attribute name="selectedRelatedPartyCIF" type="String"/>
+    <aura:attribute name="showCardNumber" type="Boolean" default="false"/>
+    <aura:attribute name="showCardFees" type="Boolean" default="false"/>
+    
+    <aura:attribute name="opportunityRecord" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="newApplicationId" type="String"/>
+    
+    <!--SELECTED PREF PRODUCT FOR CLIENT SERVICE ATTR -->
+    <aura:attribute name="productType" type="String"/>
+    <aura:attribute name="productCode" type="String"/>
+    <aura:attribute name="productBrand" type="String"/>
+    <aura:attribute name="selectedBrandProduct" type="String"/>
+    <aura:attribute name="selectedAccountNumber" type="String"/>
+    <aura:attribute name="secCardClientCode" type="String"/>
+    <aura:attribute name="nameIndicator" type="String"/>
+    <aura:attribute name="cardDeliveryMethod" type="String"/>
+    <aura:attribute name="personFullName" type="Boolean" default="false"/>
+    <!--/SELECTED PREF PRODUCT FOR CLIENT SERVICE ATTR -->
+    
+    <aura:attribute name="selectedBrandNumber" type="String"/>
+    <aura:attribute name="selectedCardType" type="String"/>
+    <aura:attribute name="sbuCode" type="String"/>
+    
+    <!--APPLICATION FIELD INPUT VALUES -->
+    <aura:attribute name="accAutoLinkInd" type="String"/>
+    <aura:attribute name="pinRequiredInd" type="String"/>
+    <aura:attribute name="cardFeeField" type="String"/>
+    <aura:attribute name="lostFeeField" type="String"/>
+    <aura:attribute name="showAddress" type="Boolean" default="false"/>
+    <!--/APPLICATION FIELD INPUT VALUES  -->
+
+    <!--SELECTED RELATED PARTY ADDRESS-->
+    <aura:attribute name="relatedPartyAddressDetail" type="List"/>
+    <aura:attribute name="street" type="String"/>
+    <aura:attribute name="suburb" type="String"/>
+    <aura:attribute name="province" type="String"/>
+    <aura:attribute name="city" type="String"/>
+    <aura:attribute name="country" type="String"/>
+    <aura:attribute name="postalCode" type="String"/>
+    <aura:attribute name="addressId" type="String"/>
+    <!--/SELECTED RELATED PARTY ADDRESS-->
+
+    <aura:attribute name="idType" type="String"/>
+    <aura:attribute name="idNumber" type="String"/>
+    <aura:attribute name="idPspInd" type="String"/>
+    <aura:attribute name="passportNumber" type="String"/>
+    <aura:attribute name="selectedName" type="String"/>
+    
+    <aura:attribute name="isStepOne" type="Boolean" default="true"/>
+    <aura:attribute name="isStepTwo" type="Boolean" default="false"/>
+    <aura:attribute name="isStepThree" type="Boolean" default="false"/>
+    <aura:attribute name="isStepFour" type="Boolean" default="false"/>
+    <aura:attribute name="isStepFive" type="Boolean" default="false"/>
+    <aura:attribute name="isStepSix" type="Boolean" default="false"/>
+    <aura:attribute name="showdebitCardOrderingModel" type="Boolean" default="false"/>
+	<aura:attribute name="showSpinner2" type="Boolean" default="false"/>
+    <aura:attribute name="oppStageName" type="String"/> <!--W-008562-->
+    <aura:method name="getOpportunityId" action="{!c.doInit}"
+                 description="Sample method with parameters">
+        <aura:attribute name="oppId" type="String" />
+    </aura:method>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+
+    
+    <lightning:workspaceAPI aura:id="workspace"/>
+    
+    <!-- Loading Spinner-->
+     <aura:if isTrue="{!v.showSpinner2}">
+        <center class="isActivityLoading" style="z-index:99">  
+            <lightning:spinner aura:id="TheSpinner"  variant="brand" size="large" />
+        </center>
+    </aura:if>
+    
+    <!-- Enable multi-line toast -->
+    <aura:html tag="style">.toastMessage.forceActionsText{white-space : pre-line !important;}</aura:html>
+    
+    <!--GET OPPORTUNITY RECORD DATA -->
+    <force:recordData aura:id="opportunityRecordLoader"
+                      recordId="{!v.recordId}"
+                      fields="AccountId,Account.Name,Account.CIF__c"
+                      targetFields="{!v.opportunityRecord}"
+                      targetError="{!v.recordLoadError}"
+                      recordUpdated="{!c.handleOpportunityLoad}"
+                      />
+    
+    <!--/GET OPPORTUNITY RECORD DATA -->
+    
+    <aura:if isTrue="{!v.showdebitCardOrderingModel}">
+        
+        <!--<div class="exampleHolder">
+            <lightning:spinner alternativeText="Loading" size="large" variant="brand"/>
+        </div>-->
+        
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closedebitCardOrderingModel}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Debit Card Ordering</h2>
+                </header>
+                <div class="slds-scrollable_y">
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p>
+                            <!--END CARD ORDERING ATTRIBUTES -->
+                            <!-- PROGRESS BAR-->
+                            <lightning:progressIndicator type="path" currentStep="{!v.progressIndicatorFlag}">
+                                <lightning:progressStep label="Related Parties" value="step1"/>
+                                <lightning:progressStep label="Confirmation" value="step2"/>
+                                <lightning:progressStep label="Application" value="step3"/>
+                                <!--<lightning:progressStep label="Product List" value="step4"/>-->
+                                <lightning:progressStep label="Product Brand List" value="step4"/>
+                                <lightning:progressStep label="Combi Card Number" value="step5"/>
+                            </lightning:progressIndicator>
+                            <!-- PROGRESS BAR-->
+                            
+                            <!-- Loading Spinner-->
+                            <aura:if isTrue="{!v.showSpinner2}">
+                                <center style="z-index:99">  
+                                    <lightning:spinner aura:id="TheSpinner"  variant="brand" size="large" />
+                                </center>
+                            </aura:if>
+                            
+                            <lightning:card>
+                                <!--RELATED PARTIES DATATABLE -->
+                                <aura:if isTrue="{!v.isStepOne}">
+                                    
+                                    <lightning:datatable data="{!v.relatedParties }"
+                                                         columns="{!v.mycolumns }"
+                                                         keyField="id"
+                                                         maxRowSelection="{!v.maxRowSelection }"
+                                                         onrowselection="{! c.updateSelectedText }"/>
+                                    <div class="slds-p-around_large">
+                                        <lightning:button aura:id ="relatedPartiesListId" label="Next" onclick="{!c.goToStepTwo}" variant="brand" disabled = "true"/>
+                                    </div>
+                                    <!--/RELATED PARTIES DATATABLE-->
+                                </aura:if>
+                                
+                                <aura:if isTrue="{!v.isStepTwo}">
+                                    <!--SELECTED RELATED PARTY VIEW FORM-->
+                                    <lightning:recordEditForm recordId="{!v.selectedRowId}" objectApiName="Account">
+                                        <lightning:messages/>
+                                        <h3 class="slds-section-title--divider">Related Party Details</h3>
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-horizontal_medium">
+                                                <span>
+                                                    <lightning:outputField fieldName="PersonTitle"/>
+                                                    <lightning:outputField fieldName="Initials__pc"/>
+                                                    <!--<lightning:outputField fieldName="Name"/>-->
+                                                    <label for="cifnumber">Secondary Card Client Code</label>
+                                                    <lightning:outputField aura:id="cifnumber" fieldName="CIF__c" value="{!v.selectedRelatedPartyCIF}" variant="label-hidden"/>
+                                                    <lightning:outputField fieldName="Client_Type__c"/>
+                                                </span>
+                                            </div>
+                                            <div class="slds-col slds-p-horizontal_medium">
+                                                <span>
+                                                    <label for="cifnumber">Full Name</label>
+                                                    <lightning:outputField fieldName="Name" variant="label-hidden"/>
+                                                    <lightning:outputField fieldName="ID_Type__pc"/>
+                                                    <lightning:outputField fieldName="ID_Number__pc"/>
+                                                    <lightning:outputField fieldName="Passport_Number__pc"/>
+                                                    
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="slds-grid">
+                                            <div class="slds-align_absolute-center slds-p-top_medium" >
+                                                <lightning:button label="Back" onclick="{!c.goBackToStepOne}" />
+                                                <lightning:button aura:id ="relatedPartyConfirmId" label="Next" onclick="{!c.goToStepThree}" variant="brand" disabled = "false"/> 
+                                            </div>
+                                        </div>
+                                    </lightning:recordEditForm>
+                                    
+                                    <!--/SELECTED RELATED PARTY VIEW FORM-->
+                                </aura:if>
+                                
+                                <aura:if isTrue="{!v.isStepThree}">
+                                    
+                                    <!--CREATE APPLICATION PRODUCTS-->
+                                    <lightning:recordEditForm objectApiName="Application_Product__c" 
+                                                              aura:id="createCardOrdering"
+                                                              onsuccess="{!c.handleSuccess}">
+
+                                        <lightning:messages aura:id="applicationFormError"/>
+                                        
+                                        <h3 class="slds-section-title--divider">Client Card Ordering Details</h3>
+                                        
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-horizontal_medium">
+                                                <span>
+                                                    
+                                                    <lightning:inputField aura:id="persIndField" fieldName="Personalised_Indicator__c" required="true" value="{!v.applicationProduct.Personalised_Indicator__c}" onchange="{!c.handlePersIndOnChange}"/>
+                                                    <aura:if isTrue="{!v.showAddress}">
+                                                    <lightning:inputField aura:id="nameIndField" fieldName="Name_Indicator__c" onchange="{!c.handleNameIndChange}" value="{!v.applicationProduct.Name_Indicator__c}" />
+                                                    </aura:if>
+
+                                                    <aura:if isTrue="{!v.showCardNumber}">
+                                                    <lightning:inputField aura:id="debitCardNumField" fieldName="Debit_Card_Number__c" value="{!v.applicationProduct.Debit_Card_Number__c}" />
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!v.personFullName}">
+                                                    <lightning:inputField aura:id="personNameField" fieldName="Name__c" required="true" value="{!v.applicationProduct.Name__c}" />
+                                                    </aura:if>
+                                                    <ui:inputCheckbox aura:id="replacementCardField" label="&nbsp; Replacement Card" value="{!v.applicationProduct.Replacement_Card__c}" change="{!c.handleCheckboxChange}"/>
+
+                                                    <aura:if isTrue="{!v.showCardFees}">
+                                                    <lightning:inputField aura:id="cardFeeField" fieldName="Card_Fee__c"  value="{!v.applicationProduct.Card_Fee__c}" />
+                                                    <lightning:inputField aura:id="lostFeeField" fieldName="Lost_Fee__c"  value="{!v.applicationProduct.Lost_Fee__c}" />
+                                                    </aura:if>
+                                                    <lightning:inputField aura:id="opportunityId" fieldName="Opportunity__c" value="{!v.recordId}" readonly="true" class="slds-hidden"/>
+
+                                                </span>
+                                            </div>
+                                            <div class="slds-col slds-p-horizontal_medium">
+                                                <span>
+                                                    
+                                                    <lightning:inputField aura:id="clientCodeField" fieldName="Client_Code__c" value="{!v.opportunityRecord.Account.CIF__c}" readonly="true"/>
+                                                    <lightning:inputField aura:id="cardDeliveryMethodField" fieldName="Card_Delivery_Method__c" required="true" value="{!v.applicationProduct.Card_Delivery_Method__c}" onchange="{!c.handleCardDeliveryChange}"/>
+                                                    <lightning:inputField aura:id="cardTypeField" fieldName="Card_Type__c" required="true" value="{!v.applicationProduct.Card_Type__c}" />
+                                                    <lightning:inputField aura:id="cardDeliverySiteCodeField" fieldName="Card_Delivery_Site_Code__c" value="{!v.applicationProduct.Card_Delivery_Site_Code__c}" />
+
+                                                    <!--Hidden inputFields : These fields will be automatically be SET -->
+                                                    <lightning:inputField fieldName="Product_Type__c" value="{!v.productType}" class="slds-hidden"/>
+                                                    <!--END of the Hidden fields -->
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <h3 class="slds-section-title--divider">Card Transaction Limits</h3>
+                                        
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-horizontal_medium">
+                                                <span>
+                                                    <!--SETTING DEFAULT VALUES TO ZERO -->
+                                                    <lightning:inputField aura:id="cardCashLimitField" fieldName="Card_Cash_Limit__c" value="{!v.applicationProduct.Card_Cash_Limit__c}" />	
+                                                    <lightning:inputField aura:id="cardCounterLimitField" fieldName="Card_Counter_Limit__c" value="{!v.applicationProduct.Card_Counter_Limit__c}" />
+                                                    <lightning:inputField aura:id="cardPosLimitField" fieldName="Card_POS_Limit__c" value="{!v.applicationProduct.Card_POS_Limit__c}" />	
+                                                    <lightning:inputField aura:id="cardTransferLimitField" fieldName="Card_Transfer_Limit__c" value="{!v.applicationProduct.Card_Transfer_Limit__c}" />
+                                                </span>
+                                            </div>
+                                            <div class="slds-col slds-p-horizontal_medium">
+                                                <span>
+                                                    <lightning:inputField aura:id="savingsCashLimitField" fieldName="Savings_Cash_Limit__c" value="{!v.applicationProduct.Savings_Cash_Limit__c}" />
+                                                    <lightning:inputField aura:id="savingsPosLimitField" fieldName="Savings_POS_Limit__c" value="{!v.applicationProduct.Savings_POS_Limit__c}" />
+                                                    <lightning:inputField aura:id="savingsTransferLimitField" fieldName="Savings_Transfer_Limit__c" value="{!v.applicationProduct.Savings_Transfer_Limit__c}" />
+                                                     
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                    </lightning:recordEditForm>
+
+                                    <!--SELECTED RESIDENTIAL ADDRESS-->
+                                    <aura:if isTrue="{!v.showAddress}">
+                                    <lightning:recordEditForm aura:id = "addressEditForm" recordId="{!v.addressId}" objectApiName="Address__c">
+                                        <h3 class="slds-section-title--divider">Card Delivery Address</h3>
+
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-horizontal_medium">
+                                                <span>
+                                                    <lightning:inputField aura:id="streetField" fieldName = "Shipping_Street__c" value="{!v.addressRecord.Shipping_Street__c}"/>
+                                                    <lightning:inputField aura:id="street2Field" fieldName = "Shipping_Street_2__c" value="{!v.addressRecord.Shipping_Street_2__c}"/>
+                                                    <lightning:inputField fieldName = "Shipping_City__c" value="{!v.addressRecord.Shipping_City__c}"/>
+                                                    <lightning:inputField fieldName = "Shipping_Zip_Postal_Code__c" value="{!v.addressRecord.Shipping_Zip_Postal_Code__c}"/>
+                                                </span>
+                                            </div>
+
+                                            <div class="slds-col slds-p-horizontal_medium">
+                                                <span>
+                                                    <lightning:inputField fieldName = "Shipping_Suburb__c" value="{!v.addressRecord.Shipping_Suburb__c}"/>
+                                                    <lightning:inputField fieldName = "Shipping_State_Province__c" value="{!v.addressRecord.Shipping_State_Province__c}"/>
+                                                    <lightning:inputField fieldName = "Shipping_Country__c" value="{!v.addressRecord.Shipping_Country__c}"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </lightning:recordEditForm>
+                                </aura:if>
+                                    <!--/SELECTED RESIDENTIAL ADDRESS-->
+
+                                        <div class="slds-grid">
+                                            <div class="slds-align_absolute-center slds-p-top_medium" >
+                                                <lightning:button label="Back" onclick="{!c.goBackToStepTwo}" />
+                                                <lightning:button aura:id ="applicationFormId" label="Next" onclick="{!c.goToStepFour}" variant="brand" disabled = "false"/>
+                                            </div>
+                                        </div>
+                                    
+                                </aura:if>
+                                <!--/CREATE APPLICATION PRODUCTS-->
+                                
+                                <!--LIST PREF PRODUCT FOR CLIENT-->
+                                <!--<aura:if isTrue="{!v.isStepFour}">
+                                    <lightning:datatable data="{!v.products}"
+                                                         columns="{!v.productcolumns}"
+                                                         keyField="id"
+                                                         maxRowSelection="{!v.maxRowSelection }"
+                                                         onrowselection="{! c.selectedClientProduct }"/>
+                                    <div class="slds-grid">
+                                        <div class="slds-align_absolute-center slds-p-top_medium" >
+                                            <lightning:button label="Back" onclick="{!c.goBackToStepThree}" />
+                                            <lightning:button aura:id ="productListId" label="Next" onclick="{!c.goToStepFive}" variant="brand" disabled = "true"/> 
+                                        </div>
+                                    </div>
+                                </aura:if>-->
+                                <!--/LIST PREF PRODUCT FOR CLIENT-->
+                                
+                               <!--PRODUCT BRAND LIST DATA TABLE -->
+
+                                <!-- WILL BE USED TO DISPLAY DATA RETURNED FROM THE BRAND LIST SERVICE-->
+                                <!--<aura:if isTrue="{!v.isStepFive}">
+                                    <lightning:datatable data="{!v.productBrandList}"
+                                                         columns="{!v.productBrandColumns}"
+                                                         keyField="id"
+                                                         maxRowSelection="{!v.maxRowSelection }"
+                                                         onrowselection="{! c.selectedBrandProduct }"/>
+                                    <div class="slds-grid">
+                                        <div class="slds-align_absolute-center slds-p-top_medium" >
+                                            <lightning:button label="Back" onclick="{!c.goBackToStepFour}" />
+                                            <lightning:button aura:id ="brandListId" label="Next" onclick="{!c.goToStepSix}" variant="brand" disabled = "false"/> 
+                                        </div>
+                                    </div>
+                                </aura:if>-->
+
+                                <!--DISPLAY THE STATIC BRAND NUMBERS FROM THE CUSTOM MATADATA TYPE-->
+                                <aura:if isTrue="{!v.isStepFour}"> <!--Was changed from isStepFive to isStepFour-->
+                                    <lightning:datatable data="{!v.staticBrandNums}"
+                                                         columns="{!v.staticBrandColumns}"
+                                                         keyField="id"
+                                                         maxRowSelection="{!v.maxRowSelection }"
+                                                         onrowselection="{! c.selectedBrandProduct }"/>
+                                    <div class="slds-grid">
+                                        <div class="slds-align_absolute-center slds-p-top_medium" >
+                                            <lightning:button label="Back" onclick="{!c.goBackToStepThree}" />
+                                            <lightning:button aura:id ="brandListId" label="Next" onclick="{!c.goToStepFive}" variant="brand" disabled = "true"/> 
+                                        </div>
+                                    </div>
+                                </aura:if>
+                                <!--/PRODUCT BRAND LIST DATA TABLE -->
+                                
+                                <!--COMBI CARD NUMBER GENERATION -->
+                                <aura:if isTrue="{!v.isStepFive}"> <!--Was changed from isStepSix to isStepFive-->
+                                    <div class="slds-box slds-theme_shade slds-theme_alert-texture">
+                                        <p>Combi Card Number: <strong>{!v.combiCardNumber}</strong></p>
+                                        <p>Delivery Fee Amount: <strong>{!v.deliveryFeeAmount}</strong></p>
+                                        <p>Card Fee Amount: <strong>{!v.cardFeeAmount}</strong></p>
+                                    </div>
+                                    <div class="slds-grid">
+                                        <div class="slds-align_absolute-center slds-p-top_medium" >
+                                            <lightning:button aura:id ="backButton" label="Back" onclick="{!c.goBackToStepFour}" />
+                                            <lightning:button aura:id ="submitCardOrdering" label="Submit" onclick="{!c.handleSubmit}" variant="brand" disabled = "false"/> 
+                                        </div>
+                                    </div>
+                                </aura:if>
+                                
+                            </lightning:card>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

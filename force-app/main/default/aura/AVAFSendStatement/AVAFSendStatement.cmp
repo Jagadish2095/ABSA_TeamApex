@@ -1,0 +1,87 @@
+<!--
+* Lightning Component handling the sending the selected AVAF statement via the SAP system (AVAFSendStatement)
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2020-11-05
+*
+-->
+
+<aura:component controller="AVAFSendStatementController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+    access="global">
+    <!--Handler Declaration-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <!--Attribute Declaration-->
+    <!--Global Attributes-->
+    <aura:attribute name="caseIdFromFlow" type="String" access="global" />
+    <aura:attribute name="caseAccountIdFromFlow" type="String" access="global" />
+    <aura:attribute name="isBusinessAccountFromFlow" type="String" access="global" />
+    <aura:attribute name="selectedAVAFAccountFromFlow" type="String" access="global" />
+    <!--Local Attributes-->
+    <aura:attribute name="selectedStatementType" type="string" />
+    <aura:attribute name="clientEmail" type="string" />
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="value" type="String" />
+    <aura:attribute name="isSpinner" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="radioOptionLabel" type="String" />
+
+
+    <!-- changes made for Ford/Avaf Indicator by Mradul  W-014878 AVAF Statements -->
+    <!-- changes made for Ford/Avaf Indicator by Mradul  W-016021 for AVAF Statements-->
+    <c:FordAvafIndicator aura:id="fordAvaf" accountNumber="{!v.selectedAVAFAccountFromFlow}"
+        caseId="{!v.caseIdFromFlow}" />
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+            <br />
+        </div>
+    </aura:if>
+
+    <lightning:radioGroup name="avafStatementTypeRadioGroup" label="Statement Type" options="{!v.options}"
+        value="{!v.value}" type="radio" required="true" onchange="{!c.onRadioOptionSelect}" />
+
+    <!-- Case Record Edit From -->
+    <lightning:recordEditForm aura:id="caseEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}">
+        <lightning:inputField aura:id="caseSubjectField" fieldName="Subject" class="slds-hide" />
+    </lightning:recordEditForm>
+
+    <lightning:layout multipleRows="true">
+        <!-- Account Record Edit From -->
+        <lightning:recordEditForm aura:id="accountEditForm" objectApiName="Account"
+            recordId="{!v.caseAccountIdFromFlow}" onload="{!c.handleAccountLoad}">
+            <lightning:inputField aura:id="accNameField" fieldName="Name" class="slds-hide" />
+            <lightning:layoutItem padding="around-small" size="12">
+                <p>
+                    The account statement will be delivered to the email address linked to this account. But you can
+                    change the email address to a preferred one
+                    below:
+                </p>
+            </lightning:layoutItem>
+            <aura:if isTrue="{!v.isBusinessAccountFromFlow}">
+                <lightning:layoutItem padding="around-small" size="12">
+                    <lightning:inputField aura:id="activeEmailField" fieldName="Active_Email__c" />
+                </lightning:layoutItem>
+                <aura:set attribute="else">
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:inputField aura:id="personEmailField" fieldName="PersonEmail" />
+                    </lightning:layoutItem>
+                </aura:set>
+            </aura:if>
+        </lightning:recordEditForm>
+
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:button label="Send Statement" onclick="{!c.sendStatement}" variant="brand" />
+        </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

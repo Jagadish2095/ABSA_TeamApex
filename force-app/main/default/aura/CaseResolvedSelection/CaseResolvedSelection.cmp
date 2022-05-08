@@ -1,0 +1,74 @@
+<!--Lightning cmp for Case Resolved Selection (CaseResolvedSelection)
+    This cmp is a reusable selection screen for Case Resolved Selection
+    Author: Jason Q & Danie Booysen
+    Date : 2020/10/22
+-->
+<aura:component controller="BehaviouralRewardsManagerController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global">
+
+    <!--Handler Declaration-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <!--Global Attribute Declaration-->
+    <aura:attribute name="caseIdFromFlow" type="string" access="global"/>
+
+    <!--Attribute Declaration-->
+    <aura:attribute name="options" type="List"/>
+    <aura:attribute name="value" type="String"/>
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="closeCase" type="Boolean" default="false"/>
+    <aura:attribute name="alwaysCloseCase" type="Boolean" default="false"/>
+    <aura:attribute name="parent" type="Aura.Component"/>
+    <aura:attribute name="isFormReadOnly" type="Boolean" default="false"/>
+    <aura:attribute name="appAndDigitalBanking" type="String" default="{!$Label.c.Behavioural_Rewards_App_And_Digital_Banking}" />
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError"><br/>
+            <h2 class="slds-section__title" style="color:red">{!v.errorMessage}</h2><br/>
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!not(v.alwaysCloseCase)}">
+        <!-- Radio Buttons -->
+        <lightning:radioGroup
+                            name="caseResolvedRadioGroup"
+                            label="Case Resolved?"
+                            options="{!v.options }"
+                            value="{!v.value }"
+                            onchange="{!c.handleRadioBtnChange}"
+                            type="radio"
+                            required="true"
+                            disabled="{!v.isFormReadOnly}"/>
+    </aura:if>
+
+     <!-- Case Record Edit From -->
+    <lightning:recordEditForm aura:id="caseResolvedEditForm"
+                              objectApiName="Case"
+                              recordId="{!v.caseIdFromFlow}"
+                              onload="{!c.handleLoad}"
+                              onsubmit="{!c.handleSubmit}"
+                              onsuccess="{!c.handleSuccess}"
+                              onerror="{!c.handleError}">
+
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide"/>
+        <lightning:inputField aura:id="caseSubjectField" fieldName="Subject" class="slds-hide"/>
+
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="12">
+                <lightning:inputField aura:id="commentsField" fieldName="Comments__c" required="true" disabled="{!v.isFormReadOnly}"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-x-small" size="12">
+                <lightning:button aura:id="actionBtn" variant="brand" label="Next​​​​" type="submit" class="slds-float_right slds-hide" disabled="{!v.isFormReadOnly}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </lightning:recordEditForm>
+
+</aura:component>

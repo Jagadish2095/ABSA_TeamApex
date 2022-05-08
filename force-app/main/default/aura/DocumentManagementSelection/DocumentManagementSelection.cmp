@@ -1,0 +1,422 @@
+<aura:component implements="flexipage:availableForAllPageTypes,force:appHostable,force:lightningQuickAction,force:hasRecordId"
+    access="global"
+    controller="DocumentManagementSelectionController">  
+	
+    <aura:attribute name="documentPlaceholders" type="List"/>
+    <aura:attribute name="primaryRelatedParties" type="List"/>
+    <aura:attribute name="docList" type="Document__c[]"/>
+    <aura:attribute name="accDocWrapper" type="List"/>
+    <aura:attribute name="tracyTest" type="List"/>
+    <aura:attribute name="options" type="List"/>
+    <aura:attribute name="selectedValue" type="String"/>
+    <aura:attribute name="eddOptions" type="List" default="[{'label': 'Yes', 'value': 'Y'},
+                                                           {'label': 'No', 'value': 'N'}]"
+                    />
+    <aura:attribute name="eddSelection" type="String" default="N" />
+    <aura:attribute name="showEddSection" type="Boolean"/>
+    <aura:attribute name="isSeniorManagementSignOff" type="Boolean"/>
+    <aura:attribute name="isAdverseMediaReport" type="Boolean"/>
+    <aura:attribute name="isSourceOfFundsWealth" type="Boolean"/>
+    <aura:attribute name="isLicence" type="Boolean"/>
+    <aura:attribute name="opportunityRecord" type="Object"/>
+    <aura:attribute name="columns" type="List" default="[]"/>
+    <aura:attribute name="columns2" type="List" default="[]"/>
+	<aura:attribute name="data" type="List" default="[]"/>
+    <aura:attribute name="docData" type="Object"/>
+    <aura:attribute name="expandedDocManagement" type="List"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="fileName" type="String" default="No File Selected.."/>
+    <aura:attribute name="fileExtension" type="string"/>
+    <aura:attribute name="showLoadingSpinner" type="boolean" default="false"/>
+    <aura:attribute name="isShowPreview" type="Boolean" />
+    <aura:attribute name="pdfData" type="String" />
+    <aura:attribute name="fileType" type="String"></aura:attribute>
+	<aura:attribute name="documentGenerated" type="String" />
+    <aura:attribute name="showESignatureDataTable" type="boolean" default="false"/>
+    <aura:attribute name="isRefresh" type="boolean" default="false"/>
+    <aura:attribute name="isButtonSignatureDisabled" type="boolean" default="false"/>
+	<aura:attribute name="draftValues" type="Object" default="[]"/>
+    <aura:attribute name="signatoryId" type="String"/>
+	<aura:attribute name="selectedEmail" type="String" default=""/>
+	<aura:attribute name="emailOptions" type="List"/>
+	<aura:attribute name="selectedMobile" type="String"/>
+    <aura:attribute name="mobileOptions" type="List"/>
+    <aura:attribute name="methodOptions" type="List"/>
+    <aura:attribute name="data1" type="List"/>
+    <aura:attribute name="columns1" type="List"/>
+    <aura:attribute name="showSignatoryUpdatePanel" type="boolean" default="false"/>
+    <aura:attribute name="showAlternativeEmail" type="boolean" default="false"/>
+    <aura:attribute name="alternativeEmail" type="String" default=""/>
+    <aura:attribute name="showAlternativeMobile" type="boolean" default="false"/>
+    <aura:attribute name="alternativeMobile" type="String" default=""/>
+    <aura:attribute name="selectedMethod" type="String"/>
+    <aura:attribute name="docId" type="String"/>
+    <aura:attribute name="accountId" type="String"/>
+    <aura:attribute name="contactId" type="String"/>
+    
+    <!--Anka Changes-->
+    <aura:attribute name="PrimaryClientMandDocs" type="String" /> <!-- W-012954-->
+    <aura:attribute name="preSelectedRows" type="List" default="[]"/>
+    <aura:attribute name="selectedRows" type="List" default="[]"/>
+    <aura:attribute name="selectedRow" type="Object"/>
+    <aura:attribute name="selectedRowsIdsList" type="List" default="[]"/>
+    <aura:attribute name="signatoriesOutput" type="List"/>
+    <aura:attribute name="signatoriesOutputSelected" type="List"/>
+    <aura:attribute name="myOrder" type="integer" default=""/>
+    <aura:attribute name="showAlternativeOrder" type="boolean" default="false"/>
+     <aura:attribute name="documentId" type="String"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="alternativeOrder" type="String" default=""/>
+    <aura:attribute name="orderOptions" type="List" default="['1','2']"/>
+    <aura:attribute name="selectedOrder" type="String"/>
+    <!--Anka Changes-->
+    
+    <!-- Validation for Upload Documents -->
+    <aura:attribute name="opportunityRec" type="Object" />
+    <aura:attribute name="recordLoadError" type="String" />
+    <force:recordData
+        aura:id="recordLoader"
+        recordId="{!v.recordId}"
+        fields="Entity_Type__c,Case__c,QA_Complex_Approval_Status__c,Complex_Application__c"
+        targetFields="{!v.opportunityRec}"
+        targetError="{!v.recordLoadError}"
+    />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.loadDocumentPlaceholders}" />
+    
+     <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="TheSpinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    
+    <lightning:card title="Document Management" iconName="standard:document" class="slds-m-left_small">
+            <lightning:accordion  allowMultipleSectionsOpen="true">
+                <!-- Primary -->
+                <aura:iteration items="{!v.accDocWrapper}" var="eachAcc" indexVar="key">
+                    <aura:if isTrue="{!eachAcc.isPrimary == true}">
+                    	<lightning:accordionSection name="{!eachAcc.accName}" label="{!eachAcc.accName}">
+                        <div class="c-container">
+                            <lightning:layout  multipleRows="true">
+                                <aura:iteration items="{!eachAcc.docPlaceholderWrappers}" var="eachDoc" > 
+                                    <aura:if isTrue="{!eachDoc.documentType != null}">
+                                    <lightning:layoutItem size="6">
+                                        <lightning:select label="{!eachDoc.documentType}" value="{!eachDoc.docPlaceholder.Type__c}" class="slds-size--11-of-12">
+                                            <aura:iteration items="{!eachDoc.documentNames}" var="option">
+                                                <option text="{!option}" value="{!option}" />
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </lightning:layoutItem> 
+                                    </aura:if>
+                                </aura:iteration>
+                            </lightning:layout>
+                            <aura:if isTrue="{!eachAcc.isPrimary}">
+                              
+                                            <lightning:radioGroup
+                                                                  aura:id="eddOptionId"
+                                                                  label="EDD"
+                                                                  options="{!v.eddOptions}"
+                                                                  value="{!v.eddSelection}"
+                                                                  type="button"
+                                                                  />
+                                        <br/>
+                                <aura:if isTrue="{!v.eddSelection == 'Y'}">
+                                    <lightning:layout  multipleRows="true">
+                                        <lightning:layoutItem size="3">
+                                            <ui:inputCheckbox value="{!v.isSeniorManagementSignOff}"
+                                                              class="slds-float--left"
+                                                              label="&nbsp; Senior Management Sign Off"
+                                                              aura:id="seniorManagementSignOffId"
+                                                              />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem size="3">
+                                            <ui:inputCheckbox value="{!v.isAdverseMediaReport}"
+                                                              class="slds-float--left"
+                                                              label="&nbsp; Adverse Media Report"
+                                                              aura:id="adverseMediaReportId"
+                                                              />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem size="3">
+                                            <ui:inputCheckbox value="{!v.isSourceOfFundsWealth}"
+                                                              class="slds-float--left"
+                                                              label="&nbsp; Source of Funds/Wealth"
+                                                              aura:id="sourceOfFundsWealthId"
+                                                              />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem size="3">
+                                            <ui:inputCheckbox value="{!v.isLicence}"
+                                                              class="slds-float--left"
+                                                              label="&nbsp; Licence"
+                                                              aura:id="licenceId"
+                                                              />
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                </aura:if>
+                            </aura:if>
+                        </div>
+                    </lightning:accordionSection>
+                    </aura:if>
+                </aura:iteration>
+                
+                <!-- Related Party -->
+                <aura:iteration items="{!v.accDocWrapper}" var="eachAccParty" indexVar="key">
+                    <aura:if isTrue="{!eachAccParty.isPrimary != true}">
+                        <lightning:accordionSection name="{!eachAccParty.accName}" label="{!eachAccParty.accName}">
+                            <div class="c-container">
+                                <lightning:layout  multipleRows="true">
+                                    <aura:iteration items="{!eachAccParty.docPlaceholderWrappers}" var="eachDoc" > 
+                                        <aura:if isTrue="{!eachDoc.documentType != null}">
+                                            <lightning:layoutItem size="6">
+                                                <lightning:select label="{!eachDoc.documentType}" value="{!eachDoc.docPlaceholder.Type__c}" class="slds-size--11-of-12">
+                                                    <aura:iteration items="{!eachDoc.documentNames}" var="option">
+                                                        <option text="{!option}" value="{!option}" />
+                                                    </aura:iteration>
+                                                </lightning:select>
+                                            </lightning:layoutItem> 
+                                        </aura:if>
+                                    </aura:iteration>
+                                </lightning:layout>
+                            </div>
+                        </lightning:accordionSection>
+                    </aura:if>
+                </aura:iteration>
+            </lightning:accordion>  
+    </lightning:card>
+    
+    <aura:if isTrue="{!v.showESignatureDataTable}">
+        <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+            <lightning:card title="Signatories" iconName="standard:document" class="slds-m-left_small">
+                <aura:set attribute="actions">
+                    <lightning:button label="Refresh Signatories" disabled="{!v.isRefresh}" onclick="{!c.refreshSignatories}" aura:id="refreshBtn"/>
+                </aura:set>
+                <aura:if isTrue="{!not(empty(v.signatoriesOutput))}" >
+                    <lightning:datatable keyField="Id"
+                                         data="{!v.signatoriesOutput}"
+                                         columns="{!v.columns2}"
+                                         onrowaction="{! c.handleRowActionSignatory}"
+                                         draftValues="{!v.draftValues}"
+                                         onsave="{!c.handleSave}"
+                                         hideCheckboxColumn="false"
+                                         sortable="false"
+                                         wrapTextMaxLines="3"
+                                         onrowselection="{! c.handleRowSelectionChange }"
+                                         selectedRows="{! v.preSelectedRows }"/>
+                </aura:if>
+                <aura:if isTrue="{!empty(v.signatoriesOutput)}">
+                    <p>No signatories found for this document type.</p>
+                </aura:if>
+                <br/>
+                <aura:if isTrue="{!v.isButtonSignatureDisabled}">
+                    Please ensure that related contacts for the Account/Opportunity have valid Roles, Salutation, email address and/or mobile number.
+                </aura:if><br/>
+                <button class="slds-button slds-button_brand" onclick="{!c.sendForSignature}" disabled= "{!v.isButtonSignatureDisabled}" >Send for Signature</button>
+            </lightning:card>
+        </article>
+        <BR/>
+    </aura:if>
+    
+    <lightning:button variant="brand" class="slds-align_absolute-center slds-m-top_xx-large" label="Update Document View Table" title="Save" onclick="{!c.saveDocuments}" /> 
+    <br/>
+    
+    <lightning:card title="Document View Table" iconName="standard:document" class="slds-m-left_small">
+        <aura:set attribute="actions">
+            <lightning:button label="Refresh" disabled="{!v.isRefresh}" onclick="{!c.refreshDocuments}" aura:id="refreshTblBtn" />
+        </aura:set>
+    <div>
+        
+        <lightning:treeGrid
+                            columns="{! v.columns }"
+                            data="{! v.docData }"
+                            keyField="Id"
+                            onrowaction="{! c.handleRowAction }"
+                            hideCheckboxColumn="true"
+                            />
+    </div>
+    </lightning:card>
+
+     <!-- Popup for document upload -->
+    
+    <div class="slds-m-around_xx-large">  
+        <aura:if isTrue="{!v.isModalOpen}">
+             
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Document Upload</h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <br/>
+            			<lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" type="file" name="file" label="Upload Attachment" multiple="false"/>
+            			<br/>
+            			<button class="slds-button slds-button_brand" onclick="{!c.doSave}">Upload Attachment</button>
+            			<div class="slds-text-body_small">{!v.fileName}</div>
+            			<aura:if isTrue="{!v.showLoadingSpinner}">
+                			<div class="slds-text-body_small slds-text-color_error">Uploading... 
+                    		<img src="/auraFW/resources/aura/images/spinner.gif" class="spinner-img" alt="Loading"/>'
+               			 </div>
+                       </aura:if>   
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeModel }"/>
+                        <lightning:button variant="brand"
+                                          label="OK"
+                                          title="OK"
+                                          onclick="{!c.submitDetails}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </div>
+    <!--Confirm Dialog Start-->
+            <div class="slds-m-around_xx-large">
+                <aura:if isTrue="{!v.isShowPreview}">
+                    <!--Modal Box Start-->
+                    <div role="dialog" class="slds-modal slds-fade-in-open ">
+                        <div class="slds-modal__container" >
+                            <!--Modal Box Content Start-->
+                            <div class="slds-modal__content slds-p-around--medium" style="height:100%;">
+                                <c:pdfViewer pdfData="{!v.pdfData}" />
+                            </div>
+                            <!--Modal Box Content End-->
+
+                            <!--Modal Box Button Start-->
+                            <footer class="slds-modal__footer">
+                                <lightning:button name='Close' label='Close' onclick='{!c.handleCloseModal}'/>
+                                <!--<lightning:button variant="brand" name='Send Email' label='Send Email' onclick='{!c.handleSendEmail}'/>-->
+                            </footer>
+                            <!--Modal Box Button End-->
+                        </div>
+                    </div>
+                    <div class="slds-backdrop slds-backdrop--open"></div>
+                </aura:if>
+            </div>
+            <!--Confirm Dialog End-->
+    <article>
+    		<lightning:card title="E-Signature Requests" iconName="standard:document" class="slds-m-left_small">
+                <lightning:datatable
+                                     columns="{! v.columns1 }"
+                                     data="{! v.data1 }"
+                                     keyField="id"
+                                     hideCheckboxColumn="true"
+                                     minColumnWidth="90"/>
+            </lightning:card>
+    </article>
+    <aura:if isTrue="{!v.showSignatoryUpdatePanel}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!--###### MODAL BOX CONFIRMATION Start ######
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeConfirmationSignatory}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Close Confirmation</h2>
+                </header>-->
+                    <!--###### MODAL BOX BODY Start ######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem size="12">
+                                <h2 class="slds-section__title">Update Signatory Details</h2>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <lightning:select aura:id="methodSelect" name="SelectMethod" label="Select Method" value="{!v.selectedMethod}" onchange="{!c.onPicklistMethodChange}" required="true">
+                                    <aura:iteration items="{!v.methodOptions}" var="item">
+                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                            <br />
+
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:select aura:id="emailSelect" name="SelectEmail" label="Select Email" value="{!v.selectedEmail}" onchange="{!c.onPicklistEmailChangeSignature}" required="true">
+                                    <aura:iteration items="{!v.emailOptions}" var="item">
+                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                                <ui:inputCheckbox aura:id="completedCheckboxEmail" class="slds-float--right" label="Use Alternative Email for E-Signature?" change="{!c.onCompletedCheckEmail}"/>
+                            </lightning:layoutItem>
+
+                            <aura:if isTrue="{!v.showAlternativeEmail}">
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:input aura:id="altEmail" value="{!v.alternativeEmail}" label="Alternative Email" type="email" required="true"/>
+                                </lightning:layoutItem>
+                            </aura:if>
+                            <br />
+
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:select aura:id="mobileSelect" name="SelectMobile" label="Select Mobile" value="{!v.selectedMobile}" onchange="{!c.onPicklistMobileChange}" required="true">
+                                    <aura:iteration items="{!v.mobileOptions}" var="item">
+                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                                <ui:inputCheckbox aura:id="completedCheckboxMobile" class="slds-float--right" label="Use Alternative Mobile for E-Signature?" change="{!c.onCompletedCheckMobile}"/>
+                            </lightning:layoutItem>
+
+                            <aura:if isTrue="{!v.showAlternativeMobile}">
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:input aura:id="altMobile" value="{!v.alternativeMobile}" label="Alternative Mobile" type="phone" required="true"/>
+                                </lightning:layoutItem>
+                            </aura:if>
+                           <br />
+                             <!--12954-->
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:select aura:id="orderSelect" name="SelectOrder" label="Select Order" value="{!v.selectedOrder}" onchange="{!c.onPicklistEmailChangeSignature}" required="true">
+                                    <aura:iteration items="{!v.orderOptions}" var="item">
+                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                                <ui:inputCheckbox aura:id="completedCheckboxOrder" class="slds-float--right" label="Use Alternative Order for E-Signature?" change="{!c.onCompletedCheckOrder}"/>
+                            </lightning:layoutItem>
+
+                            <aura:if isTrue="{!v.showAlternativeOrder}">
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:input aura:id="altOrder" value="{!v.alternativeOrder}" label="Alternative Order" type="text" required="true"/>
+                                </lightning:layoutItem>
+                            </aura:if>
+                                    
+                        </lightning:layout>
+                    </div>
+                    <!--###### MODAL BOX FOOTER Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{!c.closeConfirmationSignatory}"/>
+                        <lightning:button variant="brand"
+                                          label="Confirm"
+                                          title="Confirm"
+                                          onclick="{!c.confrimAndCloseSignatory}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+</aura:component>

@@ -1,0 +1,145 @@
+<!--This is the Exergy Policy Cancellation  -->
+<!--@author  Koketso Mpshane-->
+<!--@since   06-07-2021-->
+<!--@Work Id: W-008124 -->
+<aura:component
+	controller="AbsaLifeMemberMaintenance"
+	implements="flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction,lightning:availableForFlowScreens"
+	access="global"
+>
+	<!--Attribute Declaration-->
+	<aura:attribute name="policyName" type="String" />
+	<aura:attribute name="policyNumber" type="String" />
+	<aura:attribute name="nextDebitOrderDate" type="String" />
+	<aura:attribute name="cancellationRMovementDate" type="Date" />
+	<aura:attribute name="numberOfMembers" type="String" />
+	<aura:attribute name="policyStatus" type="String" />
+	<aura:attribute name="policyStartDate" type="String" />
+	<aura:attribute name="cancellationRLapseReason" type="String" />
+	<aura:attribute name="contractNextDueDate" type="String" />
+	<aura:attribute name="contractWithin30Days" type="Boolean" default="false" />
+	<aura:attribute name="contractGID" type="String" />
+	<aura:attribute name="isReasonOther" type="Boolean" default="false" />
+	<aura:attribute name="reasonNote" type="String" default="" />
+	<aura:attribute name="reasonOptions" type="List" default="[]" />
+	<aura:attribute name="caseIdFromFlow" type="String" access="global" />
+	<aura:attribute name="policyNumberFromFlow" type="String" default="" access="global" />
+	<aura:attribute name="errorMessage" type="String" default="" />
+	<aura:attribute name="showSpinner" type="Boolean" default="false" />
+	<aura:attribute name="confirmCancelPolicy" type="Boolean" default="false" />
+	<aura:attribute name="reasonLabel" type="String" />
+	<aura:attribute name="dateLabel" type="String" />
+
+	<!--Handler Declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<!--Error Message-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<ui:message title="Error" severity="error" closable="true"> {!v.errorMessage} </ui:message>
+	</aura:if>
+
+	<div class="slds-card__body slds-card__body_inner">
+		<article class="slds-card slds-card_boundary">
+			<!-- Lightning Spinner -->
+			<aura:if isTrue="{!v.showSpinner}">
+				<lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+			</aura:if>
+			<div class="slds-card__body slds-card__body_inner">
+				<b><ui:outputText value="Policy Information" /></b>
+				<br /><br />
+				<!-- Policy information layout-->
+				<lightning:layout>
+					<lightning:layoutItem padding="around-small" size="6">
+						<lightning:input label="Policy name" aura:id="fPolicyName" value="{!v.policyName}" disabled="true" />
+						<lightning:input label="Next debit order" aura:id="fNextDebitOrderDate" value="{!v.nextDebitOrderDate}" disabled="true" />
+						<lightning:input label="Number of members" aura:id="fNumberOfMembers" value="{!v.numberOfMembers}" disabled="true" />
+						<lightning:select
+							label="{!v.reasonLabel}"
+							aura:id="fCancellationRLapseReason"
+							value="{!v.cancellationRLapseReason}"
+							required="true"
+							onchange="{!c.handleReasonChange}"
+						>
+							<option text="Please select" value="" />
+							<aura:iteration items="{!v.reasonOptions}" var="item">
+								<option text="{!item}" value="{!item}" />
+							</aura:iteration>
+						</lightning:select>
+						<lightning:input label="Note (Optional)" aura:id="fReasonNote" value="{!v.reasonNote}" type="textarea" />
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="6">
+						<lightning:input label="Policy number" aura:id="fPolicyNumber" value="{!v.policyNumber}" disabled="true" />
+						<lightning:input label="{!v.dateLabel}" aura:id="fCancellationRMovementDate" value="{!v.cancellationRMovementDate}" type="date" />
+						<lightning:input label="Policy status" aura:id="fPolicyStatus" value="{!v.policyStatus}" disabled="true" />
+						<aura:if isTrue="{!v.contractWithin30Days}">
+							<ui:outputText value="Its within 30 days, its in the cooling off period" />
+						</aura:if>
+					</lightning:layoutItem>
+				</lightning:layout>
+				<!-- Custom Buttons -->
+				<lightning:layout>
+					<lightning:layoutItem class="right-align" padding="around-small" size="12">
+						<footer class="slds-float_right">
+							<lightning:button variant="brand" label="Submit" onclick="{!c.handleCancelRLapsePolicy}" aura:id="btnSubmit" />
+						</footer>
+					</lightning:layoutItem>
+				</lightning:layout>
+				<aura:if isTrue="{!v.confirmCancelPolicy}">
+					<!-- Start Confirm Cancel Policy Modal-->
+					<section
+						role="dialog"
+						tabindex="-1"
+						aria-labelledby="modal-heading-01"
+						aria-modal="true"
+						aria-describedby="modal-content-id-1"
+						class="slds-modal slds-fade-in-open"
+					>
+						<div class="slds-modal__container">
+							<header class="slds-modal__header">
+								<lightning:buttonIcon
+									iconName="utility:close"
+									onclick="{! c.closePolicyCancellation}"
+									alternativeText="close"
+									variant="bare-inverse"
+									class="slds-modal__close"
+								/>
+								<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Policy Cancellation - {!v.policyName}</h2>
+							</header>
+							<!--Error Message-->
+							<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+								<!-- Lightning Spinner -->
+								<aura:if isTrue="{!v.showSpinner}">
+									<lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="small" />
+								</aura:if>
+								<b><ui:outputText value="Are you sure you want to cancel the client's policy?" /></b><br /><br />
+								<p>
+									The cancellation is taking place within 7 days before the next debit order date<br /> therefore the next debit order will
+									still be deducted and the policy will be active for the next<br />
+									30 days before it lapses.
+								</p>
+							</div>
+							<footer class="slds-modal__footer">
+								<lightning:button
+									variant="neutral"
+									label="Cancel"
+									title="Cancel"
+									aura:id="btnCancelConfirm"
+									onclick="{!c.closePolicyCancellation}"
+								/>
+								<lightning:button
+									variant="brand"
+									label="Confirm"
+									title="Confirm"
+									aura:id="btnConfirm"
+									onclick="{!c.confirmPolicyCancellation}"
+								/>
+							</footer>
+						</div>
+					</section>
+					<div class="slds-backdrop slds-backdrop_open"></div>
+					<!-- End Confirm Delete Member Modal-->
+				</aura:if>
+			</div>
+		</article>
+	</div>
+</aura:component>

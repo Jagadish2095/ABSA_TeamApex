@@ -1,0 +1,171 @@
+<!--
+* Lightning Component for Cheque And Overdraft
+*
+* @author  Englarmerdge Mongwe: Absa
+* @version v1.0
+* @since   2020-09-11
+* @UserStory W-003747
+-->
+<aura:component controller="ChequeAndOverdraftController"
+        implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable"
+        access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:method name="doValidityCheck" action="{!c.doValidityCheck}" description="Validate required fields" access="global" />
+
+    <aura:attribute name="accItem" type="Object" />
+    <aura:attribute name="selOptions" type="Map" />
+    <aura:attribute name="newChequeAccounts" type="Map[]" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <!--aura:attribute name="isActiveNewAccount" type="Boolean" default="false" /-->
+    <aura:attribute name="isActiveRemoveAccount" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOtherOverdraftPurpose" type="Boolean" default="false" />
+    <aura:attribute name="isActiveAlternativeFundCode" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOnceOffOnly" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOnceOffRecurring" type="Boolean" default="false" />
+    <aura:attribute name="isActiveVariable" type="Boolean" default="false" />
+    <aura:attribute name="isODPurposeOther" type="boolean" default="false" />
+    <aura:attribute name="variableAmount" type="integer" default="0" />
+    <aura:attribute name="selOverDrfPurpose" type="Object" />
+    <aura:attribute name="selLimitTypes" type="Object" />
+    <aura:attribute name="selRedFrequency" type="Object" />
+    <aura:attribute name="selChqPrdTypes" type="Object" />
+    <aura:attribute name="selAltFundCode" type="Object" />
+    <aura:attribute name="minDate" type="Date" />
+    <aura:attribute name="maxDate" type="Date" />
+    <aura:attribute name="maxVarAmount" type="Decimal" default="0" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading..." />
+        </div>
+    </aura:if>
+
+    <!--aura:if isTrue="{!v.isActiveNewAccount}"-->
+        <lightning:layoutItem size="12" padding="around-small">
+            <div class="slds-border_bottom borderColor"><b>Account {!v.accItem.ItemId}</b></div>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="around-small">
+            <p>Unique ID for cheque account</p>
+            <ui:outputText aura:id="uniqueID" value="{! 'CHQ-' + v.accItem.TempAccountNumber}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="around-small">
+            <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove This Account" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+            <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                <lightning:button class="slds-float_right" label="Remove Account" variant="brand" onclick="{!c.removeAccount}" />
+            </aura:if>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="horizontal-small">
+             <lightning:select aura:id="inputNewAcc" required="true" label="Cheque Product Type" class="dynamic" value="{!v.accItem.ChequeProductType}">
+                <aura:iteration items="{!v.selChqPrdTypes}" var="level">
+                    <option class="{!level.class}" text="{!level.label}" value="{!level.value}" selected="{!level.selected}" />
+                </aura:iteration>
+            </lightning:select>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="horizontal-small">
+            <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Overdraft Limit New Amount" value="{!v.accItem.OverdraftLimitNewAmount}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="horizontal-small">
+            <lightning:select aura:id="inputNewAcc" required="true" label="Overdraft Purpose" class="dynamic" value="{!v.accItem.OverdraftPurpose}" onchange="{!c.onOverdraftChange}">
+                <aura:iteration items="{!v.selOverDrfPurpose}" var="level">
+                    <option class="{!level.class}" text="{!level.label}" value="{!level.value}" selected="{!level.selected}" />
+                </aura:iteration>
+            </lightning:select>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="horizontal-small">
+            <aura:if isTrue="{!v.isActiveOtherOverdraftPurpose}">
+                <lightning:input aura:id="inputNewAcc" required="{!v.isODPurposeOther}" label="Overdraft Purpose - Other (if applicable)" value="{!v.accItem.OverdraftPurposeOther}" />
+            </aura:if>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="around-small">
+            <lightning:input type="checkbox" aura:id="inputNewAcc" required="false" label="Alternative Fund Indicator" checked="{!v.accItem.AlternativeFundIndicator}" onchange="{!c.onAltFundChecked}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="horizontal-small">
+            <aura:if isTrue="{!v.isActiveAlternativeFundCode}">
+                <lightning:select aura:id="inputNewAcc" required="true" label="Alternative Fund Code" class="dynamic select" value="{!v.accItem.AlternativeFundCode}">
+                    <aura:iteration items="{!v.selAltFundCode}" var="code">
+                        <option class="{!code.class}" text="{!code.label}" value="{!code.value}" selected="{!code.selected}" />
+                    </aura:iteration>
+                </lightning:select>
+            </aura:if>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="around-small">
+            <lightning:input aura:id="inputNewAcc" required="false" label="Campaign Code" value="{!v.accItem.CampaignCode}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="around-small">
+            <lightning:input type="checkbox" aura:id="inputNewAcc" required="false" label="Secured By Mortgage Bond" checked="{!v.accItem.SecuredByMortgageBond}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="horizontal-small">
+             <lightning:select aura:id="inputNewAcc" required="true" label="Limit Type" class="dynamic select" value="{!v.accItem.LimitType}" onchange="{!c.onLimitSelectChange}">
+                <aura:iteration items="{!v.selLimitTypes}" var="limit">
+                    <option class="{!limit.class}" text="{!limit.label}" value="{!limit.value}" selected="{!limit.selected}" />
+                </aura:iteration>
+            </lightning:select>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="around-small">
+        </lightning:layoutItem>
+    <!--/aura:if-->
+    <aura:if isTrue="{!v.isActiveOnceOffOnly}">
+        <lightning:layoutItem size="6" padding="horizontal-small">
+            <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Once-Off Amount" value="{!v.accItem.OnceOffAmount}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="horizontal-small">
+            <lightning:input type="date" aura:id="inputNewAcc" required="true" label="Once-Off Date" value="{!v.accItem.OnceOffDate}" min="{!v.minDate}" max="{!v.maxDate}" />
+        </lightning:layoutItem>
+    </aura:if>
+    <aura:if isTrue="{!v.isActiveOnceOffRecurring}">
+        <lightning:layoutItem size="6" padding="horizontal-small">
+            <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Reduction Amount" value="{!v.accItem.ReductionAmount}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="horizontal-small">
+            <lightning:input type="date" aura:id="inputNewAcc" required="true" label="Reduction Date" value="{!v.accItem.ReductionDate}" min="{!v.minDate}" max="{!v.maxDate}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="horizontal-small">
+            <lightning:select aura:id="inputNewAcc" required="true" label="Reduction Frequency" class="dynamic" value="{!v.accItem.ReductionFrequency}" >
+                <aura:iteration items="{!v.selRedFrequency}" var="red">
+                    <option class="{!red.class}" text="{!red.label}" value="{!red.value}" selected="{!red.selected}" />
+                </aura:iteration>
+            </lightning:select>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="around-small">
+        </lightning:layoutItem>
+    </aura:if>
+    <aura:if isTrue="{!v.isActiveVariable}">
+        <lightning:layoutItem size="6" padding="around-small">
+            <p>Variable Amounts Table</p>
+            <table class="slds-table slds-table--cell-buffer">
+                <thead>
+                    <tr class="slds-var-m-top_small">
+                        <th scope="col">
+                            <div class="slds-truncate" title="AccountNameNumber">#</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="AccountNameNumber">Variable Amount</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="AccountType">Variable Date</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.accItem.VariableData}" var="vData">
+                        <tr>
+                            <td>
+                                {!vData.Id}
+                            </td>
+                            <td>
+                                <lightning:input name="{!vData.Id}" type="number" value="{!vData.VariableAmount}" max="{!v.accItem.OverdraftLimitNewAmount}" formatter="currency" step="0.01" />
+                            </td>
+                            <td>
+                                <lightning:input name="{!vData.Id}" type="date" value="{!vData.VariableDate}" min="{!vData.MinDate}" max="{!vData.MaxDate}" onchange="{!c.onSetMinDate}"/>
+                            </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6" padding="around-small">
+        </lightning:layoutItem>
+    </aura:if>
+    <br />
+</aura:component>

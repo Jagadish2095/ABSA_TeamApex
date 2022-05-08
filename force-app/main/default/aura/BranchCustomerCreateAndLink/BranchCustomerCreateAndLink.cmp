@@ -1,0 +1,168 @@
+<!--
+* Uses the BranchCreateAccountController to risk profile customers
+* @author  Andre Pietersen : ABSA (IQ Business)
+* @version v1.0
+* @since   2020-11-09
+-->
+<aura:component access="global" 
+                controller="BranchCreateAccountController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,force:hasSObjectName">
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="spinnerText" type="string" default="" />
+    <aura:attribute name="applicationId" type="String"/>
+    <aura:attribute name="opportunityId" type="String"/>
+    <aura:attribute name="paymentPlanId" type="String"/>
+    
+    <aura:attribute name="productFamily" type="String" default="cheque" />
+
+    <aura:attribute name="IsChequeProduct" type="Boolean" default="true" />
+    <aura:attribute name="IsGroupScheme" type="Boolean" default="true" />
+    <aura:attribute name="IsSpousal" type="Boolean" default="true" />
+    
+    <aura:attribute name="IsNewToBank" type="Boolean" default="false"/>
+    <aura:attribute name="IsNoneScoredProduct" type="Boolean" default="false"/>
+    <aura:attribute name="managerNumber" type="String"/>
+    <aura:attribute name="accoutOpeningReason" type="String"/>
+    <aura:attribute name="mandateNumber" type="String" default="01"/>
+    <aura:attribute name="accountName" type="String"/>
+    <aura:attribute name="sourceOfFunds" type="String" />
+    <aura:attribute name="groupSchemeName" type="String" default=""/>
+    <aura:attribute name="groupSchemeList" type="List" />
+
+    <aura:attribute name="usePackageAccount" type="boolean" default="false"/>
+    <aura:attribute name="message" type="String" default="Opening cheque account."/>
+    <aura:attribute name="retryMessage" type="String" />
+   
+    <aura:attribute name="sourceOfFundsList" type="List" />
+    <aura:attribute name="accoutOpeningReasonList" type="List" />
+    <aura:attribute name="spouseAccountNumber" type="String"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+
+    <!-- Loading Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container" >
+            <div class="custom-loading-text-top">
+                <label>Please wait</label>
+            </div>
+            <div role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand" >
+                <div class="slds-spinner__dot-a" />
+                <div class="slds-spinner__dot-b" />
+            </div>
+            <div class="custom-loading-text-bottom">
+                <label>{! v.spinnerText }</label>
+            </div>
+        </div>
+    </aura:if>
+
+    <lightning:layout >
+        <lightning:layoutItem padding="around-medium" size="6">
+            <legend class="slds-text-heading--small slds-p-vertical--medium">
+                <b>Create Account</b>
+            </legend>
+            <lightning:layout>
+                <aura:if isTrue="{!v.IsNoneScoredProduct}">
+                    <lightning:layoutitem size="12" >       
+                        <div id="{! globalId + '_AccountName' }" class="slds-var-p-around_x-small">
+                            <label for="AccountName" >Account Name</label>
+                            <lightning:input aura:id="AccountName" 
+                                             name="AccountName"
+                                             value="{! v.accountName }"
+                                             variant="label-hidden"
+                                             required="false"
+                                             disabled="false"/>
+                        </div>
+                        <aura:if isTrue="{!v.IsChequeProduct}">
+                        	<div id="{! globalId + '_ManagerNumber' }" class="slds-var-p-around_x-small">
+                                <label for="ManagerNumber" >Manager Number</label>
+                                <lightning:input aura:id="ManagerNumber" 
+                                                name="ManagerNumber"
+                                                value="{! v.managerNumber }"
+                                                variant="label-hidden"
+                                                required="false"
+                                                disabled="false"/>
+                            </div>
+                        </aura:if>
+                        <div id="{! globalId + '_OpenReason' }" class="slds-var-p-around_x-small">
+                            <label for="OpenReason" >Open Reason</label>
+                            <lightning:select aura:id="OpenReason"
+                                              name="OpenReason"
+                                              label="" 
+                                              class="label-hidden"
+                                              value="{! v.accoutOpeningReason }"
+                                              required="true" >   
+                                <option value="">please select...</option>
+                                <aura:iteration items="{! v.accoutOpeningReasonList }" var="openReasonValue">
+                                    <option value="{!openReasonValue}" selected="{!openReasonValue==v.accoutOpeningReason}">{!openReasonValue}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </div>
+                    </lightning:layoutitem>
+                    <lightning:layoutitem size="12">
+                        <aura:if isTrue="{!v.IsChequeProduct}">
+                        <div id="{! globalId + '_MandateNumber' }" class="slds-var-p-around_x-small">
+                            <label for="MandateNumber" >Mandate Number</label>
+                            <lightning:input aura:id="MandateNumber" 
+                                             name="MandateNumber"
+                                             value="{! v.mandateNumber }"
+                                             variant="label-hidden"
+                                             disabled="false"
+                                             required="false"/>
+                        </div>
+                        </aura:if>
+                        <div id="{! globalId + '_SOF' }" class="slds-var-p-around_x-small">
+                            <label for="SOF" >Source of Funds</label>
+                            <lightning:select aura:id="SOF"
+                                              name="SOF"
+                                              label="" 
+                                              class="label-hidden"
+                                              value="{! v.sourceOfFunds }"
+                                              required="true" >   
+                                <option value="">please select...</option>
+                                <aura:iteration items="{! v.sourceOfFundsList }" var="sourceOfFunds">
+                                    <option value="{!sourceOfFunds}" selected="{!sourceOfFunds==v.sourceOfFunds}">{!sourceOfFunds}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </div>
+                        <aura:if isTrue="{!and(v.IsChequeProduct, v.IsSpousal)}">
+                          <div id="{! globalId + '_primaryAccountNumber' }" class="slds-var-p-around_x-small">
+                                        <label for="primaryAccountNumber" >Primary Account Number</label>
+                                        <lightning:input aura:id="PrimaryAccountNumber"
+                                                         name="PrimaryAccountNumber"
+                                                         value="{! v.primaryAccountNumber }"
+                                                         variant="label-hidden"
+                                                         disabled="false"
+                                                         required="false"/>
+                                    </div>
+                        </aura:if>
+                        <aura:if isTrue="{!and(v.IsChequeProduct, v.IsGroupScheme)}">
+                          <div id="{! globalId + '_groupSchemeSelection' }" class="slds-var-p-around_x-small">
+                                        <label for="_groupSchemeSelection" >Group Scheme</label>
+                                        <lightning:select aura:id="GroupSchemeSelection"
+                                                         name="GroupSchemeSelection"
+                                                         value="{! v.groupSchemeName }"
+                                                         label=""
+                                                         class="label-hidden"
+                                                         required="false">
+                                            <option value="">please select...</option>
+                                            <aura:iteration items="{! v.groupSchemeList }" var="groupScheme">
+                                                <option value="{!groupScheme}" selected="{!groupScheme==v.groupSchemeName}">{!groupScheme}</option>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </div>
+                        </aura:if>
+                    </lightning:layoutitem>
+                </aura:if>
+            </lightning:layout>
+        </lightning:layoutItem>
+    </lightning:layout>
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="horizontal-small" size="12">
+            <div>
+                <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                    availableActions="['NEXT']" 
+                                    navigateFlowEvent="{! c.handleNavigate }" />
+            </div>
+        </lightning:layoutItem> 
+    </lightning:layout>
+</aura:component>

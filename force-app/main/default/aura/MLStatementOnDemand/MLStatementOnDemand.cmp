@@ -1,0 +1,112 @@
+<!--
+* Lightning Component for Statement On Demand (MLStatementOnDemand)
+*
+* @author  Chandra Bhushan Singh : Absa
+* @version v1.0
+* @since   2020-12-03
+*
+-->
+<aura:component
+    controller="MLStatementOnDemandController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForRecordHome,force:hasRecordId"
+    access="global"
+>
+    <!--Attribute Declaration-->
+    <aura:attribute name="caseAccountId" type="String" access="global" />
+    <aura:attribute name="caseId" type="String" access="global" />
+    <aura:attribute name="SelectedAccNumberFromFlow" type="String" access="global" />
+    <aura:attribute name="templateName" type="String" access="global" />
+    <aura:attribute name="attachmentFilename" type="String" access="global" />
+    <aura:attribute name="isBusinessAccountFromFlow" type="String" access="global" />
+    <aura:attribute name="isShowSpinner" type="Boolean" default="false" />
+    <aura:attribute name="isCaseCloseShow" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="noOfMonthOptions" type="List" />
+    <aura:attribute name="selectedNoOfMonth" type="String" />
+
+    <!--Handler Declaration-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <div class="slds">
+        <lightning:card>
+            <!-- Spinner -->
+            <aura:if isTrue="{! v.isShowSpinner}">
+                <center style="z-index: 99">
+                    <lightning:spinner aura:id="TheSpinner" variant="brand" size="large" />
+                </center>
+            </aura:if>
+
+            <!-- Error Message -->
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="recordError">
+                    <br />
+                    <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+                    <br />
+                </div>
+            </aura:if>
+
+            <div class="slds-grid slds-wrap">
+                <div class="slds-col slds-size_2-of-2">
+                    <span>
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:select
+                                    name="noOfMonths"
+                                    label="Select No. of month(s)"
+                                    aura:id="noOfMonths"
+                                    value="{!v.selectedNoOfMonth}"
+                                    required="true"
+                                >
+                                    <aura:iteration items="{!v.noOfMonthOptions}" var="option">
+                                        <option text="{!option.label}" value="{!option.value}" selected="{!option.selected}" />
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_2-of-2">
+                    <lightning:recordEditForm aura:id="recordEditForm" recordId="{!v.caseAccountId}" objectApiName="Account">
+                        <lightning:layout multipleRows="true">
+                            <aura:if isTrue="{!v.isBusinessAccountFromFlow}">
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="activeEmailField" fieldName="Active_Email__c" required="true" />
+                                </lightning:layoutItem>
+                                <aura:set attribute="else">
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:inputField aura:id="personEmailField" fieldName="PersonEmail" required="true" />
+                                    </lightning:layoutItem>
+                                </aura:set>
+                            </aura:if>
+                        </lightning:layout>
+                    </lightning:recordEditForm>
+                </div>
+            </div>
+
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:button
+                        aura:id="send"
+                        variant="brand"
+                        label="Send On Demand Statement"
+                        onclick="{!c.sendOnDemandStatement}"
+                        disabled="{!v.isCaseCloseShow==true}"
+                        class="slds-align_absolute-center slds-m-top_x-large"
+                    />
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:button
+                        aura:id="close"
+                        variant="brand"
+                        label="Close Case"
+                        title="Close"
+                        onclick="{!c.caseClose}"
+                        disabled="{!v.isCaseCloseShow==false}"
+                        class="slds-align_absolute-center slds-m-top_x-large"
+                    />
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:card>
+    </div>
+</aura:component>

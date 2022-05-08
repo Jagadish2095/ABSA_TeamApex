@@ -1,0 +1,329 @@
+<!--
+  @description       :  Retrieving banking details info for SPM
+  @author            : haritha.police@absa.africa
+  @group             :
+  @last modified on  : 2021-06-29
+  @last modified by  : haritha.police@absa.africa
+  Modifications Log
+  Ver   Date         Author                       Modification
+  1.0   2021-06-21   haritha.police@absa.africa   Initial Version
+-->
+<aura:component
+	controller="SPMBankingDetailsController"
+	implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName"
+	access="global"
+>
+	<!--Initialization handler-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:attribute name="recordId" type="String" />
+	<aura:attribute name="paymentPlan" type="Payment_Plan__c" default="{'sobjectType': 'Payment_Plan__c'}" />
+	<aura:attribute name="accTypeOptions" type="List" />
+	<aura:attribute name="TypeOptions" type="List" />
+	<aura:attribute name="isShowSuccessToast" type="Boolean" />
+	<aura:attribute name="IsPlatform" type="Boolean" />
+	<aura:attribute name="hidefieldsifPlatform" type="Boolean" />
+	<aura:attribute name="isCIFRetrieval" type="Boolean" default="true" />
+	<aura:attribute name="errorMessage" type="String" /> 
+
+	<aura:attribute name="sObjectName" type="String" />
+	<!-- Event listener -->
+	<aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}" />
+	<!-- Aura methods-->
+	<aura:method name="setSelectedBankAndBranchName" action="{!c.setSelectedBankAndBranchName}" access="public">
+		<aura:attribute name="selectedBankName" type="String" />
+		<aura:attribute name="selectedBranchName" type="String" />
+	</aura:method>
+	<!--Declare Spinner-->
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+	<aura:attribute name="responseList" type="List" />
+	<aura:attribute name="prodTypesList" type="List" />
+	<aura:attribute name="accNumList" type="List" />
+	<aura:attribute name="prodTypesSet" type="Set" />
+	<aura:attribute name="selectedProductValue" type="String" access="global" />
+	<aura:attribute name="selectedProductBranch" type="String" access="global" />
+	<aura:attribute name="selectedAccountNumber" type="String" />
+	<aura:attribute name="productTypeFilter" type="String" access="global" />
+	<aura:attribute name="appRec" type="object" />
+	<aura:if isTrue="{!v.showSpinner}">
+		<lightning:spinner />
+	</aura:if>
+
+	<lightning:accordion activeSectionName="Banking Details / Platform Banking Details" allowMultipleSectionsOpen="false">
+		<lightning:accordionSection name="BankingDetailsPlatformBankingDetails" label="Banking Details / Platform Banking Details">
+			<lightning:layoutItem size="12" padding="around-small">
+				<lightning:button
+					aura:id="submitButton"
+					class="slds-m-top_small slds-float--left"
+					iconName="utility:check"
+					variant="brand"
+					type="submit"
+					name="add"
+					label="Retrieve CIF banking details"
+					onclick="{!c.retrieveBankingDetails}"
+				/>
+			</lightning:layoutItem>
+			<div class="slds-p-bottom_large"></div>
+			<aura:if isTrue="{!!v.isCIFRetrieval}">
+				<lightning:layoutItem padding="around-small" size="6">
+					<lightning:select
+						value="{!v.selectedProductValue}"
+						class="select-auto-width"
+						aura:id="myProductselection"
+						onchange="{!c.getAccountNumbers}"
+						label="Select the Product Type"
+					>
+						<option value="">--None--</option>
+						<aura:iteration items="{!v.prodTypesList}" var="prod" indexVar="key">
+							<!--option value="{!prod}">{!prod}</option-->
+							<option value="{!prod.value}">{!prod.label}</option>
+						</aura:iteration>
+					</lightning:select>
+					<lightning:select
+						value="{!v.selectedAccountNumber}"
+						class="select-auto-width"
+						aura:id="myAccountselection"
+						onchange="{!c.getSelectedAccount}"
+						label="Select the Account"
+					>
+						<option value="">--None--</option>
+						<aura:iteration items="{!v.accNumList}" var="acc" indexVar="key">
+							<option value="{!acc}">{!acc}</option>
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+				<aura:set attribute="else">
+					<div class="recordError">
+						<br />
+						<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+						<br />
+					</div>
+				</aura:set>
+			</aura:if>
+			<aura:if isTrue="{!v.sObjectName=='Account'}">
+				<aura:if isTrue="{!!v.IsPlatform}"> </aura:if>
+				<div class="slds-col slds-size_1-of-2">
+					<span>
+						<lightning:select
+							aura:id="TypeField"
+							name="Type"
+							label="Type"
+							value="{!v.paymentPlan.Type__c}"
+							onchange="{!c.onPicklisttypeChange}"
+							disabled="{!v.IsPlatform}"
+						>
+							<aura:iteration items="{!v.TypeOptions}" var="item">
+								<option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.paymentPlan.Type__c}" />
+							</aura:iteration>
+						</lightning:select>
+					</span>
+				</div>
+			</aura:if>
+			<div class="slds-col slds-size_1-of-2"></div>
+			<aura:if isTrue="{!!v.IsPlatform}">
+				<div class="slds-col slds-size_1-of-2">
+					<span>
+						<label class="slds-float_left" padding="around-small"><span style="color: red" align="left">*</span>Select Bank Name </label>
+						<c:customLookUp aura:id="customLookUpCmp" IconName="custom:custom17" selectedRecord="{!v.paymentPlan.Bank_Name__c}" label="" />
+					</span>
+				</div>
+			</aura:if>
+			<div class="slds-col slds-size_1-of-2"></div>
+			<div class="slds-col slds-size_1-of-2">
+				<span>
+					<label class="slds-float_left" padding="around-small">Bank Name Selected :</label>
+					<br /><a>{!v.paymentPlan.Bank_Name__c}</a>
+				</span>
+			</div>
+			<div class="slds-col slds-size_1-of-2"></div>
+			<aura:if isTrue="{!!v.IsPlatform}">
+				<div class="slds-col slds-size_1-of-2">
+					<span>
+						<label class="slds-float_left" padding="around-small"><!--<span style="color:red;" align="left">*</span>-->Select Branch Name </label>
+						<c:dependentCutomLookup
+							aura:id="dependentCutomLookupCmp"
+							dselectedBankName="{!v.paymentPlan.Bank_Name__c}"
+							IconName="custom:custom16"
+							selectedRecord="{!v.paymentPlan.Branch_Name__c}"
+							label=""
+						/>
+					</span>
+				</div>
+			</aura:if>
+			<div class="slds-col slds-size_1-of-2"></div>
+			<div class="slds-col slds-size_1-of-2">
+				<span>
+					<label class="slds-float_left" padding="around-small">Branch Name Selected :</label>
+					<br /><a>{!v.paymentPlan.Branch_Name__c}</a>
+				</span>
+			</div>
+			<div class="slds-col slds-size_1-of-2"></div>
+			<!--Display Branch Code  -->
+			<div class="slds-col slds-size_1-of-2">
+				<span>
+					<label class="slds-float_left" padding="around-small">Branch Code Selected :</label>
+					<br /><a>{!v.paymentPlan.Branch_Code__c}</a>
+				</span>
+			</div>
+			<!-- BIC Code -->
+			<div class="slds-grid slds-wrap slds-gutters_medium">
+				<aura:if isTrue="{!and(v.hidefieldsifPlatform,v.paymentPlan.Type__c=='SPM Product')}">
+					<!--<aura:if isTrue="{!v.paymentPlan.Type__c=='SPM Product'}">-->
+					<div class="slds-col slds-size_1-of-2">
+						<span>
+							<lightning:input
+								type="text"
+								aura:id="bicCodeField"
+								label="BIC Code"
+								value="{!v.paymentPlan.BIC_Code__c}"
+								placeholder="BIC Code"
+								disabled="{!v.IsPlatform}"
+							/>
+						</span>
+					</div>
+				</aura:if>
+				<!--</aura:if>-->
+				<div class="slds-col slds-size_1-of-2">
+					<span>
+						<lightning:input
+							type="text"
+							aura:id="accountNumberField"
+							label="Bank Account Number"
+							value="{!v.paymentPlan.Account_Number__c}"
+							placeholder="Bank Account Number"
+							disabled="{!v.IsPlatform}"
+						/>
+					</span>
+				</div>
+				<aura:if isTrue="{!or(v.paymentPlan.Type__c=='SPM Product',v.sObjectName=='Opportunity')}">
+					<div class="slds-col slds-size_1-of-2">
+						<span>
+							<lightning:input
+								type="text"
+								aura:id="accountNameField"
+								label="Name Of Account"
+								value="{!v.paymentPlan.Account_Name__c}"
+								placeholder="Account Name"
+								disabled="{!v.IsPlatform}"
+							/>
+						</span>
+					</div>
+					<!--</aura:if>
+            <aura:if isTrue="{!v.paymentPlan.Type__c=='SPM Product'}">-->
+					<div class="slds-col slds-size_1-of-2">
+						<span>
+							<lightning:select
+								aura:id="accountTypeField"
+								name="AccountType"
+								label="Account Type"
+								value="{!v.paymentPlan.Account_Type__c}"
+								onchange="{!c.onPicklistChange}"
+								disabled="{!v.IsPlatform}"
+							>
+								<aura:iteration items="{!v.accTypeOptions}" var="item">
+									<option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.paymentPlan.Account_Type__c}" />
+								</aura:iteration>
+							</lightning:select>
+						</span>
+					</div>
+				</aura:if>
+
+				<aura:if isTrue="{!and(v.paymentPlan.Type__c=='Cash Settlement',v.sObjectName=='Account')}">
+					<div class="slds-col slds-size_1-of-2">
+						<span>
+							<lightning:input
+								type="text"
+								aura:id="accountNameField"
+								label="Name Of Account"
+								value="{!v.paymentPlan.Account_Name__c}"
+								placeholder="Account Name"
+								disabled="{!v.IsPlatform}"
+							/>
+						</span>
+					</div>
+					<div class="slds-col slds-size_1-of-2">
+						<span>
+							<lightning:select
+								aura:id="accountTypeField"
+								name="AccountType"
+								label="Account Type"
+								value="{!v.paymentPlan.Account_Type__c}"
+								onchange="{!c.onPicklistChange}"
+								disabled="{!v.IsPlatform}"
+							>
+								<aura:iteration items="{!v.accTypeOptions}" var="item">
+									<option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.paymentPlan.Account_Type__c}" />
+								</aura:iteration>
+							</lightning:select>
+						</span>
+					</div>
+				</aura:if>
+			</div>
+			<!-- Validate Account Button -->
+			<div class="slds-col slds-size_6-of-12" padding="around-small">
+				<lightning:layoutItem size="6" padding="around-small">
+					<lightning:button
+						variant="brand"
+						class="slds-align_absolute-left slds-m-top_xx-large"
+						label="Save"
+						title="Save"
+						onclick="{!c.validateAcc}"
+						aura:id="saveBtn"
+						disabled="{!v.IsPlatform}"
+					/>
+				</lightning:layoutItem>
+			</div>
+		</lightning:accordionSection>
+	</lightning:accordion>
+	<aura:if isTrue="{!v.sObjectName=='Opportunity'}">
+	<lightning:accordion activeSectionName="Additional Platform Details" allowMultipleSectionsOpen="false">
+		<lightning:accordionSection name="AdditionalPlatformDetails" label="Additional Platform Details">
+			<!-- Added by Haritha on 03/5/2021 -->
+			<lightning:recordEditForm aura:id="iAppRecord" objectApiName="Application__c" recordId="{!v.appRec.Id}">
+				<div class="slds-grid slds-wrap slds-gutters_medium">
+					<aura:if
+						isTrue="{!!or(v.appRec.Platform__c == 'Absa Trust - Burg Managed (BD)',v.appRec.Platform__c == 'Absa Trust - Burg Managed Portfolio (BG)',v.appRec.Platform__c == 'Absa Trust - Ex TR (BK)',v.appRec.Platform__c == 'Absa Trust Discretionary (BP)')}"
+					>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<label class="slds-form-element__label">
+									<span class="required">* </span>
+									<span class="slds-m-right_small">First Name/Nickname</span>
+								</label>
+								<lightning:inputField fieldName="Intermediary_Client_Name__c" aura:id="clientname1" variant="label-hidden" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2"></div>
+					</aura:if>
+					<aura:if
+						isTrue="{!or(v.appRec.Platform__c == 'Absa Trust - Burg Managed (BD)',v.appRec.Platform__c == 'Absa Trust - Burg Managed Portfolio (BG)',v.appRec.Platform__c == 'Absa Trust - Ex TR (BK)',v.appRec.Platform__c == 'Absa Trust Discretionary (BP)')}"
+					>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<label class="slds-form-element__label">
+									<span class="required">* </span>
+									<span class="slds-m-right_small">Absa Trust Name</span>
+								</label>
+								<lightning:inputField fieldName="Intermediary_Client_Name__c" aura:id="clientname2" variant="label-hidden" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<label class="slds-form-element__label">
+									<span class="required">* </span>
+									<span class="slds-m-right_small">Absa Trust Number</span>
+								</label>
+								<lightning:inputField fieldName="Intermediary_Client_Number__c" aura:id="clientnumber2" variant="label-hidden" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2"></div>
+					</aura:if>
+				</div>
+			</lightning:recordEditForm>
+			<br /> <br />
+			<span class="slds-m-top_medium; slds-align_absolute-center">
+				<lightning:button label="Save" onclick="{!c.saveadditionalfields}" variant="brand" aura:id="ibtn" />
+			</span>
+		</lightning:accordionSection>
+	</lightning:accordion>
+</aura:if>
+</aura:component>

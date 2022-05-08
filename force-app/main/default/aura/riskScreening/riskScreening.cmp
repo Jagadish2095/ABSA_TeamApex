@@ -1,0 +1,151 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="RiskScreeningController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:attribute name="account" type="Account" default="{sobjectType:'Account'}"/>
+    <aura:attribute name="opportunity" type="Opportunity" default="{sobjectType:'Opportunity'}"/>
+
+    <aura:attribute name="occupationCategoryOptions" type="List" />
+    <aura:attribute name="selectedOccupationCategory" type="String" />
+    <aura:attribute name="occupationStatusOptions" type="List" />
+    <aura:attribute name="selectedOccupationStatus" type="String" />
+    <aura:attribute name="sourceIncomeOptions" type="List" />
+    <aura:attribute name="selectedSourceIncome" type="String" />
+    
+    <aura:attribute name="showRiskScreen" type="boolean" default="true"/>
+    <aura:attribute name="showFinishedScreen" type="boolean" default="false"/>
+    <aura:attribute name="showCasaNotCompleted" type="boolean" default="false"/>
+    
+    <aura:attribute name="countriesTradedOptions" type="List"/>
+    <aura:attribute name="countriesTradedValues" type="List"/>
+    
+    <aura:attribute name="accountRecordType" type="String" />
+    <aura:attribute name="casaScreeningStatus" type="boolean" default="false" />
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <center style="z-index:99">
+       <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+   	</center>
+
+    <aura:if isTrue="{!v.showRiskScreen}">
+        <aura:if isTrue="{!v.accountRecordType == 'Individual Client' || v.accountRecordType == 'Individual Prospect'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12">
+                    <h2 class="slds-section__title">New Risk Rating (Individual)</h2>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="accountForm" value="{!v.account.Occupation__pc}" label="Occupation" required="true"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:select aura:id="accountForm" name="occupationCategory" label="Occupation Category" value="{!v.selectedOccupationCategory}" onchange="{!c.onPicklistOccupationCategoryChange}" required="true">
+                        <aura:iteration items="{!v.occupationCategoryOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem> 
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:select aura:id="accountForm" name="occupationStatus" label="Occupation Status" value="{!v.selectedOccupationStatus}" onchange="{!c.onPicklistOccupationStatusChange}" required="true">
+                        <aura:iteration items="{!v.occupationStatusOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem> 
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:select aura:id="accountForm" name="sourceIncome" label="Source of Funds" value="{!v.selectedSourceIncome}" onchange="{!c.onPicklistSourceIncomeChange}" required="true">
+                        <aura:iteration items="{!v.sourceIncomeOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:dualListbox name="countriesTraded"  
+                           label= "Countries Traded With:" 
+                           sourceLabel="Available" 
+                           selectedLabel="Selected" 
+                           fieldLevelHelp="Absa Countries Traded With" 
+                           options="{!v.countriesTradedOptions}" 
+                           value="{!v.countriesTradedValues}" 
+                           onchange="{!c.multiPicklistCountriesTradedChange}"/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="12">
+                    <lightning:button class="slds-m-top_small slds-float--right" variant="brand" type="submit" name="add" label="Submit" onclick="{!c.doRiskScreening}"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.accountRecordType == 'Business Client' || v.accountRecordType == 'Business Prospect'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12">
+                    <h2 class="slds-section__title">New Risk Rating (Joint Account)</h2>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:dualListbox name="countriesTraded"  
+                           label= "Countries Traded With:" 
+                           sourceLabel="Available" 
+                           selectedLabel="Selected" 
+                           fieldLevelHelp="Absa Countries Traded With" 
+                           options="{!v.countriesTradedOptions}" 
+                           value="{!v.countriesTradedValues}" 
+                           onchange="{!c.multiPicklistCountriesTradedChange}"/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="12">
+                    <lightning:button class="slds-m-top_small slds-float--right" variant="brand" type="submit" name="add" label="Submit" onclick="{!c.doRiskScreening}"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:if>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showFinishedScreen}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> Risk Rating done Successfully.</p>            
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem size="6" class="slds-p-top_large">
+                <b>Risk Rating: </b><ui:outputText value="{!v.opportunity.Risk_Rating__c}"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" class="slds-p-top_large">
+                <b>Risk Rating Date: </b><ui:outputText value="{!v.opportunity.Risk_Rating_Date__c}"/>
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem size="12" class="slds-p-top_large">
+                <lightning:button class="slds-float--right" variant="brand" label="Redo Risk Rating" onclick="{!c.redoScreening}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.casaScreeningStatus}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <center style="z-index:99; height=150px">
+                    <p style="font-size:18px; margin-top:20px"><lightning:icon size="small" iconName="action:close" alternativeText="Not Completed" /> CASA Screening Status needs to be approved before Risk Rating can be done.</p>
+                </center>            
+            </lightning:layoutItem>           
+        </lightning:layout>
+        
+        <aura:set attribute="else">
+            <aura:if isTrue="{!v.showCasaNotCompleted}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12">
+                        <center style="z-index:99; height=150px">
+                            <p style="font-size:18px; margin-top:20px"><lightning:icon size="small" iconName="action:close" alternativeText="Not Completed" /> CASA Screening needs to be completed before Risk Rating can done.</p>
+                        </center>            
+                    </lightning:layoutItem>           
+                </lightning:layout>
+            </aura:if>
+        </aura:set>
+    </aura:if> 
+    
+    
+</aura:component>

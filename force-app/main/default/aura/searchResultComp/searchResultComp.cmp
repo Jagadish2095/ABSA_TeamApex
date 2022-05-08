@@ -1,0 +1,203 @@
+<!--
+  @description       : 
+  @author            : Vinod.Thupakula@absa.africa
+  @last modified on  : 2021-11-25
+  @last modified by  : Vinod.Thupakula@absa.africa
+-->
+<aura:component controller="BrokerNoteProcessController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+
+    <aura:attribute name="ShowResultOnNextScree" type="boolean" default="false"/>
+    <aura:attribute name="open" type="boolean" default="true"/>
+    <aura:attribute name="dsblBtn" type="boolean" default="true"/>
+    <aura:attribute name="close" type="boolean" default="false"/>
+    <aura:attribute name="showBranchdetailsLst" type="Object" default=""/>
+    <aura:attribute name="showBranchdetailsLstMAp" type="Object" default=""/>
+    <aura:attribute name="selectedRadio" type="String"/>
+     <aura:attribute name="caseComments" type="String"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="selectedRecordInfo" type="User_Site__c" />
+    <aura:attribute name="activeSections" type="List" default="[]" />
+    <aura:attribute name="dummy" type="Boolean" default="true" />
+    <aura:attribute name="CurrentCaseRecordId" type="String" default="" /><!-- //mod by HP -->
+    <aura:attribute name="objectName" type="String"/>
+   <!--Added By Divya-->
+    <aura:attribute name="selectedId" type="String"/>
+    <aura:attribute name="showButton" type="boolean"/>
+   <!--Added By Deepthi-->
+    <aura:attribute name="selectedUser" type="sObject"/>
+	<aura:attribute name="usrDialog" type="boolean" default="false"/>
+	
+
+   <aura:registerEvent name="F2FSearchEvent" type="c:F2FSearchEvent"/>
+   <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    
+    <aura:attribute name="isLoading" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.isLoading}">
+        <lightning:spinner alternativeText="Loading"/>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.dummy}">
+        <div class="slds-box slds-m-around_xx-small">
+            <aura:if isTrue="{!v.open}">
+                 <aura:if isTrue="{!v.usrDialog}">     
+                <!--  <div class="slds-col slds-size_1-of-2 slds-p-around_small">   -->
+                  <aura:if isTrue="{!not(empty(v.showBranchdetailsLstMAp))}">                 
+                    <aura:iteration items="{!v.showBranchdetailsLstMAp}" var="item" indexVar="key">                    
+                     <p class="slds-p-around_small"> Branch Name : {!item.key} </p>                
+                	</aura:iteration>	
+                     <aura:set attribute="else">
+                        <p class="slds-p-around_small"> Branch Name : </p>  
+                      </aura:set>
+                     </aura:if>
+                                    <span>
+                                        <lightning:card class="slds-p-around_small" iconName="utility:user" title="{!v.selectedUser.Name  }">
+										 <ui:inputRadio name="checkThis" class="slds-radio" text="{!v.selectedUser.Id}" change="{!c.onRadio}"/>  
+                                            	
+                                            <lightning:layout verticalAlign="stretch" multipleRows="true" class="x-large" >
+                                                
+                                                <lightning:layoutItem  flexibility="grow">
+                                                    <lightning:recordViewForm recordId="{!v.selectedUser.Id}" objectApiName="User">
+                                                        <div class="slds-grid slds-gutters slds-p-left_small">
+                                                            <div class="slds-col ">
+                                                                <span>
+                                                                    
+                                                                    <lightning:outputField fieldName="LanguageLocaleKey" />
+                                                                    <div class="slds-border_bottom"/>
+                                                                </span>
+                                                            </div>
+                                                            <div class="slds-col">
+                                                                <span>
+                                                                    
+                                                                    
+                                                                    <lightning:outputField fieldName="Skills_Products__c" />
+                                                                    <div class="slds-border_bottom"/>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                    </lightning:recordViewForm>
+                                                    
+                                                </lightning:layoutItem>
+                                                
+                                            </lightning:layout>
+                                        </lightning:card>
+                                    </span>
+                            <!--    </div> -->
+				
+				<aura:set attribute="else">
+				 <!---showBranchdetailsLst iteration--> 
+				    <aura:iteration items="{!v.showBranchdetailsLstMAp}" var="item" indexVar="key">
+                    
+                    <p class="slds-p-around_small">Branch Name : {!item.key}
+                        <lightning:buttonIcon class="slds-float_right" onclick="{!c.acordian}" iconName="utility:chevronup" size="large" variant="bare" alternativeText="View More" title="View" />
+                        
+                    </p>
+                    
+                </aura:iteration>
+               
+              <!-->    <lightning:accordion allowMultipleSectionsOpen="true"
+                                     activeSectionName="{! v.activeSections }" >
+                    
+                    <lightning:accordionSection name="A" label="Details" class="slds-float_right" >
+                     <-->   
+                     <div aria-hidden="false" class="slds-section__content">
+                            <lightning:layout multipleRows="true">
+                                
+                                  <lightning:layoutItem padding="around-small" size="12">
+                                    
+                                    <aura:renderIf isTrue="{!v.objectName == 'Opportunity'}">
+                                         <label class="slds-form-element__label" for="select-01">
+    										<abbr class="slds-required" title="required">* </abbr>
+                                         Agent Notes</label>
+                                         <aura:set attribute="else">
+                                             <ui:outputText value="Agent Notes"/>
+                                        </aura:set>
+                                    </aura:renderIf>
+                                    <ui:inputTextArea aura:id="internalComments" value="{!v.caseComments}" />
+                                </lightning:layoutItem>
+                                
+                                
+                            </lightning:layout>
+                        </div>
+                        
+                        <div class="slds-grid slds-wrap">
+                            <aura:iteration items="{!v.showBranchdetailsLst.lstUserRecs}" var="usr">
+                                <!--User Details Display  Card section start-->
+                                
+                                <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                                    <span>
+                                        <lightning:card class="slds-p-around_small" iconName="utility:user" title="{! usr.Name  }">
+                                            <aura:set attribute="actions">
+                                                 <aura:renderIf isTrue="{!v.objectName != 'Opportunity'}"> <!-- if it is case object -->
+                                               
+                                                <ui:inputRadio name="checkThis" class="slds-radio"
+                                                               text="{!usr.Id}" change="{!c.onRadio}"/>
+                                                                </aura:renderIf>
+                                              <aura:renderIf isTrue="{!v.objectName == 'Opportunity'}"> <!-- if component is added on the opportunity object added for investment opportunities on 2021/07/13 by pravin w.-->  
+                                                <ui:inputRadio name="checkThis" class="slds-radio"
+                                                               text="{!usr.Id}" change="{!c.onRadioChange}"/>
+                                                
+                                                </aura:renderIf>
+                                            </aura:set>
+                                            <lightning:layout verticalAlign="stretch" multipleRows="true" class="x-large" >
+                                                
+                                                <lightning:layoutItem  flexibility="grow">
+                                                    <lightning:recordViewForm recordId="{!usr.Id}" objectApiName="User">
+                                                        <div class="slds-grid slds-gutters slds-p-left_small">
+                                                            <div class="slds-col ">
+                                                                <span>
+
+                                                                    <lightning:outputField fieldName="LanguageLocaleKey" />
+                                                                    <div class="slds-border_bottom"/>
+                                                                </span>
+                                                            </div>
+                                                            <div class="slds-col">
+                                                                <span>
+
+                                                                    <lightning:outputField fieldName="Skills_Products__c" />
+                                                                    <div class="slds-border_bottom"/>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                    </lightning:recordViewForm>
+
+                                                </lightning:layoutItem>
+
+                                            </lightning:layout>
+                                        </lightning:card>
+                                    </span>
+                                </div>
+
+                            </aura:iteration>
+                              
+								<aura:renderIf isTrue="{!v.showButton}" >
+                                        <lightning:layoutItem padding="around-small" size="12">
+                                            <lightning:button variant="brand" label="Refer" onclick="{!c.onRadioOpportunity}" />
+                                        </lightning:layoutItem>
+                               </aura:renderIf> 
+                        </div>
+				</aura:set>
+				
+				</aura:if>
+                    
+                       
+                     <!-->   
+                    </lightning:accordionSection>
+                </lightning:accordion>
+					<-->
+
+                    <!--User Details Display  Card section End-->
+            </aura:if>
+            <aura:if isTrue="{!v.close}">
+                <p class="slds-p-around_small">
+                    <lightning:buttonIcon class="slds-float_right" onclick="{!c.acordian}" iconName="utility:chevrondown" size="large" variant="bare" alternativeText="View More" title="close" />
+                </p>
+
+            </aura:if>
+        </div>
+    </aura:if>
+
+
+</aura:component>

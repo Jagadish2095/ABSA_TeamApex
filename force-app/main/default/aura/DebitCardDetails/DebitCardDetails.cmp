@@ -1,0 +1,391 @@
+<!--
+  @description       : 
+  @author            : André Pietersen (IQ Business)
+  @last modified on  : 2021-10-18
+  @last modified by  : André Pietersen (IQ Business)
+-->
+<aura:component
+	access="global"
+	controller="DebitCardDetailsIssueController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+>
+	<!-- Event Handler Decleration -->
+	<aura:attribute name="ApplicationProdId" type="String" default="" />
+	<aura:attribute name="OppurtunityId" type="String" />
+	<aura:attribute name="SelectedBrandType" type="String" />
+	<aura:attribute name="brandTypesList" type="list" />
+	<aura:attribute name="debitCardNumber" type="String" />
+	<aura:attribute name="brandNumber" type="String" />
+	<aura:attribute name="AccountNumber" type="String" />
+	<aura:attribute name="showNominatableAccounts" type="Boolean" default="False" />
+	<aura:attribute name="showCardLimits" type="Boolean" default="False" />
+	<aura:attribute name="combiCardIssued" type="Boolean" default="False" />
+	<aura:attribute name="productFamily" type="String" />
+    <aura:attribute name="processType" type="String" access="global"/><!--Simangaliso Mathenjwa-->
+	<aura:attribute
+		name="personalisedCardOptions"
+		type="List"
+		default="[
+                                                                        {'label': 'Yes', 'value': 'Yes'},
+                                                                        {'label': 'No', 'value': 'No'}
+                                                                        ]"
+	/>
+	<aura:attribute
+		name="deliveryMethodList"
+		type="List"
+		default="[
+                                                                   {'label': 'Face to Face', 'value': 'F2F'},
+                                                                   {'label': 'In Branch', 'value': 'BRNCH'}
+                                                                   ]"
+	/>
+
+	<aura:attribute name="issearching" type="boolean" default="false" />
+	<aura:attribute name="isPersonalisedCard" type="string" default="No" />
+	<aura:attribute name="showPersonalisedOptions" type="boolean" default="true" />
+	<aura:attribute name="deliveryMethod" type="string" />
+	<aura:attribute name="deliveryBranch" type="string" default="0" />
+	<aura:attribute name="deliveryBranchName" type="string" />
+	<aura:attribute name="SearchKeyWord" type="string" />
+	<aura:attribute name="personalisedName" type="string" />
+	<aura:attribute name="NominatedSavingsAccount" type="string" />
+	<aura:attribute name="SelectedNominatedSavingsAccount" type="string" />
+	<aura:attribute name="NominatableSavingsAccountsList" type="list" />
+
+	<aura:attribute name="NominatedChequeAccount" type="string" />
+	<aura:attribute name="SelectedNominatedChequeAccount" type="string" />
+	<aura:attribute name="NominatableChequeAccountsList" type="list" />
+
+	<aura:attribute name="NominatedCreditCardAccount" type="string" />
+	<aura:attribute name="SelectedNominatedCreditCardAccount" type="string" />
+	<aura:attribute name="NominatableCreditCardAccountsList" type="list" />
+	<aura:attribute name="listOfRecords" type="map" />
+
+	<aura:attribute name="CashWithdrawalLimit" type="string" />
+	<aura:attribute name="CashTransferLimit" type="string" />
+	<aura:attribute name="PointOfSalePurchaseLimit" type="string" />
+	<aura:attribute name="CardCounterLimit" type="string" />
+
+	<aura:attribute name="doPinpad" type="boolean" default="false" />
+	<aura:attribute name="pinPadResponse" type="string" default="" />
+	<aura:attribute name="macCode" type="string" default="" />
+	<aura:handler name="change" value="{! v.pinPadResponse }" action="{! c.pinpadComplete }" />
+
+	<aura:attribute name="dataLoaded" type="boolean" default="false" />
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+	<aura:handler name="change" value="{! v.dataLoaded }" action="{! c.dataLoaded }" />
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:attribute name="validate" type="Aura.Action" description="" />
+
+	<aura:registerEvent name="navigateOnDeviceResponse" type="c:BranchNavigateFlow" />
+	<aura:handler name="navigateOnDeviceResponse" event="c:BranchNavigateFlow" action="{!c.handleNavigate}" />
+
+	<aura:if isTrue="{!v.showSpinner}">
+		<div class="slds-spinner_container">
+			<lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+		</div>
+	</aura:if>
+	<div class="slds-is-relative">
+		<lightning:recordEditForm
+			aura:id="DebitCardDetails"
+			recordId="{!v.ApplicationProdId}"
+			objectApiName="Application_Product__c"
+			density="comfy"
+			onload="{! c.infoRecordLoaded }"
+			onsubmit="{! c.infoRecordSubmit }"
+			onerror="{! c.onSubmitError}"
+			onsuccess="{! c.onSubmitSuccess}"
+		>
+			<!-- Needs one field on RecordEdit to fire onsubmit() -->
+			<lightning:inputField fieldName="Debit_Card_Number__c" class="hidden_field" />
+			<lightning:inputField fieldName="Brand_Number__c" class="hidden_field" />
+			<button id="{! globalId + '_debit_submit' }" type="submit" class="hidden_field" />
+		</lightning:recordEditForm>
+
+		<lightning:layout>
+			<lightning:layoutItem padding="around-small" size="3">
+				<legend class="slds-text-heading_medium slds-var-p-vertical_large">
+					<p><b>Debit card details</b></p>
+				</legend>
+			</lightning:layoutItem>
+		</lightning:layout>
+		<lightning:layout>
+			<lightning:layoutItem padding="around-medium" size="3">
+				<lightning:input
+					aura:id="AccountNumber"
+					label="Account number"
+					required="true"
+					readonly="true"
+					value="{!v.AccountNumber}"
+					class="slds-m-right_xx-large"
+				/>
+			</lightning:layoutItem>
+			<aura:if isTrue="{!v.showPersonalisedOptions}">
+				<lightning:layoutItem padding="around-medium" size="3">
+					<lightning:radioGroup
+						name="isPersonalisedCardRadios"
+						label="Customer requires a personalized card?"
+						options="{! v.personalisedCardOptions }"
+						value="{! v.isPersonalisedCard }"
+						type="radio"
+						disabled="{!if(v.processType =='Voice Sales Product Onboarding','true','false')}"/><!--Simangaliso Mathenjwa added  condition for VOICE-->
+				</lightning:layoutItem>
+			</aura:if>
+		</lightning:layout>
+		<lightning:layout>
+			<lightning:layoutItem padding="around-medium" size="3">
+				<aura:if isTrue="{! v.isPersonalisedCard == 'No'}">
+					<lightning:input
+						aura:id="DebitCardNumber"
+						required="true"
+						readonly="{!v.combiCardIssued}"
+						label="Debit Card Number"
+						value="{!v.debitCardNumber}"
+						class="slds-m-right_xx-large"
+					/>
+				</aura:if>
+				<aura:if isTrue="{! v.isPersonalisedCard == 'Yes'}">
+					<lightning:input
+						aura:id="PersonalisedName"
+						required="true"
+						label="Personalised name on card"
+						value="{!v.personalisedName}"
+						class="slds-m-right_xx-large"
+					/>
+				</aura:if>
+			</lightning:layoutItem>
+
+			<lightning:layoutItem padding="around-medium" size="3">
+				<label for="Brand">Brand Number</label>
+				<lightning:select aura:id="Brand" name="Brand" label="Brand Number" class="label-hidden" value="{! v.brandNumber }" required="true">
+					<option value="">please select...</option>
+					<aura:iteration items="{! v.brandTypesList }" var="b">
+						<option value="{!b}" selected="{!b==v.brandNumber}">{!b}</option>
+					</aura:iteration>
+				</lightning:select>
+			</lightning:layoutItem>
+		</lightning:layout>
+		<aura:if isTrue="{! v.isPersonalisedCard == 'Yes'}">
+			<lightning:layout>
+				<lightning:layoutItem padding="around-medium" size="3">
+					<lightning:radioGroup
+						name="DeliveryMethod"
+						label="Delivery Method"
+						options="{! v.deliveryMethodList }"
+						value="{! v.deliveryMethod }"
+						type="radio"
+					/>
+				</lightning:layoutItem>
+				<aura:if isTrue="{! v.deliveryMethod == 'BRNCH'}">
+					<lightning:layoutItem padding="around-medium" size="3">
+						<div onmouseleave="{!c.onblur}" aura:id="searchRes" class="slds-form-element slds-lookup slds-is-close" data-select="single">
+							<!--This part is for display search bar for lookup-->
+							<div class="slds-form-element__control">
+								<div class="slds-input-has-icon slds-input-has-icon--right">
+									<div aura:id="lookupField" class="slds-show" onkeyup="{! c.handleKeyUp }">
+										<lightning:input
+											aura:id="DeliveryBranch"
+											name="DeliveryBranch"
+											label="Branch"
+											isLoading="{! v.issearching }"
+											value="{! v.deliveryBranchName }"
+											type="search"
+										/>
+									</div>
+								</div>
+							</div>
+
+							<!--This part is for Display typehead lookup result List-->
+							<ul
+								style="min-height: 40px; margin-top: 0px !important"
+								class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds"
+								role="listbox"
+							>
+								<lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinner" />
+								<center>{!v.Message}</center>
+
+								<aura:iteration items="{!v.listOfRecords}" var="singleRec">
+									<li
+										role="presentation"
+										class="slds-listbox__item"
+										onclick="{!c.selectRecord}"
+										data-code="{!singleRec.key}"
+										data-name="{!singleRec.value}"
+									>
+										<span
+											id="listbox-option-unique-id-01"
+											class="slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta"
+											role="option"
+										>
+											<span class="slds-media__body">
+												<span class="slds-listbox__option-text slds-listbox__option-text_entity">{!singleRec.value}</span>
+											</span>
+										</span>
+									</li>
+								</aura:iteration>
+							</ul>
+						</div>
+					</lightning:layoutItem>
+				</aura:if>
+			</lightning:layout>
+		</aura:if>
+		<aura:if isTrue="{!v.showNominatableAccounts}">
+			<lightning:layout>
+				<lightning:layoutItem padding="around-small" size="3">
+					<legend class="slds-text-heading_medium slds-var-p-vertical_large">
+						<p><b>Debit card nominated accounts</b></p>
+					</legend>
+				</lightning:layoutItem>
+			</lightning:layout>
+
+			<lightning:layout>
+				<lightning:layoutItem padding="around-medium" size="3">
+					<label for="NominatedSavingsAccount">Nominated Savings Account</label>
+					<lightning:select
+						aura:id="NominatedSavingsAccount"
+						name="NominatedSavingsAccount"
+						label="Nominated Savings Account"
+						class="label-hidden"
+						value="{! v.SelectedNominatedSavingsAccount }"
+						required="true"
+					>
+						<option value="">Not Applicable</option>
+						<aura:iteration items="{! v.NominatableSavingsAccountsList }" var="NSA">
+							<option value="{!NSA}" selected="{!NSA==v.SelectedNominatedSavingsAccount}">{!NSA}</option>
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-medium" size="3">
+					<label for="NominatedChequeAccount">Nominated Cheque Account</label>
+					<lightning:select
+						aura:id="NominatedChequeAccount"
+						name="NominatedChequeAccount"
+						label="Nominated Cheque Account"
+						class="label-hidden"
+						value="{! v.SelectedNominatedChequeAccount }"
+						required="true"
+					>
+						<option value="">Not Applicable</option>
+						<aura:iteration items="{! v.NominatableChequeAccountsList }" var="NCHA">
+							<option value="{!NCHA}" selected="{!NCHA==v.SelectedNominatedChequeAccount}">{!NCHA}</option>
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+			</lightning:layout>
+
+			<lightning:layout>
+				<lightning:layoutItem padding="around-medium" size="3">
+					<label for="NominatedCreditCardAccount">Nominated CreditCard Account</label>
+					<lightning:select
+						aura:id="NominatedCreditCardAccount"
+						name="NominatedCreditCardAccount"
+						label="Nominated CreditCard Account"
+						class="label-hidden"
+						value="{! v.SelectedNominatedCreditCardAccount }"
+						required="true"
+					>
+						<option value="">Not Applicable</option>
+						<aura:iteration items="{! v.NominatableCreditCardAccountsList }" var="NCCA">
+							<option value="{!NCCA}" selected="{!NCCA==v.SelectedNominatedCreditCardAccount}">{!NCCA}</option>
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+			</lightning:layout>
+		</aura:if>
+
+		<aura:if isTrue="{!v.showCardLimits}">
+			<lightning:layout>
+				<lightning:layoutItem padding="around-medium" size="6">
+					<legend class="slds-text-heading_medium slds-var-p-vertical_large">
+						<p><b>Debit card limits</b></p>
+					</legend>
+					<div align="top" style="padding: 2px; background: #f2f3f4; width: 920px">
+						<table align="top">
+							<tr>
+								<td>
+									<lightning:icon iconName="utility:info" alternativeText="info" title="info" />
+								</td>
+								<td>
+									The customer can manage their limits via the Absa Banking App. Ask the customer to start downloading the App while we
+									complete the application.
+								</td>
+							</tr>
+						</table>
+					</div>
+				</lightning:layoutItem>
+			</lightning:layout>
+			<lightning:layout>
+				<lightning:layoutItem padding="around-medium" size="3">
+					<lightning:input
+						aura:id="CashWithdrawalLimit"
+						required="true"
+						label="Cash withdrawal limit"
+						fieldName="Card_Cash_Limit__c"
+						value="{!v.CashWithdrawalLimit}"
+						class="slds-m-right_xx-large"
+					/>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-medium" size="3">
+					<lightning:input
+						aura:id="CashTransferLimit"
+						required="true"
+						label="Cash transfer limit"
+						fieldName="Card_Transfer_Limit__c"
+						value="{!v.CashTransferLimit}"
+						class="slds-m-right_xx-large"
+					/>
+				</lightning:layoutItem>
+			</lightning:layout>
+
+			<lightning:layout>
+				<lightning:layoutItem padding="around-medium" size="3">
+					<lightning:input
+						aura:id="PointOfSalePurchaseLimit"
+						required="true"
+						label="Point of sale purchase limit"
+						fieldName="Card_POS_Limit__c"
+						value="{!v.PointOfSalePurchaseLimit}"
+						class="slds-m-right_xx-large"
+					/>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-medium" size="3">
+					<lightning:input
+						aura:id="CardCounterLimit"
+						required="true"
+						label="Card counter limit"
+						fieldName="Card_Counter_Limit__c"
+						value="{!v.CardCounterLimit}"
+						class="slds-m-right_xx-large"
+					/>
+				</lightning:layoutItem>
+			</lightning:layout>
+		</aura:if>
+		<aura:if isTrue="{!v.doPinpad}">
+			<section
+				role="dialog"
+				tabindex="-1"
+				aria-labelledby="modal-heading-01"
+				aria-modal="true"
+				aria-describedby="modal-content-id-1"
+				class="slds-modal slds-fade-in-open"
+			>
+				<div class="slds-modal__container">
+					<header class="slds-modal__header">
+						<h2 id="modal-heading-01" class="customSectionButton"></h2>
+					</header>
+					<div class="content slds-theme_default" style="height: 500px">
+						<c:ASPPinpadFuncIntegrationComponent PinPadFunction="NewEPin" recordId="{! v.OppurtunityId }" PinPadData="{! v.pinPadResponse}" />
+					</div>
+					<footer class="slds-modal__footer">
+						<lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closePinPad }" />
+					</footer>
+				</div>
+			</section>
+			<div class="slds-backdrop slds-backdrop_open"></div>
+		</aura:if>
+	</div>
+
+	<div class="slds-var-p-around_x-small">
+		<c:BranchFlowFooter aura:id="branchFlowFooter" availableActions="{! v.availableActions }" navigateFlowEvent="{!c.handleNavigate}" />
+	</div>
+</aura:component>

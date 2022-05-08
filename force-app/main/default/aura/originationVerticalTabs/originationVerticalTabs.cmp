@@ -1,0 +1,296 @@
+<!--
+* Lightning Component for maintaining Origination vertical tab structure
+* <c:originationVerticalTabs/>
+* @author  Saurabh : Absa
+* @version v1.0
+* @since   2020-08-15
+* @UserStory W:005724
+-->
+
+<aura:component
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+    access="global" controller="originationVerticalTabsController">
+
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="asyncValidation" type="Boolean" />
+    <aura:attribute name="hasBeenEdited" type="Boolean" />
+    <aura:attribute name="isSoleTrader" type="Boolean" />
+    <aura:attribute name="selectedItem" type="String" />
+    <aura:attribute name="activeItem" type="String" />
+    <aura:attribute name="resultData" type="List" />
+    <aura:attribute name="commBureauData" type="Map[]" />
+    <aura:attribute name="consBureauData" type="Map[]" />
+    <aura:attribute name="discription" type="string" />
+    <aura:attribute name="CurrentUser" type="Object" />
+    <aura:attribute name="isSuperUser" type="Boolean" />
+    <aura:attribute name="illustrativeDecisionFlag" type="Boolean" />
+    <aura:attribute name="isLocateCallRequired" type="Boolean" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" access="private" />
+    <aura:attribute name="isRefreshed" type="boolean" default="false" access="private"/>
+    <aura:attribute name="listItems" type="List" />
+    <aura:attribute name="completedTabs" type="List" />
+    <aura:attribute name="completedTabsList" type="String" default="" />
+    <aura:attribute name="showCreditTab" type="Boolean" default="false" /><!-- added by Manish for W-012105 -->
+    <aura:attribute name="showBGTab" type="Boolean" default="false" />
+    <aura:attribute name="showTLTab" type="Boolean" default="false" />
+    <aura:attribute name="conductAccountsOnly" type="boolean" default="false"/><!--added by Saurabh for W-012285 -->
+    <force:recordData recordId="{!$SObjectType.CurrentUser.Id}" fields="Profile.Name" targetFields="{!v.CurrentUser}" />
+
+    <aura:attribute name="oppAccRecord" type="Object"/>
+    <aura:attribute name="isOtherClientTypes" type="Boolean" default="false" />
+    <force:recordData aura:id="recordLoader" fields="Id,Account.Client_Type__c"
+                     recordId="{!v.recordId}" targetFields="{!v.oppAccRecord}" />
+
+    <!-- aura handler for init -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <!-- Handle Application Event -->
+    <aura:handler event="c:creditOriginationEvent" action="{!c.handleApplicationEvent}" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="large" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    <div>
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="2">
+                <lightning:verticalNavigation selectedItem="{! v.selectedItem }">
+                    <lightning:verticalNavigationSection>
+                        <aura:if isTrue="{!v.isSoleTrader}">
+                            <lightning:verticalNavigationItemIcon label="Spouse" iconName="custom:custom24" name="spouse" onclick="{!c.toggleClass}" />
+                        </aura:if>
+                        <lightning:verticalNavigationItemIcon label="Cheque &amp; Overdraft" iconName="custom:custom24" name="TabOne" onclick="{!c.toggleClass}" />
+                        <aura:if isTrue="{!v.showCreditTab}">
+                            <lightning:verticalNavigationItemIcon label="Credit Card" iconName="custom:custom24" name="creditCard" onclick="{!c.toggleClass}" />
+                        </aura:if>
+                        <aura:if isTrue="{!v.showBGTab}">
+                            <lightning:verticalNavigationItemIcon label="Bank Guarantee" iconName="custom:custom24" name="bankGuarantee" onclick="{!c.toggleClass}" />
+                        </aura:if>
+                        <aura:if isTrue="{!v.showTLTab}">
+                            <lightning:verticalNavigationItemIcon label="Term Loan" iconName="custom:custom24" name="termLoan" onclick="{!c.toggleClass}" />
+                        </aura:if>
+                        <c:auraIfContainsContainer items="{!v.completedTabs}"  element="Cheque_Overdraft_Validated,Credit_Card_Validated,Bank_Guarantee_Validated">
+                            <lightning:verticalNavigationItemIcon label="Non Scored Approval" iconName="custom:custom24" name="TabTwo" onclick="{!c.toggleClass}" />
+                            <lightning:verticalNavigationItemIcon label="External Banking Relationships" iconName="custom:custom24" name="TabThree" onclick="{!c.toggleClass}" />
+                            <lightning:verticalNavigationItemIcon label="Securities Offered" iconName="custom:custom24" name="TabFour" onclick="{!c.toggleClass}" />
+                            <c:auraIfContainsContainer items="{!v.completedTabs}"  element="Non_Scored_Approved_Facilities">
+                                <lightning:verticalNavigationItemIcon label="Exposure" iconName="custom:custom24" name="TabSeven" onclick="{!c.toggleClass}" />
+                                <lightning:verticalNavigationItemIcon label="Triad" iconName="custom:custom24" name="TabEight" onclick="{!c.toggleClass}" />
+                                <c:auraIfContainsContainer items="{!v.completedTabs}"  element="Exposure">
+                                    <lightning:verticalNavigationItemIcon label="Validation 1" iconName="custom:custom24" name="TabSix" onclick="{!c.toggleClass}" />
+                                    <c:auraIfContainsContainer items="{!v.completedTabs}"  element="Validation01">
+                                        <!--lightning:verticalNavigationItemIcon label="Exposure" iconName="custom:custom24" name="TabSeven" onclick="{!c.toggleClass}"
+                        				<lightning:verticalNavigationItemIcon label="Triad" iconName="custom:custom24" name="TabEight" onclick="{!c.toggleClass}" /-->
+                                        <lightning:verticalNavigationItemIcon label="Security Existing" iconName="custom:custom24" name="securityExisting" onclick="{!c.toggleClass}" />
+                                        <lightning:verticalNavigationItemIcon label="Applicant Financials" iconName="custom:custom24" name="TabNine" onclick="{!c.toggleClass}" />
+                                        <aura:if isTrue="{!v.isSoleTrader}">
+                                            <lightning:verticalNavigationItemIcon label="Sole Proprietor Assets and Liabilities" iconName="custom:custom24" name="solePropAssetsLiabs" onclick="{!c.toggleClass}" />
+                                        </aura:if>
+                                        <lightning:verticalNavigationItemIcon label="Validation 2" iconName="custom:custom24" name="validation2" onclick="{!c.toggleClass}" />
+                                        <c:auraIfContainsContainer items="{!v.completedTabs}"  element="Validation03">
+                                            <aura:if isTrue="{!v.isSoleTrader == false}">
+                                                <lightning:verticalNavigationItemIcon label="Principal Financials" iconName="custom:custom24" name="TabTen" onclick="{!c.toggleClass}" />
+                                            </aura:if>
+                                            <lightning:verticalNavigationItemIcon label="Validation 3" iconName="custom:custom24" name="validation3" onclick="{!c.toggleClass}" />
+                                            <c:auraIfContainsContainer items="{!v.completedTabs}"  element="Validation04">
+                                                <aura:if isTrue="{!v.illustrativeDecisionFlag}">
+                                                    <lightning:verticalNavigationItemIcon label="Illustrative Decision" iconName="custom:custom24" name="illustrativeDecision" onclick="{!c.toggleClass}" />
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.isLocateCallRequired}">
+                                                    <lightning:verticalNavigationItemIcon label="Locate Call" iconName="custom:custom24" name="locateCall" onclick="{!c.toggleClass}" />
+                                                </aura:if>
+                                                <aura:if isTrue="{!not(v.isSoleTrader)}">
+                                                    <lightning:verticalNavigationItemIcon label="Commercial Bureau" iconName="custom:custom24" name="commercialBureau" onclick="{!c.toggleClass}" />
+                                                </aura:if>
+                                                <aura:if isTrue="{!or(v.isSoleTrader, v.isOtherClientTypes)}">
+                                                    <lightning:verticalNavigationItemIcon label="Consumer Bureau" iconName="custom:custom24" name="consumerBureau" onclick="{!c.toggleClass}" />
+                                                </aura:if>
+                                                <c:auraIfContainsContainer items="{!v.completedTabs}" element="{!v.completedTabsList}">
+                                                    <aura:if isTrue="{!v.isSoleTrader}">
+                                                        <lightning:verticalNavigationItemIcon label="Income &amp; Expenses" iconName="custom:custom24" name="TabTwelve" onclick="{!c.toggleClass}" />
+                                                    </aura:if>
+                                                    <lightning:verticalNavigationItemIcon label="Validation 4" iconName="custom:custom24" name="validation4" onclick="{!c.toggleClass}" />
+                                                </c:auraIfContainsContainer>
+                                                <c:auraIfContainsContainer items="{!v.completedTabs}"  element="Validation06">
+                                                    <lightning:verticalNavigationItemIcon label="General Qualitative Information" iconName="custom:custom24" name="TabEleven" onclick="{!c.toggleClass}" />
+                                                    <c:auraIfContainsContainer items="{!v.completedTabs}"  element="General_Qualitative">
+                                                        <aura:if isTrue="{!v.isSuperUser}">
+                                                            <lightning:verticalNavigationItemIcon label="AIPS" iconName="custom:custom24" name="aips" onclick="{!c.toggleClass}" />
+                                                            <lightning:verticalNavigationItemIcon label="Borrowing Capactiy" iconName="custom:custom24" name="borrowingCapactiy" onclick="{!c.toggleClass}" />
+                                                            <lightning:verticalNavigationItemIcon label="Scorecard" iconName="custom:custom24" name="scorecard" onclick="{!c.toggleClass}" />
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.CurrentUser.Profile.Name !='Standard User (Credit Manager)'}">
+                                                            <lightning:verticalNavigationItemIcon label="Validation 5" iconName="custom:custom24" name="validation5" onclick="{!c.toggleClass}" />
+                                                            <c:auraIfContainsContainer items="{!v.completedTabs}"  element="Validation07">
+                                                                <lightning:verticalNavigationItemIcon label="Decision Summary" iconName="custom:custom24" name="decisionSummary" onclick="{!c.toggleClass}" />
+                                                                <lightning:verticalNavigationItemIcon label="Terms Of Business" iconName="custom:custom24" name="termsofBusiness" onclick="{!c.toggleClass}" />
+                                                                <lightning:verticalNavigationItemIcon label="Pricing &amp; Fees" iconName="custom:custom24" name="pricingAndFees" onclick="{!c.toggleClass}" />
+                                                                <!--<lightning:verticalNavigationItemIcon label="Agreement" iconName="custom:custom24" name="agreement" onclick="{!c.toggleClass}" />-->
+                                                                <lightning:verticalNavigationItemIcon label="Conditions" iconName="custom:custom24" name="conditions" onclick="{!c.toggleClass}" />
+                                                                <lightning:verticalNavigationItemIcon label="Acceptance Of TOB" iconName="custom:custom24" name="acceptTOB" onclick="{!c.toggleClass}" />
+                                                                <!--<lightning:verticalNavigationItemIcon label="Fulfillment" iconName="custom:custom24" name="fulfillmentApplication" onclick="{!c.toggleClass}" />-->
+                                                            </c:auraIfContainsContainer> <!-- Validation07 Sec Aura If End-->
+                                                        </aura:if>
+                                                    </c:auraIfContainsContainer> <!-- General_Qualitative Sec Aura If End-->
+                                                </c:auraIfContainsContainer> <!-- Validation06 Sec Aura If End-->
+                                            </c:auraIfContainsContainer> <!-- Validation04 Sec Aura If End-->
+                                        </c:auraIfContainsContainer> <!-- Validation03 Sec Aura If End-->
+                                    </c:auraIfContainsContainer> <!-- Validation01 Sec Aura If End-->
+                                </c:auraIfContainsContainer> <!-- Exposure Sec Aura If End-->
+                            </c:auraIfContainsContainer> <!--Non Scored Sec Aura If End -->
+                        </c:auraIfContainsContainer> <!--Cheque Sec Aura If End -->
+                    </lightning:verticalNavigationSection>
+                </lightning:verticalNavigation>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem padding="around-small" size="10">
+                <aura:if isTrue="{!v.isSoleTrader}">
+                    <div aura:id='spouse' class="slds-hide">
+                        <c:SolePropSpouseDetailCapture recordId="{!v.recordId}" />
+                    </div>
+                </aura:if>
+                <div aura:id='div1' class="slds-hide">
+                    <c:ChequeAndOverdraft aura:Id="chqAndOvrDft" recordId="{!v.recordId}" selectedTab="{!v.selectedItem}" conductAccOnly="{!v.conductAccountsOnly}" />
+                </div>
+                <div aura:id = 'creditCard' class = "slds-hide">
+                    <c:CreditCard recordId="{!v.recordId}" />
+                </div>
+                <div aura:id = 'bankGuarantee' class = "slds-hide">
+                    <c:BankGuarantee recordId="{!v.recordId}" />
+                </div>
+                <!--<div aura:id = 'termLoan' class = "slds-hide">
+                    <c:TermLoans recordId="{!v.recordId}" />
+                </div>-->
+                <div aura:id='div2' class="slds-hide">
+                    <aura:if isTrue="{!v.selectedItem == 'TabTwo'}">
+                    <c:NonScoredApprovedFacilities aura:Id="nonScdAppFac" recordId="{!v.recordId}" />
+                    </aura:if>
+                    </div>
+                <div aura:id='div3' class="slds-hide">
+                    <c:ExternalBankingRelationships aura:Id="extBankRels" recordId="{!v.recordId}" />
+                </div>
+                <div aura:id='div4' class="slds-hide">
+                    <c:securitiesOffered recordId="{!v.recordId}" />
+                </div>
+                <div aura:id='div6' class="slds-hide">
+                    <aura:if isTrue="{!v.selectedItem == 'TabSix'}">
+                        <c:PowerCurve_Validations aura:id="PCValidation" recordId="{!v.recordId}" validationScreen="01" />
+                        <c:PowerCurveValidationScoring recordId="{!v.recordId}" />
+                        <!-- replacing with new cmp, Will remove after testing<c:Credit_Origination_Validation recordId="{!v.recordId}"/> -->
+                    </aura:if>
+                </div>
+                <div aura:id='div7' class="slds-hide">
+                    <aura:if isTrue="{!v.selectedItem == 'TabSeven'}">
+                    	<c:Exposure recordId="{!v.recordId}" />
+                    </aura:if>
+                    <!--c:GroupExposures recordId="{!v.recordId}" />>
+                    <c:cashAndInvestment recordId="{!v.recordId}" />
+                    <c:ApplicationExposureCMS OppId ="{!v.recordId}"/-->
+                </div>
+                <div aura:id='div8'>
+                    <aura:if isTrue="{!v.selectedItem == 'TabEight'}">
+                    	<c:Triad recordId="{!v.recordId}" />
+                	</aura:if>
+                </div>
+                <aura:if isTrue="{!v.selectedItem == 'securityExisting'}">
+                    <div aura:id='securityExisting' class="slds-hide">
+                        <c:NewSecurities recordId="{!v.recordId}" />
+                    </div>
+                </aura:if>
+                <div aura:id='div9' class="slds-hide">
+                    <c:ApplicationFinancialsUpload oppId="{!v.recordId}" /><!-- will add for Financials Later-->
+                </div>
+                <div aura:id='solePropAssetsLiabs' class="slds-hide">
+                    <c:PrincipalFinancials opportunityId="{!v.recordId}" /><!-- will add for Financials Later-->
+                </div>
+                <div aura:id='validation2' class="slds-hide">
+                    <c:PowerCurve_Validations recordId="{!v.recordId}" validationScreen="03"/>
+                </div>
+                <div aura:id='div10' class="slds-hide">
+                    <c:PrincipalFinancials opportunityId="{!v.recordId}" /><!-- will add for Financials Later-->
+                </div>
+                <div aura:id='validation3' class="slds-hide">
+                    <c:PowerCurve_Validations recordId="{!v.recordId}" validationScreen="04" />
+                    <!-- passing the screen = 4 as it goes for PCO 4-->
+                    <c:PowerCurveValidation3Response recordId="{!v.recordId}" />
+                </div>
+                <div aura:id="illustrativeDecision" class="slds-hide">
+                    <c:IllustrativeDecision recordId="{!v.recordId}" />
+                </div>
+                <div aura:id="locateCall" class="slds-hide">
+                    <c:LocateCall recordId="{!v.recordId}" />
+                </div>
+                <aura:if isTrue="{!v.selectedItem == 'commercialBureau'}">
+                    <div aura:id='commercialBureau'>
+                        <c:CommercialBureau opportunityId="{!v.recordId}" commBureauData="{!v.commBureauData}" />
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.selectedItem == 'consumerBureau'}">
+                    <div aura:id='consumerBureau'>
+                        <c:ConsumerBureau opportunityId="{!v.recordId}" consBureauData="{!v.consBureauData}" />
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{! and(v.isSoleTrader,v.selectedItem=='TabTwelve')}">
+                    <div aura:id='div12' class="slds-hide">
+                        <c:IncomeAndExpense recordId="{!v.recordId}" />
+                    </div>
+                </aura:if>
+                <div aura:id='validation4' class="slds-hide">
+                    <c:PowerCurve_Validations recordId="{!v.recordId}" validationScreen="06" />
+                    <!-- passing the screen = 06 as it goes for PCO 6-->
+                    <c:PowerCurveValidationScoringValidation4 recordId="{!v.recordId}" />
+                </div>
+                <div aura:id='div11' class="slds-hide">
+                    <c:GeneralQualitativeInformation recordId="{!v.recordId}" />
+                </div>
+                <div aura:id='validation5' class="slds-hide">
+                    <aura:if isTrue="{!v.selectedItem == 'validation5'}">
+                        <c:PowerCurve_Validations aura:id="PCValidation" recordId="{!v.recordId}" validationScreen="07" />
+                        <!-- passing the screen = 4 as it goes for PCO 7-->
+                        <c:PowerCurveValidation5Response recordId="{!v.recordId}" />
+                    </aura:if>
+                </div>
+                <div aura:id='aips' class="slds-hide">
+                    <c:ApplicationAIPS opportunityId="{!v.recordId}" />
+                </div>
+                <aura:if isTrue="{!v.selectedItem == 'borrowingCapactiy'}">
+                    <div aura:id="borrowingCapactiy">
+                        <c:BorrowingCapacity opportunityId="{!v.recordId}" />
+                    </div>
+                </aura:if>
+                <div aura:id="scorecard" class="slds-hide">
+                    <c:Scorecard aura:id="scorecardCmp" recordId="{!v.recordId}" />
+                </div>
+                <div aura:id="decisionSummary" class="slds-hide">
+                    <c:CreditDecisionSummary recordId="{!v.recordId}" completedTabs="{!v.completedTabs}"/>
+                </div>
+                <aura:if isTrue="{!v.CurrentUser.Profile.Name !='Standard User (Credit Manager)'}">
+                    <div aura:id="termsofBusiness" class="slds-hide">
+                         <aura:if isTrue="{!v.selectedItem == 'termsofBusiness'}">
+                        <c:originationTermsOfBusiness aura:id="termsofBusinessCmp" recordId="{!v.recordId}" />
+                        <!--<c:TermsOfBusinessCmp   recordId="{!v.recordId}" />-->
+                        </aura:if>
+                    </div>
+                    <div aura:id="pricingAndFees" class="slds-hide">
+                        <c:PricingAndFees recordId="{!v.recordId}" />
+                    </div>
+                    <div aura:id="conditions" class="slds-hide">
+                        <c:ConditionsOfGrantOrigination recordId="{!v.recordId}" />
+                    </div>
+                    <!--<div aura:id="Agreement" class="slds-hide">
+                        <c:ProductAgreementTab recordId="{!v.recordId}" />
+                    </div> -->
+                    <div aura:id="acceptTOB" class="slds-hide">
+                        <c:AcceptTOBCmp aura:id="acceptTOBcmp" recordId="{!v.recordId}" />
+                    </div>
+                    <!--<div aura:id="fulfillmentApplication" class="slds-hide">
+                        <c:FulfillmentApplication aura:id="fulfillmentApplicationCmp" recordId="{!v.recordId}" />
+                    </div>-->
+                </aura:if>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </div>
+</aura:component>

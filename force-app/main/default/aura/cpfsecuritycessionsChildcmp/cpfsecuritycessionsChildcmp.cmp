@@ -1,0 +1,313 @@
+<!--
+  @description       : 
+  @author            : 
+  @last modified on  : 2021-06-30
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-06-30      Initial Version
+-->
+<aura:component 
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="accItem" type="Application_Security_CPF__c" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="newSecurityCession" type="Application_Security_CPF__c[]" />
+    <aura:attribute name="isActiveRemoveAccount" type="Boolean" default="false" />
+    <aura:attribute name="isLimited" type="Boolean" />
+    <aura:attribute name="rowindex" type="String" />
+    <aura:attribute name="showTobeReleasedOptions" type="String" />
+    <aura:attribute name="showIncAddOptions" type="String" />
+    <aura:attribute name="value2" type="String" />
+    <aura:attribute name="tobereleasedoptn" type="String" />
+    <aura:attribute name="incaddoptn" type="String" />
+    <aura:attribute name="Leaseandrentalsofproperty" type="String" default="Yes"/> 
+    <!--   <aura:attribute name="proceedsinrespectofsaleortransfer" type="String" /> 
+    <aura:attribute name="revenuesinrespectofproperty" type="String" /> 
+    <aura:attribute name="claimsinrespectofinsurance" type="String" /> 
+    <aura:attribute name="bookdebtsandotherdebtclaims" type="String" /> 
+    <aura:attribute name="VATreimbursementandpayments" type="String" /> 
+    <aura:attribute name="investmentsandorotherdeposits" type="String" />  
+    <aura:attribute name="Borrowercession" type="boolean" default="false" /> 
+    <aura:attribute name="Othercedentcession" type="boolean" default="false" /> 
+    <aura:attribute name="Pledgesandcession" type="boolean" default="false" /> 
+    <aura:attribute name="Shareholdersmemberscessions" type="boolean" default="false" /> 
+    <aura:attribute name="Othercession" type="boolean" default="false" /> -->
+    
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading..." />
+        </div>
+    </aura:if>  
+    <!-- Register Application Events -->
+    <aura:registerEvent name="CPFLimitedandUnlimitedGauranteesevent" type="c:CPFLimitedandUnlimitedGauranteesevent"/> 
+    <!-- Register Application Events -->
+    <!-- <aura:registerEvent name="CPFlimitedfieldoptions" type="c:CPFlimitedfieldoptions"/> -->
+    <!--    <lightning:accordion activeSectionName="Security Cessions" allowMultipleSectionsOpen="false"> 
+        <lightning:accordionSection name="SecurityCessions" label="Security Cessions" > -->
+    <lightning:recordEditForm aura:id="isecurityOfferedCpfRecord" objectApiName="Application_Security_CPF__c"  >
+        
+        <div class="slds-grid slds-wrap slds-gutters_medium">
+            <div class="slds-col slds-size_1-of-2">
+                <span >
+                    <p>Security cession number</p>
+                    <ui:outputText aura:id="uniqueID" value="{!v.rowindex + 1}"/>
+                </span>
+            </div>
+            <div class="slds-col slds-size_1-of-2">
+                <span >
+                    <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove these security cession details." aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+                    <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                        <lightning:button class="slds-float_right" label="Remove Account" variant="brand" onclick="{!c.removeAccount}" />
+                    </aura:if>                                   
+                </span>
+            </div>
+            <div class="slds-col slds-size_1-of-2 ; slds-hide">
+                <span >
+                    <lightning:inputField fieldName="Category__c" aura:id="securitycession" value="Security Cession"/>
+                </span>
+            </div>
+            <div class="slds-col slds-size_1-of-2">
+                <span >
+                    <label class="slds-form-element__label">
+                        <span class="required">* </span>
+                        <label for="trustname">Security cession type</label>
+                        <lightning:helptext icon-name="utility:like" content="Option 2A: Cession in security (in securitatem debiti ) by by [INSERT BORROWER NAME]  (Registration Number: [INSERT BORROWER REGISTRATION NUMBER)]/ [INSERT OTHER CEDENT NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)]  of rights in to and all: (Option: [STANDARD/LIMITED CPA/FULL CPA])Option: [Leases and rentals in respect of the Property] /Option: [Proceeds in respect of the sale or transfer of the property, including without limitation any sale proceeds or expropriation proceeds] /Option: [Revenues in respect of the Property] /Option: [Book debts and other debts and claims]/[Amounts that are/become due and payable by the Receiver of Revenue in respect of VAT reimbursements or payments] /Option: [Claims in respect of insurance policies and insurance proceeds] /Option: [Investments and/or deposits].Option: [REPEATER]"/>
+                        
+                    </label>
+                    
+                    <lightning:inputField fieldName="Type__c" aura:id="inputtype"  value="{!v.accItem.Type__c}" required="true"  variant="label-hidden"/>
+                </span>
+            </div> 
+            
+            <aura:If isTrue="{!or(v.accItem.Type__c == 'Borrower cession' ,v.accItem.Type__c == 'Other cedent cession')}"> 
+                
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="CPA_document_version__c" aura:id="CPAdocumentversion" value="{!v.accItem.CPA_document_version__c}" required="true" />
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Lease and rentals of property</span>
+                            <lightning:helptext icon-name="utility:like" content="Leases and rentals in respect of the Property." />
+                        </label>
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                        picklistfieldName="Lease_and_rentals_of_property__c" 
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.Lease_and_rentals_of_property__c}"
+                                                        titleyes="[Leases and rentals in respect of the Property]"
+                                                        titleno=""/> 
+                    </span></div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Proceeds in respect of sale or transfer of the property</span>
+                            <lightning:helptext icon-name="utility:like" content="Proceeds in respect of the sale or transfer of the property, including without limitation any sale proceeds or expropriation proceeds." />
+                        </label>
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                        picklistfieldName="Proceeds_in_respect_of_sale_or_transfer__c" 
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.Proceeds_in_respect_of_sale_or_transfer__c}"
+                                                        titleyes="Proceeds in respect of the sale or transfer of the Property, including without limitation any sale proceeds or expropriation proceeds"
+                                                        titleno=""/> 
+                    </span></div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Revenues in respect of the Property</span>
+                            <lightning:helptext icon-name="utility:like" content="Revenues in respect of the Property" />
+                        </label>
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                        picklistfieldName="Revenues_in_respect_of_property__c" 
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.Revenues_in_respect_of_property__c}"
+                                                        titleyes="Revenues in respect of the Property"
+                                                        titleno=""/> 
+                    </span></div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Claims in respect of insurance</span>
+                            <lightning:helptext icon-name="utility:like" content="Claims in respect of insurance policies and insurance proceeds" />
+                        </label>
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                        picklistfieldName="Claims_in_respect_of_insurance__c" 
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.Claims_in_respect_of_insurance__c}"
+                                                        titleyes="Claims in respect of insurance policies and insurance proceeds"/> 
+                    </span></div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Book debts and other debts and claims</span>
+                            <lightning:helptext icon-name="utility:like" content="Book debts and other debts and claims" />
+                        </label>
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                        picklistfieldName="Book_debts_and_other_debt_claims__c" 
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.Book_debts_and_other_debt_claims__c}"
+                                                        titleyes="Book debts and other debts and claims"
+                                                        titleno=""/> 
+                    </span></div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">VAT reimbursement and payments</span>
+                            <lightning:helptext icon-name="utility:like" content="Amounts that are/become due and payable by the Receiver of Revenue in respect of VAT reimbursements or payments." />
+                        </label>
+                        
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                        picklistfieldName="VAT_reimbursement_and_payments__c" 
+                                                        objectName="Application_Security_CPF__c"
+                                                        picklistLabelName=""
+                                                        value="{!v.accItem.VAT_reimbursement_and_payments__c}"
+                                                        titleyes="Amounts that are/become due and payable by the Receiver of Revenue in respect of VAT reimbursements or payments"/> 
+                    </span></div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Investments and/or deposits</span>
+                            <lightning:helptext icon-name="utility:like" content="Investments and/or deposits" />
+                        </label>
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                        picklistfieldName="Investments_and_or_other_deposits__c" 
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.Investments_and_or_other_deposits__c}"
+                                                        titleyes="Investments and/or deposits"
+                                                        titleno=""/> 
+                    </span></div>
+            </aura:If>
+            <aura:If isTrue="{!or(or(v.accItem.Type__c =='Other cedent cession',v.accItem.Type__c =='Shareholders / members cessions'),v.accItem.Type__c =='Pledges and cession')}">
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            
+                            <span class="slds-m-right_small">Cedent name</span>
+                            
+                            <aura:If isTrue="{!v.accItem.Type__c =='Other cedent cession'}">
+                                
+                                <lightning:helptext icon-name="utility:like" content="Cession in security (in securitatem debiti ) by [INSERT OTHER CEDENT NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)]  of rights in to and all: (Option: [STANDARD/LIMITED CPA/FULL CPA])" />
+                            </aura:If>
+                            <aura:If isTrue="{!v.accItem.Type__c =='Pledges and cession'}">
+                                <lightning:helptext icon-name="utility:like" content="[A pledge and cession of Option: [shares]/[linked units]/[member’s interest] by[INSERT CEDENT NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] in [INSERT ENTITY NAME] (Registration Number: [INSERT REGISTRATION NUMBER)] (Option: [STANDARD/LIMITED CPA/FULL CPA])Option: [REPEATER]" />
+                            </aura:If>
+                            <aura:If isTrue="{!v.accItem.Type__c =='Shareholders / members cessions'}">
+                                
+                                <lightning:helptext icon-name="utility:like" content="[A cession of OPTION: [shareholder’s]/[member’s] loan accounts [INSERT OTHER CEDENT NAME] [(Registration Number / Identity Number: REGISTRATION / IDENTITY NUMBER)] in [INSERT ENTITY NAME] [(Registration Number / Identity Number: REGISTRATION / IDENTITY NUMBER)]. (Option: [STANDARD/LIMITED CPA/FULL CPA]) Option: [REPEATER]" />
+                            </aura:If>
+                        </label>
+                        <lightning:inputField fieldName="Cedent_name__c" aura:id="cedentname" value="{!v.accItem.Cedent_name__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            
+                            <span class="slds-m-right_small">Cedent ID/ registration number</span>
+                            <aura:If isTrue="{!v.accItem.Type__c =='Other cedent cession'}">
+                                <lightning:helptext icon-name="utility:like" content="Cession in security (in securitatem debiti ) by [INSERT OTHER CEDENT NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)]  of rights in to and all: (Option: [STANDARD/LIMITED CPA/FULL CPA])" />
+                            </aura:If>
+                            <aura:If isTrue="{!v.accItem.Type__c =='Pledges and cession'}">
+                                <lightning:helptext icon-name="utility:like" content="[A pledge and cession of Option: [shares]/[linked units]/[member’s interest] by[INSERT CEDENT NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] in [INSERT ENTITY NAME] (Registration Number: [INSERT REGISTRATION NUMBER)] (Option: [STANDARD/LIMITED CPA/FULL CPA])Option: [REPEATER]" />
+                            </aura:If>
+                            <aura:If isTrue="{!v.accItem.Type__c =='Shareholders / members cessions'}">
+                                <lightning:helptext icon-name="utility:like" content="[A cession of OPTION: [shareholder’s]/[member’s] loan accounts [INSERT OTHER CEDENT NAME] [(Registration Number / Identity Number: REGISTRATION / IDENTITY NUMBER)] in [INSERT ENTITY NAME] [(Registration Number / Identity Number: REGISTRATION / IDENTITY NUMBER)]. (Option: [STANDARD/LIMITED CPA/FULL CPA]) Option: [REPEATER]" />
+                            </aura:If>
+                            
+                        </label>
+                        <lightning:inputField fieldName="Cedent_registration_number__c" aura:id="Cedentregistrationnumber" value="{!v.accItem.Cedent_registration_number__c}" variant="label-hidden"/>
+                    </span>
+                </div>
+            </aura:If>
+            <aura:If isTrue="{!v.accItem.Type__c == 'Pledges and cession'}">
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Pledge_and_cession_of__c" aura:id="Pledgeandcessionof" value="{!v.accItem.Pledge_and_cession_of__c}" required="true" />
+                    </span>
+                </div> 
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="CPA_document_version__c" aura:id="CPAdocumentversion" value="{!v.accItem.CPA_document_version__c}" required="true" />
+                    </span>
+                </div> 
+            </aura:If>
+            <aura:If isTrue="{!or(v.accItem.Type__c == 'Pledges and cession' ,v.accItem.Type__c == 'Shareholders / members cessions')}"> 
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            
+                            <span class="slds-m-right_small">Entity name</span>
+                            <aura:If isTrue="{!v.accItem.Type__c =='Pledges and cession'}">
+                                <lightning:helptext icon-name="utility:like" content="[A pledge and cession of Option: [shares]/[linked units]/[member’s interest] by[INSERT CEDENT NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] in [INSERT ENTITY NAME] (Registration Number: [INSERT REGISTRATION NUMBER)] (Option: [STANDARD/LIMITED CPA/FULL CPA])Option: [REPEATER]" />
+                            </aura:If>
+                            <aura:If isTrue="{!v.accItem.Type__c =='Shareholders / members cessions'}">
+                                <lightning:helptext icon-name="utility:like" content="[A cession of OPTION: [shareholder’s]/[member’s] loan accounts [INSERT OTHER CEDENT NAME] [(Registration Number / Identity Number: REGISTRATION / IDENTITY NUMBER)] in [INSERT ENTITY NAME] [(Registration Number / Identity Number: REGISTRATION / IDENTITY NUMBER)]. (Option: [STANDARD/LIMITED CPA/FULL CPA]) Option: [REPEATER]" />
+                            </aura:If>
+                            
+                        </label>
+                        
+                        <lightning:inputField fieldName="Entity_name__c" aura:id="Entityname" value="{!v.accItem.Entity_name__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div> 
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            
+                            <span class="slds-m-right_small">Entity registration number / identification number</span>
+                            <aura:If isTrue="{!v.accItem.Type__c =='Pledges and cession'}">
+                                <lightning:helptext icon-name="utility:like" content="[A pledge and cession of Option: [shares]/[linked units]/[member’s interest] by[INSERT CEDENT NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] in [INSERT ENTITY NAME] (Registration Number: [INSERT REGISTRATION NUMBER)] (Option: [STANDARD/LIMITED CPA/FULL CPA])Option: [REPEATER]" />
+                            </aura:If>
+                            <aura:If isTrue="{!v.accItem.Type__c =='Shareholders / members cessions'}">
+                                <lightning:helptext icon-name="utility:like" content="[A cession of OPTION: [shareholder’s]/[member’s] loan accounts [INSERT OTHER CEDENT NAME] [(Registration Number / Identity Number: REGISTRATION / IDENTITY NUMBER)] in [INSERT ENTITY NAME] [(Registration Number / Identity Number: REGISTRATION / IDENTITY NUMBER)]. (Option: [STANDARD/LIMITED CPA/FULL CPA]) Option: [REPEATER]" />
+                            </aura:If>
+                            
+                        </label>
+                        
+                        <lightning:inputField fieldName="Entity_registration_Identification_num__c" aura:id="entityregistrationIdentificationnum" value="{!v.accItem.Entity_registration_Identification_num__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div> 
+            </aura:If>    
+            <aura:If isTrue="{!or(v.accItem.Type__c == 'Shareholders / members cessions')}">
+                
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Loan_accounts_by__c" aura:id="Loanaccountsby" value="{!v.accItem.Loan_accounts_by__c}" required="true" />
+                    </span>
+                </div> 
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="CPA_document_version__c" aura:id="CPAdocumentversion" value="{!v.accItem.CPA_document_version__c}" required="true" />
+                        
+                        <!--  <lightning:inputField fieldName="Date_registered__c" aura:id="Dateregistered" value="{!v.accItem.Date_registered__c}" required="true" /> -->
+                    </span>
+                </div> 
+            </aura:If>
+            <aura:If isTrue="{!v.accItem.Type__c == 'Other cession'}">
+                
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Details__c" aura:id="Details" value="{!v.accItem.Details__c}" required="true" />
+                    </span>
+                </div>
+            </aura:If>
+        </div>
+    </lightning:recordEditForm>
+    <!--  </lightning:accordionSection>
+    </lightning:accordion> -->
+    
+</aura:component>

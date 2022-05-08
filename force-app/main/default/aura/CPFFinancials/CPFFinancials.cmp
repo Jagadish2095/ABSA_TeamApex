@@ -1,0 +1,543 @@
+<aura:component
+                controller="CPFGeneralInformationController"
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global"
+                >
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="financialConvenantApplicable" type="String" />
+    <aura:attribute name="theBankReserveRightTo" type="String" default="Yes" />
+    <aura:attribute name="otherentitiesfinancial" type="Object[]" />
+    <aura:attribute name="otherentitiessubfinancial" type="Object[]" />
+    <aura:attribute name="otherentitiesfinCount" type="Integer" />
+    <aura:attribute name="otherentitiessubsidiariesfinCount" type="Integer" />
+    <aura:attribute name="fstatement" type="String" />
+    <aura:attribute name="Includingfinstatement" type="String" default="No" />
+    <aura:attribute name="finStmtBorrow" type="String" />
+    <aura:attribute name="finStmtGurator" type="String" />
+    <aura:attribute name="finConsolaated" type="String" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute type="Application_Product_CPF__c[]" name="acctList" />
+    <aura:attribute name="appPrdctCpfRec" type="Object" />
+    <aura:attribute name="data" type="Object" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="newFinStmtChild" type="Application_Contract_Clause__c[]" />
+    <aura:attribute name="newFinChild" type="Application_Contract_Clause__c[]" />
+    
+    <!--Financials-->
+    
+    <aura:attribute name="newFacilityAccount" type="Application_Financial_Account__c[]" />
+    <!--<aura:handler name="CPFApplicationPortfolioCreation" event="c:CPFApplicationPortfolioCreation" action="{!c.handleApplicationEvent}"/>
+    <aura:handler name="CPFApplicationPortToBeclosed" event="c:CPFApplicationPortToBeClosed" action="{!c.handleAppFinAcctobeClosedEvent}"/>-->
+    <aura:attribute name="ApplicationProductCPF" type="Application_Product_CPF__c" default="{sobjectType:'Application_Product_CPF__c'}" />
+    
+    <aura:attribute name="showCIFField" type="Boolean" default="false" />
+    <aura:attribute name="showCIFField1" type="Boolean" default="false" />
+    <aura:attribute name="showCIFField2" type="Boolean" default="false" />
+    <aura:attribute name="newFurtherCond" type="list" />
+    
+    <!--financial-->
+    <aura:attribute name="Parenttoprovidethebankwithfinancia" type="String" default="No" />
+    <aura:attribute name="GuarantortoprovideBankfinancialinfo" type="String" default="No" />
+    <aura:attribute name="Borrowerhassubsidiaries" type="String" default="No" />
+    <aura:attribute name="Guarantorshashavesubsidiaries" type="String" default="No" />
+    <aura:attribute name="Unauditedinterimstmtreq" type="String" default="No" />
+    <aura:attribute name="Includebalancesheetprofitlossacc" type="String" default="No" />
+    <aura:attribute name="Borrowerhassub" type="String" default="No" />
+    <aura:attribute name="Guarantorhashavesub" type="String" default="No" />
+    <aura:attribute name="Availble" type="String" />
+    <aura:attribute name="period" type="String" />
+    <aura:attribute name="otherfinan" type="String" />
+    <aura:attribute name="Financialinformationrequired" type="String" />
+    
+    <!--Lease Attributes-->
+    <aura:attribute name="leaseOptionsValue" type="String" default="No" />
+    <aura:attribute name="otherLeasesValue" type="String" default="No" />
+    <aura:attribute name="leaseRecordList" type="Application_Lease_CPF__c[]" />
+    <aura:attribute name="otherLeaseRecordList" type="Application_Lease_CPF__c[]" />
+    <aura:attribute name="deletedLeaseRecordList" type="Application_Lease_CPF__c[]" />
+    <aura:attribute name="LeaseArea" type="string" />
+    <aura:attribute name="otherLeaseCount" type="Integer" />
+    
+    <aura:handler name="CPFFinancialChildEvent" event="c:CPFFinancialChildEvent" action="{!c.handleFinancialChildEvent}" />
+    <aura:handler name="CPFFinancialStmtEvent" event="c:CPFFinancialStmtEvent" action="{!c.handleFinancialStmtEvent}" />
+    <aura:handler name="CPFFinancialEvent" event="c:CPFFinancialEvent" action="{!c.handleFinancialEvent}" />
+    
+    <!-- Register Application Events -->
+    <aura:registerEvent name="CPFFinancialChildEvent" type="c:CPFFinancialChildEvent" />
+    <aura:registerEvent name="CPFFinancialStmtEvent" type="c:CPFFinancialStmtEvent" />
+    <aura:registerEvent name="CPFFinancialEvent" type="c:CPFFinancialEvent" />
+    
+    <aura:attribute name="transactionalConvenantApplicable" type="String" />
+    <aura:attribute name="alreadyHeld" type="String" default="No" />
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading..." />
+        </div>
+    </aura:if>
+    <lightning:accordion activeSectionName="Original/Certified Copies of Financial Statements" allowMultipleSectionsOpen="false">
+        <lightning:recordEditForm recordId="" objectApiName="Application_Product_CPF__c">
+            <lightning:accordionSection name="Original/Certified Copies of Financial Statements" label="Original/Certified Copies of Financial Statements">
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">The Bank reserves the right</span>
+                            <lightning:helptext
+                                                icon-name="utility:like"
+                                                content="If the results are found to fall outside the Bank’s target market criteria, the Bank reserves the right to restructure, reduce, modify or withdraw this Facility."
+                                                />
+                        </label>
+                        <c:DynamicPicklistValueRenderer
+                                                        aura:id="DynamicPicklist"
+                                                        picklistfieldName="The_bank_reserves_the_right_to__c"
+                                                        objectName="Application_Product_CPF__c"
+                                                        value="{!v.theBankReserveRightTo}"
+                                                        />
+                    </span>
+                    <span>
+                        <!--   <aura:if isTrue="{!v.theBankReserveRightTo == 'Yes'}"> -->
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Already held</span>
+                            <lightning:helptext icon-name="utility:like" content="Select Yes if Financial statements are already held by the Bank." />
+                        </label>
+                        <c:DynamicPicklistValueRenderer
+                                                        aura:id="DynamicPicklist"
+                                                        picklistfieldName="Already_held__c"
+                                                        objectName="Application_Product_CPF__c"
+                                                        value="{!v.alreadyHeld}"
+                                                        />
+                        <!--  </aura:if> -->
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Financial statements</span>
+                            <lightning:helptext
+                                                icon-name="utility:like"
+                                                content="Option 1: [Financial statements of the Borrower for the financial year ended [DATE] Option: [Already Held]
+                                                         Option 1A: [and the Guarantor(s)] for the financial year ended [DATE] Option: [Already Held]
+                                                         Option 2:[Consolidated financial statements of the Parent and each of its Subsidiaries for the financial year ended [DATE] Option: [Already Held]
+                                                         Option 3:[Consolidated financial statements of [INSERT NAME] (Registration Number: [INSERT REGISTRATION NUMBER)]and each of its Subsidiaries for the financial year ended [DATE].] Option: [Already Held]
+                                                         Where available, the financial statements shall be the audited financial statements. Option [If the results are found to fall outside the Bank’s target market criteria, the Bank reserves the right to restructure, reduce, modify or withdraw this Facility.]"
+                                                />
+                        </label>
+                        <lightning:inputField fieldName="Financial_statements__c" value="{!v.fstatement}" variant="label-hidden" />
+                        
+                        <aura:if isTrue="{!v.fstatement == 'Financial statements of the Borrower'}">
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Financial statements for year ended (borrower)</span>
+                                <lightning:helptext
+                                                    icon-name="utility:like"
+                                                    content="Option 1: [Financial statements of the Borrower for the financial year ended [DATE] Option: [Already Held]
+                                                             Option 1A: [and the Guarantor(s)] for the financial year ended [DATE] Option: [Already Held]
+                                                             Option 2:[Consolidated financial statements of the Parent and each of its Subsidiaries for the financial year ended [DATE] Option: [Already Held]
+                                                             Option 3:[Consolidated financial statements of [INSERT NAME] (Registration Number: [INSERT REGISTRATION NUMBER)]and each of its Subsidiaries for the financial year ended [DATE].] Option: [Already Held]
+                                                             Where available, the financial statements shall be the audited financial statements. Option [If the results are found to fall outside the Bank’s target market criteria, the Bank reserves the right to restructure, reduce, modify or withdraw this Facility.]"
+                                                    />
+                            </label>
+                            <lightning:inputField
+                                                  fieldName="Financial_statements_for_year_ended_bo__c"
+                                                  auraid="fstmtborrow"
+                                                  variant="label-hidden"
+                                                  value="{!v.finStmtBorrow}"
+                                                  required="true"
+                                                  />
+                            
+                            <c:DynamicPicklistValueRenderer
+                                                            aura:id="DynamicPicklist"
+                                                            picklistfieldName="Including_financial_statements_of_guaran__c"
+                                                            objectName="Application_Product_CPF__c"
+                                                            picklistLabelName="Including financial statements of guarantor(s)"
+                                                            value="{!v.Includingfinstatement}"
+                                                            required="true"
+                                                            />
+                            
+                            <aura:if isTrue="{!v.Includingfinstatement == 'Yes'}">
+                                <label for="fstmtgurator">Financial statements for year ended (guarantor)</label>
+                                <lightning:inputField
+                                                      fieldName="Financial_statements_for_year_ended_gu__c"
+                                                      auraid="fstmtgurator"
+                                                      variant="label-hidden"
+                                                      value="{!v.finStmtGurator}"
+                                                      required="true"
+                                                      />
+                            </aura:if>
+                        </aura:if>
+                        <aura:if isTrue="{!v.fstatement == 'Consolidated financial statements of the Parent and each of its Subsidiaries'}">
+                            <label for="fConsolaated">Consolidated financial statements for year ended</label>
+                            <lightning:inputField
+                                                  fieldName="Consolidated_financial_statements_for_y__c"
+                                                  auraid="fConsolaated"
+                                                  value="{!v.finConsolaated}"
+                                                  variant="label-hidden"
+                                                  />
+                        </aura:if>
+                        <aura:if isTrue="{!v.fstatement == 'Consolidated financial statements of other entitles and each of its Subsidiaries'}">
+                            <aura:iteration items="{!v.newFinChild}" var="nfinchildItem" indexVar="index">
+                                <c:CPFfinancialchild
+                                                     aura:id="newLimitedGaurId"
+                                                     accfinchild="{!nfinchildItem}"
+                                                     rowindex="{!index}"
+                                                     newFinChild="{!v.newFinChild}"
+                                                     isLimited="{!v.isLimited}"
+                                                     OpprecordId="{!v.recordId}"
+                                                     />
+                            </aura:iteration>
+                            <br />
+                            <div class="slds-col">
+                                <lightning:button
+                                                  variant="brand"
+                                                  label="Add an other entities and subsidiaries"
+                                                  title="Add an other entities and subsidiaries"
+                                                  onclick="{! c.Addentityandsubsidary }"
+                                                  />
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{!v.fstatement == 'other entity'}">
+                            <aura:iteration items="{!v.newFinStmtChild}" var="nfinstmtItem" indexVar="index">
+                                <c:CPFfinancialstmtchild
+                                                         aura:id="newLimitedGaurId"
+                                                         accfinstmtchild="{!nfinstmtItem}"
+                                                         rowindex="{!index}"
+                                                         newFinStmtChild="{!v.newFinStmtChild}"
+                                                         isLimited="{!v.isLimited}"
+                                                         OpprecordId="{!v.recordId}"
+                                                         />
+                            </aura:iteration>
+                            <br />
+                            <div class="slds-col">
+                                <lightning:button
+                                                  variant="brand"
+                                                  label="Add an other entities"
+                                                  title="Add an other entities"
+                                                  onclick="{! c.Addentityfinstmt}"
+                                                  />
+                            </div>
+                        </aura:if>
+                    </span>
+                </div>
+                <br />
+                <br />
+                <div class="slds-col">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                        <lightning:button label="Save &amp; Validate" onclick="{!c.handleFinancialStatementSubmit}" variant="brand" aura:id="ibtn1" />
+                    </span>
+                </div>
+            </lightning:accordionSection>
+        </lightning:recordEditForm>
+        
+        
+        <!--financial-->
+        <lightning:recordEditForm
+                                  aura:id="iApplicationRecord"
+                                  objectApiName="Application_Product_CPF__c"
+                                  recordId="{!v.appPrdctCpfRec.Id}"
+                                  onError="{!c.handleSaveError}"
+                                  onSuccess="{!c.handleSuccess}"
+                                  >
+            <lightning:accordion activeSectionName="Financial Information" allowMultipleSectionsOpen="false">
+                <lightning:accordionSection name="Financial Information" label="Financial Information">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <span>
+                                    <span class="required">* </span>
+                                    <label class="slds-form-element__label">
+                                        <label for="amendment">Parent to provide the Bank with financial Information</label>
+                                        <lightning:helptext icon-name="utility:like" content="Select Yes if Parent will provide financials" />
+                                    </label>
+                                    <c:DynamicPicklistValueRenderer
+                                                                    aura:id="DynamicPicklist"
+                                                                    picklistfieldName="Parent_to_provide_the_bank_with_financia__c"
+                                                                    objectName="Application_Product_CPF__c"
+                                                                    value="{!v.Parenttoprovidethebankwithfinancia}"
+                                                                    />
+                                </span>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <span>
+                                    <span class="required">* </span>
+                                    <label class="slds-form-element__label">
+                                        <label for="amendment">Guarantor(s) to provide the Bank with financial information</label>
+                                        <lightning:helptext icon-name="utility:like" content="Select Yes if Guarantor(s) will provide financials" />
+                                    </label>
+                                    <!--   <aura:if isTrue="{!v.financialConvenantApplicable == 'Yes'}"> -->
+                                    <c:DynamicPicklistValueRenderer
+                                                                    aura:id="DynamicPicklist"
+                                                                    picklistfieldName="Guarantor_s_to_provide_the_bank_with_fi__c"
+                                                                    objectName="Application_Product_CPF__c"
+                                                                    value="{!v.GuarantortoprovideBankfinancialinfo}"
+                                                                    />
+                                    <!--  </aura:if> -->
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <br />
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label class="slds-form-element__label">
+                                    <span class="required">*</span>
+                                    <span class="slds-m-right_small">Financial information required</span>
+                                    <lightning:helptext
+                                                        icon-name="utility:like"
+                                                        content="Option 1:a) copies of its audited financial statements: [(including consolidated financial statements if the Borrower Option: [or the Guarantor(s)] has Subsidiaries, including a balance sheet, profit and loss account and cash flow statement, as soon as they are available and not later than [NUMBER] days from the end of each of its financial years Option: [and its unaudited interim statements within [NUMBER] days after the end of each half year]; and]
+                                                                 Option 2:b) copies of its unaudited Options: [monthly]/[quarterly]/[semi-annual]/[annual] management accounts in form and substance satisfactory to the Bank, including [Option: for example, a balance sheet, profit and loss account and cash flow statement or any other requirements  in accordance with the Bank’s approval, Option: [consolidated if the Borrower Option: [or the Guarantor(s)] has Subsidiaries, as soon as they are available and not later than [NUMBER] days from the end of the period to which they relate; and]
+                                                                 Option 3:(c) LIST OTHER FINANCIAL INFORMATION REQUIRED]"
+                                                        />
+                                </label>
+                                <lightning:inputField
+                                                      fieldName="Financial_information_required__c"
+                                                      aura:id="amendment"
+                                                      variant="label-hidden"
+                                                      onchange="{!c.showHiddenFields}"
+                                                      />
+                            </span>
+                        </div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <aura:if isTrue="{!v.showCIFField}">
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Financial statements available no later</span>
+                                        <lightning:helptext
+                                                            icon-name="utility:like"
+                                                            content="copies of its audited financial statements: [(including consolidated financial statements if the Borrower Option: [or the Guarantor(s)] has Subsidiaries, including a balance sheet, profit and loss account and cash flow statement, as soon as they are available and not later than [NUMBER] days from the end of each of its financial years Option: [and its unaudited interim statements within [NUMBER] days after the end of each half year]"
+                                                            />
+                                    </label>
+                                    <lightning:inputField
+                                                          fieldName="Financial_statements_available_no_later__c"
+                                                          aura:id="Financialstmtavailablenolater"
+                                                          variant="label-hidden"
+                                                          />
+                                </aura:if>
+                            </span>
+                        </div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <aura:if isTrue="{!or(v.showCIFField,v.showCIFField1)}">
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Borrower has subsidiaries</span>
+                                        <lightning:helptext icon-name="utility:like" content="Select Yes if applicable" />
+                                    </label>
+                                    <!--   <aura:if isTrue="{!v.financialConvenantApplicable == 'Yes'}"> -->
+                                    <c:DynamicPicklistValueRenderer
+                                                                    aura:id="DynamicPicklist"
+                                                                    picklistfieldName="Borrower_has_subsidiaries__c"
+                                                                    objectName="Application_Product_CPF__c"
+                                                                    value="{!v.Borrowerhassubsidiaries}"
+                                                                    />
+                                    <!--  </aura:if> -->
+                                </aura:if>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <aura:if isTrue="{!or(v.showCIFField,v.showCIFField1)}">
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Guarantor(s) has/have subsidiaries</span>
+                                        <lightning:helptext icon-name="utility:like" content="Select Yes if applicable" />
+                                    </label>
+                                    <!--   <aura:if isTrue="{!v.financialConvenantApplicable == 'Yes'}"> -->
+                                    <c:DynamicPicklistValueRenderer
+                                                                    aura:id="DynamicPicklist"
+                                                                    picklistfieldName="Guarantor_s_has_have_subsidiaries__c"
+                                                                    objectName="Application_Product_CPF__c"
+                                                                    value="{!v.Guarantorshashavesubsidiaries}"
+                                                                    />
+                                    <!--  </aura:if> -->
+                                </aura:if>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <aura:if isTrue="{!v.showCIFField}">
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Unaudited interim statements required</span>
+                                        <lightning:helptext icon-name="utility:like" content="Select Yes if applicable" />
+                                    </label>
+                                    <!--   <aura:if isTrue="{!v.financialConvenantApplicable == 'Yes'}"> -->
+                                    <c:DynamicPicklistValueRenderer
+                                                                    aura:id="DynamicPicklist"
+                                                                    picklistfieldName="Unaudited_interim_statements_required__c"
+                                                                    objectName="Application_Product_CPF__c"
+                                                                    value="{!v.Unauditedinterimstmtreq}"
+                                                                    />
+                                    <!--  </aura:if> -->
+                                    
+                                    <aura:if isTrue="{!v.Unauditedinterimstmtreq == 'Yes'}">
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">Unaudited interim statements available no later than</span>
+                                            <!--<lightning:helptext icon-name="utility:like" content="Select Yes if applicable" />-->
+                                        </label>
+                                        <lightning:inputField fieldName="Unaudited_interim_statements_available__c"
+                                                              aura:id="unauditedinterimavailable"
+                                                              variant="label-hidden"
+                                                              />
+                                    </aura:if>
+                                </aura:if>
+                            </span>
+                        </div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <aura:if isTrue="{!v.showCIFField1}">
+                                    <lightning:inputField
+                                                          fieldName="Period__c"
+                                                          label="Borrower has subsidiaries"
+                                                          aura:id="Period"
+                                                          />
+                                </aura:if>
+                            </span>
+                        </div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <aura:if isTrue="{!v.showCIFField1}">
+                                    <!--   <aura:if isTrue="{!v.financialConvenantApplicable == 'Yes'}"> -->
+                                    <c:DynamicPicklistValueRenderer
+                                                                    aura:id="DynamicPicklist"
+                                                                    picklistfieldName="Include_balance_sheet_profit_loss_acc__c"
+                                                                    objectName="Application_Product_CPF__c"
+                                                                    picklistLabelName="Include balance sheet,profit loss acc"
+                                                                    value="{!v.Includebalancesheetprofitlossacc}"
+                                                                    />
+                                    <!--  </aura:if> -->
+                                </aura:if>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <aura:if isTrue="{!v.showCIFField1}">
+                                    <lightning:inputField
+                                                          fieldName="Available__c"
+                                                          label="Available"
+                                                          aura:id="available"
+                                                          />
+                                </aura:if>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <aura:if isTrue="{!v.showCIFField2}">
+                                <lightning:inputField
+                                                      fieldName="Other_financial_information__c"
+                                                      label="Other financial information"
+                                                      aura:id="Otherfinancialinformation"
+                                                      required="true"
+                                                      />
+                            </aura:if>
+                        </span>
+                    </div>
+                    
+                    <div class="slds-col slds-size_1-of-1">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleInsert}" variant="brand" aura:id="ibtn1" />
+                        </span>
+                    </div>
+                </lightning:accordionSection>
+            </lightning:accordion>
+        </lightning:recordEditForm>
+        
+        <lightning:accordion activeSectionName="Financial Information" allowMultipleSectionsOpen="false">
+            <lightning:accordionSection name="Leases" label="Leases">
+                <lightning:recordEditForm  recordId="{!v.appPrdctCpfRec.Id}" objectApiName="Application_Product_CPF__c">
+                    
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Lease options</span>
+                                <lightning:helptext icon-name="utility:like" content="Capture leases to populate Lease Schedule" />
+                            </label>
+                            <c:DynamicPicklistValueRenderer
+                                                            aura:id="DynamicPicklist"
+                                                            picklistfieldName="Lease_options__c"
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.leaseOptionsValue}"
+                                                            />
+                        </span>
+                    </div>
+                    
+                    <aura:if isTrue="{!v.leaseOptionsValue == 'Yes'}">
+                        <lightning:accordion>
+                            <lightning:accordionSection name="Leases As Per Schedule 4" label="Leases As Per Schedule 4">
+                                <div>
+                                    <aura:iteration items="{!v.leaseRecordList}" var="currentLeaseRecord" indexVar="index">
+                                        <c:CPFFinancialchild1
+                                                              rowindex="{!index}"
+                                                              currentLeaseRecord="{!currentLeaseRecord}"
+                                                              leaseRecordList="{!v.leaseRecordList}"
+                                                              deletedLeaseRecordList="{!v.deletedLeaseRecordList}"
+                                                              />
+                                    </aura:iteration>
+                                    <br />
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span class="slds-m-top_medium; slds-align_absolute-left">
+                                            <lightning:button label="Add a Lease As Per Schedule 4" onclick="{!c.addNewLeaseRecord}" variant="brand" aura:id="ibtn1" />
+                                        </span>
+                                    </div>
+                                </div>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-1">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleLeaseSave}" variant="brand" aura:id="ibtn1" />
+                        </span>
+                    </div>
+                    
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Other Leases</span>
+                                <lightning:helptext icon-name="utility:like" content="Select this option to capture tenant detail where all the info re lease are or escalation are not available" />
+                            </label>
+                            <c:DynamicPicklistValueRenderer
+                                                            aura:id="DynamicPicklist"
+                                                            picklistfieldName="Other_Leases__c"
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.otherLeasesValue}"
+                                                            />
+                        </span>
+                    </div>
+                    <aura:if isTrue="{!v.otherLeasesValue == 'Yes'}">
+                        <lightning:accordion>
+                            <lightning:accordionSection name="Other Leases" label="Other Leases">
+                                <div>
+                                    <aura:iteration items="{!v.otherLeaseRecordList}" var="currentLeaseRecord" indexVar="index">
+                                        <c:CPFFinancialchild2
+                                                              rowindex="{!index}"
+                                                              currentLeaseRecord="{!currentLeaseRecord}"
+                                                              otherLeaseRecordList="{!v.otherLeaseRecordList}"
+                                                              deletedLeaseRecordList="{!v.deletedLeaseRecordList}"
+                                                              />
+                                    </aura:iteration>
+                                    <br />
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span class="slds-m-top_medium; slds-align_absolute-left">
+                                            <lightning:button label="Add Another Lease" onclick="{!c.addNewOtherLeaseRecord}" variant="brand" aura:id="ibtn1" />
+                                        </span>
+                                    </div>
+                                </div>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-1">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherLeaseSave}" variant="brand" aura:id="ibtn1" />
+                        </span>
+                    </div>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </lightning:accordion>
+        
+    </lightning:accordion>
+</aura:component>

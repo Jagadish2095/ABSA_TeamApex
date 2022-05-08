@@ -1,0 +1,173 @@
+<!--This is the DHAQnAComponent for customer verification-->
+<!--@author  Chandra-->
+<!--@since   2021-09-14-->
+<!--@Work Id: W-014252-->
+<aura:component controller="DHAQnAController" implements="force:hasRecordId">
+    
+    <!--Attribute Declaration-->
+    <aura:attribute name="smartCardIssued" type="String" />
+    <aura:attribute name="idDateIssued" type="String" />
+    <aura:attribute name="idBlocked" type="String" />
+    <aura:attribute name="maritalStatus" type="String" />
+    <aura:attribute name="countryofBirth" type="String" />
+    <aura:attribute name="citizenship" type="String" />
+    <aura:attribute name="pdfData" type="String" />
+    <aura:attribute name="accountId" type="String" />
+    <aura:attribute name="correctAnsCounter" type="Integer" default="0"/>
+    <aura:attribute name="xdsDecision" type="boolean" />
+    <aura:attribute name="accountRecord" type="Object"/>
+    <aura:attribute name="clientID" type="String" />
+    <aura:attribute name="showPDF" type="Boolean" /><!--Added by chandra dated 20/01/2022-->
+    <aura:attribute name="showDHAQNA" type="Boolean" /><!--Added by chandra dated 20/01/2022-->
+    <aura:attribute name="errorMessage" type="String" default="" /><!--Added by chandra dated 25/01/2022-->
+    <aura:attribute name="saveDisabled" type="boolean" /><!--Added by Hloni Matsoso dated 01/03/2022-->
+
+
+    <!--Using LDS to load Account record-->
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.accountId}"
+                      fields="ID_Number__pc"
+                      targetFields="{!v.accountRecord}"
+                      recordUpdated="{!c.handleRecordUpdated}"
+                      />
+    
+    <!-- Spinner -->
+    <center style="z-index: 99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" />
+    </center>
+    
+    
+    <aura:if isTrue="{!and(not(empty(v.pdfData)),v.showDHAQNA)}">
+        <div class="slds-m-top_x-small slds-m-left_none slds-m-bottom_small slds-text-heading_medium">
+            <span>Since XDS is offline, please authenticate the customer through DHA.</span>
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!and(not(empty(v.pdfData)),v.showPDF)}">
+        <div class="size"><c:pdfViewer pdfData="{!v.pdfData}" /></div>
+        
+        <!--Confirm Dialog End-->
+        <aura:html tag="style">
+            .size{
+            width : 100vh !important;
+            max-width: 100vh !important;
+            }
+            .size{
+            height : 100vh !important;
+            max-height: 100vh !important;
+            }
+        </aura:html>
+    </aura:if>
+    
+    <!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title slds-align_absolute-left" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+    
+    <aura:if isTrue="{!and(not(empty(v.pdfData)),v.showDHAQNA)}">
+        <div class="slds-m-top_xx-large slds-m-left_large slds-text-heading_small">
+            <span>Please authenticate the customer by confirmimg the following information.</span>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!and(not(empty(v.pdfData)),v.showDHAQNA)}">
+        <div class="slds-m-top_x-small slds-m-left_large">
+            <span>The customer will need to correctly confirm four (4) of the six (6) questions below:</span>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!and(not(empty(v.pdfData)),v.showDHAQNA)}">
+        <div class="slds-grid slds-gutters">
+            <div class="slds-col slds-size_3-of-12 ">
+                <div class="slds-col slds-size_12-of-12 slds-m-left_small slds-m-top_small">
+                    <span>Smart card issued: {!v.smartCardIssued}</span>
+                </div>
+                <div class="slds-col slds-grid slds-size_8-of-12">
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Pass" name="pass" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Fail" name="fail" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_12-of-12 slds-m-left_small slds-m-top_small">
+                    <span>Country of birth: {!v.countryofBirth}</span>
+                </div>
+                <div class="slds-col slds-grid slds-size_8-of-12">
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Pass" name="pass" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Fail" name="fail" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_12-of-12 slds-m-left_small slds-m-top_small">
+                    <span>Id blocked: {!v.idBlocked}</span>
+                </div>
+                <div class="slds-col slds-grid slds-size_8-of-12">
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Pass" name="pass" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Fail" name="fail" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_12-of-12 slds-m-left_small slds-m-top_small">
+                    <span><lightning:button variant="brand" label="Submit" title="submit" onclick="{! c.handleSubmit }" /></span>
+                </div>
+            </div>
+            <div class="slds-col slds-size_3-of-12">
+                <div class="slds-col slds-size_12-of-12 slds-m-left_small slds-m-top_small">
+                    <span>Marital Status: {!v.maritalStatus}</span>
+                </div>
+                <div class="slds-col slds-grid slds-size_8-of-12">
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Pass" name="pass" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Fail" name="fail" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_12-of-12 slds-m-left_small slds-m-top_small">
+                    <span>Citizenship: {!v.citizenship}</span>
+                </div>
+                <div class="slds-col slds-grid slds-size_8-of-12">
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Pass" name="pass" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Fail" name="fail" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_12-of-12 slds-m-left_small slds-m-top_small">
+                    <span>ID Date Issued: {!v.idDateIssued}</span>
+                </div>
+                <div class="slds-col slds-grid slds-size_8-of-12">
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Pass" name="pass" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                    <div class="slds-col slds-size_6-of-12 slds-m-bottom_x-small">
+                        <span><lightning:input type="checkbox" label="Fail" name="fail" onchange="{! c.onChange }" checked="false" /></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    <!--W-015253 Added by Hloni Matsoso dated 01/03/2022-->
+    <aura:if isTrue="{!not(empty(v.recordId))}">
+        <div class="">
+            <lightning:select aura:id="attestDecision" name="attestDecision" label="Select an option" onchange="{!c.onAttestDecisionChange}">
+                <option value="yesCertCorrect">Yes, certificate detail is correct</option>
+                <option value="noCertIncorrect">No, certificate detail is not correct</option>
+                <option value="noMarried">No, recently married. DHA not updated</option>
+                <option value="noDivorced">No, recently divorced. DHA not updated</option>
+                <option value="noNameChanged">No, recent name change. DHA not updated</option>
+            </lightning:select>
+            <lightning:button label="Save"
+            variant="brand" class="slds-m-top--medium"
+            onclick="{!c.onAttestDecisionSave}" disabled="{!v.saveDisabled}"/>
+        </div>
+	</aura:if>
+</aura:component>

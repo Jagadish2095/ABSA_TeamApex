@@ -1,0 +1,163 @@
+<!--
+* Lightning Component for Fulfillment -Term Loans  Quotations and Agreements Additional Detais
+* 
+* @author  Ketelo Makalela
+* @version v1.0
+* @since   2020-11-18
+* @UserStory W-007432
+-->
+
+<aura:component access="global" controller="QuotesAgreementsAdditionalDetailsCTRL"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="mandateNumber" type="Integer"  />
+    <aura:attribute name="optionLoanPurposes" type="Object" />
+    <aura:attribute name="selectLoanPurposes" type="String" />
+    <aura:attribute name="optionMarketSector" type="Object" />
+    <aura:attribute name="selectMarketSector" type="String" />
+    <aura:attribute name="optionSchemeType" type="Object" />
+    <aura:attribute name="selectSchemeType" type="String" default="Personal Loan"/>
+    <aura:attribute name="optionPaymentMethod" type="Object" />
+    <aura:attribute name="selectPaymentMethod" type="String" />
+    <aura:attribute name="respObjData" type="Object"/>
+    <aura:attribute name="optionElectronicTransfer" type="List" default="[
+                                                                         {'label': 'YES', 'value': 'Y'},
+                                                                         {'label': 'NO', 'value': 'N'}
+                                                                         ]"/>
+    <aura:attribute name="selectedElectronicTransfer" type="Object"/>
+    <aura:attribute name="optionAgreementCategory" type="Object" />
+    <aura:attribute name="selectAgreementCategory" type="String" default="Large"/>
+    <aura:attribute name="optionFinanceType" type="Object" />
+    <aura:attribute name="selectFinanceType" type="String" default="Term Loan"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="optionPermitWD" type="List" default="[
+                                                               {'label': 'YES', 'value': 'Y'},
+                                                               {'label': 'NO', 'value': 'N'}
+                                                               ]"/>
+    <aura:attribute name="selectedPermitWD" type="Object"/>
+    <aura:attribute name="selectedSecReq" type="Object"/>
+    <aura:attribute name="optionSecuritiesRequired" type="List" default="[
+                                                                         {'label': 'YES', 'value': 'YES'},
+                                                                         {'label': 'NO', 'value': 'NO'}
+                                                                         ]"/>
+    <aura:attribute name="contractDate" type="Date" />
+    <aura:attribute name="selectedTermLoanType" type="String" />
+    <aura:attribute name="securityReq" type="String" />
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    <aura:attribute name="caseRecord" type="Object"/>
+    <force:recordData aura:id="recordLoader"
+      fields="Opportunity__c,Application_Product_Id__c"
+      recordId="{!v.recordId}"
+      targetFields="{!v.caseRecord}"  
+      />
+    <aura:if isTrue="{!v.caseRecord}">
+    <lightning:accordion allowMultipleSectionsOpen="true">
+        
+        <lightning:accordionSection name="QuotesAndAgreementsInput"  label="Agreements Details">
+            <lightning:layout multipleRows="true" >
+                
+                <lightning:layoutItem size="12">
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input aura:id="quoteForm" type="number" formatter="integer" label="Mandate Number" value="{!v.mandateNumber}" required="true" />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <!--<lightning:select aura:id="quoteForm"  label="Loan Purposes" class="dynamic" value="{!v.selectLoanPurposes}" required="true" >
+                        <aura:iteration items="{!v.optionLoanPurposes}" var="LP">
+                            <option class="{!LP.class}" text="{!LP.label}" value="{!LP.value}" selected="{!LP.selected}" />
+                        </aura:iteration>
+                    </lightning:select> -->
+                    <lightning:input aura:id="quoteForm"  class="dynamic" disabled="true" value="{!v.selectLoanPurposes}" label="Loan Purposes" />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="quoteForm"  label="Market sector" class="dynamic" value="{!v.selectMarketSector}" required="true" >
+                        <aura:iteration items="{!v.optionMarketSector}" var="MS">
+                            <option class="{!MS.class}" text="{!MS.label}" value="{!MS.value}" selected="{!MS.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+					<lightning:input aura:id="quoteForm"  class="dynamic" disabled="true" value="{!v.selectSchemeType}" label="Scheme Type" />
+                  <!--  <lightning:select aura:id="quoteForm"  label="Scheme Type" class="dynamic" value="{!v.selectSchemeType}" required="true" >
+                        <aura:iteration items="{!v.optionSchemeType}" var="ST">
+                            <option class="{!ST.class}" text="{!ST.label}" value="{!ST.value}" selected="{!ST.selected}" />
+                        </aura:iteration>
+                    </lightning:select>-->
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="quoteForm"  label="Payment Method" class="dynamic" value="{!v.selectPaymentMethod}" required="true" >
+                        <aura:iteration items="{!v.optionPaymentMethod}" var="PM">
+                            <option class="{!PM.class}" text="{!PM.label}" value="{!PM.value}" selected="{!PM.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:radioGroup name="eTransfer"
+                                          label="Electronic Transfer"
+                                          options="{! v.optionElectronicTransfer}"
+                                          value="{! v.selectedElectronicTransfer }"
+                                          type="button"
+                                          />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:input aura:id="quoteForm"  class="dynamic" disabled="true" value="{!v.selectAgreementCategory}" label="Agreement Category" />
+                 <!--   <lightning:select aura:id="quoteForm"  label="Agreement Category" class="dynamic" value="{!v.selectAgreementCategory}" required="true" >
+                        <aura:iteration items="{!v.optionAgreementCategory}" var="AC">
+                            <option class="{!AC.class}" text="{!AC.label}" value="{!AC.value}" selected="{!AC.selected}" />
+                        </aura:iteration>
+                    </lightning:select>-->
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:input aura:id="quoteForm"  class="dynamic" disabled="true" value="{!v.selectFinanceType}" label="Finance Type" />
+                    <!--<lightning:select aura:id="quoteForm"  label="Finance Type" class="dynamic" value="{!v.selectFinanceType}" required="true" >
+                        <aura:iteration items="{!v.optionFinanceType}" var="FT">
+                            <option class="{!FT.class}" text="{!FT.label}" value="{!FT.value}" selected="{!FT.selected}" />
+                        </aura:iteration>
+                    </lightning:select> -->
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:radioGroup name="permWD"
+                                          label="Permit Withdrawal"
+                                          options="{! v.optionPermitWD}"
+                                          value="{! v.selectedPermitWD}"
+                                          type="button"
+                                          />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:radioGroup name="SecReq"
+                                          label="Securities Required"
+                                          options="{! v.optionPermitWD}"
+                                          value="{! v.selectedSecReq}"
+                                          type="button"
+                                          />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Calculate" variant="brand" onclick="{!c.calculate}" />
+                </lightning:layoutItem>
+                
+            </lightning:layout>
+        </lightning:accordionSection>
+        <!--<lightning:accordionSection name="conditions"  label="Conditions Of Agreement" >
+            <c:TermLoanConditionsNAgreement  ABFAcctStatusResponse="{!v.respObjData}"  recordId="{!v.recordId}"/>
+        </lightning:accordionSection> -->
+    </lightning:accordion>
+    </aura:if>
+</aura:component>

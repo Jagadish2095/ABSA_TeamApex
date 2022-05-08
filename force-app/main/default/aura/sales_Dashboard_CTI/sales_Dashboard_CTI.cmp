@@ -1,0 +1,120 @@
+<aura:component controller="sales_ChewyCTI">
+    <ltng:require scripts="{!$Resource.sales_Dashboard_Utilities + '/Utilities.js'}" />  
+
+	<aura:registerEvent name="socketobj" type="c:sales_Dashboard_TriggerDive" />
+    <aura:handler name="updateLogin" event="c:sales_Dashboard_CTILoginEvt" action="{!c.updateLoginCredsHandler}"/>
+    
+    <aura:handler name="acceptCall" value="{!v.callInprogress}" action="{!c.acceptCallHandler}"/> 
+    <aura:handler name="socketobj" event="c:sales_Dashboard_TriggerDive" action="{!c.invokeDashboard}"/>	
+
+    
+    <aura:attribute name="data" type="Map" description="Stores data shared between child components with actions" default=""/>
+    <aura:attribute name="obj" type="Map"/>
+    <aura:attribute name="modalObj" type="Map" default="{isOpen: false, header: '', body: ''}"/>
+    <aura:attribute name="loggedInUser2" type="Map" /> 
+    <!-- CTI attributes -->
+    <aura:method name="loginMethod" action="{!c.loginHandler}" access="PUBLIC">
+        <aura:attribute name="loggedInUser" type="Map" /> 
+    </aura:method> 
+    <aura:attribute name="ctiSpinner" type="Map" default="{displayCls: 'slds-hide', msgDisplayed: 'Loading...'}"/> 
+    <aura:attribute name="update_station_id" type="boolean" default="false"/>
+    <aura:attribute name="changeAcceptCall" type="boolean" default="false"/>
+    <aura:attribute name="callInprogress" type="boolean" default="false"/>
+    <aura:attribute name="stopWatchTime" type="String" default="00:00:00"/>
+    <aura:attribute name="stopDisplayed" type="boolean" default="false"/> 
+    <aura:attribute name="activeCall" type="Map" default="" description="Active call obj"/> 
+    <aura:attribute name="icon_type" type="String" default="utility:down"/>
+    <aura:attribute name="show_list_class" type="String" default="slds-hide"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="place_call_onhold" type="String" default="HOLD"/>
+    <aura:attribute name="cti" type="Map" description="Chewy call controls" default="{
+                                                                       status:'Offline',
+                                                                       statusIcon:'/Icons/disconnected.svg',
+                                                                       statusCls:'cursor',
+                                                                       
+                                                                       oncall:'On call',
+                                                                       onCallIcon:'/Icons/inactivenocall.svg',
+                                                                       onCallCls:'cti_tile_disabled',
+                                                                       
+                                                                       endCall:'End call',
+                                                                       endCallIcon:'/Icons/inactivephonedown.svg',
+                                                                       endCallCls:'cti_tile_disabled',
+                                                                       
+                                                                       transfer:'Transfer',
+                                                                       transferIcon:'/Icons/inactivetransfer.svg',
+                                                                       transferCls:'cti_tile_disabled',
+                                                                       
+                                                                       stopWatchTime:'00:00:00',
+                                                                       stopWatchTimeCls:'cti_tile_disabled',
+                                                                       
+                                                                       hideCTI: '',
+                                                                       
+                                                                       connectionId: '',
+                                                                       ucId: '',
+                                                                       sessionId: '',
+                                                                       agentId: '',
+                                                                       stationId: '',
+                                                                       toggleInd:'HOLD'}"/> 
+    
+    <aura:attribute name="selected_value_class" type="String" default="black"/>
+    <aura:attribute name="selected_value" type="String" default="Not Ready"/>
+  
+    <aura:handler name="change" value="{!v.data.loggedInUser.username}" action="{!c.loginHandler}"/> 
+   <!-- <aura:handler name="init" value="{!this}" action="{!c.doInit}" /> --> 
+    
+    <aura:attribute name="hideCTI" type="String" default="slds-hide1"/> 
+    <aura:attribute name="loggedInUser" type="Map" default="" />  
+    <aura:attribute name="isLoginModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="isLogoutModalOpen" type="boolean" default="false"/> 
+    <aura:attribute name="agentStatus" type="List" default="[{'label': 'Available', 'value': 'READY', 'auxCode' : '0' },
+                                                        {'label': 'Lunch', 'value': 'NOT_READY', 'auxCode' : '1'},
+                                                        {'label': 'Meeting', 'value': 'NOT_READY', 'auxCode' : '2'},
+                                                        {'label': 'End of shift', 'value': 'NOT_READY', 'auxCode' : '3'},
+                                                        {'label': 'Training', 'value': 'NOT_READY', 'auxCode' : '4'},
+                                                        {'label': 'Tea break', 'value': 'NOT_READY', 'auxCode' : '5'},    
+                                                        {'label': 'Restroom', 'value': 'NOT_READY', 'auxCode' : '6'},
+                                                        {'label': 'Admin', 'value': 'NOT_READY', 'auxCode' : '7'},
+                                                        {'label': 'Systems issues', 'value': 'NOT_READY', 'auxCode' : '8'},
+                                                        {'label': 'Coaching', 'value': 'NOT_READY', 'auxCode' : '9'},
+                        								{'label': 'Not Ready', 'value': 'NOT_READY', 'auxCode' : '10', 'selected':'true'},
+                                                        {'label': 'Logout', 'value': 'Logout', 'auxCode' : '11'}]"/> 
+    
+    <aura:attribute name="selValTempHolder" type="String" default=""/>
+    <aura:attribute name="selected_row" type="Map" default="{'label': 'Not Ready', 'value': 'NOT_READY', 'auxCode' : '10'}"/>
+    
+    <div class="slds-grid">
+        <div class="slds-col slds-col slds-size_1-of-3 center-left">
+            <div class="slds-grid">
+           <div class="slds-col slds-size_7-of-12">              
+               <div style="width:245px;">                   
+                   <c:sales_Dashboard_DropDown icon_type="{!v.icon_type}" show_list_class="{!v.show_list_class}" hideCTI="{!v.hideCTI}" agentStatus="{!v.agentStatus}" loggedInUser="{!v.loggedInUser}" isModalOpen="{!v.isLoginModalOpen}" selValTempHolder="{!v.selValTempHolder}" selected_value="{!v.selected_value}" selected_value_class="{!v.selected_value_class}" ctiSpinner="{!v.ctiSpinner}" modalObj="{!v.modalObj}" cti="{!v.cti}"/>              
+               </div>                
+           </div> 
+           <div class="slds-col slds-size_5-of-12">
+          <!-- <lightning:button class="button-class" label="Accept" onclick="{!c.startCall}"/> &nbsp; -->
+              
+           <!--  <lightning:button class="button-class" label="Hold" onclick="{!c.onHoldHandler}" />
+            <lightning:button class="button-class" label="Sock" onclick="{!c.testSock}"/> -->
+           </div> 
+            </div>
+        </div>
+        <div class="slds-col slds-size_2-of-3 slds-p-right_xxx-small" style="padding-left: 80px;">                        
+            <div class="{!v.hideCTI+' slds-grid bordered '}">
+                <!-- CTI STATUS BAR -->
+                <div class="{!v.cti.statusCls+' slds-col th'}" onclick="{!c.authenticateHandler}" style="padding-top:3px"><img src="{!$Resource.sales_Dashboard_Assets + v.cti.statusIcon}" style="width:18px;"/> &nbsp;<span style="padding-top:3px;">{!v.cti.status}</span></div>
+                <div class="{!v.cti.onCallCls+' slds-col'}" onclick="{!c.onHoldHandler}"><img src="{!$Resource.sales_Dashboard_Assets + v.cti.onCallIcon}" style="width:20px;"/> <br/> {!v.cti.oncall}</div>
+                <div class="{!v.cti.endCallCls+' slds-col'}" onclick="{!c.endCallHandler}"><img src="{!$Resource.sales_Dashboard_Assets +  v.cti.endCallIcon}" style="width:25px;"/> <br/>{!v.cti.endCall}</div>                    
+                <div class="{!v.cti.transferCls+' slds-col'}" ><img src="{!$Resource.sales_Dashboard_Assets + v.cti.transferIcon}" style="width:25px;"/><br/>{!v.cti.transfer}</div>
+                <div class="{!v.cti.stopWatchTimeCls+' slds-col radius-right'}" style="padding-top:25px">{!v.cti.stopWatchTime}<br/>
+                <!--   
+           		<lightning:button variant="brand" label="Start" onclick="{!c.handleStartClick }" disabled="{!v.stopDisplayed}"/>
+                <lightning:button variant="brand" label="Stop" onclick="{!c.handleStopClick }" />-->
+                <!--<lightning:button variant="brand" label="Hold" onclick="{!c.onHoldHandler}" />  -->
+				                                          
+                </div>          
+            </div>
+        </div>
+    </div>      
+    <c:sales_Dashboard_CTILogin hideCTI="{!v.hideCTI}" isModalOpen="{!v.isLoginModalOpen}" loggedInUser="{!v.loggedInUser2}" />     
+    <c:sales_Dashboard_CTILogout hideCTI="{!v.hideCTI}" isModalOpen="{!v.isLogoutModalOpen}" ctiSpinner="{!v.ctiSpinner}" modalObj="{!v.modalObj}" loggedInUser="{!v.loggedInUser}" cti="{!v.cti}" selected_row="{!v.selected_row}" selected_value="{!v.selected_value}" selected_value_class="{!v.selected_value_class}" agentStatus="{!v.agentStatus}"/>   	
+</aura:component>

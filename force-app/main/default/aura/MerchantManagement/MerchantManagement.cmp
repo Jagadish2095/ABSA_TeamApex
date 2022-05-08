@@ -1,0 +1,193 @@
+<!--
+* Lightning Component for the Merchant Management (MerchantManagement)
+*
+* @author  Prashant Jain
+* @version v1.0
+* @since   2020-06-09
+*
+-->
+<aura:component access="global"
+                controller="MerchantManagement"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction">
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+    <aura:handler name="change" value="{!v.isAutoRefresh}" action="{!c.handleIsAutoRefreshChange}"/>
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}" />
+
+    <!-- Flow Declaration -->
+    <lightning:flow aura:id="flowId" onstatuschange="{!c.handleStatusChange}" class="slds-hide"/>
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="errorMessage" type="String"/>
+    <aura:attribute name="isSpinner" type="Boolean"/>
+    <aura:attribute name="isAutoRefresh" type="Boolean"/>
+    <aura:attribute name="applicationId" type="String"/>
+    <aura:attribute name="appProdMerchId" type="String"/>
+    <aura:attribute name="applicationRecord" type="Object"/>
+    <aura:attribute name="merchantIdRecord" type="Object"/>
+    <aura:attribute name="appProdMerchRecord" type="Object"/>
+    <aura:attribute name="setIntervalId" type="Integer"/>
+    <aura:attribute name="showConfirmDialog" type="Boolean" />
+    <aura:attribute name="activeSections" type="List" default="['CAMSStatusSection']" />
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <force:recordData aura:id="applicationEditor"
+                      fields="Application_Status__c, Application_Generation_Date__c, Application_Correctness_Consent__c, QA_Status__c, QA_Status_Updated_By__c, QA_Status_Updated_On__c, Merchant_Id_Ref__c"
+                      recordId="{!v.applicationId}"
+                      targetFields="{!v.applicationRecord}"
+                      mode="EDIT"/>
+
+    <force:recordData aura:id="merchantIdEditor"
+                      fields="Merchant_Id__c"
+                      recordId="{!if(empty(v.applicationRecord), null, v.applicationRecord.Merchant_Id_Ref__c)}"
+                      targetFields="{!v.merchantIdRecord}"
+                      mode="VIEW"/>
+
+    <force:recordData aura:id="appProdMerchEditor"
+                      fields="Status_MASS_Account__c, Status_Merchant_Plan__c, Status_POSH_Merchant__c, Status_Message_MASS_Account__c, Status_Message_Merchant_Plan__c, Status_Message_POSH_Merchant__c"
+                      recordId="{!v.appProdMerchId}"
+                      targetFields="{!v.appProdMerchRecord}"
+                      mode="EDIT"/>
+
+    <aura:if isTrue="{!and(not(empty(v.applicationRecord)), v.applicationRecord.QA_Status__c=='Approved')}">
+        <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+            <lightning:accordionSection name="CAMSStatusSection" label="CAMS - API Service Automation" >
+                <lightning:layout multipleRows="true">
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:input type="toggle" label="Auto Refresh" checked="{!v.isAutoRefresh}"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:input label="Merchant Id" value="{!if(empty(v.merchantIdRecord), null, v.merchantIdRecord.Merchant_Id__c)}" disabled="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="1">
+                        <aura:if isTrue="{!v.appProdMerchRecord.Status_MASS_Account__c=='Success'}">
+                            <lightning:icon iconName="action:approval" alternativeText="Success" title="Success" size="large"/>
+                            <aura:set attribute="else">
+                                <lightning:icon iconName="action:close" alternativeText="Failed" title="Failed" size="large"/>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input label="Merchant Id Creation Status" value="{!v.appProdMerchRecord.Status_MASS_Account__c}" disabled="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="8">
+                        <lightning:textarea label="Merchant Id Creation Message" value="{!v.appProdMerchRecord.Status_Message_MASS_Account__c}" disabled="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="1">
+                        <aura:if isTrue="{!v.appProdMerchRecord.Status_Merchant_Plan__c=='Success'}">
+                            <lightning:icon iconName="action:approval" alternativeText="Success" title="Success" size="large"/>
+                            <aura:set attribute="else">
+                                <lightning:icon iconName="action:close" alternativeText="Failed" title="Failed" size="large"/>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input label="Merchant Plan Creation Status" value="{!v.appProdMerchRecord.Status_Merchant_Plan__c}" disabled="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="8">
+                        <lightning:textarea label="Merchant Plan Creation Message" value="{!v.appProdMerchRecord.Status_Message_Merchant_Plan__c}" disabled="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="1" class="slds-hide"> <!--PJAIN: 20200721: Added slds-hide for Story W-005302-->
+                        <aura:if isTrue="{!v.appProdMerchRecord.Status_POSH_Merchant__c=='Success'}">
+                            <lightning:icon iconName="action:approval" alternativeText="Success" title="Success" size="large"/>
+                            <aura:set attribute="else">
+                                <lightning:icon iconName="action:close" alternativeText="Failed" title="Failed" size="large"/>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="3" class="slds-hide"> <!--PJAIN: 20200721: Added slds-hide for Story W-005302-->
+                        <lightning:input label="Merchant Device Linking Status" value="{!v.appProdMerchRecord.Status_POSH_Merchant__c}" disabled="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="8" class="slds-hide"> <!--PJAIN: 20200721: Added slds-hide for Story W-005302-->
+                        <lightning:textarea label="Merchant Device Linking Message" value="{!v.appProdMerchRecord.Status_Message_POSH_Merchant__c}" disabled="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <b><i>It may take some time for the status to update. Please wait at least 60 seconds before retrying.</i></b>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <!--PJAIN: 20200721: Removed condition on Status_POSH_Merchant__c field for Story W-005302-->
+                        <!--lightning:button aura:id="retryFailuresBtn" label="Retry Failures" onclick="{!c.handleRetryFailuresBtn}" variant="brand" class="slds-align_absolute-center slds-m-top_xx-large" disabled="{!or(empty(v.appProdMerchId), and(v.appProdMerchRecord.Status_MASS_Account__c=='Success', and(v.appProdMerchRecord.Status_Merchant_Plan__c=='Success', v.appProdMerchRecord.Status_POSH_Merchant__c=='Success')))}" /-->
+                        <lightning:button aura:id="retryFailuresBtn" label="Retry Failures" onclick="{!c.handleRetryFailuresBtn}" variant="brand" class="slds-align_absolute-center slds-m-top_xx-large" disabled="{!or(empty(v.appProdMerchId), and(v.appProdMerchRecord.Status_MASS_Account__c=='Success', v.appProdMerchRecord.Status_Merchant_Plan__c=='Success'))}" />
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <!--PJAIN: 20200721: Removed condition on Status_POSH_Merchant__c field for Story W-005302-->
+                        <!--lightning:button aura:id="reviseApplicationBtn" label="Revise Application" onclick="{!c.handleReviseApplicationBtn}" variant="brand" class="slds-align_absolute-center slds-m-top_xx-large" disabled="{!or(empty(v.appProdMerchId), and(v.appProdMerchRecord.Status_MASS_Account__c=='Success', and(v.appProdMerchRecord.Status_Merchant_Plan__c=='Success', v.appProdMerchRecord.Status_POSH_Merchant__c=='Success')))}" /-->
+                        <lightning:button aura:id="reviseApplicationBtn" label="Revise Application" onclick="{!c.handleReviseApplicationBtn}" variant="brand" class="slds-align_absolute-center slds-m-top_xx-large" disabled="{!or(empty(v.appProdMerchId), and(v.appProdMerchRecord.Status_MASS_Account__c=='Success', v.appProdMerchRecord.Status_Merchant_Plan__c=='Success'))}" />
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <!--Lerato Matenzhe 20200724: W-005060 - Merchant Onboarding_Manually Trigger Case creation (2nd Vetting)-->
+                        <lightning:button aura:id="createCaseBtn" label="Create Fulfillment Case" onclick="{!c.handleCreateCase}" variant="brand" class="slds-align_absolute-center slds-m-top_xx-large" disabled="{!or(empty(v.merchantIdRecord), empty(v.merchantIdRecord.Merchant_Id__c))}" />
+                    </lightning:layoutItem>
+
+                </lightning:layout>
+
+            </lightning:accordionSection>
+        </lightning:accordion>
+
+        <!--Confirm Dialog Start-->
+        <div class="slds-m-around_xx-large">
+            <aura:if isTrue="{!v.showConfirmDialog}">
+                <!--Modal Box Start-->
+                <div role="dialog" class="slds-modal slds-fade-in-open ">
+                    <div class="slds-modal__container">
+                        <!--Modal Box Header Start-->
+                        <header class="slds-modal__header">
+                            <h1 class="slds-text-heading--medium">Confirmation</h1>
+                        </header>
+                        <!--Modal Box Header End-->
+
+                        <!--Modal Box Content Start-->
+                        <div class="slds-modal__content slds-p-around--medium">
+                            <center><b>This would revise the application and allow modifications. The QA process will have to be repeated. Are you sure you want to continue?</b></center>
+                        </div>
+                        <!--Modal Box Content End-->
+
+                        <!--Modal Box Button Start-->
+                        <footer class="slds-modal__footer">
+                            <lightning:button name='No' label='No' onclick='{!c.handleConfirmDialogNo}'/>
+                            <lightning:button variant="brand" name='Yes' label='Yes' onclick='{!c.handleConfirmDialogYes}'/>
+                        </footer>
+                        <!--Modal Box Button End-->
+                    </div>
+                </div>
+                <div class="slds-backdrop slds-backdrop--open"></div>
+            </aura:if>
+        </div>
+        <!--Confirm Dialog End-->
+        <aura:set attribute="else">
+            <div  class="recordError">
+                <h2 class="slds-section__title slds-align_absolute-left" style="color:red">QA Status must be approved</h2>
+            </div>
+        </aura:set>
+
+    </aura:if>
+
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br/>
+            <h2 class="slds-section__title slds-align_absolute-left" style="color:red">{!v.errorMessage}</h2>
+            <br/>
+        </div>
+    </aura:if>
+
+</aura:component>

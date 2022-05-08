@@ -1,0 +1,259 @@
+<aura:component access="global" controller ="MobileIVRBeneficiaryController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:isUrlAddressable">
+
+    <lightning:workspaceAPI aura:id="workspace" />
+
+    <!--Handler Declaration-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <!--Attribute Declaration-->
+    <aura:attribute name="mobileProviderOptions" type="List" />
+    <aura:attribute name="serviceProvider" type="string"/>
+    <aura:attribute name="mobileBenList" type="List"/>
+    <aura:attribute name="name" type="String"/>
+    <aura:attribute name="bank" type="String"/>
+    <aura:attribute name="cellphoneNumber" type="String"/>
+    <aura:attribute name="paginationList" type="List"/>
+    <aura:attribute name="pageSize" type="Integer" default="5"/>
+    <aura:attribute name="totalSize" type="Integer"/>
+    <aura:attribute name="start" type="Integer" />
+    <aura:attribute name="end" type="Integer"/>
+    <aura:attribute name="accountType" type="String"/>
+    <aura:attribute name="IVR" type="String"/>
+    <aura:attribute name="CifKey" type="String" />
+    <aura:attribute name="AddBen" type="boolean" default="false"/>
+    <aura:attribute name="UpdateBen" type="boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="showRefresh" type="boolean" default="false"/>
+
+    <aura:attribute name="caseRecord" type="Object"/>
+
+    <!--Start of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+    <aura:handler name="change" value="{!v.clientIDnVObjectParent}" action="{!c.handleObjectChange}"/>
+    <aura:attribute name="clientIDnVObjectParent" type="Map" default="{}" />
+    <aura:attribute name="allowClientIDnVPolling" type="Boolean" default="false" />
+    <aura:attribute name="clientCifCodeParent" type="Boolean" default="false" />
+
+    <aura:if isTrue="{!v.allowClientIDnVPolling}">
+        <c:ClientIDnVPolling clientIDnVObject="{!v.clientIDnVObjectParent}" cifCodeFromParentCmp="{!v.clientCifCodeParent}"/>
+    </aura:if>
+
+    <lightning:recordEditForm
+                              aura:id="caseEditFormIDnV"
+                              objectApiName="Case"
+                              recordId="{!v.recordId}"
+                              onload="{!c.handleCaseLoadIDnV}"
+                              onsuccess="{!c.handleCaseSuccessIDnV}"
+                              >
+        <lightning:inputField aura:id="statusFieldIDnV" fieldName="Status" class="slds-hide" />
+        <lightning:inputField aura:id="serviceGroupFieldIDnV" fieldName="sd_Service_Group__c" class="slds-hide" />
+        <lightning:inputField aura:id="clientCIFFieldIDnV" fieldName="Client_CIF_Number__c" class="slds-hide" />
+        <lightning:inputField aura:id="caseNumberFieldIDnV" fieldName="CaseNumber" class="slds-hide" />
+    </lightning:recordEditForm>
+	<!--End of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+
+    <force:recordData aura:id="recordLoader" recordId="{!v.recordId}" fields="Id,Account.Name" targetFields="{!v.caseRecord}" />
+    
+    <!--# Flow Attribute -->
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"  />
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <center style="z-index:999">
+            <lightning:spinner aura:id="TheSpinner" variant="brand" size="large"/>
+        </center>
+    </aura:if>
+    <div class="slds-card slds-card_boundary">
+        
+        <header class="slds-card__header slds-grid">
+            <div class="slds-media slds-media--center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <lightning:icon iconName="standard:product" alternativeText="Absa Products" size="small" />
+                </div>
+                <div class="slds-media__body slds-truncate">
+                    <h2>
+                        <a href="javascript:void(0);" class="slds-text-link--reset">
+                            <span class="slds-text-heading--small">IVR Mobile Beneficiaries</span>
+                        </a>
+                    </h2>
+                </div>
+            </div>
+            <div class="slds-no-flex">
+                <button onclick="{!c.newMobile}" class="slds-button slds-button--neutral slds-col--bump-left">Add New</button>
+                
+            </div>
+        </header>
+        <div>
+            
+            <lightning:layout multipleRows="true">
+                <table >
+                    <tr> <td style="width:5%">Show</td><td style="width:7%">
+                        <lightning:select aura:id="records" onchange="{!c.onSelectChange}">
+                            <option text="5" value="5"/>
+                            <option text="10" value="10"/>
+                            <option text="20" value="20"/>
+                            <option text="30" value="30"/>
+                        </lightning:select>
+                        
+                        </td>
+                        <td>Entries</td>
+                    </tr>
+                </table>
+                <table class="slds-table slds-table–bordered">
+                    <thead>
+                        <tr style="background-color:#6cbcd2;color:white;font-weight:bold">
+                            <th>IVR Number</th>
+                            <th>Name</th>
+                            <th>Cellphone Number</th>
+                            <th>Service Provider</th>
+                            
+                        </tr>
+                    </thead>
+                    
+                    <tbody>
+                        
+                        <aura:iteration items="{!v.paginationList}" var="mapKey" indexVar="key">
+                            <tr onclick="{!c.selectedItem}" data-value="{!mapKey.description}" class="slds-truncate" title="{!mapKey.description}">  
+                                <td>{!mapKey.ivrPaymentNo}</td>
+                                <td>{!mapKey.description}</td>
+                                <td>{!mapKey.cellNo}</td>
+                                <td>{!mapKey.cellProvider}</td>  
+                            </tr> 
+                        </aura:iteration>
+                        <ul class="slds-list_horizontal slds-has-inline-block-links_space">
+                            <li class="slds-p-right_xx-small"><lightning:button label="First" disabled="{!v.start == 0}"  onclick="{!c.first}" /></li>
+                            <li class="slds-p-right_xx-small"><lightning:button label="Previous" disabled="{!v.start == 0}"  onclick="{!c.previous}" /></li>
+                            <li class="slds-p-right_xx-small"><lightning:button label="Next" disabled="{!v.end >= v.totalSize}" onclick="{!c.next}" /></li>
+                            <li><lightning:button label="Last" disabled="{!v.end >= v.totalSize}" onclick="{!c.last}" /></li>
+                        </ul>
+                        
+                        
+                    </tbody>
+                </table>
+            </lightning:layout>
+        </div> 
+    </div> 
+    
+    <lightning:layout multipleRows="true" >    
+        <lightning:layoutItem padding="around-small" size="12">
+            <div class="slds-m-top_small slds-float--right">
+                <aura:if isTrue="{!v.showRefresh}"><lightning:button variant="brand" label="Refresh"  onclick="{!c.doInit }" /></aura:if>
+            </div>
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+    <!--Modal : ADD MOBILE BENEFICIARY-->
+    <aura:if isTrue="{!v.AddBen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add New Beneficiary</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">                  
+                    
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem padding="around-small" size="10">
+                            <lightning:input aura:id="nameId" label="Name" value="{!v.name}" required ="true"/>
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem padding="around-small" size="2">
+                            <lightning:input aura:id="IVRNumberId" label="IVR No" type="integer" value="{!v.IVR}" required ="true"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:input aura:id="cellNumberId" label="Cellphone Number" value="{!v.cellphoneNumber}" required ="true"/>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:select aura:id="targetAccType" value="{!v.serviceProvider}" label="Service Provider" onchange="{!c.onMobileProviderChange}" required ="true">
+                            <option value="">Select Provider</option>
+                            <aura:iteration items="{!v.mobileProviderOptions}" var="item">
+                                <option text="{!item.label}" value="{!item.value}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    
+                </div>
+                
+                
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <div class="slds-m-top_small slds-float--left">
+                        <lightning:button variant="neutral" 
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.cancel }"/>
+                    </div>
+                    <div class="slds-m-top_small slds-float--right">
+                        <lightning:button variant="brand" 
+                                          label="Save"
+                                          title="Save"
+                                          onclick="{! c.actionAddMobile}"/>
+                    </div>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>           
+    </aura:if>
+    
+    <aura:if isTrue="{!v.UpdateBen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Update IVR Beneficiary</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">                  
+                    
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem padding="around-small" size="10">
+                            <lightning:input aura:id="nameId" label="Name" value="{!v.name}"/>
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem padding="around-small" size="2">
+                            <lightning:input aura:id="IVRNumberId" label="IVR No" value="{!v.IVR}"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:input aura:id="cellNumberId" label="Cellphone Number" value="{!v.cellphoneNumber}" required ="true"/>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:select aura:id="targetAccType" value="{!v.serviceProvider}" label="Service Provider" onchange="{!c.onMobileProviderChange}" required ="true">
+                            <option value="">Select Provider</option>
+                            <aura:iteration items="{!v.mobileProviderOptions}" var="item">
+                                <option text="{!item.label}" value="{!item.value}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    
+                    
+                </div>
+                
+                
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.cancel }"/>
+                    <!--<lightning:button variant="brand" 
+                                      label="Delete"
+                                      title="Delete"
+                                      onclick="{! c.actionDelete}"/>-->
+                    <lightning:button variant="brand" 
+                                      label="Update"
+                                      title="Update"
+                                      onclick="{! c.updateBeneficiary}"/>
+                    
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->            
+    </aura:if>
+    
+</aura:component>

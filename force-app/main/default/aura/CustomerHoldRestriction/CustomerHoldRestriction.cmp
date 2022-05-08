@@ -1,0 +1,177 @@
+<!--
+* Lightning Component for Customer's Holds Restrictions under Customer Holds tab in Lead record deatils and
+* Person Account record Details Page
+*
+* @author Santosh Kumar: Absa
+* @version v1.0
+* @since 2021-06-25
+*
+-->
+<aura:component
+	Controller="CustomerHoldController"
+	implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes,force:hasRecordId"
+	access="global"
+>
+	<!-- Attribute Declaration for Onload to sObject field values of Account or Lead object -->
+	<aura:attribute name="recordId" type="String" />
+	<aura:attribute name="currentUserId" type="String" />
+	<aura:attribute name="userRecord" type="Object" />
+	<aura:attribute name="sObjectRecord" type="Object" />
+	<aura:attribute name="recordLoadError" type="String" />
+	<aura:attribute name="currentUserSiteCode" type="String" />
+	<aura:attribute name="currentRecordCIF" type="String" />
+	<aura:attribute name="isShowSpinner" type="boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+
+	<!-- Attribute Declaration to Show Imposed Holds Data-->
+	<aura:attribute name="ficLock" type="Boolean" />
+	<aura:attribute name="identificationRequired" type="Boolean" />
+	<aura:attribute name="insolventEstate" type="Boolean" />
+	<aura:attribute name="deceasedEstate" type="Boolean" />
+	<aura:attribute name="spouseDeceased" type="Boolean" />
+	<aura:attribute name="curatorship" type="Boolean" />
+	<aura:attribute name="newPostalAddressRequired" type="Boolean" />
+	<aura:attribute name="newResidentialExecutorPhysicalAddressRequired" type="Boolean" />
+	<aura:attribute name="newEmployerNameAddressRequ" type="Boolean" />
+	<aura:attribute name="fraudRiskManagement" type="Boolean" />
+	<aura:attribute name="financialCrime" type="Boolean" />
+	<aura:attribute name="clientAgreementIssued" type="Boolean" />
+	<aura:attribute name="voluntaryCreditConsolidation" type="Boolean" />
+
+	<!--Handler Declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<!--Using LDS to load loged User record to get Site Code field value-->
+	<aura:if isTrue="{!not(empty(v.currentUserId))}">
+		<force:recordData
+			aura:id="recordLoader"
+			recordId="{!v.currentUserId}"
+			fields="SiteCode__c"
+			targetFields="{!v.userRecord}"
+			targetError="{!v.recordLoadError}"
+			recordUpdated="{!c.handleRecordUpdated}"
+		/>
+	</aura:if>
+
+	<!--Using LDS to load sObjectRecord record CIF field value,
+      1: If it is on Lead Deatils page than it will pass CIF field value of Lead object,
+      2: If it is person Account details page then it will pass CIF field value of Account object
+  -->
+	<aura:if isTrue="{!not(empty(v.recordId))}">
+		<force:recordData
+			aura:id="recordLoader"
+			recordId="{!v.recordId}"
+			fields="CIF__c"
+			targetFields="{!v.sObjectRecord}"
+			targetError="{!v.recordLoadError}"
+			recordUpdated="{!c.handleRecordUpdated}"
+		/>
+	</aura:if>
+
+	<article class="slds-card">
+		<!-- Lightning Spinner -->
+		<aura:if isTrue="{!v.isShowSpinner}">
+			<lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+		</aura:if>
+
+		<!-- For header of Customer Hold -->
+		<div class="slds-card__header slds-grid">
+			<header class="slds-media slds-media_center slds-has-flexi-truncate slds-box slds-theme--shade">
+				<div class="slds-media__figure">
+					<span class="slds-icon_container slds-icon-standard-account" title="Customer Hold">
+						<lightning:icon iconName="standard:product_required" size="small" title="custom18" />
+						<span class="slds-assistive-text">Customer Holds</span>
+					</span>
+				</div>
+				<div class="slds-media__body">
+					<h2 class="slds-card__header-title">
+						<a href="javascript:void(0);" class="slds-card__header-link slds-truncate" title="Customer Hold">
+							<span>Customer Holds</span>
+						</a>
+					</h2>
+				</div>
+			</header>
+		</div>
+
+		<!-- To Show Only Active/Imposed HOLDS Data with Checkbox true-->
+		<div class="c-container">
+			<lightning:layout multipleRows="true">
+				<!-- Error message-->
+				<aura:if isTrue="{!not(empty(v.errorMessage))}">
+					<div class="recordError">
+						<br />
+						<h2 class="slds-section__title slds-align_absolute-left" style="color: red">{!v.errorMessage}</h2>
+						<br />
+					</div>
+				</aura:if>
+
+				<aura:if isTrue="{!v.ficLock}">
+					<lightning:layoutItem flexibility="auto" size="5" padding="around-small">
+						<ui:outputCheckbox aura:id="ficLock" value="{!v.ficLock}" />
+						<span class="slds-form-element__label slds-p-left_x-small">Fic Lock</span>
+					</lightning:layoutItem>
+				</aura:if>
+				<aura:if isTrue="{!v.identificationRequired}">
+					<lightning:layoutItem flexibility="auto" size="7" padding="around-small">
+						<ui:outputCheckbox aura:id="identificationRequired" value="{!v.identificationRequired}" />
+						<span class="slds-form-element__label slds-p-left_x-small">Identification Required</span>
+					</lightning:layoutItem>
+				</aura:if>
+				<aura:if isTrue="{!v.curatorship}">
+					<lightning:layoutItem flexibility="auto" size="5" padding="around-small">
+						<ui:outputCheckbox aura:id="curatorship" value="{!v.curatorship}" />
+						<span class="slds-form-element__label slds-p-left_x-small">Curatorship</span>
+					</lightning:layoutItem>
+				</aura:if>
+				<aura:if isTrue="{!v.deceasedEstate}">
+					<lightning:layoutItem flexibility="auto" size="7" padding="around-small">
+						<ui:outputCheckbox aura:id="deceasedEstate" value="{!v.deceasedEstate}" />
+						<span class="slds-form-element__label slds-p-left_x-small">Deceased Estate</span>
+					</lightning:layoutItem>
+				</aura:if>
+				<aura:if isTrue="{!v.spouseDeceased}">
+					<lightning:layoutItem flexibility="auto" size="6" padding="around-small">
+						<ui:outputCheckbox aura:id="spouseDeceased" value="{!v.spouseDeceased}" />
+						<span class="slds-form-element__label slds-p-left_x-small">Spouse Deceased</span>
+					</lightning:layoutItem>
+				</aura:if>
+				<aura:if isTrue="{!v.financialCrime}">
+					<lightning:layoutItem flexibility="auto" size="7" padding="around-small">
+						<ui:outputCheckbox aura:id="financialCrime" value="{!v.financialCrime}" />
+						<span class="slds-form-element__label slds-p-left_x-small">Financial Crime</span>
+					</lightning:layoutItem>
+				</aura:if>
+				<aura:if isTrue="{!v.newPostalAddressRequired}">
+					<lightning:layoutItem flexibility="auto" size="12" padding="around-small">
+						<ui:outputCheckbox aura:id="newPostalAddressRequired" value="{!v.newPostalAddressRequired}" />
+						<span class="slds-form-element__label slds-p-left_x-small">New Postal Address Required</span>
+					</lightning:layoutItem>
+				</aura:if>
+				<aura:if isTrue="{!v.newEmployerNameAddressRequ}">
+					<lightning:layoutItem flexibility="auto" size="12" padding="around-small">
+						<ui:outputCheckbox aura:id="newEmployerNameAddressRequ" value="{!v.newEmployerNameAddressRequ}" />
+						<span class="slds-form-element__label slds-p-left_x-small">New Employer’s Name / Address Required</span>
+					</lightning:layoutItem>
+				</aura:if>
+				<aura:if isTrue="{!v.newEmployerNameAddressRequ}">
+					<lightning:layoutItem flexibility="auto" size="6" padding="around-small">
+						<ui:outputCheckbox aura:id="insolventEstate" value="{!v.insolventEstate}" />
+						<span class="slds-form-element__label slds-p-left_x-small">Insolvent Estate</span>
+					</lightning:layoutItem>
+				</aura:if>
+				<aura:if isTrue="{!v.clientAgreementIssued}">
+					<lightning:layoutItem flexibility="auto" size="12" padding="around-small">
+						<ui:outputCheckbox aura:id="clientAgreementIssued" value="{!v.clientAgreementIssued}" />
+						<span class="slds-form-element__label slds-p-left_x-small">Client Agreement Issued</span>
+					</lightning:layoutItem>
+				</aura:if>
+				<aura:if isTrue="{!v.newResidentialExecutorPhysicalAddressRequired}">
+					<lightning:layoutItem flexibility="auto" size="12" padding="around-small">
+						<ui:outputCheckbox aura:id="newResidentialExecutorPhysicalAddressRequired" value="{!v.newResidentialExecutorPhysicalAddressRequired}" />
+						<span class="slds-form-element__label slds-p-left_x-small">New Residential / Executor Physical Address</span>
+					</lightning:layoutItem>
+				</aura:if>
+			</lightning:layout>
+		</div>
+	</article>
+</aura:component>

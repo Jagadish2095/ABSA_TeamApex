@@ -1,0 +1,37 @@
+<aura:component implements="flexipage:availableForRecordHome,force:lightningQuickAction,force:hasRecordId,force:hasSObjectName" access="global" controller="LeadChangeStatusActionExt" >
+    <lightning:workspaceAPI aura:id="workspace" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="change" value="{!v.selectedStatus}" action="{!c.showLeadRatingFields}"/>
+    <aura:handler name="change" value="{!v.selectedSubStatus}" action="{!c.showLeadRatingFields}"/>
+    
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="isLeadClosed" type="Boolean" />
+    <aura:attribute name="selectedStatus" type="String" />
+    <aura:attribute name="selectedSubStatus" type="String" />
+    <aura:attribute name="leadRating" type="String" />
+    <aura:attribute name="leadRatingComment" type="String" />
+    <aura:attribute name="showLeadRating" type="boolean" default="false"/>
+    
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" />
+    </center>
+    <aura:renderIf isTrue="{!v.isLeadClosed}">
+        <ui:message title="" severity="info" closable="false">
+            This Lead is closed and you cannot change statuses at this stage.
+        </ui:message>
+        <aura:set attribute="else">
+        <lightning:recordEditForm aura:id="iUpdateLead" objectApiName="Lead" recordId="{!v.recordId}" >
+            <lightning:inputField fieldName="Status" value="{!v.selectedStatus}" aura:id="iStatus" required="true"/> 
+            <lightning:inputField fieldName="SubStatus__c" value="{!v.selectedSubStatus}" aura:id="iSubStatus" required="true"/>
+            <lightning:inputField fieldName="On_Hold_Reason__c"  aura:id="iStatusReason" required="true"/>
+            <aura:if isTrue="{!v.showLeadRating}">
+                <lightning:inputField fieldName="Lead_Rating__c" aura:id="iLeadRating" value="{!v.leadRating}" required="true"/>
+                <lightning:inputField fieldName="Lead_Rating_Comment__c" aura:id="iComment" value="{!v.leadRatingComment}" required="true"/>
+            </aura:if>
+            <br/> 
+            <lightning:button label="Change" onclick="{!c.changeStatus}" variant="brand" />
+        </lightning:recordEditForm> 
+        </aura:set>
+    </aura:renderIf>
+</aura:component>

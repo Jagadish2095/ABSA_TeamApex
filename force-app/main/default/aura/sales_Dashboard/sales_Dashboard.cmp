@@ -1,0 +1,212 @@
+<aura:component controller="sales_DashboardController" implements="force:appHostable">
+   <aura:handler name="change" value="{!v.client.securityQuestionsResult}" action="{!c.securityQuestionController}"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+   <aura:attribute name="client" type="Map" default=""/>
+    
+   <aura:attribute name="exception_API_Name" type="String" default="" description=""/>
+   <aura:attribute name="validate_update_obj" type="Object" description=""/>
+   <aura:attribute name="validate_update_err_exceptionType" type="String" default="" description=""/>
+
+  
+   <!-- navigation --> 
+   <aura:attribute name="selTabId" type="String" default="clientProfile"/> 
+   <aura:attribute name="currentTabId" type="String" default=""/>
+   <aura:attribute name="priorTabId" type="String"/> 
+   <aura:attribute name="nextBtn" type="Boolean" />
+   <aura:attribute name="backBtn" type="Boolean" default="true"/>
+   <aura:attribute name="currentTab" type="String" default="clientProfile" description="Navigation tracker"/> 
+    <aura:attribute name="tabMap" type="Map" default="{'clientProfile':1,'contactDetails':2,'employmentDetails':3,'productSelection':4,'loanApplication':5,'livingExpenses':6,'incomeAndExpenses':7,'outcome':8}"/>
+   <aura:attribute name="tabMapRev" type="Map" default="{1:'clientProfile' , 2:'contactDetails', 3:'employmentDetails', 4:'productSelection',5:'loanApplication',6:'livingExpenses',7:'incomeAndExpenses',8:'outcome'}"/>
+   <aura:attribute name="navLink" type="Map" default="{profile: 'clientProfile',contact: 'contactDetails',employment: 'employmentDetails',product: 'productSelection',application: 'loanApplication',expenses: 'livingExpenses',income: 'incomeAndExpenses',outcome: 'outcome'}"/>
+   <aura:attribute name="IdNumber" type="String" default=""/>
+   <aura:attribute name="searchCardVisible" type="String" default="slds-hide"/>
+   <aura:attribute name="dashBoardVisible" type="String" default="slds-hide"/> 
+   <aura:attribute name="supportVisible" type="String" default="slds-hide"/> 
+   <aura:attribute name="informationCardVisible" type="String" default="slds-hide"/>
+   <aura:attribute name="modalObj" type="Map" default="{isOpen: false, header: '', body: ''}"/>
+   <aura:attribute name="client_validation_check" type="Boolean" default="false"/>
+     
+   <aura:attribute name="isTabVisited" description="If true if tab visited" type="Map" default="{'clientProfile':true,'contactDetails':false,'employmentDetails':false,'productSelection':false,'loanApplication':false,'livingExpenses':false,'incomeAndExpenses':false,'outcome':false}"/>     
+   <aura:attribute name="isTabValid" description="If true move enable next tab" type="Map" default="{'clientProfile':false,'contactDetails':false,'employmentDetails':false,'productSelection':false,'loanApplication':false,'livingExpenses':false,'incomeAndExpenses':false,'outcome':false}"/>
+   <aura:attribute name="openSecurityQuestions" type="boolean" default="false" /> 
+   <aura:attribute name="securityQuestionsResult" type="String" default="test" description="Did caller pass security questions?"/>  
+    <!-- CTI -->
+   <aura:attribute name="show_list_class" type="String" default="slds-hide" description="close list upon clicking anywhere on dive"/>
+   <aura:attribute name="activeConnections" type="Map" default="" description="Active calls obj"/>
+   <aura:handler name="socketobj" event="c:sales_Dashboard_TriggerDive" action="{!c.invokeDashboard}"/>
+   <aura:attribute name="ctiSpinner" type="Map" default="{displayCls: 'slds-hide', msgDisplayed: 'Loading...'}"/>
+   <aura:attribute name="loggedInUser2" type="Map" default="" description=""/> 
+    
+   <aura:attribute name="cti" type="Map" description="Chewy call controls" default="{ 
+      status:'Offline',
+      statusIcon:'/Icons/disconnected.svg',
+      statusCls:'cursor',
+      oncall:'On call',
+      onCallIcon:'/Icons/inactivenocall.svg',
+      onCallCls:'cti_tile_disabled',
+      endCall:'End call',
+      endCallIcon:'/Icons/inactivephonedown.svg',
+      endCallCls:'cti_tile_disabled',
+      transfer:'Transfer',
+      transferIcon:'/Icons/inactivetransfer.svg',
+      transferCls:'cti_tile_disabled',
+      stopWatchTime:'00:00:00',
+      stopWatchTimeCls:'cti_tile_disabled',
+      hideCTI: '',
+      connectionId: '',
+      ucId: '',
+      sessionId: '',
+      agentId: '',
+      stationId: '',
+      toggleInd:'HOLD'}"/>
+   <!-- Search Box -->
+   <div class="{!v.dashBoardVisible+' cont'}" style="background-color: white;margin-top:-3px;min-height:100%">
+     <!-- <div class="cti_section" style="z-index:1;position: absolute;height: 70px;padding-top:10px;">
+         <c:sales_Dashboard_CTI aura:id="login" ctiSpinner="{!v.ctiSpinner}" modalObj="{!v.modalObj}" data="{!v.data}" activeCall="{!v.activeCall}" cti="{!v.cti}" show_list_class="{!v.show_list_class}" obj="{!v.obj}" loggedInUser2="{!v.loggedInUser2}" loggedInUser="{!v.loggedInUser2}"/>
+      </div> -->
+      <div class="{!v.searchCardVisible+' main-container'}">
+         <div class="inner-container">
+            <div class="search-area" >
+               <div class="slds-form-element slds-p-bottom_x-large slds-p-top_xx-large" style="font-size: 1.1em;color:rgb(62, 62, 60);">
+                  Please enter an ID number:
+               </div>
+               <div class="input-container" onkeyup="{!c.openDashboardOnKeyUp}">
+                  <input class="input-field" type="text" aura:id="IdNumber" id="IdNumber" value="{!v.IdNumber}" readonly="{!v.searchBoxDisabled}" pattern="[0-9]" autofocus="autofocus"/>
+                  <i class="fa fa-user icon" onclick="{!c.openDashboardOnClick}">
+                     <lightning:icon iconName="utility:search" alternativeText="Search" size="x-small"/>
+                  </i>
+               </div>
+               <div class="{!v.invalidACCText+ ' slds-text-align_left slds-p-top_x-small slds-text-color_error'}">{!v.resultStatus}</div>
+            </div>
+         </div>
+      </div>
+      <div class="{!v.informationCardVisible+' slds-grid slds-wrap'}">
+         <div class="slds-col slds-size_1-of-12 slds-text-align_center" style="margin-top:280px;">
+            <aura:if isTrue="{!v.backBtn}">
+               <aura:set attribute="else">
+                  <lightning:icon iconName="utility:chevronleft" size="large" onclick="{!c.goBackward}"/>
+               </aura:set>
+            </aura:if>
+         </div>
+         <div class="slds-col slds-size_10-of-12">
+            <div style="padding-top:40px;">
+         
+               <div>
+                
+                <div class="slds-grid">
+                  <div>
+                      <label class="label_header">{!v.client.title_label}&nbsp;{!v.client.first_names}&nbsp;{!v.client.surname_comp} <aura:if isTrue="{!v.client.surname_comp}">,</aura:if>&nbsp;{!v.client.id_number}</label>
+                  </div>
+                  <div class="slds-col_bump-left">
+                    	<label class="label_header" onclick="{!c.cancelApplication}">Cancel application</label> 
+                  </div>
+                </div>                
+                
+                
+                </div>                
+               <div class="slds-tabs--default">
+                   <ul class="slds-tabs--default__nav" role="tablist">
+                    <li aura:id="clientProfile" class="slds-tabs--default__item slds-active">
+                        <a class="slds-tabs--default__link slds-hide" onclick="{!c.navigationHandler}" id="clientProfile">Personal details</a>
+                     </li>
+                     <li aura:id="contactDetails" class="slds-tabs--default__item">
+                        <a class="slds-tabs--default__link slds-hide" onclick="{!c.navigationHandler}" id="contactDetails">Contact details</a>
+                     </li>
+                     <li aura:id="employmentDetails" class="slds-tabs--default__item">
+                        <a class="slds-tabs--default__link slds-hide" onclick="{!c.navigationHandler}" id="employmentDetails">Employment details</a>
+                     </li>
+                     <li aura:id="productSelection" class="slds-tabs--default__item">
+                        <a class="slds-tabs--default__link slds-hide" onclick="{!c.navigationHandler}" id="productSelection">Select a product</a>
+                     </li>
+                     <li aura:id="loanApplication" class="slds-tabs--default__item">
+                        <a class="slds-tabs--default__link slds-hide" onclick="{!c.navigationHandler}" id="loanApplication">Personal loan application</a>
+                     </li>
+                     <li aura:id="livingExpenses" class="slds-tabs--default__item">
+                        <a class="slds-tabs--default__link slds-hide" onclick="{!c.navigationHandler}" id="livingExpenses">Monthly living expenses</a>
+                     </li>
+                     <li aura:id="incomeAndExpenses" class="slds-tabs--default__item">
+                        <a class="slds-tabs--default__link slds-hide" onclick="{!c.navigationHandler}" id="incomeAndExpenses">Monthly income and expenses</a>
+                     </li>
+                     <li aura:id="outcome" class="slds-tabs--default__item">
+                        <a class="slds-tabs--default__link slds-hide" onclick="{!c.navigationHandler}" id="outcome">Outcome</a>
+                     </li>
+
+                  </ul> 
+                  <div aura:id="clientProfileDiv" class="slds-tabs--default__content slds-show" role="tabpanel" aria-labelledby="clientProfileDiv">
+                      <c:sales_ClientProfile client="{!v.client}"/>
+                  </div>
+                  <div aura:id="contactDetailsDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="contactDetailsDiv">
+                     <c:sales_ContactDetails client="{!v.client}"/>
+                  </div>
+                  <div aura:id="employmentDetailsDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="employmentDetailsDiv">
+                     <c:sales_EmploymentDetails client="{!v.client}"/>
+                  </div>
+                  <div aura:id="productSelectionDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="productSelectionDiv">
+                     <c:sales_ProductSelection client="{!v.client}"/>
+                  </div>
+                  <div aura:id="loanApplicationDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="loanApplicationDiv">
+                     <c:sales_LoanApplication client="{!v.client}"/>
+                  </div>
+                  <div aura:id="livingExpensesDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="livingExpensesDiv">
+                     <c:sales_LivingExpenses client="{!v.client}"/>
+                  </div>
+                  <div aura:id="incomeAndExpensesDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="incomeAndExpensesDiv">
+                     <c:sales_IncomeAndExpenses client="{!v.client}"/>
+                  </div>
+                  <div aura:id="outcomeDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="outcomeDiv">
+                     <c:sales_Outcome client="{!v.client}"/>
+                  </div>
+               </div>
+            </div>
+            <!--Navigation starts here -->
+            <div class="slds-list_horizontal slds-button-group" style="float: right;">
+               <aura:if isTrue="{!v.backBtn}">
+                  <aura:set attribute="else">
+                     <button onclick="{!c.goBackward}" class="slds-button slds-button_icon button slds-button_icon-brand navigation-style slds-not-selected">
+                        <lightning:icon class="changeIconBackground" iconName="utility:left" size="small" alternativeText="Navigate left"/>
+                     </button>
+                  </aura:set>
+               </aura:if>
+               <div class="dropup">
+                  <button class="slds-button slds-button_icon button slds-button_icon-brand navigation-style" style="border-top-left-radius: 0px; border-bottom-left-radius: 0px;">
+                     <lightning:icon class="changeIconBackground" iconName="utility:up" size="small" alternativeText="Navigate left"/>
+                  </button>
+                  <div class="dropup-content" style="background-color:white;z-index: 2;">
+                     <a onclick="{!c.hyperlinkNavController}" class="" id="profile" aura:id="profile">Profile</a>
+                     <a onclick="{!c.hyperlinkNavController}" class="link-cls" id="contact" aura:id="contact">Contact</a>
+                     <a onclick="{!c.hyperlinkNavController}" class="link-cls" id="employment" aura:id="employment">Employment</a>
+                     <a onclick="{!c.hyperlinkNavController}" class="link-cls" id="product" aura:id="product">Product</a>
+                     <a onclick="{!c.hyperlinkNavController}" class="link-cls" id="application">Application</a>
+                     <a onclick="{!c.hyperlinkNavController}" class="link-cls" id="expenses">Expenses</a>
+                     <a onclick="{!c.hyperlinkNavController}" class="link-cls" id="income">Income</a>
+                     <a onclick="{!c.hyperlinkNavController}" class="link-cls" id="outcome">Outcome</a>
+                  </div>
+               </div>
+               <aura:if isTrue="{!v.nextBtn}">
+                   <button onclick="{!c.finalizeApplicationController}" class="slds-button slds-button_icon  button buttonslds-button_icon-brand navigation-style">
+                       <a class="done_button">Done</a>
+                   </button>
+                  <aura:set attribute="else">
+                     <button onclick="{!c.goForward}" class="slds-button slds-button_icon  button buttonslds-button_icon-brand navigation-style">
+                        <lightning:icon class="changeIconBackground" iconName="utility:right" size="small" alternativeText="Navigate left"/>
+                     </button>
+                  </aura:set>
+               </aura:if>
+            </div>
+         </div>
+         <div class="slds-col slds-size_1-of-12 slds-text-align_center" style="margin-top:280px;">
+            <aura:if isTrue="{!v.nextBtn}">          
+               <aura:set attribute="else">
+                  <lightning:icon iconName="utility:chevronright" size="large" onclick="{!c.goForward}"/>
+               </aura:set>
+            </aura:if>
+         </div>
+      </div>
+   </div>
+    <lightning:card class="{!v.supportVisible}">                    
+        <img class="dive-support"  src="{!$Resource.sales_Dashboard_Assets + '/Images/sales_support.png'}"/>         	
+    </lightning:card>
+   <c:sales_Dashboard_Modal isModalOpen="{!v.modalObj.isOpen}" modalObj="{!v.modalObj}"/>
+   <c:sales_SecurityQuestions isModalOpen="{!v.openSecurityQuestions}" client="{!v.client}" securityQuestionsResult="{!v.client.securityQuestionsResult}"/> 
+   <c:sales_Dashboard_Spinner showSpinner="{!v.ctiSpinner.displayCls}" spinnerMsg="{!v.ctiSpinner.msgDisplayed}"/>
+</aura:component>

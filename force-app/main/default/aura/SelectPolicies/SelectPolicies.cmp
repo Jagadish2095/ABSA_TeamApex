@@ -1,0 +1,194 @@
+<aura:component Controller="BrokerNoteProcessController" implements="force:hasRecordId,lightning:availableForFlowScreens,flexipage:availableForAllPageTypes" access="global">
+    
+    <aura:attribute name="showPopup" type="boolean" default="false"/>
+    
+    <aura:attribute name="recordId" type="String" />
+    
+    <aura:attribute name="PolicyList" type="List"/>
+    <aura:attribute name="OtherPolicyList" type="List"/>   
+    <aura:attribute name="PolicyListValues" type="string[]" default="['Product_Name__c','Policy_Number__c','Policy_Type__c','Product_Provider__c','Risk_Sum_Assured__c','Inception_Date__c']" />
+    <aura:attribute name="OtherPolicyListValues" type="string[]" default="['Product_Name__c','Policy_Number__c','Policy_Type__c','Product_Provider__c','Risk_Sum_Assured__c','Inception_Date__c']"/> 
+    <aura:attribute name="isSelectAll" type="boolean" />
+    <aura:attribute name="isSelectAllOther" type="boolean" default="false"/>
+    <aura:attribute name="ShowResultOnNextScree" type="boolean" default="false"/>
+    <aura:attribute name="open" type="boolean" default="true"/>
+    <aura:attribute name="validateNextButton" type="Integer" default="0" />
+    <aura:attribute name="mainPolicyCount" type="Integer" default="0" />
+    <aura:attribute name="otherPolicyCount" type="Integer" default="0" />
+    <aura:attribute name="isModal" type="boolean" default="false"/>
+    <aura:attribute name="isCheckBoxTrueResponse" type="boolean" default="false"/>
+    <aura:attribute name="booltrue" type="boolean" default="true"/>
+    
+    <aura:registerEvent name="PolicySelectionEvent" type="c:PolicySelectionEvent"/>
+    <!--<aura:handler name="init" action="{!c.fetchPolicies}" value="{!this}"/>
+    <aura:handler name="init" action="{!c.fetchOtherPolicies}" value="{!this}"/>-->
+    
+    <aura:handler name="init" value="{!this}" action="{!c.getCasePolicies}" />
+    
+    <!-- APP EVENT it capturing value form call script btn if it true it shows pop up -->
+    <aura:handler event="c:callScriptAppEvent" action="{!c.callAppEventResponse}"/>
+    
+    <aura:attribute name="dsblBtn" type="boolean" default="false"/>
+    
+    <aura:attribute name="isLoading" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.isLoading}">
+        <lightning:spinner alternativeText="Loading"/>
+    </aura:if>
+    <aura:if isTrue="{!v.open}"> 
+        <div class="slds-box slds-m-around_small">          
+            <lightning:accordion aura:id="accordion" activeSectionName="A" > 
+                <lightning:accordionSection name="A" label="Client’s Products"><br/>
+                    <div class="slds-m-around_small slds-p-around_x-small">
+                        <p><h2><b style="color:red">*</b> Please select the products the customer has agreed to transfer to the new advisor</h2></p><br/>                
+                        
+                        
+                        <aura:if isTrue="{!v.isModal}">      
+                            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                                <div class="slds-modal__container">
+                                    <header class="slds-modal__header">
+                                        <lightning:buttonIcon alternativeText="Close" class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" iconName="utility:close" name="isCreateModal" title="close" onclick="{!c.closeModal}"/>
+                                        <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">ADD POLICY</h2>
+                                    </header>
+                                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                        <lightning:recordEditForm aura:id="PolicyCreateForm"
+                                                                  objectApiName="Case_Support__c"
+                                                                  onsuccess="{!c.handleSuccess}"
+                                                                  onerror="{!c.handleError}"
+                                                                  >
+                                            
+                                            <lightning:inputField fieldName="Case__c" value="{!v.recordId}" disabled="true"/> 
+                                            <lightning:inputField aura:id="nameField" fieldName="Product_Name__c" required="true"/>
+                                            <lightning:inputField aura:id="nameField" fieldName="Product_Provider__c" required="true"/>
+                                            <lightning:inputField aura:id="nameField" fieldName="Policy_Type__c" required="true"/>
+                                            <lightning:inputField aura:id="nameField" fieldName="Policy_Number__c" required="true"/>
+                                            <lightning:inputField aura:id="nameField" fieldName="Risk_Sum_Assured__c"/>
+                                            <lightning:inputField aura:id="nameField" fieldName="Inception_Date__c"/>
+                                            <div style="display:none">
+                                                <lightning:inputField fieldName="Other_Policy__c" value="{!v.booltrue}" disabled="true"  /> 
+                                            </div>
+                                            <lightning:button class="" type="submit" label="Save" />
+                                            <lightning:button label="Close"  onclick="{! c.closeModal }" />
+                                            
+                                        </lightning:recordEditForm>
+                                    </div>
+                                </div>
+                            </section>
+                            <div class="slds-backdrop slds-backdrop_open"></div>
+                        </aura:if>
+                        
+                        <lightning:input type="checkbox" checked="{!v.isSelectAll}" onchange="{!c.handleSelectAllPolicies}" aura:id="selectAll" name="input1" label="Select all products"/><br/>                 
+                        
+                        <aura:iteration items="{!v.PolicyList}"  var="sp">
+                            <lightning:card class="slds-p-around_x-small">    
+                                <lightning:layout verticalAlign="stretch" multipleRows="true" class="x-large">
+                                    <lightning:input type="checkbox" onchange="{!c.handleSelectedPoliciesMain}" checked="{!sp.selected}" aura:id="checkIndvPolicy" name="{!sp.recordId}"  /><br/>                 
+                                    <lightning:layoutItem  flexibility="grow">  
+                                        <lightning:recordForm
+                                                              recordId="{!sp.recordId}"
+                                                              objectApiName="Case_Support__c"
+                                                              columns="2"
+                                                              
+                                                              mode="readonly"
+                                                              fields="{!v.PolicyListValues}"
+                                                              density="comfy"/>
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </lightning:card>
+                        </aura:iteration>
+                    </div>
+                </lightning:accordionSection>
+            </lightning:accordion>
+            <lightning:accordion>
+                <lightning:accordionSection  name="B" label="Other products (Astute consented)"><br/>
+                    <div class="slds-m-around_small slds-p-around_x-small">
+                        <p>
+                            <h2>
+                                <b style="color:red">*</b>Please select the other products the customer has agreed to transfer to the new advisor
+                            </h2>
+                        </p>
+                        <br/>
+                        <div class="slds-clearfix">
+                            <div class="slds-float_right">
+                                <lightning:button variant="brand"  label="ADD POLICY" title="Brand action" onclick="{!c.openModal}" /><br/>
+                            </div>
+                        </div>
+                        <aura:if isTrue="{!v.isCheckBoxTrueResponse}">
+                            <lightning:input type="checkbox" checked="{!v.isSelectAllOther}" onchange="{!c.handleSelectAllOtherPolicies}" aura:id="selectAllOther" name="input2" label="Select all other products"/><br/>        
+                            <aura:set attribute="else">
+                                <lightning:input type="checkbox" checked="{!v.isSelectAllOther}" onchange="{!c.handleSelectAllOtherPolicies}" aura:id="selectAllOther" name="input2" label="Select all other products" disabled="true"/><br/>
+                            </aura:set>
+                        </aura:if>
+                        <aura:iteration items="{!v.OtherPolicyList}"  var="sp">
+                            <lightning:card class="slds-p-around_x-small">    
+                                <lightning:layout verticalAlign="stretch" multipleRows="true" class="x-large">
+                                    
+                                    <aura:if isTrue="{!v.isCheckBoxTrueResponse}">
+                                        <lightning:input type="checkbox"  onchange="{!c.handleSelectedPoliciesOther}" name="{!sp.recordId}" checked="{!sp.selected}" aura:id="checkIndvOtherPolicy"/>
+                                        <aura:set attribute="else">
+                                            <lightning:input type="checkbox"  onchange="{!c.handleSelectedPoliciesOther}" name="input2"  aura:id="checkIndvOtherPolicy" disabled="true"/>
+                                        </aura:set>
+                                    </aura:if>
+                                    
+                                    <lightning:layoutItem  flexibility="grow">
+                                        <lightning:recordForm
+                                                              recordId="{!sp.recordId}"
+                                                              objectApiName="Case_Support__c"
+                                                              columns="2"
+                                                              
+                                                              mode="readonly"
+                                                              fields="{!v.PolicyListValues}"
+                                                              density="comfy"/>
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </lightning:card>
+                        </aura:iteration>
+                    </div>
+                </lightning:accordionSection>
+            </lightning:accordion>
+            
+        </div>
+        <footer class="slds-modal__footer">
+            <!--  <lightning:button label="Next"  disabled="{!v.dsblBtn}" onclick="{!c. next}" variant="destructive"/> -->
+            <aura:if isTrue="{!lessthanorequal(v.validateNextButton,0)}"> 
+                <p style="color:red">*Please select atleast one policy in order to complete the broker note.</p>
+                
+            </aura:if>
+            <aura:if isTrue="{!not(v.isCheckBoxTrueResponse)}"> 
+                <p style="color:red">*Policies from other products can't be selected if Astute Consent is not given.</p>
+            </aura:if>
+        </footer>
+    </aura:if> 
+    <aura:if isTrue="{!v.ShowResultOnNextScree}" >
+        <c:BrokerNotePdfGenration recordId="{!v.recordId}" />
+        <c:CrossSellProductBrokerNote recordId="{!v.recordId}" />
+    </aura:if>
+    
+    
+    
+    
+    <aura:if isTrue="{!v.showPopup}">
+        <div class="slds-modal
+                    slds-fade-in-open
+                    slds-backdrop ">
+            <div class="slds-modal__container">
+                
+                <div class="slds-modal__header slds-open">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          alternativeText="Close this window"
+                                          size="large"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close slds-hide"
+                                          onclick="{!c.clodPopup}"
+                                          />
+                    <p><h2>You haven't given astute consent in the last section.</h2><br/><h2>Please go back and provide astute consent.</h2></p>
+                </div>
+                <div class="slds-modal__content">
+                    <center class="slds-p-top_large slds-p-bottom_large">
+                        <lightning:button label="OK"  onclick="{!c.clodPopup}" />
+                    </center>
+                </div>
+                
+            </div> 
+        </div>
+    </aura:if> 
+</aura:component>

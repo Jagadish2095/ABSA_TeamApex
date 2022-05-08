@@ -1,0 +1,121 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+<!--attributes-->
+<aura:attribute name="prephaseItem" type="Application_Phase_CPF__c" />
+<aura:attribute name="newperphase" type="Application_Phase_CPF__c[]" />
+<aura:attribute name="otherprelodgmentItem" type="Application_Contract_Clause__c" />
+<aura:attribute name="OtherPreLodgmentConditions" type="Application_Contract_Clause__c[]" />
+<aura:attribute name="otherpredisbursementItem" type="Application_Contract_Clause__c" />
+<aura:attribute name="OtherpredisbursementConditions" type="Application_Contract_Clause__c[]" />
+<aura:attribute name="isPrephase" type="Boolean" default="false"/>
+<aura:attribute name="OppRecId" type="Id" />
+<aura:attribute name="showSpinner" type="Boolean" default="false" />
+<aura:attribute name="isActiveRemoveAccount" type="Boolean" default="false" />
+<aura:attribute name="rowindex" type="String" />
+<!-- Register Application Events -->
+<aura:registerEvent name="CPFLimitedandUnlimitedGauranteesevent" type="c:CPFLimitedandUnlimitedGauranteesevent"/>
+<aura:if isTrue="{!v.prephaseItem != null}">
+<lightning:recordEditForm aura:id="iAppPhaseCPFRecord" objectApiName="Application_Phase_CPF__c"  >
+<div class="slds-grid slds-wrap slds-gutters_medium">
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="required">* </span>
+<span class="slds-m-right_small">Phase number</span>
+<lightning:helptext icon-name="utility:like" content="Proof that at least [NUMBER] Pre-sales with an aggregate selling price of at least R[AMOUNT] (excluding estate agents’ commission, VAT and transfer fees), have been entered into in respect of Phase [INSERT PHASE NUMBER] [REPEATER]" />
+</label>
+<lightning:inputField fieldName="Phase_Number__c" aura:id="inputphasenumber" value="{!v.prephaseItem.Phase_Number__c}" required="true" variant="label-hidden"/>
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="required">* </span>
+<span class="slds-m-right_small">Number of pre sales</span>
+<lightning:helptext icon-name="utility:like" content="Proof that at least [NUMBER] Pre-sales with an aggregate selling price of at least R[AMOUNT] (excluding estate agents’ commission, VAT and transfer fees), have been entered into." />
+</label>
+<lightning:inputField fieldName="Number_of_pre_sales__c" aura:id="inputnumberofpresales" value="{!v.prephaseItem.Number_of_pre_sales__c}" required="true" variant="label-hidden"/>
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="required">* </span>
+<span class="slds-m-right_small">Aggregate price</span>
+<lightning:helptext icon-name="utility:like" content="Proof that at least [NUMBER] Pre-sales with an aggregate selling price of at least R[AMOUNT] (excluding estate agents’ commission, VAT and transfer fees), have been entered into." />
+</label>
+<lightning:inputField fieldName="Aggregate_price__c" aura:id="inputaggregateprice" value="{!v.prephaseItem.Aggregate_price__c}" required="true" variant="label-hidden"/>
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove Per Phase" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+<aura:if isTrue="{!v.isActiveRemoveAccount}">
+<lightning:button class="slds-float_right" label="Remove Per Phase" variant="brand" onclick="{!c.removeAccount}" />
+</aura:if>                                   
+</span>
+</div>
+</div>
+</lightning:recordEditForm>
+</aura:if>
+<aura:if isTrue="{!v.otherprelodgmentItem != null}">
+<lightning:recordEditForm aura:id="iAppContractclauseCPFRecord" objectApiName="Application_Contract_Clause__c"  >
+<div class="slds-grid slds-wrap slds-gutters_medium">
+<div class="slds-col slds-size_1-of-2">
+<span >
+<p>Any other pre-lodgement conditions</p>
+<ui:outputText aura:id="uniqueID" value="{!v.rowindex + 1}"/>
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+
+<span class="slds-m-right_small">Other Pre-Lodgement Conditions</span>
+<lightning:helptext icon-name="utility:like" content="Capture any other specific Pre-Lodgement conditions to be displayed in Schedule 2" />
+</label>
+<lightning:inputField fieldName="Other_Pre_Lodgement_Conditions__c" aura:id="inputprelodgmentconditions" value="{!v.otherprelodgmentItem.Other_Pre_Lodgement_Conditions__c}" required="true" variant="label-hidden"/>
+</span>
+</div>
+    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove Other PreLodgment" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+                            <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                                <lightning:button class="slds-float_right" label="Remove Other Pre-Lodgment" variant="brand" onclick="{!c.removeprelodgmentAccount}" />
+                            </aura:if>                                   
+                        </span>
+                    </div>
+</div>
+</lightning:recordEditForm>
+</aura:if>
+    
+<aura:if isTrue="{!v.otherpredisbursementItem != null}">
+<lightning:recordEditForm aura:id="iAppContractclauseCPFRecord" objectApiName="Application_Contract_Clause__c"  >
+<div class="slds-grid slds-wrap slds-gutters_medium">
+<div class="slds-col slds-size_1-of-2">
+<span >
+<p>Any other pre-disbursement conditions</p>
+<ui:outputText aura:id="uniqueID" value="{!v.rowindex + 1}"/>
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+
+<span class="slds-m-right_small">Other pre-disbursement conditions</span>
+<lightning:helptext icon-name="utility:like" content="Capture any other specific Pre-Disbursement conditions to be displayed in Schedule 2" />
+</label>
+<lightning:inputField fieldName="Other_pre_disbursement_conditions__c" aura:id="inputpredisbursementconditions" value="{!v.otherpredisbursementItem.Other_pre_disbursement_conditions__c}" required="true" variant="label-hidden"/>
+</span>
+</div>
+    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove Other PreLodgment" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+                            <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                                <lightning:button class="slds-float_right" label="Remove Other pre-disbursement" variant="brand" onclick="{!c.removepredisbursementAccount}" />
+                            </aura:if>                                   
+                        </span>
+                    </div>
+</div>
+</lightning:recordEditForm>
+</aura:if>    
+</aura:component>

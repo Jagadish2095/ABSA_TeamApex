@@ -1,0 +1,269 @@
+<!--Lightning component for EB Collection Collabration weekly challenge story
+ User Story: W - 011455
+    Author: Bhanumurty Rayala
+    Date : 2021-05-24
+-->
+<aura:component
+	controller="EBCollabWeeklyChallenge"
+	implements="flexipage:availableForAllPageTypes,force:appHostable,flexipage:availableForRecordHome,lightning:actionOverride,force:hasRecordId,force:hasSObjectName,force:lightningQuickAction"
+	access="global"
+>
+	<!-- Component Attributes -->
+	<aura:attribute name="activeWeeklyChallengeList" type="List" />
+	<aura:attribute name="previousWeeklyChallengeList" type="List" />
+	<aura:attribute name="isShowModal" type="Boolean" default="false" />
+	<aura:attribute name="isNewChallengeModal" type="Boolean" default="false" />
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="isShowAccordion" type="Boolean" default="false" />
+
+	<!--Group selction attributes-->
+	<aura:attribute name="isGroupMemberAdmin" type="Boolean" default="false" />
+	<aura:attribute name="groupMemberInfoList" type="List" />
+	<aura:attribute name="selectedGroup" type="String" default="None" />
+	<aura:attribute name="collaborationGroupId" type="String" />
+
+	<!-- Lightning datatable attributes record form-->
+	<aura:attribute name="columns" type="List" />
+	<aura:attribute name="recordId" type="String" />
+
+	<!-- Modal Attributes-->
+	<aura:attribute name="errorMessageModal" type="String" />
+	<aura:attribute name="isChallengeModalFooter" type="Boolean" default="false" />
+
+	<!-- New Challenge Modal Attributes-->
+	<aura:attribute name="selectChallengeField" type="String" />
+	<aura:attribute name="lookingWinnerField" type="String" />
+	<aura:attribute name="challengeEndField" type="Date" />
+	<aura:attribute name="isChallengeOtherModal" type="Boolean" default="false" />
+	<aura:attribute name="newChallengeNameField" type="String" />
+
+	<!-- Assign Winner Modal Attributes-->
+	<aura:attribute name="isAssignWinnerModal" type="Boolean" default="false" />
+	<aura:attribute name="selectWinnerField" type="String" />
+	<aura:attribute name="durationField" type="String" />
+	<aura:attribute name="durationStartDateField" type="Date" />
+	<aura:attribute name="winnerCommentField" type="String" />
+
+	<!--Search Winner Attributes-->
+	<aura:attribute name="groupMembersList" type="List" />
+
+	<!-- Delete Modal Attributes-->
+	<aura:attribute name="isDeleteChallengeModal" type="Boolean" default="false" />
+
+	<!-- Component Handler -->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<!-- Spinner -->
+	<aura:if isTrue="{!v.isSpinner}">
+		<center style="z-index: 99">
+			<lightning:spinner variant="brand" alternativeText="Busy" size="large" />
+		</center>
+	</aura:if>
+
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<!--Showing Accordion based on the group selected -->
+	<lightning:accordion>
+		<!--Active challenge accordion section-->
+		<lightning:accordionSection name="Weekly Challenges" label="Active Challenges">
+			<aura:set attribute="actions">
+				<!--Based on the user member role value the button will displayed-->
+				<aura:if isTrue="{!v.isGroupMemberAdmin}">
+					<lightning:button label="New Challenge" iconName="utility:add" iconPosition="left" variant="brand" onclick="{! c.handleNewChallenge }" />
+				</aura:if>
+			</aura:set>
+			<aura:set attribute="body">
+				<!--Data table for the active challenges-->
+				<lightning:layout>
+					<lightning:datatable
+						columns="{! v.columns }"
+						data="{! v.activeWeeklyChallengeList }"
+						keyField="Id"
+						hideCheckboxColumn="true"
+						onrowaction="{! c.challengeRowAction }"
+					/>
+				</lightning:layout>
+			</aura:set>
+		</lightning:accordionSection>
+		<!--Previous challenge accordion section-->
+		<lightning:accordionSection name="Expired Challenges" label="Previous Challenges">
+			<lightning:layout multipleRows="true">
+				<aura:iteration var="challenge" items="{!v.previousWeeklyChallengeList}">
+					<div class="slds-col slds-size_1-of-4 slds-p-around_small">
+						<lightning:card>
+							<aura:set attribute="title">
+								<lightning:icon iconName="custom:custom11" title="custom11" />
+								{! challenge.Select_Challenge__c }
+							</aura:set>
+							<p class="slds-p-horizontal_small">{! challenge.Select_Winner__r.Name }</p>
+						</lightning:card>
+					</div>
+				</aura:iteration>
+			</lightning:layout>
+		</lightning:accordionSection>
+	</lightning:accordion>
+
+	<!-- Challenge modal-->
+	<aura:if isTrue="{!v.isShowModal}">
+		<!-- Modal/Popup Box starts here-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			class="slds-modal slds-fade-in-open slds-modal_small"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+		>
+			<div class="slds-modal__container">
+				<!--Modal/Popup Box Header Starts here-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeModal }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Weekly Challenge</h2>
+				</header>
+				<!--Modal/Popup Box Body Starts here-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<!-- Error Message -->
+					<aura:if isTrue="{!not(empty(v.errorMessageModal))}">
+						<div class="recordError" style="word-wrap: break-word">
+							<br />
+							<h2 class="slds-section__title" style="color: red">{!v.errorMessageModal}</h2>
+							<br />
+						</div>
+					</aura:if>
+					<aura:if isTrue="{!v.isNewChallengeModal}">
+						<!--This is to create new challenge from the modal-->
+						<!--Used record edit form to get the LDS for Collaboration object-->
+						<lightning:recordEditForm objectApiName="Collaboration__c">
+							<lightning:layout multipleRows="true" class="slds-align_absolute-center">
+								<lightning:layoutItem size="8" padding="around-small">
+									<label class="slds-form-element__label" for="selectChallenge">Select a challenge</label>
+									<lightning:inputField
+										aura:id="selectChallenge"
+										fieldName="Select_Challenge__c"
+										variant="label-hidden"
+										value="{!v.selectChallengeField}"
+										onchange="{!c.onchangeSelectChallenge}"
+									/>
+								</lightning:layoutItem>
+								<aura:if isTrue="{!v.isChallengeOtherModal}">
+									<lightning:layoutItem size="8" padding="around-small">
+										<label class="slds-form-element__label" for="challengeName">New challenge name</label>
+										<lightning:inputField
+											aura:id="challengeName"
+											fieldName="Challenge_Name__c"
+											variant="label-hidden"
+											value="{!v.newChallengeNameField}"
+										/>
+									</lightning:layoutItem>
+								</aura:if>
+							</lightning:layout>
+							<lightning:layout multipleRows="true" class="slds-align_absolute-center">
+								<lightning:layoutItem size="8" padding="around-small">
+									<label class="slds-form-element__label" for="endDate">When will the challenge end</label>
+									<lightning:inputField aura:id="endDate" fieldName="End_Date__c" variant="label-hidden" value="{!v.challengeEndField}" />
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout multipleRows="true" class="slds-align_absolute-center">
+								<lightning:layoutItem size="8" padding="around-small">
+									<label class="slds-form-element__label" for="winnerCriteria">What are you looking for in a winner</label>
+									<lightning:inputField
+										aura:id="winnerCriteria"
+										fieldName="Winner_Criteria__c"
+										variant="label-hidden"
+										value="{!v.lookingWinnerField}"
+									/>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout><span></span></lightning:layout>
+						</lightning:recordEditForm>
+						<!--End of the create new challenge-->
+					</aura:if>
+					<aura:if isTrue="{!v.isAssignWinnerModal}">
+						<!--This is to assign winner from the modal-->
+						<!--Used record edit form to get the LDS for Collaboration object-->
+						<lightning:recordEditForm objectApiName="Collaboration__c">
+							<lightning:layout multipleRows="true" class="slds-align_absolute-center">
+								<lightning:layoutItem size="8" padding="around-small">
+									<!-- Dispalying and Selecting the group based on the user Id-->
+									<lightning:select name="selectWinner" label="Select a winner" aura:id="selectWinner" value="{!v.selectWinnerField}">
+										<option value="">None</option>
+										<aura:iteration items="{!v.groupMembersList}" var="member">
+											<option text="{!member.Name}" value="{!member.Id}" selected="{!member.selected}" />
+										</aura:iteration>
+									</lightning:select>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout multipleRows="true" class="slds-align_absolute-center">
+								<lightning:layoutItem size="8" padding="around-small">
+									<label class="slds-form-element__label" for="winnerDuration">How long will this duration</label>
+									<lightning:inputField aura:id="winnerDuration" fieldName="Duration__c" variant="label-hidden" value="{!v.durationField}" />
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout multipleRows="true" class="slds-align_absolute-center">
+								<lightning:layoutItem size="8" padding="around-small">
+									<label class="slds-form-element__label" for="startDate">Winner Start Date</label>
+									<lightning:inputField
+										aura:id="startDate"
+										fieldName="Start_Date__c"
+										variant="label-hidden"
+										value="{!v.durationStartDateField}"
+									/>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout multipleRows="true" class="slds-align_absolute-center">
+								<lightning:layoutItem size="8" padding="around-small">
+									<lightning:inputField fieldName="Comments__c" value="{!v.winnerCommentField}" />
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout><span></span></lightning:layout>
+						</lightning:recordEditForm>
+						<!--End of the assign winner-->
+					</aura:if>
+					<aura:if isTrue="{!v.isDeleteChallengeModal}">
+						<!--This is to delete challenge from the modal-->
+						<force:recordData
+							aura:id="recordHandler"
+							recordId="{!v.recordId}"
+							fields="Id"
+							targetError="{!v.errorMessageModal}"
+							recordUpdated="{!c.handleRecordResponse}"
+						/>
+						<!-- Display the delete confirmation message -->
+						<div class="Delete Record">
+							<lightning:card iconName="action:delete" title="Delete Record">
+								<div>
+									<b> Are you sure you want to Delete the Selected Challenge? </b>
+									<lightning:button label="Delete" variant="destructive" onclick="{!c.handleDeleteChallenge}" />
+								</div>
+							</lightning:card>
+						</div>
+						<!--End of the delete challenge-->
+					</aura:if>
+				</div>
+				<!-- Modal Footer starts here-->
+				<footer class="slds-modal__footer">
+					<aura:if isTrue="{!v.isChallengeModalFooter}">
+						<lightning:button variant="brand" label="Save" title="ADD" onclick="{!c.weeklyChallenge}" aura:id="actionButton" />
+						<lightning:button variant="neutral" label="Cancel" onclick="{!c.closeModal}" />
+					</aura:if>
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--MOdal/PopUp Ends Here-->
+	</aura:if>
+</aura:component>

@@ -1,0 +1,51 @@
+<!--This is the View Insurance Policy Audit Component-->
+<!--@author  Kokesto Mpshane-->
+<!--@Created Date   2021-01-29-->
+<!--@Work Id: W-007415-->
+<aura:component controller="InsurancePolicyAuditController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+	<!--Attribute Declaration-->
+    <aura:attribute name="tableColumns" type="Object[]"/>
+    <aura:attribute name="policyAuditList" type="Insurance_Policy_Audit__c[]"/>
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="policyRecordId" type="String" default="0YT1q0000008OJcGAM"/>
+    <aura:attribute name="pageNumber" type="Integer" default="1"/>
+	<aura:attribute name="pageSize" type="Integer" default="15"/>
+	<aura:attribute name="totalRows" type="Integer" default="0" />
+	<aura:attribute name="isLastPage" type="Boolean" default="false"/>
+    <!--Handler Declaration-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title slds-align_absolute-center" style="color: red">{!v.errorMessage}</h2>
+        </div>
+    </aura:if>
+    
+	<aura:if isTrue="{!v.policyAuditList.length>0}">
+        <div aura:id="actionButtonBar" class="slds-clearfix slds-p-top_medium">
+			<aura:if isTrue="{!v.showLoadingSpinner}">
+				<lightning:spinner alternative-text="Loading" size="small" variant="brand" alternativeText="Processing"/>
+			</aura:if>
+			<lightning:datatable data="{!v.policyAuditList}" columns="{!v.tableColumns}" keyField="id" hideCheckboxColumn="true"/><br/>
+		
+			<!-- Next/Previous pagination action buttons -->
+			<div class="slds-float_left">
+				<aura:if isTrue="true">
+				Page {!v.pageNumber} | Showing records from {!((v.pageNumber-1)*(v.pageSize)+1)+' to'+((v.pageNumber-1)*v.pageSize+v.totalRows)}
+				</aura:if>
+			</div>
+			<div class="slds-float_right">
+				<lightning:button aura:id="Previous" label="Previous" variant="neutral" onclick="{!c.handlePrev}" disabled="{! v.pageNumber == 1}"/>
+				<lightning:button aura:id="Next" label="Next" variant="neutral" onclick="{!c.handleNext}" disabled="{! v.isLastPage}"/>
+			</div>
+			</div>
+    	<aura:set attribute="else">
+          	<!--In Case the is no data on the table-->
+			<ui:message title="No records" severity="info" closable="false">
+				There are no Insurance Policy Financial records
+			</ui:message>
+    	</aura:set>
+      </aura:if>
+    
+</aura:component>

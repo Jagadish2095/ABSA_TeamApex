@@ -1,0 +1,298 @@
+<!--This is the HLDueDateChange for Home Loans-->
+<!--@author  Simangaliso Mathenjwa-->
+<!--@Created Date 16 May 2021 -->
+<!--@Work Id: W-005579 -->
+<aura:component
+	controller="HLDueDateChangeController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+	access="global"
+>
+	<!--Attributes-->
+	<aura:attribute name="dueDaysList" type="List" />
+	<aura:attribute name="selectedDay" type="Integer" />
+	<aura:attribute name="showSpinner" type="Boolean" default="false" />
+	<aura:attribute name="accountNumberFromFlow" type="String" access="global" /><!--default="8050306640"-->
+	<aura:attribute name="primaryAccountId" type="String" access="global" />
+	<aura:attribute name="refNumber" type="Integer" default="12" />
+	<aura:attribute name="schemaCode" type="Integer" access="global" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="showSuccessMessage" type="Boolean" default="false" />
+	<aura:attribute name="getAccountDataFromSF" type="Boolean" default="false" />
+	<aura:attribute name="accountIdFromFlow" type="String" access="global" />
+	<aura:attribute name="accountRecord" type="Object" />
+	<aura:attribute name="accountRecordId" type="String" access="global" />
+	<aura:attribute name="isBusinessAccountFromFlow" type="String" access="global" />
+	<aura:attribute name="clientEmailAddress" type="String" access="global" />
+	<aura:attribute name="emailTemplate" type="String" access="global" default="Contact_Centre_Case_Closed_Auto_Response" />
+	<aura:attribute name="showForm" type="Boolean" default="false" />
+	<aura:attribute name="sendConfirmationEmail" type="Boolean" default="false" access="global" />
+	<aura:attribute name="closeCase" type="Boolean" default="true" access="global" />
+
+	<!--Form fields-->
+	<aura:attribute name="contactName" type="String" access="global" />
+	<aura:attribute name="interestRate" type="String" access="global" />
+	<aura:attribute name="interestRateType" type="String" access="global" />
+	<aura:attribute name="flexiReserveFacility" type="String" access="global" />
+	<aura:attribute name="nameOfScheme" type="String" access="global" />
+	<aura:attribute name="remainingTerm" type="String" access="global" />
+	<aura:attribute name="repaymentDueDay" type="Integer" />
+	<aura:attribute name="serviceFee" type="Double" />
+	<aura:attribute name="advanceAmount" type="Double" />
+	<aura:attribute name="totalRepayment" type="Double" />
+	<aura:attribute name="outstandingBalance" type="Double" />
+	<aura:attribute name="primaryAccountNumber" type="String" access="global" />
+	<aura:attribute name="secondaryAccountList" type="List" />
+
+	<!--Handlers-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<force:recordData aura:id="forceRecords" recordId="{!v.accountIdFromFlow}" targetFields="{!v.accountRecord}" layoutType="FULL" />
+
+	<lightning:recordEditForm aura:id="accountEditForm" objectApiName="Account" recordId="{!v.accountIdFromFlow}" onload="{!c.handleRecordEditFormLoad}">
+		<lightning:inputField aura:id="accountActiveEmailField" fieldName="Active_Email__c" class="slds-hide" />
+		<lightning:inputField aura:id="accountPhoneField" fieldName="Phone" class="slds-hide" />
+		<lightning:inputField aura:id="accountPersonEmailField" fieldName="PersonEmail" class="slds-hide" />
+	</lightning:recordEditForm>
+
+	<aura:if isTrue="{!v.showSpinner}">
+		<center style="z-index: 99">
+			<lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+		</center>
+	</aura:if>
+	<!--Display Errors-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<aura:if isTrue="{!v.showForm}">
+		<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Account Number </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputText aura:id="text-input-id-1" class="field" value="{!v.accountNumberFromFlow}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Contact Name </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputText aura:id="text-input-id-1" class="field" value="{!v.contactName}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Name </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputText aura:id="text-input-id-1" class="field" value="{!v.contactName}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Contact Telephone Number </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputText aura:id="text-input-id-1" class="field" value="{!v.accountRecord.Phone}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Interest Rate </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputText aura:id="text-input-id-1" class="field" value="{!v.interestRate}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Interest Rate type </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputText aura:id="text-input-id-1" class="field" value="{!v.interestRateType}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Flexi Reserve Facility </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputText aura:id="text-input-id-1" class="field" value="{!v.flexiReserveFacility}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Name of Scheme </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputText aura:id="text-input-id-1" class="field" value="{!v.nameOfScheme}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Remaining Term </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputText aura:id="text-input-id-1" class="field" value="{!v.remainingTerm +' Months'}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Repayment Due Day </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputText aura:id="text-input-id-1" class="field" value="{!v.repaymentDueDay}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Service/Admin fee </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputCurrency value="{!v.serviceFee}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Advance amount </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputCurrency value="{!v.advanceAmount}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Total Repayment </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputCurrency value="{!v.totalRepayment}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<span class="slds-form-element__label"> Outstanding Balance </span>
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<ui:outputCurrency value="{!v.outstandingBalance}" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<lightning:select
+								aura:id="targetAccType"
+								value="{!v.selectedDay}"
+								label="New Repayment Due Day"
+								class="slds-float--left slds-m-right_small"
+							>
+								<option value="">--None--</option>
+								<aura:iteration items="{!v.dueDaysList}" var="item">
+									<option text="{!item.label}" value="{!item.value}" />
+								</aura:iteration>
+							</lightning:select>
+							<br />
+							<div class="slds-p-vertical_xx-small slds-p-horizontal_small slds-m-left_x-small">
+								<lightning:button
+									aura:id="submitButton"
+									iconName="utility:date_input"
+									label="Submit"
+									onclick="{!c.handleSubmit}"
+									variant="neutral"
+								/>
+							</div>
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+			<aura:if isTrue="{!v.showSuccessMessage}">
+				<lightning:layoutItem size="4" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<div class="slds-notify slds-notify_toast slds-theme--success">
+									<span class="slds-assistive-text"> </span>
+									<div class="slds-notify__content">
+										<h5 class="slds-text-heading_small slds-align_absolute-right">The Repayment Day was successfully updated to: {!v.selectedDay}</h5>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+			</aura:if>
+		</lightning:layout>
+
+		<!--Table-->
+		<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+			<lightning:layoutItem size="12">
+				<table class="slds-table slds-table--bordered">
+					<thead>
+						<tr>
+							<th>Linked Accounts</th>
+							<th>Account Number</th>
+							<th>Remaining Term(months)</th>
+							<th>Interest Rate(%)</th>
+							<th>Payment Amount(R)</th>
+							<th>Outstanding Balance(R)</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="slds-hint-parent">
+							<td>Primary</td>
+							<td>{!v.accountNumberFromFlow}</td>
+							<td>{!v.remainingTerm}</td>
+							<td>{!v.interestRate}</td>
+							<td>{!v.totalRepayment}</td>
+							<td>{!v.outstandingBalance}</td>
+						</tr>
+						<aura:iteration items="{!v.secondaryAccountList}" var="row" indexVar="rowIndex">
+							<tr class="slds-hint-parent">
+								<td>Secondary</td>
+								<td>{!row.MLB854O_SEC_ACCT_NUMBER}</td>
+								<td>{!row.MLB854O_SEC_ACCT_REM_TERM}</td>
+								<td>{!row.MLB854O_SEC_ACCT_INT_RATE}</td>
+								<td>{!row.MLB854O_SEC_ACCT_PAYMENT}</td>
+								<td>{!row.MLB854O_SEC_ACCT_BAL}</td>
+							</tr>
+						</aura:iteration>
+					</tbody>
+				</table>
+			</lightning:layoutItem>
+		</lightning:layout>
+	</aura:if>
+</aura:component>

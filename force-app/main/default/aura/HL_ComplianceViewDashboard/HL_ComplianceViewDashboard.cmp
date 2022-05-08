@@ -1,0 +1,608 @@
+<!--
+* Lightning Component for Compliance View Dashboard (ComplianceViewDashboard)
+*
+* @author  Sharath Chandra : Absa
+* @version v1.0
+* @since   2021-02-23
+* @W-009448
+-->
+<aura:component controller="ComplianceViewDashboardController"
+                implements="flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction,forceCommunity:availableForAllPageTypes,force:appHostable"
+                access="global" >
+
+    <!--Attribute Initializations-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!--  <aura:handler name="init" value="{!this}" action="{!c.getColumnHeaders}" /> -->
+    <aura:attribute name="currentAccount" type="Account"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="False"/>
+    <aura:attribute name="IsRBBBanker" type="Boolean" default="False"/>
+    <aura:attribute name="isShowInit" type="Boolean" default="False"/>
+    <aura:attribute name="isShowRemediate" type="Boolean" default="False"/>
+    <aura:attribute name="isTrue" type="Boolean" default="False"/>
+    <aura:attribute name="isUpdate" type="Boolean" default="False"/>
+    <aura:attribute name="showSmallSpinner" type="Boolean" default="False"/>
+    <aura:attribute name="showConflictSpinner" type="Boolean" default="False"/>
+    <aura:attribute name="isModalOpen" type="Boolean" default="False"/>
+    <aura:attribute name="showError" type="Boolean" default="False"/>
+    <aura:attribute name="dataFound" type="Boolean" default="True"/>
+    <aura:attribute name="clientSearchResultColumns" type="List"/>
+    <aura:attribute name="missingDocuments" type="List"/>
+    <aura:attribute name="missingData" type="List"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="accountRecord" type="Object" description="The record object to be displayed"/>
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="image" type="String"/>
+    <aura:attribute name="idNum" type="String"/>
+    <aura:attribute name="AccountId" type="String" default="{!v.recordId}"/>
+    <aura:attribute name="fileName" type="String" default="No File Selected.."/>
+    <aura:attribute name="healthStatus" type="String"/>
+    <aura:attribute name="riskRating" type="String"/>
+    <aura:attribute name="fullName" type="String"/>
+    <aura:attribute name="IDNumber" type="String"/>
+    <aura:attribute name="partyType" type="String"/>
+    <aura:attribute name="Title" type="String"/>
+    <aura:attribute name="phone" type="String"/>
+    <aura:attribute name="lastRefreshDate" type="String"/>
+    <aura:attribute name="nextRefreshDate" type="String"/>
+    <aura:attribute name="FICLockStatus" type="String"/>
+    <aura:attribute name="FICAAddressAttestedDate" type="String"/>
+    <aura:attribute name="IdentificationAttestedDate" type="String"/>
+    <aura:attribute name="PEPStatus" type="String"/>
+    <aura:attribute name="partyRelationship" type="String"/>
+    <aura:attribute name="purposeOfAccount" type="String"/>
+    <aura:attribute name="sourceOfFunds" type="String"/>
+    <aura:attribute name="notificationSent" type="String"/>
+    <aura:attribute name="occupation" type="String"/>
+    <aura:attribute name="daysDue" type="String"/>
+    <aura:attribute name="expectedTransactionActivity" type="String"/>
+    <aura:attribute name="errorMessage" type="String"/>
+    <aura:attribute name="fileType" type="String"/>
+    <aura:attribute name="cifAddresses" type="List"/>
+    <aura:attribute name="goldenSourceAddresses" type="List"/>
+    <aura:attribute name="selectedCIFAddress" type="String"/>
+    <aura:attribute name="selectedGoldenSourceAddress" type="String"/>
+    <aura:attribute name="addressName1" type="String"/>
+    <aura:attribute name="addressName2" type="String"/>
+    <aura:attribute name="suburbName" type="String"/>
+    <aura:attribute name="cityName" type="String"/>
+    <aura:attribute name="countryName" type="String"/>
+    <aura:attribute name="postalCode" type="String"/>
+    <aura:attribute name="gAddressName1" type="String"/>
+    <aura:attribute name="gAddressName2" type="String"/>
+    <aura:attribute name="gSuburbName" type="String"/>
+    <aura:attribute name="gCityName" type="String"/>
+    <aura:attribute name="gCountryName" type="String"/>
+    <aura:attribute name="gPostalCode" type="String"/>
+    <aura:attribute name="sbuSegment" type="String"/>
+
+
+    <lightning:accordion>
+        <div>
+            <aura:if isTrue="{!v.showSpinner}">
+                <div class="slds-spinner_container">
+                    <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+                </div>
+            </aura:if>
+            <aura:if isTrue="{!v.dataFound}">
+                <lightning:layout multipleRows="True">
+                    <lightning:layoutItem size="3">
+                        <div class="c-container1">
+                            <lightning:card >
+                                <div class="c-con">
+                                    <h2><b style="font-size:120%">Personal Details</b></h2>
+                                    <img class="slds-align_absolute-center" src="{!v.image}" width="125" height="155"/>
+                                    <br/><br/><br/><br/><br/>ID Number:<br/>
+                                    <div class="slds-border_bottom"><b><lightning:formattedText value="{!v.IDNumber}"/></b></div>
+
+                                    <br/>Title:<br/>
+                                    <aura:if isTrue="{!and(v.Title != null, v.Title != '')}">
+                                        <div class="slds-border_bottom"><b><lightning:formattedText value="{!v.Title}"/></b></div>
+                                        <aura:set attribute="else">
+                                            <div class="slds-border_bottom"><b><lightning:formattedText value="Still to be captured"/></b></div>
+                                        </aura:set>
+                                    </aura:if>
+
+                                    <br/>Party Relationship:<br/>
+                                    <aura:if isTrue="{!and(v.partyType != null, v.partyType != '')}">
+                                        <div class="slds-border_bottom"><b><lightning:formattedText value="{!v.partyType}"/></b></div>
+                                        <aura:set attribute="else">
+                                            <div class="slds-border_bottom"><b><lightning:formattedText value="NA"/></b></div>
+                                        </aura:set>
+                                    </aura:if>
+
+                                    <br/>Party SubType:<br/>
+                                    <aura:if isTrue="{!and(v.partySubType != null, v.partySubType != '')}">
+                                        <div class="slds-border_bottom"><b><lightning:formattedText value="{!v.partySubType}"/></b></div>
+                                        <aura:set attribute="else">
+                                            <div class="slds-border_bottom"><b><lightning:formattedText value="Still to be captured"/></b></div>
+                                        </aura:set>
+                                    </aura:if>
+
+                                    <br/>Occupation:<br/>
+                                    <aura:if isTrue="{!and(v.occupation != '', v.occupation != null)}">
+                                        <b><lightning:formattedText value="{!v.occupation}"/></b>
+                                        <aura:set attribute="else">
+                                            <b><lightning:formattedText value="NA"/></b>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>
+                            </lightning:card>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="3">
+                        <div class="c-container">
+                            <lightning:card>
+                                <div class="custom-box pad" onclick="{!c.clickHandler}">
+                                    <br/>
+                                    <lightning:icon size="medium" iconName="utility:package_org"/>
+                                    <br/><br/>
+                                    Compliance Status<br/>
+                                    <b style="font-size:100%"><lightning:formattedText value="{!v.healthStatus}"/></b>
+                                    <aura:if isTrue="{!v.healthStatus == 'PartialCompliant'}">
+                                        <hr style="height:4px;background-color:orange"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.healthStatus == 'NonCompliant'}">
+                                                <hr style="height:4px;background-color:#b31b1b"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.healthStatus == 'Compliant'}">
+                                                        <hr style="height:4px;background-color:green"/>
+                                                        <aura:set attribute="else">
+                                                            <hr style="height:4px;background-color:#b31b1b"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>
+                            </lightning:card>
+                        </div>
+                        <div class="c-container">
+                            <lightning:card>
+                                <div class="custom-box pad">
+                                    <br/>
+                                    <lightning:icon size="medium" iconName="utility:dayview"/>
+                                    <br/><br/>
+                                    Days to Anniversary
+                                    <br/>
+                                    <aura:if isTrue="{!v.daysDue != ''}" >
+                                        <aura:if isTrue="{!v.daysDue > 0}">
+                                            <b style="font-size:100%"><lightning:formattedText value="{!v.daysDue + ' Days ' + ' - Prior to Due'}"/></b>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!v.daysDue == 0}" >
+                                                    <b style="font-size:100%"><lightning:formattedText value="Due"/></b>
+                                                    <aura:set attribute="else">
+                                                        <aura:if isTrue="{!lessthan(v.daysDue, 0)}" >
+                                                            <b style="font-size:100%"><lightning:formattedText value="{!v.daysDue + ' Days ' + ' - Over Due'}"/></b>
+                                                        </aura:if>
+                                                    </aura:set>
+                                                </aura:if>
+
+                                            </aura:set>
+                                        </aura:if>
+
+                                        <aura:set attribute="else">
+                                            <b style="font-size:100%"><lightning:formattedText value="NA"/></b>
+                                        </aura:set>
+                                    </aura:if>
+                                    <br/>
+                                    <aura:if isTrue="{!v.daysDue > 120}">
+                                        <hr style="height:4px;background-color:green"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{ !and(lessthan(v.daysDue,119), (v.daysDue > 60)) }">
+                                                <hr style="height:4px;background-color:yellow"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!and(lessthan(v.daysDue, 59), (v.daysDue > 30)) }">
+                                                        <hr style="height:4px;background-color:orange"/>
+                                                        <aura:set attribute="else">
+                                                            <hr style="height:4px;background-color:#b31b1b"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>
+                            </lightning:card>
+                        </div>
+                        <div class="c-container">
+                            <lightning:card>
+                                <div class="custom-box pad" style="padding-bottom: 12px;">
+                                    <br/>
+                                    <lightning:icon size="medium" iconName="utility:user"/>
+                                    <br/><br/>
+                                    Identification Attested Date:<br/>
+                                    <aura:if isTrue="{!and(v.IdentificationAttestedDate != '', v.IdentificationAttestedDate != null)}">
+                                        <b style="font-size:100%"><lightning:formattedText value="{!v.IdentificationAttestedDate}"/></b>
+                                        <aura:set attribute="else">
+                                            <b style="font-size:100%"><lightning:formattedText value="NA"/></b>
+                                        </aura:set>
+                                    </aura:if>
+                                    <br/><br/>
+                                </div>
+                            </lightning:card>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="3">
+                        <div class="c-container">
+                            <lightning:card>
+                                <div class="custom-box pad">
+                                    <br/>
+                                    <lightning:icon size="medium" iconName="utility:warning"/>
+                                    <br/><br/>
+                                    Risk Category<br/>
+                                    <aura:if isTrue="{!and(v.riskRating != '', v.riskRating != null)}">
+                                        <b style="font-size:100%"><lightning:formattedText value="{!v.riskRating}"/></b>
+                                        <aura:set attribute="else">
+                                            <b style="font-size:100%"><lightning:formattedText value="NA"/></b>
+                                        </aura:set>
+                                    </aura:if>
+
+                                    <aura:if isTrue="{!or(v.riskRating == 'Low' , v.riskRating == 'Very Low')}">
+                                        <hr style="height:4px;background-color:green"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.riskRating == 'Medium'}">
+                                                <hr style="height:4px;background-color:orange"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.riskRating == 'High' || v.riskRating == 'Very High' }">
+                                                        <hr style="height:4px;background-color:#b31b1b"/>
+                                                        <aura:set attribute="else" >
+                                                            <hr style="height:4px;background-color:#b31b1b"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>
+                            </lightning:card>
+                        </div>
+                        <div class="c-container">
+                            <lightning:card>
+                                <div class="custom-box pad">
+                                    <br/>
+                                    <lightning:icon size="medium" iconName="utility:push"/>
+                                    <br/><br/>
+                                    Party Engagement History
+                                    <br/>
+                                    <aura:if isTrue="{!and(v.notificationSent != '', v.notificationSent != null)}" >
+                                        <b style="font-size:100%"><lightning:formattedText value="{!v.notificationSent}"/></b>
+                                        <aura:set attribute="else">
+                                            <b style="font-size:100%"><lightning:formattedText value="NA"/></b>
+                                        </aura:set>
+                                    </aura:if>
+                                    <br/>
+                                    <aura:if isTrue="{!v.notificationSent != ''}">
+                                        <hr style="height:4px;background-color:green"/>
+                                        <aura:set attribute="else">
+                                            <hr style="height:4px;background-color:#b31b1b"/>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>
+                            </lightning:card>
+                        </div>
+                        <div class="c-container">
+                            <lightning:card>
+                                <div class="custom-box pad" style="padding-bottom: 12px;">
+                                    <br/>
+                                    <lightning:icon size="medium" iconName="utility:sync"/>
+                                    <br/><br/>
+                                    Refresh Dates:<br/>
+                                    <b style="font-size:100%">
+                                        Last:&nbsp;
+                                        <aura:if isTrue="{!and(v.lastRefreshDate != null, v.lastRefreshDate != '')}">
+                                            <lightning:formattedText value="{!v.lastRefreshDate}"/>
+                                            <aura:set attribute="else">
+                                                <lightning:formattedText value="NA"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </b><br/>
+                                    <b style="font-size:100%">
+                                        Next:&nbsp;
+                                        <aura:if isTrue="{!and(v.nextRefreshDate != null, v.nextRefreshDate != '')}">
+                                            <lightning:formattedText value="{!v.nextRefreshDate}"/>
+                                            <aura:set attribute="else">
+                                                <lightning:formattedText value="NA"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </b>
+                                </div>
+                            </lightning:card>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="3">
+                        <div class="c-container">
+                            <lightning:card>
+                                <div class="custom-box pad">
+                                    <br/>
+                                    <aura:if isTrue="{!v.FICLockStatus == 'No Lock'}">
+                                        <lightning:icon size="medium" iconName="utility:unlock"/>
+                                        <aura:set attribute="else">
+                                            <lightning:icon size="medium" iconName="utility:lock"/>
+                                        </aura:set>
+                                    </aura:if>
+                                    <br/><br/>FICA Lock Status<br/>
+                                    <aura:if isTrue="{!and(v.FICLockStatus != '', v.FICLockStatus != null)}">
+                                        <b style="font-size:100%"><lightning:formattedText value="{!v.FICLockStatus}"/></b>
+                                        <aura:set attribute="else">
+                                            <b style="font-size:100%"><lightning:formattedText value="NA"/></b>
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.FICLockStatus == 'No Lock'}">
+                                        <hr style="height:4px;background-color:green"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.FICLockStatus == 'Soft Lock'}">
+                                                <hr style="height:4px;background-color:orange"/>
+                                                <aura:set attribute="else">
+                                                    <hr style="height:4px;background-color:#b31b1b"/>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>
+                            </lightning:card>
+                        </div>
+                        <div class="c-container">
+                            <lightning:card>
+                                <div class="custom-box pad" style="padding-bottom: 8px;">
+                                    <br/>
+                                    <lightning:icon size="medium" iconName="utility:checkin"/>
+                                    <br/><br/>
+                                    FICA Address Attested Date:<br/>
+                                    <aura:if isTrue="{!and(v.FICAAddressAttestedDate != '',v.FICAAddressAttestedDate != null)}">
+                                        <b style="font-size:100%"><lightning:formattedText value="{!v.FICAAddressAttestedDate}"/></b>
+                                        <aura:set attribute="else">
+                                            <b style="font-size:100%"><lightning:formattedText value="NA"/></b>
+                                        </aura:set>
+                                    </aura:if>
+                                    <br/><br/>
+                                </div>
+                            </lightning:card>
+                        </div>
+                        <div class="c-container">
+                            <lightning:card>
+                                <div class="custom-box pad1" style="padding-bottom: 29px;">
+                                    <br/>
+                                    <lightning:icon size="medium" iconName="utility:help"/>
+                                    <br/><br/>
+                                    Purpose of Account
+                                    <br/>
+                                    <aura:if isTrue="{!and(v.purposeOfAccount != '', v.purposeOfAccount != null)}" >
+                                        <b style="font-size:100%"><lightning:formattedText value="{!v.purposeOfAccount}"/></b>
+                                        <aura:set attribute="else">
+                                            <b style="font-size:100%"><lightning:formattedText value="NA"/></b>
+                                        </aura:set>
+                                    </aura:if>
+                                    <br/>
+                                </div>
+                            </lightning:card>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6">
+                        <div class="c-container" style="padding-bottom: 86px">
+                            <lightning:card>
+                                <div class="custom-box pad">
+                                    <b style="font-size:100%">Expected Account Activity</b>
+                                    <br/>
+                                    <aura:if isTrue="{!and(v.expectedTransactionActivity != '', v.expectedTransactionActivity != null)}">
+                                        <p style="font-size:95%; padding-bottom:2%;"><lightning:formattedText value="{!v.expectedTransactionActivity}"/></p>
+                                        <aura:set attribute="else">
+                                            <p style="font-size:95%; padding-bottom:2%;"><lightning:formattedText value="NA"/></p>
+                                        </aura:set>
+                                    </aura:if>
+                                    <br/><br/>
+                                </div>
+                            </lightning:card>
+                        </div>
+                    </lightning:layoutItem>
+                  <!--  <aura:if isTrue="{!v.sbuSegment =='99' }">-->
+                        <aura:if isTrue="{!v.healthStatus == 'NonCompliant'}">
+                            <lightning:layoutItem size="3">
+                                <div class="c-container" >
+                                    <lightning:card>
+                                        <div class="custom-box pad" style="padding-bottom: 8px;">
+
+                                            <br/>
+                                            <lightning:icon size="medium" iconName="utility:error"/>
+                                            <br/><br/>
+                                            Service request blocked<br/>
+                                            <b style="font-size:100%">   <lightning:formattedText value=" Unable to perform service requests until status is resolved"/></b>
+                                        </div>
+                                    </lightning:card>
+                                </div>
+                            </lightning:layoutItem>
+                        </aura:if>
+                <!--    </aura:if>-->
+                    <aura:if isTrue="{!v.IsRBBBanker}">
+                        <lightning:layoutItem size="3">
+                            <div class="c-container">
+                                <lightning:card>
+                                    <div class="custom-box pad">
+                                        <br/>
+                                        <lightning:icon size="medium" iconName="utility:target"/>
+                                        <br/><br/>
+                                        PEP Status<br/>
+                                        <aura:if isTrue="{!and(v.PEPStatus != '', v.PEPStatus != null)}">
+                                            <b style="font-size:100%"><lightning:formattedText value="{!v.PEPStatus}"/></b>
+                                            <aura:set attribute="else">
+                                                <b style="font-size:100%"><lightning:formattedText value="NA"/></b>
+                                            </aura:set>
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(v.PEPStatus == 'Sensitive' , v.PEPStatus == 'No')}">
+                                            <hr style="height:4px;background-color:green"/>
+                                            <aura:set attribute="else">
+                                                <hr style="height:4px;background-color:#b31b1b"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                </lightning:card>
+                            </div>
+                        </lightning:layoutItem>
+                    </aura:if>
+                    <lightning:layoutItem size="3">
+                        <div class="c-container" >
+                            <lightning:card>
+                                <div class="custom-box pad1" style="padding-bottom: 25px;">
+                                    <br/>
+                                    <lightning:icon size="medium" iconName="utility:moneybag"/>
+                                    <br/><br/>
+                                    Source Of Funds
+                                    <br/>
+                                    <aura:if isTrue="{!and(v.sourceOfFunds != '', v.sourceOfFunds != null)}" >
+                                        <b style="font-size:100%"><lightning:formattedText value="{!v.sourceOfFunds}"/></b>
+                                        <aura:set attribute="else">
+                                            <b style="font-size:100%"><lightning:formattedText value="NA"/></b>
+                                        </aura:set>
+                                    </aura:if>
+                                    <br/><br/><br/>
+                                </div>
+                            </lightning:card>
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+              <!--  <aura:if isTrue="{!v.sbuSegment !='99' }">-->
+
+               <!-- </aura:if>-->
+                <!--to display the attachment upload pop-up -->
+                <aura:if isTrue="{!v.isTrue}">
+                    <div class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <div class="slds-modal__header">
+                                <h2 class="title slds-text-heading--medium">Upload Document</h2>
+                            </div>
+                            <div class="slds-modal__content slds-p-around--medium">
+                                <lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" type="file" name="file"
+                                                 accept=".pdf" label="Upload Document" multiple="false"/>
+                                <div class="slds-text-body_small slds-text-color_error">{!v.fileName}</div>
+                                <!--use aura:if for show-hide the loading spinner image-->
+                                <aura:if isTrue="{!v.showSmallSpinner}">
+                                    <div class="slds-text-body_small slds-text-color_error">Uploading...
+                                        <img src="/auraFW/resources/aura/images/spinner.gif" class="spinner-img" alt="Loading"/>'
+                                    </div>
+                                </aura:if>
+                                <button class="slds-button slds-button_brand" onclick="{!c.doSave}">Upload Attachment</button>
+                            </div>
+                            <div class="slds-modal__footer">
+                                <lightning:button variant="neutral" iconName="utility:close" label="Cancel" onclick="{!c.closeModel}"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+
+                <!--Resolve conflicts section-->
+                <aura:if isTrue="{!v.isModalOpen}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header ">
+                                <h2 class="title slds-text-heading--medium">Select The Correct Information</h2>
+                            </header>
+                            <!--Modal/Popup Box Body Starts here-->
+                            <div class="slds-modal__content slds-p-around_large" id="modal-content-id-1">
+                                <table class="slds-table" style="border: 1px solid #efe7e8;">
+                                    <thead>
+                                    <tr style="border: 1px solid #efe7e8;">
+                                        <th>Conflicting Information</th>
+                                        <th>CIF</th>
+                                        <th>Golden Source</th>
+                                    </tr>
+                                    </thead>
+                                    <tr style="border: 1px solid #efe7e8;">
+                                        <td>Address</td>
+                                        <td>
+                                            <lightning:radioGroup name="radioGroup"
+                                                                  label=""
+                                                                  options="{!v.cifAddresses}"
+                                                                  value="{!v.selectedCIFAddress}"
+                                                                  type="radio"/>
+                                        </td>
+                                        <td>
+                                            <lightning:radioGroup name="radioGroup"
+                                                                  label=""
+                                                                  options="{!v.goldenSourceAddresses}"
+                                                                  value="{!v.selectedGoldenSourceAddress}"
+                                                                  type="radio"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div>
+                                    <p><br/><br/></p>
+                                </div>
+                            </div>
+                            <!--Modal/Popup Box Footer Starts here-->
+                            <footer class="slds-modal__footer slds-modal__footer_directional">
+                                <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{!c.closeModal}"/>
+                                <lightning:button variant="brand" label="Proceed with attestation" title="OK" onclick="{!c.submitDetails}"/>
+                                <aura:if isTrue="{!v.showConflictSpinner}">
+                                    <div class="slds-text-body_small slds-text-color_error">Resolving Confilcts...
+                                        <img src="/auraFW/resources/aura/images/spinner.gif" class="spinner-img" alt="Loading"/>'
+                                    </div>
+                                </aura:if>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+
+                <!--Various button invocations -->
+                <div style="padding-left:500px; padding-top:15px; padding-bottom:5px">
+                    <lightning:layout multipleRows="False" >
+                        <!--Remediate Client button - START -->
+                        <!--Commenting the Resolve Remediate buttons as the Compliance status is only dependent on Documents by Mohammed Junaid U -->
+                        <!--   <lightning:layoutItem size="4">
+                               <aura:if isTrue="{!or(or(not(empty(v.missingData)), empty(v.missingDocuments)), and(not(empty(v.missingData)), not(empty(v.missingDocuments))))}">
+                                   <lightning:button variant="brand" label="Remediate Client" title="Remediate Client" onclick="{!c.initiateRemediate}"/>
+                                   <aura:if isTrue="{!v.isShowRemediate}">
+                                       <c:RemediateCustomer isShowRemediate="{!v.isShowRemediate}" recordId="{!v.recordId}"/>
+                                   </aura:if>
+                               </aura:if>
+                           </lightning:layoutItem> -->
+                        <!--Remediate Client button - END -->
+
+                        <!--Resolve conflicts button - START -->
+                        <!--Commenting the Resolve Conflicts buttons as the Compliance status is only dependent on Documents by Mohammed Junaid U -->
+                        <!--  <lightning:layoutItem size="4">
+                              <aura:if isTrue="{!or(not(empty(v.cifAddresses)), not(empty(v.goldenSourceAddresses)))}">
+                                  <lightning:button variant="brand" label="Resolve Conflicts" title="Resolve Conflicts" onclick="{!c.openModal}" />
+                              </aura:if>
+                          </lightning:layoutItem> -->
+                        <!--Resolve conflicts button - END -->
+
+                        <!--Attest Client button - START -->
+                        <lightning:layoutItem size="4">
+                            <aura:if isTrue="{!v.healthStatus == 'Compliant'}">
+                                <lightning:button variant="brand" label="Attest Client" title="Attest Client" onclick="{!c.initiateRefresh}"/>
+                                <aura:if isTrue="{!v.isShowInit}">
+                                    <c:FICManualUserRefresh isShowInit="{!v.isShowInit}" recordId="{!v.recordId}"/>
+                                </aura:if>
+                            </aura:if>
+                        </lightning:layoutItem>
+                        <!--Attest Client button - END -->
+                    </lightning:layout>
+                </div>
+
+                <aura:set attribute="else">
+                    <!-- Show the message to ui in case of any errors-->
+                    <aura:if isTrue="{!v.showError}">
+                        <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                            <span class="slds-assistive-text">error</span>
+                            <h1>Error : {!v.errorMessage}</h1>
+                        </div>
+                    </aura:if>
+                </aura:set>
+
+            </aura:if>
+        </div>
+       <!-- <aura:if isTrue="{!v.sbuSegment =='99' }">-->
+            <lightning:layout>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <div class="slds-float_right">
+                        <aura:if isTrue="{!v.healthStatus != 'Compliant'}">
+                            <lightning:button variant="destructive" label="Resolve Status" title="Resolve Status" onclick="{!c.navigatetoAttest}"/>
+                        </aura:if>
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>
+     <!--   </aura:if>-->
+    </lightning:accordion>
+</aura:component>

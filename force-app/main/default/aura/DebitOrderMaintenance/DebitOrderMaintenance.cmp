@@ -1,0 +1,314 @@
+<!--
+* Lightning Component for Debit order detail changes (DebitOrderMaintenance)
+*
+* @author  Humbelani Denge : Absa
+* @version v1.0
+* @since   2020-10-23
+*
+-->
+<aura:component
+	controller="DebitOrderMaintenanceController"
+	implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes,force:hasRecordId"
+	access="global"
+>
+	<!--Attribute Initializations-->
+	<aura:attribute name="policyStatus" type="String" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="selTabId" type="string" default="1" />
+	<aura:attribute name="isHomeLoanProduct" type="Boolean" />
+	<aura:attribute name="isAbsaLifeProduct" type="Boolean" />
+	<aura:attribute name="dynamicLabel" type="String" />
+	<aura:attribute name="emailFromFlow" type="String" access="global" />
+	<aura:attribute name="productNameFromFlow" type="String" access="global" />
+	<aura:attribute name="productTypeFromFlow" type="String" access="global" />
+	<aura:attribute
+		name="idsToValidate"
+		type="List"
+		default="['dayOfPaymentPicklist','branchCodeField','accountHoldersNameField', 'accountNumberField','accountTypePicklist']"
+	/>
+	<aura:attribute name="curInsDueDay" type="Date" />
+	<aura:attribute name="curInstallment" type="Decimal" />
+	<aura:attribute name="caseId" type="String" access="global" />
+	<aura:attribute name="combiNumberFromFlow" type="String" default="" access="global" />
+	<aura:attribute name="accountNumberFromFlow" type="String" default="" access="global" />
+	<aura:attribute name="record" type="Object" />
+	<aura:attribute name="simpleRecord" type="Object" />
+	<aura:attribute name="accountTypes" type="List" />
+	<aura:attribute name="debitOrderDays" type="List" />
+	<aura:attribute name="accountType" type="String" />
+	<aura:attribute name="recordError" type="String" />
+	<aura:attribute name="bankName" type="String" />
+	<aura:attribute name="branchName" type="String" />
+	<aura:attribute name="branchCode" type="String" />
+	<aura:attribute name="accountNumber" type="String" />
+	<aura:attribute name="accountHolderName" type="String" />
+	<aura:attribute name="commencementDate" type="Date" />
+	<aura:attribute name="premiumFrequency" type="String" />
+	<aura:attribute name="policyPremium" type="Currency" />
+	<aura:attribute name="premiumCollectionDay" type="Integer" />
+	<aura:attribute name="sourceOfIncome" type="String" />
+	<aura:attribute name="sourceOfFund" type="String" />
+	<aura:attribute name="clientCode" type="String" />
+	<aura:attribute name="showConfirmation" type="Boolean" default="false" />
+	<aura:attribute name="bankingDetailsTabLoaded" type="Boolean" default="false" />
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+	<aura:attribute name="bankDetailsChanged" type="boolean" default="false" />
+	<aura:attribute name="exergyBankName" type="String" />
+	<aura:attribute name="exergyBankId" type="String" />
+	<aura:attribute name="exergyBranchId" type="String" />
+    <aura:attribute name="saveBtnDisabled" type="Boolean" Default= "False"/>
+	<!--Handler Declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}" />
+	<aura:handler name="change" value="{!v.bankName}" action="{!c.handleBankChange}" />
+
+	<force:recordData
+		aura:id="caseRecordLoader"
+		recordId="{!v.caseId}"
+		targetFields="{!v.simpleRecord}"
+		targetError="{!v.recordError}"
+		fields="Id,Status"
+		mode="EDIT"
+	/>
+
+	<lightning:tabset selectedTabId="{!v.selTabId}">
+		<lightning:tab label="{!v.dynamicLabel}" id="1">
+			<!-- Lightning Spinner -->
+			<aura:if isTrue="{!v.showSpinner}">
+				<lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+			</aura:if>
+
+			<lightning:layout multipleRows="true">
+				<aura:if isTrue="{!v.isAbsaLifeProduct}">
+					<!-- Commencement Date -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem size="5" padding="around-small">
+							<lightning:input
+								type="date"
+								aura:id="commencementDateField"
+								label="Commencement Date"
+								value="{!v.commencementDate}"
+								disabled="true"
+							/>
+						</lightning:layoutItem>
+					</div>
+					<!-- Payment Frequency -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem padding="around-small" size="5">
+							<lightning:input
+								type="String"
+								aura:id="paymentFrequencyField"
+								label="Premium Frequency"
+								value="{!v.premiumFrequency}"
+								disabled="true"
+							/>
+						</lightning:layoutItem>
+					</div>
+
+					<!-- Premium -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem size="5" padding="around-small">
+							<lightning:input type="currency" aura:id="premiumAmountField" label="Premium" value="{!v.policyPremium}" disabled="true" />
+						</lightning:layoutItem>
+					</div>
+
+					<!-- Day Of Payment -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem padding="around-small" size="5">
+							<lightning:select
+								aura:id="dayOfPaymentPicklist"
+								name="CollectionDay"
+								label="Day Of Payment"
+								value="{!v.premiumCollectionDay}"
+								onchange="{!c.onPickListDebitDayChange}"
+								required="true"
+								disabled="{!v.policyStatus == 'Inactive'}"
+							>
+								<aura:iteration items="{!v.debitOrderDays}" var="item">
+									<option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.premiumCollectionDay}" />
+								</aura:iteration>
+							</lightning:select>
+						</lightning:layoutItem>
+					</div>
+				</aura:if>
+				<aura:if isTrue="{!not(v.isAbsaLifeProduct)}">
+					<!-- Current Installment Due Date -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem size="5" padding="around-small">
+							<lightning:input type="date" name="curInsDueDay" label="Current Installment Due Date" value="{! v.curInsDueDay }" readonly="true" />
+						</lightning:layoutItem>
+					</div>
+					<!-- Current Installment -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem size="5" padding="around-small">
+							<lightning:input type="number" name="curInstallment" label="Current Installment" value="{!v.curInstallment}" readonly="true" />
+						</lightning:layoutItem>
+					</div>
+					<!-- Display Lightning Data Service errors -->
+					<aura:if isTrue="{!not(empty(v.recordError))}">
+						<div class="recordError">{!v.recordError}</div>
+					</aura:if>
+				</aura:if>
+				<aura:if isTrue="{!not(v.isAbsaLifeProduct)}">
+					<div class="slds-m-top_medium slds-m-bottom_medium">
+						<lightning:button class="slds-float--right" variant="brand" label="Close Case" title="Close Case" onclick="{! c.handleCloseCase }" />
+					</div>
+				</aura:if>
+			</lightning:layout>
+		</lightning:tab>
+		<aura:if isTrue="{!v.isAbsaLifeProduct}">
+			<lightning:tab label="Banking Details" id="2" onactive="{!c.onBankingDetailsTabActive}">
+				<lightning:layout multipleRows="true">
+					<!-- Status -->
+					<div class="slds-col slds-size_12-of-12">
+						<lightning:layoutItem size="5" padding="around-small">
+							<lightning:input type="text" aura:id="status" label="Policy Status" value="{!v.policyStatus}" disabled="true" />
+						</lightning:layoutItem>
+					</div>
+					<!-- Bank Name -->
+					<div class="'slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem padding="around-small" size="5">
+							<label class="slds-float_left" padding="around-small"><span style="color: red" align="left">*</span>Bank Name </label>
+							<c:customLookUp aura:id="customLookUpCmp" IconName="custom:custom17" selectedRecord="{!v.bankName}" />
+						</lightning:layoutItem>
+					</div>
+					<!-- Branch Name -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem padding="around-small" size="5">
+							<label class="slds-float_left" padding="around-small"><span style="color: red" align="left">*</span>Branch Name </label>
+							<c:dependentCutomLookup
+								aura:id="dependentCutomLookupCmp"
+								dselectedBankName="{!v.bankName}"
+								IconName="custom:custom16"
+								selectedRecord="{!v.branchName}"
+							/>
+						</lightning:layoutItem>
+					</div>
+					<!-- Branch Code -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem size="5" padding="around-small">
+							<lightning:input
+								type="text"
+								aura:id="branchCodeField"
+								label="Branch Code"
+								value="{!v.branchCode}"
+								required="true"
+								disabled="true"
+							/>
+						</lightning:layoutItem>
+					</div>
+
+					<!-- Account Type -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem padding="around-small" size="5">
+							<lightning:select
+								aura:id="accountTypePicklist"
+								name="Account Type"
+								label="Account Type"
+								value="{!v.accountType}"
+								onchange="{!c.onPicklistAccTypeChange}"
+								required="true"
+								disabled="{!v.policyStatus == 'Inactive'}"
+							>
+								<aura:iteration items="{!v.accountTypes}" var="item">
+									<option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.accountType}" />
+								</aura:iteration>
+							</lightning:select>
+						</lightning:layoutItem>
+					</div>
+					<!-- Account Number -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem size="5" padding="around-small">
+							<lightning:input
+								type="text"
+								aura:id="accountNumberField"
+								label="Account Number"
+								value="{!v.accountNumber}"
+								required="true"
+								disabled="{!v.policyStatus == 'Inactive'}"
+							/>
+						</lightning:layoutItem>
+					</div>
+					<!-- Account holders name -->
+					<div class="slds-col slds-size_12-of-12" padding="around-small">
+						<lightning:layoutItem size="5" padding="around-small">
+							<lightning:input
+								type="text"
+								aura:id="accountHoldersNameField"
+								label="Account holders name"
+								value="{!v.accountHolderName}"
+								required="true"
+								disabled="{!v.policyStatus == 'Inactive'}"
+							/>
+						</lightning:layoutItem>
+					</div>
+					<!-- confirm Bank Detail Changes and make call out -->
+					<lightning:layoutItem size="4" padding="around-small">
+						<lightning:button
+							variant="brand"
+							class="slds-align_absolute-left"
+							label="Save"
+							title="Save"
+							onclick="{!c.validateRequiredFields}"
+							aura:id="saveBtn"
+							disabled="{!v.saveBtnDisabled}"
+						/>
+					</lightning:layoutItem>
+					<!-- Error message-->
+					<aura:if isTrue="{!or(v.policyStatus == 'Inactive', v.policyStatus == 'Not in force')}">
+						<div class="slds-col slds-size_12-of-12" padding="around-small" aura:id="errorMsg">
+							<lightning:layoutItem size="12" padding="around-small">
+								<h4 class="slds-section__title slds-align_absolute-left" style="color: red">Cannot perform update on inactive policy!</h4>
+							</lightning:layoutItem>
+						</div>
+					</aura:if>
+				</lightning:layout>
+			</lightning:tab>
+		</aura:if>
+		<!-- Error Message -->
+		<aura:if isTrue="{!not(empty(v.errorMessage))}">
+			<div class="slds-box slds-theme_error">
+				<div class="slds-notify__content">
+					<h2 class="slds-text-heading_small slds-align_absolute-center">Error</h2>
+					<br />
+					<p class="slds-align_absolute-center">{!v.errorMessage}</p>
+				</div>
+			</div>
+		</aura:if>
+	</lightning:tabset>
+	<!--Confirmation-Dialog-->
+	<aura:if isTrue="{!v.showConfirmation}">
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+			<aura:if isTrue="{!v.showSpinner}">
+				<lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+			</aura:if>
+			<div class="slds-modal__container">
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						size="large"
+						variant="bare"
+						onclick="{! c.handleCancelClick }"
+						alternativeText="Close"
+						class="slds-modal__close slds-button_icon-inverse"
+					/>
+					<h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Confirmation of Changes</h2>
+					<p class="slds-m-top_x-small">The new debit order details of the policy are as follows.</p>
+				</header>
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>Banking Name: {!v.bankName}</p>
+					<p>Branch Code: {!v.branchCode}</p>
+					<p>Account Type: {!v.accountType}</p>
+					<p>Account Holder: {!v.accountHolderName}</p>
+					<p>Account Number: {!v.accountNumber}</p>
+					<p>Day of Payment: {!v.premiumCollectionDay}</p>
+				</div>
+				<footer class="slds-modal__footer">
+					<button class="slds-button slds-button_neutral" onclick="{!c.handleCancelClick}">Cancel</button>
+					<button class="slds-button slds-button_brand" onclick="{!c.handleOkClick}">Ok</button>
+				</footer>
+			</div>
+		</section>
+	</aura:if>
+</aura:component>

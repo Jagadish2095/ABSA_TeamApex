@@ -1,0 +1,282 @@
+<!--This is the Payment Component for Everyday Banking - Telephone Banking-->
+<!--@author  Simangaliso Mathenjwa-->
+<!--@Created Date   01 March 2021-->
+<!--@Work Id: W-009112 and W-015795 -->
+<aura:component
+	controller="AbsaRewardsCloseOrEscalateCTRL"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+	access="global"
+>
+	<!--Attributes-->
+	<aura:attribute
+		name="solvedRadioOptions"
+		type="List"
+		default="[{'label': 'I was able to solve the client\'s query', 'value': 'Solved'},{'label': 'I was not able to solve the client\'s query, the case needs to be escalated', 'value': 'Unsolved'}]"
+	/>
+	<aura:attribute
+		name="approvedDeclinedOptions"
+		type="List"
+		default="[{'label': 'Approved', 'value': 'Approved'},{'label': 'Declined', 'value': 'Declined'}]"
+	/>
+	<aura:attribute
+		name="outOfStockOptions"
+		type="List"
+		default="[{'label': 'Wait for the voucher to be restocked', 'value': 'wait'},{'label': 'Select an alternative voucher', 'value': 'selectAlternateVoucher'}]"
+	/>
+	<aura:attribute name="errorMessage" type="string" access="global" />
+	<aura:attribute name="caseIdFromFlow" type="string" access="global" />
+	<aura:attribute name="escalationEmailAddressFromFlow" type="string" access="global" />
+	<aura:attribute name="approvalReasonsValue" type="string" access="global" />
+	<aura:attribute name="declineReasonsValue" type="string" access="global" />
+	<aura:attribute name="declineReasonOptions" type="List" access="global" />
+	<aura:attribute name="approvalReasonOptions" type="List" access="global" />
+	<aura:attribute name="escalatedFromFlow" type="boolean" access="global" default="false" />
+	<aura:attribute name="columnList" type="List" />
+	<aura:attribute name="AvailableVouchersList" type="List" />
+	<aura:attribute name="data" type="List" />
+	<aura:attribute name="selectedVoucher" type="Object" />
+	<aura:attribute name="txnReference" type="String" />
+	<aura:attribute name="showVoucherOutOfStockRadio" type="boolean" default="true" />
+	<aura:attribute name="outOfStockValue" type="string" access="global" />
+	<aura:attribute name="solvedRadioOptionsValue" type="String" />
+	<aura:attribute name="approvedDeclinedValue" type="String" />
+	<aura:attribute name="approvalStatusValue" type="String" />
+	<aura:attribute name="reissueVoucherValue" type="String" />
+	<aura:attribute name="disableReissueRequest" type="boolean" access="global" default="false" />
+	<aura:attribute name="cifFromFlow" type="String" access="global" />
+	<aura:attribute name="idNumberFromFlow" type="String" access="global" />
+	<aura:attribute name="isSpinner" type="boolean" access="global" default="false" />
+
+	<!--Case Att-->
+	<aura:attribute name="caseRecord" type="Object" />
+	<aura:attribute name="cse" type="Object" />
+	<aura:attribute name="recordError" type="String" />
+	<!--Handler Declaration-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<!--Account Record-->
+	<force:recordData
+		aura:id="caseRecordData"
+		recordId="{!v.caseIdFromFlow}"
+		targetFields="{!v.cse}"
+		targetError="{!v.recordError}"
+		fields="Status,Subtype__c,Reissue_Voucher__c,Approval_Status__c,Subject,Origin"
+		mode="EDIT"
+	/>
+
+	<!--targetRecord="{!v.caseRecord}"-->
+	<!--Display Errors-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+	<aura:if isTrue="{!and(v.cse.Reissue_Voucher__c == 'Approved', not(empty(v.cse.Approval_Status__c)))}">
+		<div>
+			<br />
+			<ui:message title="Approval Status" severity="info" closable="false">
+				<h2 class="slds-section__title">Manager Approval Status: {!v.cse.Approval_Status__c}</h2>
+			</ui:message>
+			<br />
+		</div>
+	</aura:if>
+	<aura:if isTrue="{!v.isSpinner}">
+				<center style="z-index: 99">
+					<lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+				</center>
+			</aura:if>
+	<!-- Case Record Edit From -->
+	<lightning:recordEditForm aura:id="caseEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}" onsubmit="{!c.closeCase}" onload="{!c.caseOnload}" onerror="{!c.onError}">
+		<lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+		<lightning:inputField aura:id="typeField" fieldName="Subtype__c" class="slds-hide" />
+		<lightning:inputField aura:id="reissueVoucherField" fieldName="Reissue_Voucher__c" class="slds-hide" />
+		<lightning:inputField aura:id="approvalStatusField" fieldName="Approval_Status__c" class="slds-hide" />
+		<lightning:messages />
+		<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+			
+
+			<aura:if isTrue="{!!v.escalatedFromFlow}">
+				<lightning:layoutItem size="12" flexibility="auto" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:radioGroup
+									name="radioGroupRequired"
+									variant="label-hidden"
+									options="{!v.solvedRadioOptions}"
+									value="{!v.solvedRadioOptionsValue}"
+									onchange="{!c.HandleCaseResolutionSelect}"
+									type="radio"
+									required="true"
+								/>
+								<!---->
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+
+				<lightning:layoutItem size="6" flexibility="auto" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<span class="slds-form-element__label"> Comments </span>
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField fieldName="Comments" aura:id="caseComments" variant="label-hidden" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+			</aura:if>
+
+			<aura:if isTrue="{!v.escalatedFromFlow}">
+				<lightning:layoutItem size="12" flexibility="auto" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:radioGroup
+									name="approvedDeclinedOptions"
+									variant="label-hidden"
+									options="{!v.approvedDeclinedOptions}"
+									value="{!v.approvedDeclinedValue}"
+									type="radio"
+									required="true"
+								/>
+								<!--onchange="{!c.HandleCaseResolutionSelect}"-->
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<aura:if isTrue="{!v.approvedDeclinedValue=='Declined'}">
+					<lightning:layoutItem size="12" flexibility="auto" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:select
+										aura:id="declineReasons"
+										value="{!v.declineReasonsValue}"
+										label="Reasons for Declining Voucher Reissue"
+										required="true"
+									>
+										<aura:iteration items="{!v.declineReasonOptions}" var="item">
+											<option text="{!item.label}" value="{!item.value}" />
+										</aura:iteration>
+									</lightning:select>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+				</aura:if>
+
+				<aura:if isTrue="{!v.approvedDeclinedValue=='Approved'}">
+					<lightning:layoutItem size="12" flexibility="auto" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:select
+										aura:id="approvalReasons"
+										value="{!v.approvalReasonsValue}"
+										label="Reasons for Approving Voucher Reissue"
+										required="true"
+									>
+										<aura:iteration items="{!v.approvalReasonOptions}" var="item">
+											<option text="{!item.label}" value="{!item.value}" />
+										</aura:iteration>
+									</lightning:select>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<aura:if isTrue="{!and(v.showVoucherOutOfStockRadio, v.cse.Approval_Status__c =='Approved')}">
+						<lightning:layoutItem size="12" flexibility="auto" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<ui:message title="Voucher Out of Stock" severity="info" closable="false">
+											<lightning:radioGroup
+												name="outOfStockRadioGroup"
+												variant="label-hidden"
+												options="{!v.outOfStockOptions}"
+												value="{!v.outOfStockValue}"
+												type="radio"
+												required="false"
+											/>
+										</ui:message>
+										<aura:if isTrue="{!and(v.outOfStockValue=='wait',not(empty(v.AvailableVouchersList)))}">
+											<ui:message title="" severity="info" closable="false">
+												<lightning:button
+													aura:id="scheduleButton"
+													label="Schedule The Request"
+													onclick="{!c.handleScheduleVoucherReissue}"
+													variant="brand"
+													disabled="{!v.disableReissueRequest}"
+												/><br />
+												The client will be notified once the voucher is sent to their wallet.
+											</ui:message>
+										</aura:if>
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+					</aura:if>
+					<aura:if isTrue="{!and(v.cse.Approval_Status__c =='Approved', not(empty(v.AvailableVouchersList)))}">
+						<lightning:layoutItem size="6" flexibility="auto" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<lightning:select aura:id="approvalReasons" value="{!v.selectedVoucher}" label="Available vouchers" required="false">
+											<aura:iteration items="{!v.AvailableVouchersList}" var="item">
+												<option text="{!item.offerDescription}" value="{!item}" selected="{!item==v.selectedVoucher}" />
+											</aura:iteration>
+										</lightning:select>
+										<div>
+											<lightning:button
+												aura:id="submitButton"
+												label="Send Reissue Request"
+												onclick="{!c.handleSendVoucher}"
+												variant="neutral"
+												disabled="{!v.disableReissueRequest}"
+											/>
+										</div>
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+					</aura:if>
+				</aura:if>
+
+				<lightning:layoutItem size="12" flexibility="auto" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<span class="slds-form-element__label"> Comments </span>
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField fieldName="Comments" aura:id="caseComments" variant="label-hidden" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+			</aura:if>
+
+			<lightning:layoutItem size="12" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<lightning:datatable data="{!v.data}" columns="{!v.columnList }" keyField="Id" hideCheckboxColumn="true" />
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+		</lightning:layout>
+		<!--Buttons-->
+		<div class="slds-float_right">
+			<lightning:button aura:id="closeCase" label="Close Case" variant="neutral" type="submit" />
+
+			<aura:if isTrue="{!and(v.solvedRadioOptionsValue =='Unsolved',v.escalatedFromFlow ==false)}">
+				<lightning:button aura:id="escalateCase" label="Escalate Case" variant="brand" onclick="{!c.escalateCase}" />
+			</aura:if>
+			<aura:if isTrue="{!and(v.approvedDeclinedValue=='Approved', v.cse.Approval_Status__c !='Approved')}">
+				<lightning:button aura:id="requestApproval" label="Request Approval" variant="brand" onclick="{!c.requestApproval}" />
+			</aura:if>
+		</div>
+	</lightning:recordEditForm>
+</aura:component>

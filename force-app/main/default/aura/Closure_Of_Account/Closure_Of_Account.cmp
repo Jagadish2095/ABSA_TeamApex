@@ -1,0 +1,300 @@
+<aura:component controller="ClosureOfAccount"
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,lightning:availableForFlowScreens" access="global" >
+    
+    <aura:attribute name="recId" type="String" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{! c.doInit}" />
+    <!-- <aura:handler name="render" value="{!this}" action="{!c.onRender}"/> -->
+    <aura:attribute name="isCapturingDetails" type="Boolean" default="false" />
+    <aura:attribute name="showStartSpinner" type="Boolean" default="true" />
+    <aura:attribute name="showError" type="Boolean" default="false" />
+    <aura:attribute name="closedProduct" type="String" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="holdOptions" type="List" default="[{'label': 'Yes', 'value': 'Yes'},
+                                                            {'label': 'No', 'value': 'No'}
+                                                            ]"/>
+    
+    <aura:attribute name="accountOnHold" type="Boolean" default="false" />
+    <aura:attribute name="accountHold" type="String" />
+    <aura:attribute name="isAccountHold" type="Boolean" default="false" />
+    <aura:attribute name="accountHoldReason" type="String" />
+    <aura:attribute name="isjournalDetails" type="Boolean" default="false" />
+    <aura:attribute name="isexpandDebitDetails" type="Boolean" default="true" />
+    <aura:attribute name="debitRowsList" 	type="List" description="List of Rows that are created dynamically"/>
+    <aura:attribute name="isexpandCreditDetails" type="Boolean" default="true" />
+    <aura:attribute name="creditRowsList" 	type="List" description="List of Rows that are created dynamically"/>
+    <aura:attribute name="multiple" type="Boolean" default="false" />
+    <aura:attribute name="accept" type="List" default="['.jpg', '.jpeg', '.JPG', '.pdf', '.PDF']"/>
+    <aura:attribute name="referenceNumber" type="String" />
+    <aura:attribute name="fileName" type="String" />
+    <aura:attribute name="isCapturedDetails" type="Boolean" default = "false"/>
+    <aura:attribute name="isexpandAccountDetails" type="Boolean" default = "true"/>
+    <aura:attribute name="selectedProduct" type="String" />
+    <aura:attribute name="isaccountOnHold" type="String" />
+    <aura:attribute name="reasonForHold" type="String" />
+    <aura:attribute name="numberSARSTR" type="String" />
+    <aura:attribute name="debitList" type="List" />
+    <aura:attribute name="creditList" type="List" />
+    <aura:attribute name="isOutputDebitDetails" type="Boolean" default = "true"/>
+    <aura:attribute name="isOutputCreditDetails" type="Boolean" default = "true"/>
+    
+    <aura:if isTrue="{!v.showStartSpinner}">
+        <div class="slds-backdrop slds-backdrop_open">
+            <lightning:spinner aura:id="spinner" variant="brand" size="large"/>
+        </div>
+    </aura:if> 
+    <!-- Show the message to ui in case of any errors-->
+    <aura:if isTrue="{!v.showError}">
+        <div class="slds-notify_alert slds-alert_error" role="alert">
+            <span class="slds-assistive-text">error</span>
+            <h1>Error : {!v.errorMessage}</h1>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.isCapturingDetails}">
+        <div style="padding-left:30px">
+            <div class="slds-col slds-size_1-of-2">
+                <lightning:select name="closureOfProduct" label="Product to be closed" required="true"
+                                  value="{!v.closedProduct}" onchange="{! c.selectedProduct }">
+                    <option value="">Choose one...</option>
+                    <option value="Term Loan">Term Loan</option>
+                    <option value="Revolving loan">Revolving loan</option>
+                    <option value="Cheque account">Cheque account</option>
+                    <option value="Term Loan">Savings account</option>
+                </lightning:select>
+            </div>
+            <br />
+            <aura:if isTrue="{!v.accountOnHold}">
+                <div class="slds-col slds-size_1-of-2">
+                    <p>Holds on the account</p>
+                    <lightning:radioGroup  aura:id='btngp1'  options="{!v.holdOptions}" type="button"  onchange="{!c.holdChange}" value="{!v.accountHold}" />
+                </div>
+                <br />
+                <aura:if isTrue="{!v.isAccountHold}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:select name="holdReason" label="Reason For Hold" required="true"
+                                          value="{!v.accountHoldReason}" onchange="{! c.reasonForHold }">
+                            <option value="">Choose one...</option>
+                            <option value="Cash focus">Cash focus</option>
+                            <option value="Debit order hold">Debit order hold</option>
+                            <option value="Dormant">Dormant</option>
+                            <option value="Semi dormant">Semi dormant</option>
+                            <option value="Set-off">Set-off</option>
+                            <option value="Deposit book">Deposit book</option>
+                            <option value="Account Stopped">Account Stopped</option>
+                        </lightning:select>
+                    </div>
+                </aura:if>
+                <br />
+                <aura:if isTrue="{!v.isjournalDetails}">
+                    <div  style="padding-bottom:30px;">
+                        <h3 class="slds-section__title slds-theme_shade" style="width:100%;background-color: #f3f2f2" onclick="{!c.expandDebitDetails}">
+                            <lightning:buttonIcon iconName="{! if(v.isexpandDebitDetails, 'utility:chevrondown', 'utility:chevronright')}" variant="bare" alternativeText="Status" title="Status"/>&nbsp;Debit details
+                        </h3> 
+                        <aura:if isTrue="{!v.isexpandDebitDetails}">
+                            <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_col-bordered slds-table_striped outerTable" >
+                                <thead>
+                                    <tr class="slds-text-title_caps">
+                                        <th scope="col" style="width:30%" title="Account Name">Account Name</th>
+                                        <th scope="col" style="width:30%" title="Account Number">Account Number</th>
+                                        <th scope="col" style="width:25%" title="Phone">Amount</th>
+                                        <th scope="col" style="width:15%" title="Actions">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.debitRowsList}" var="eachRow" indexVar="index" >
+                                        <tr>
+                                            <td>
+                                                <lightning:input name="accName" type="text" maxlength="50" value="{!eachRow.Name}" />
+                                            </td>
+                                            <td>
+                                                <lightning:input name="accNumber" type="text" maxlength="50" value="{!eachRow.AccountNumber}" />
+                                            </td>
+                                            <td>
+                                                <lightning:input name="accAmount" type="number" value="{!eachRow.Amount}" step="0.01"/>
+                                            </td>
+                                            <td>
+                                                <aura:if isTrue="{! eachRow.rowNumber == 1 }" >
+                                                    <a onclick="{!c.addDebitRecord}" >
+                                                        <lightning:icon iconName="utility:add" size="small" alternativeText="Add"/>
+                                                        <span class="slds-assistive-text">Add</span>
+                                                    </a>
+                                                    <aura:set attribute="else">
+                                                        <a onclick="{!c.deleteDebitRecord}" data-record="{!index}">
+                                                            <lightning:icon iconName="utility:delete" size="small" alternativeText="Delete"/>
+                                                            <span class="slds-assistive-text">Delete</span>
+                                                        </a>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </td>
+                                        </tr>
+                                    </aura:iteration>
+                                </tbody>
+                            </table> 
+                        </aura:if>
+                    </div>
+                    <br/>
+                    <div  style="padding-bottom:30px;">
+                        <h3 class="slds-section__title slds-theme_shade" style="width:100%;background-color: #f3f2f2" onclick="{!c.expandCreditDetails}">
+                            <lightning:buttonIcon iconName="{! if(v.isexpandCreditDetails, 'utility:chevrondown', 'utility:chevronright')}" variant="bare" alternativeText="Status" title="Status"/>&nbsp;Credit details
+                        </h3>
+                        <aura:if isTrue="{!v.isexpandCreditDetails}">
+                            <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_col-bordered slds-table_striped outerTable" >
+                                <thead>
+                                    <tr class="slds-text-title_caps">
+                                        <th scope="col" style="width:30%" title="Account Name">Account Name</th>
+                                        <th scope="col" style="width:30%" title="Account Number">Account Number</th>
+                                        <th scope="col" style="width:25%" title="Phone">Amount</th>
+                                        <th scope="col" style="width:15%" title="Actions">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.creditRowsList}" var="eachRow" indexVar="index" >
+                                        <tr>
+                                            <td>
+                                                <lightning:input name="accName" type="text" maxlength="50" value="{!eachRow.Name}" />
+                                            </td>
+                                            <td>
+                                                <lightning:input name="accNumber" type="text" maxlength="50" value="{!eachRow.AccountNumber}" />
+                                            </td>
+                                            <td>
+                                                <lightning:input name="accAmount" type="number" value="{!eachRow.Amount}" step="0.01"/>
+                                            </td>
+                                            <td>
+                                                <aura:if isTrue="{! eachRow.rowNumber == 1 }" >
+                                                    <a onclick="{!c.addCreditRecord}" >
+                                                        <lightning:icon iconName="utility:add" size="small" alternativeText="Add"/>
+                                                        <span class="slds-assistive-text">Add</span>
+                                                    </a>
+                                                    <aura:set attribute="else">
+                                                        <a onclick="{!c.deleteCreditRecord}" data-record="{!index}">
+                                                            <lightning:icon iconName="utility:delete" size="small" alternativeText="Delete"/>
+                                                            <span class="slds-assistive-text">Delete</span>
+                                                        </a>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </td>
+                                        </tr>
+                                    </aura:iteration>
+                                </tbody>
+                            </table> 
+                        </aura:if>
+                    </div>
+                    
+                    
+                    <!--<lightning:fileUpload label="Add attachment" multiple="{!v.multiple}" 
+                                      accept="{!v.accept}" recordId="{!v.objectID}" 
+                                      onuploadfinished="{!c.handleUploadFinished}" /> -->
+                    <span>
+                        <lightning:input
+                                         name="file1"
+                                         aura:id="fileid"
+                                         type="file"
+                                         label="Upload Journal Details"
+                                         multiple="false"
+                                         onchange="{! c.handleFilesChange }"
+                                         />
+                        <div class="slds-text-body_small">{!v.fileName}</div>
+                    </span>
+                    <br />
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:input name="sarNumber" type="text"  value="{!v.referenceNumber}" label="SAR/STR reference number"/>
+                    </div>
+                    <br />
+                    <div class="slds-align_absolute-center" style="height:5rem">
+                        <button class="slds-button slds-button_brand"  onclick="{!c.validateJournalDetails}">Validate and Save</button>
+                    </div>
+                </aura:if>
+            </aura:if>
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.isCapturedDetails}">
+        <div  style="padding-bottom:30px;">
+            <h3 class="slds-section__title slds-theme_shade" style="width:100%;background-color: #f3f2f2" onclick="{!c.expandAccountDetails}">
+                <lightning:buttonIcon iconName="{! if(v.isexpandAccountDetails, 'utility:chevrondown', 'utility:chevronright')}" variant="bare" alternativeText="Status" title="Status"/>&nbsp;Account Closure details
+            </h3>
+            <aura:if isTrue="{!v.isexpandAccountDetails}">
+                <div style="padding-left:30px">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem size="6" padding="around-small" >
+                            <b>Closed Product : </b>
+                            <ui:outputText value="{!v.selectedProduct}"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small" >
+                            <b>Account on Hold : </b>
+                            <lightning:formattedText value="{!v.isaccountOnHold}"/>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!v.isaccountOnHold == 'Yes'}">
+                            <lightning:layoutItem size="6" padding="around-small" >
+                                <b>Reason for Hold : </b>
+                                <lightning:formattedText value="{!v.reasonForHold}"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+                        <lightning:layoutItem size="6" padding="around-small" >
+                            <b>SAR/STR Reference Number : </b>
+                            <lightning:formattedText value="{!v.numberSARSTR}"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+            </aura:if>
+            <h3 class="slds-section__title slds-theme_shade" style="width:100%;background-color: #f3f2f2" onclick="{!c.outputDebitDetails}">
+                <lightning:buttonIcon iconName="{! if(v.isOutputDebitDetails, 'utility:chevrondown', 'utility:chevronright')}" variant="bare" alternativeText="Status" title="Status"/>&nbsp;Debit details
+            </h3>
+            <aura:if isTrue="{!v.isOutputDebitDetails}">
+                <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_col-bordered slds-table_striped outerTable" >
+                    <thead>
+                        <tr class="slds-text-title_caps">
+                            <th scope="col" style="width:30%" title="Account Name">Account Name</th>
+                            <th scope="col" style="width:30%" title="Account Number">Account Number</th>
+                            <th scope="col" style="width:30%" title="Phone">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.debitList}" var="eachRow" indexVar="index" >
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="{!eachRow.name}">{!eachRow.name}</div>
+                                </td>
+                                <td>
+                                    <div class="slds-truncate" title="{!eachRow.accountNumber}">{!eachRow.accountNumber}</div>
+                                </td>
+                                <td>
+                                    <div class="slds-truncate" title="{!eachRow.amount}">{!eachRow.amount}</div>
+                                </td>
+                            </tr>
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </aura:if>
+            <h3 class="slds-section__title slds-theme_shade" style="width:100%;background-color: #f3f2f2" onclick="{!c.outputCreditDetails}">
+                <lightning:buttonIcon iconName="{! if(v.isOutputCreditDetails, 'utility:chevrondown', 'utility:chevronright')}" variant="bare" alternativeText="Status" title="Status"/>&nbsp;Credit details
+            </h3>
+            <aura:if isTrue="{!v.isOutputCreditDetails}">
+                <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_col-bordered slds-table_striped outerTable" >
+                    <thead>
+                        <tr class="slds-text-title_caps">
+                            <th scope="col" style="width:30%" title="Account Name">Account Name</th>
+                            <th scope="col" style="width:30%" title="Account Number">Account Number</th>
+                            <th scope="col" style="width:30%" title="Phone">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.creditList}" var="eachRow" indexVar="index" >
+                            <tr>
+                                <td>
+                                    <div class="slds-truncate" title="{!eachRow.name}">{!eachRow.name}</div>
+                                </td>
+                                <td>
+                                    <div class="slds-truncate" title="{!eachRow.accountNumber}">{!eachRow.accountNumber}</div>
+                                </td>
+                                <td>
+                                    <div class="slds-truncate" title="{!eachRow.amount}">{!eachRow.amount}</div>
+                                </td>
+                            </tr>
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </aura:if>
+        </div>
+    </aura:if>
+</aura:component>

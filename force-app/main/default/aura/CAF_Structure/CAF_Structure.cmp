@@ -1,0 +1,114 @@
+<aura:component
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+    controller="cafApplicationController"
+    access="global"
+>
+    <!-- BEGAN ATTRIBUTE -->
+    <aura:attribute
+        name="options"
+        type="List"
+        default="[
+                                                        {'label': 'Yes', 'value': 'Yes'},
+                                                        {'label': 'No', 'value': 'No'}
+                                                        ]"
+    />
+    <aura:attribute name="recordId" type="String" default="" />
+    <aura:attribute name="applicationData" type="Object" />
+    <aura:attribute name="skipPayments" type="String" default="{!v.applicationData.Skip_payments__c}" />
+    <aura:attribute name="debitOrder" type="String" default="{!v.applicationData.Debit_order__c}" />
+    <aura:attribute name="vatPayback" type="String" />
+    <aura:attribute name="skipMonths" type="Decimal" />
+    <aura:attribute name="skipMonthsFrom" type="Date" />
+    <aura:attribute name="skipMonthsTo" type="Date" />
+    <aura:attribute name="selectedBankName" type="String" />
+    <aura:attribute name="accountHolder" type="String" default="" />
+    <aura:attribute name="accountNumber" type="String" default="" />
+    <aura:attribute name="accountType" type="String" default="" />
+    <aura:attribute name="branchCode" type="String" default="" />
+
+    <!-- Aura handlers -->
+    <aura:handler name="oSelectedRecordEvent" event="c:selectedsObjectRecordEvent" action="{!c.handleComponentEvent}" />
+
+    <!-- END ATTRIBUTE -->
+
+    <lightning:accordionSection name="CAF_Structure" label="Structure">
+        <!-- BASIC GRID EXAMPLE -->
+        <div class="slds-grid slds-wrap p-lr-20">
+            <lightning:inputField fieldName="VAT_Pay_Back__c" label="VAT pay back" aura:id="VATback" value="{!v.vatPayback}" />
+            <div class="slds-col slds-size_5-of-12">
+                <lightning:radioGroup
+                    name="SkipPayments"
+                    label="Skip payments"
+                    required="true"
+                    options="{! v.options }"
+                    value="{!v.skipPayments}"
+                    type="button"
+                />
+                <lightning:inputField class="slds-hidden" fieldName="Skip_payments__c" value="{!v.skipPayments}" />
+
+                <aura:if isTrue="{!v.skipPayments == 'Yes'}">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_12-of-12">
+                            <p>
+                                <lightning:inputField fieldName="Skip_months__c" label="Skip months" />
+                            </p>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12">
+                            <p>
+                                <lightning:inputField fieldName="Skip_months_from__c" label="Skip months from" />
+                            </p>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12">
+                            <p>
+                                <lightning:inputField fieldName="Skip_months_to__c" label="Skip months to" />
+                            </p>
+                        </div>
+                    </div>
+                </aura:if>
+            </div>
+            <div class="slds-col slds-size_12-of-12">
+                <lightning:radioGroup name="DebitOrder" label="Debit Order" required="true" options="{! v.options }" value="{! v.debitOrder }" type="button" />
+
+                <lightning:inputField class="slds-hidden" fieldName="Debit_order__c" value="{!v.debitOrder}" />
+
+                <aura:if isTrue="{!v.debitOrder == 'Yes'}">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_3-of-12">
+                            <p>
+                                <!--<div class="search">-->
+                                <div>
+                                    <label class="slds-form-element__label" for="form-element-01">Bank Name</label>
+                                    <c:customLookUp aura:id="customlookup" />
+                                    <p>{! (v.applicationData.Bank_name__c != '')? v.applicationData.Bank_name__c : v.selectedBankName }</p>
+                                    <lightning:inputField class="slds-hide" fieldName="Bank_name__c" value="{!v.selectedBankName}" />
+                                </div>
+                                <!--<div class="search-wrapper">
+                                        <form class="search-form">
+                                            <div class="search-input-wrapper">
+                                                <lightning:inputField fieldName="Bank_name__c" label="Bank name" aura:id="BankName" value="{!v.Bank_name__c}" />
+                                            </div>
+                                            <input type="hidden" name="language" value="en" />
+                                        </form>
+                                    </div>-->
+                                <!--</div>-->
+                            </p>
+
+                            <p>
+                                <lightning:inputField fieldName="Account_holder__c" required="true" label="Account holder" />
+                            </p>
+                            <p>
+                                <lightning:inputField fieldName="Account_number__c" required="true" label="Account number" />
+                            </p>
+                            <p>
+                                <lightning:inputField fieldName="Account_type__c" required="true" label="Account type" />
+                            </p>
+                            <p>
+                                <lightning:inputField fieldName="Branch_clearing_code__c" label="Branch clearing code" />
+                            </p>
+                        </div>
+                    </div>
+                </aura:if>
+            </div>
+        </div>
+    </lightning:accordionSection>
+</aura:component>

@@ -1,0 +1,212 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             : 
+  @last modified on  : 2021-10-08
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+  Modifications Log 
+  Ver   Date         Author                               Modification
+  1.0   04-01-2021   ChangeMeIn@UserSettingsUnder.SFDoc   Initial Version
+-->
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,force:hasSObjectName"
+	access="global"
+	controller="RelatedPartyDetailsController">
+	<aura:attribute name="CanNavigate" type="Boolean" default="false" />
+	<aura:attribute name="IsAddingRelatedParty" type="boolean" access="global" default="true" />
+	<!--ClientFinder_ROA decision-->
+	<aura:attribute name="thirdpartydata" type="List" default="[]"  />
+	<aura:attribute name="thirdpartycolumns" type="list" />
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="accountRecId" type="String" access="global" />
+	<aura:attribute name="casareferencenumber" type="String" access="global" />
+	<aura:attribute name="relatedPartyRecordID" type="String" default="" />
+	<aura:attribute name="casamainreferencenumber" type="String" access="global" />
+	<aura:attribute name="draftValues" type="Object" default="[]" />
+	<aura:attribute name="currentScannedDocuments" type="String" default="" />
+	<aura:attribute name="requiredDocuementsPackList" type="String" default="" />
+	<aura:attribute name="controllerSelected" type="Boolean" />
+	<aura:attribute name="numberOfRelatedPatries" type="integer" />
+	<aura:attribute name="numberOfSelectedSignatories" type="integer" />
+	<aura:attribute name="isRemoveRelatedParty" type="Boolean" default="false" />
+	<aura:attribute name="addRelatedParty" type="Boolean" default="false" />
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:attribute name="idToChange" type="String" access="global" />
+	<aura:attribute name="relatedPartyIDNumber" type="String" access="global" default="" />
+	<aura:attribute name="test" type="list" access="global" />
+	<aura:attribute name="CanAddRelatedParty" type="Boolean" />	
+    <aura:attribute name="isButtonActive" type="Boolean" default="false" />
+
+
+	<!-- Spinner -->
+	<aura:if isTrue="{!v.isSpinner}">
+		<lightning:spinner variant="brand" alternativeText="Busy" />
+	</aura:if>
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+	<h3 class="slds-section__title">
+		<button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action customSectionButton">
+			<span class="slds-truncate" title="Participants"><b>Related parties.</b></span>
+		</button>
+	</h3>
+	<p>Add and verify all the related parties before continuing.<b>A minimum of 2 and maximum of 5 related parties</b> are required to proceed.</p>
+	<table aura:id="thirdPartyTable01" class="slds-table slds-table--bordered slds-table--cell-buffer" role="grid">
+		<thead>
+			<tr>
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate" title="Related parties">Related parties</div>
+				</th>
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate" title="ID Number">Id Number</div>
+				</th>
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate" title="Mark as controller(chairperson)">Mark as controller(chairperson)</div>
+				</th>
+				 <!---->
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate"></div></th>
+				<!--  <th class="slds-cell-shrink" scope="col">
+                    <div class="slds-truncate" title="Mandated officials">CIF</div>
+                </th> -->
+			</tr>
+		</thead>
+		<tbody>
+			<aura:iteration items="{!v.thirdpartydata}" var="row">
+				<tr aura:id="{!row.accountId}" id="{!row.accountId}" class="slds-hint-parent">
+					<td data-label="Signatory">
+						<div class="slds-truncate" title="{!row.contactName}">{!row.contactName}</div>
+					</td>
+
+					<td data-label="ID Number">
+						<div class="slds-truncate" title="{!row.contactIdNumber}">{!row.contactIdNumber}</div>
+					</td>
+
+					<td data-label="">
+						<lightning:input
+							type="radio"
+							checked="{!row.contactController}"
+							aura:id="{!row.accountId}"
+							name="options"
+							value="{!row.accountId}"
+							onchange="{!c.onSelectRadioboxChange}"
+						/>
+					</td>
+				
+					<td data-label="">
+						<div style="float: right">
+							<lightning:button
+								onclick="{!c.removeThirdparty}"
+								aura:id="removeThirdpartyBtn"
+								value="{!row.accountId}"
+								variant="error"
+								disabled= "{!v.isButtonActive}"
+								title="Delete">
+								<lightning:icon iconName="utility:delete" size="xx-small" alternativeText="delete" class="slds-button" /> </lightning:button
+							><span class="slds-assistive-text">Delete Icon</span>
+						</div>
+					</td>
+					<!-- <td data-label="CIF">
+						<div class="slds-truncate" title="{!row.accountCIF}">{!row.accountCIF}</div>
+					</td> -->
+				</tr>
+			</aura:iteration>
+		</tbody>
+	</table>
+	<aura:if isTrue="{!(v.CanAddRelatedParty)}">
+	<lightning:button variant="brand"  aura:id="addSignatoryBtn" label="Add Related Party" onclick="{!c.addRelatedParty}" />
+</aura:if>
+	<aura:if isTrue="{!(v.CanNavigate)}">
+		<div class="slds-var-p-around_x-small">
+			<c:BranchFlowFooter aura:id="branchFlowFooter" availableActions="{! v.availableActions }" navigateFlowEvent="{!c.handleNavigate}" />
+		</div>
+	</aura:if>
+
+	<!--Modal : Add more related Partiesy -->
+	<aura:if isTrue="{!v.addRelatedParty}">
+		<!--###### MODAL BOX Start######-->
+		<section
+				role="dialog"
+				tabindex="-1"
+				aria-labelledby="modal-heading-01"
+				aria-modal="true"
+				aria-describedby="modal-content-id-1"
+				class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+							iconName="utility:close"
+							onclick="{! c.closeConfirmModal }"
+							alternativeText="close"
+							variant="bare-inverse"
+							class="slds-modal__close"
+					 />
+					<!--<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Remove Related Party</h2> -->
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b>A minimun of 2 related parties are required to proceed? </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Ok" title="Ok" onclick="{! c.closeModal }" />
+					
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--Modal : Remove Beneficiary -->
+	<aura:if isTrue="{!v.isRemoveRelatedParty}">
+		<!--###### MODAL BOX Start######-->
+		<section
+				role="dialog"
+				tabindex="-1"
+				aria-labelledby="modal-heading-01"
+				aria-modal="true"
+				aria-describedby="modal-content-id-1"
+				class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+							iconName="utility:close"
+							onclick="{! c.closeConfirmModal }"
+							alternativeText="close"
+							variant="bare-inverse"
+							class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Remove Related Party</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure you want to remove this related party </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeConfirmModal }" />
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{! c.handleRemoveRelatedParty }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--Modal : Edit Beneficiary -->
+</aura:component>

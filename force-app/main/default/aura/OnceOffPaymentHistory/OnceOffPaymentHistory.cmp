@@ -1,0 +1,101 @@
+<!--
+* Lightning Component for selecting the Once Off Payment made to resend the proof of payment
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2021-03-18
+*
+-->
+
+<aura:component
+	controller="OnceOffPaymentHistoryApex"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+	access="global"
+>
+	<lightning:workspaceAPI aura:id="workspace" />
+	<!--DBOOYSEN. W-008831-->
+
+	<!--Handler Declaration-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<!--Attribute Declaration-->
+	<aura:attribute name="AccountNumberFromFlow" type="String" access="global" />
+	<aura:attribute name="SelectedPaymentString" type="String" access="global" />
+	<aura:attribute name="caseIdFromFlow" type="String" access="global" />
+	<aura:attribute name="Balance" type="String" default="0" />
+	<aura:attribute name="data" type="Object" />
+	<aura:attribute name="filteredData" type="Object" />
+	<aura:attribute name="columns" type="List" />
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="keyword" type="String" />
+
+	<!--Start of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+	<aura:handler name="change" value="{!v.clientIDnVObjectParent}" action="{!c.handleObjectChange}" />
+	<aura:attribute name="clientIDnVObjectParent" type="Map" default="{}" />
+	<aura:attribute name="allowClientIDnVPolling" type="Boolean" default="false" />
+	<aura:attribute name="clientCifCodeParent" type="Boolean" default="false" />
+
+	<aura:if isTrue="{!v.allowClientIDnVPolling}">
+		<c:ClientIDnVPolling clientIDnVObject="{!v.clientIDnVObjectParent}" cifCodeFromParentCmp="{!v.clientCifCodeParent}" />
+	</aura:if>
+
+	<lightning:recordEditForm
+		aura:id="caseEditFormIDnV"
+		objectApiName="Case"
+		recordId="{!v.caseIdFromFlow}"
+		onload="{!c.handleCaseLoadIDnV}"
+		onsuccess="{!c.handleCaseSuccessIDnV}"
+	>
+		<lightning:inputField aura:id="statusFieldIDnV" fieldName="Status" class="slds-hide" />
+		<lightning:inputField aura:id="serviceGroupFieldIDnV" fieldName="sd_Service_Group__c" class="slds-hide" />
+		<lightning:inputField aura:id="clientCIFFieldIDnV" fieldName="Client_CIF_Number__c" class="slds-hide" />
+		<lightning:inputField aura:id="caseNumberFieldIDnV" fieldName="CaseNumber" class="slds-hide" />
+	</lightning:recordEditForm>
+	<!--End of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+
+	<article style="position: relative">
+		<!-- Spinner -->
+		<aura:if isTrue="{!v.isSpinner}">
+			<lightning:spinner variant="brand" alternativeText="Busy" class="slds-align_absolute-center" />
+		</aura:if>
+
+		<lightning:layout multipleRows="true">
+			<lightning:layoutItem padding="around-small" size="12">
+				<lightning:input label="Client Account Number" readonly="true" value="{!v.AccountNumberFromFlow}" />
+			</lightning:layoutItem>
+			<lightning:layoutItem padding="around-small" size="6">
+				<lightning:input
+					label="Filter"
+					type="search"
+					value="{!v.keyword}"
+					onchange="{!c.searchTable}"
+					placeholder="Filter Search"
+					fieldLevelHelp="Filters on Bank, Reference"
+				/>
+			</lightning:layoutItem>
+			<lightning:layoutItem padding="around-small" size="2">
+				<lightning:input aura:id="fromDate" label="From Date" type="date" dateStyle="short" onchange="{!c.filterDate}" />
+			</lightning:layoutItem>
+			<lightning:layoutItem padding="around-small" size="2">
+				<lightning:input aura:id="endDate" label="End Date" type="date" dateStyle="short" onchange="{!c.filterDate}" />
+			</lightning:layoutItem>
+			<lightning:layoutItem padding="around-small" size="2">
+				<div class="slds-p-top_large">
+					<lightning:button label="Reset Date" variant="neutral" onclick="{!c.resetDate}" />
+				</div>
+			</lightning:layoutItem>
+		</lightning:layout>
+
+		<div style="height: 250px">
+			<lightning:datatable
+				columns="{!v.columns}"
+				data="{!v.filteredData}"
+				keyField="instrNumber"
+				maxRowSelection="1"
+				onrowselection="{!c.rowSelected}"
+				enableInfiniteLoading="true"
+				loadMoreOffset="20"
+			/>
+		</div>
+	</article>
+</aura:component>

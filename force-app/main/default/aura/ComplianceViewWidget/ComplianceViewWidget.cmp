@@ -1,0 +1,114 @@
+<!--
+* Lightning Component for Compliance View Widget (ComplianceViewWidget)
+*
+* @author  Sharath Chandra : Absa
+* @version v1.0
+* @since   2021-03-10
+* @W-009448
+-->
+<aura:component controller="ComplianceViewDashboardController"
+                implements="flexipage:availableForRecordHome,force:hasRecordId"
+                access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="currentAccount" type="Account"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="isShowInit" type="boolean" default="false"/>
+    <aura:attribute name="lastRefreshDate" type="String"/>
+    <aura:attribute name="nextRefreshDate" type="String"/>
+    <aura:attribute name="healthStatus" type="String"/>
+    <aura:attribute name="showError" type="boolean"/>
+    <aura:attribute name="dataFound" type="boolean" default="true"/>
+    <aura:attribute name="showHeader" type="boolean" default="true"/>
+    <aura:attribute name="errorMessage" type="string"/>
+    <aura:attribute name="serviceGroup" type="Boolean" default="false"/>
+      <!-- Register Events Added for Home Loans-->
+    <aura:registerEvent name="setComplianceStatus" type="c:ComplianceEvent"/>
+    <lightning:accordion>
+        <!-- <div class="c-container">-->
+        <aura:if isTrue="{!v.showSpinner}">
+            <div class="slds-spinner_container">
+                <lightning:spinner aura:id="spinner" variant="brand" size="small"/>
+            </div>
+        </aura:if>
+        <lightning:layout multipleRows="true">
+            <aura:if isTrue="{!v.showHeader}">
+                <header class=".slds-theme_inverse">
+                    <h1><b style="font-size:130%">&nbsp;&nbsp;&nbsp;Compliance Overview</b></h1>
+                </header>
+            </aura:if>
+            <aura:if isTrue="{!v.dataFound}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="6">
+                        <div class="c-container1">
+                            <div class="flex-container" style="padding-top: 6px; padding-bottom: 10px;">
+                                <div class="flex-child1">
+                                    <aura:if isTrue="{!v.healthStatus == 'PartialCompliant'}">
+                                        <div class="circle" style="background-color: orange"></div>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.healthStatus == 'Compliant'}">
+                                                <div class="circle" style="background-color: green"></div>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.healthStatus == 'NonCompliant'}">
+                                                        <div class="circle" style="background-color: #b31b1b"></div>
+                                                        <aura:set attribute="else">
+                                                            <div class="circle" style="background-color: #b31b1b"></div>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>
+                                <div class="flex-child">
+                                    <div class="slds-region_narrow" style="width:360px">
+                                        &nbsp;&nbsp;Compliance Status<br/>
+                                        <aura:if isTrue="{!v.healthStatus != null}">
+                                            &nbsp;&nbsp;<b><lightning:formattedText value="{!v.healthStatus}"/></b>
+                                            <aura:set attribute="else">
+                                                &nbsp;&nbsp;<b><lightning:formattedText value="NA"/></b>
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <!-- <lightning:layoutItem size="3">
+                        <div class="c-container2">
+                            &nbsp;&nbsp;&nbsp;Last Refresh Date<br/>
+                            <aura:if isTrue="{!v.lastRefreshDate != null}">
+                                &nbsp;&nbsp;&nbsp;<b><lightning:formattedText value="{!v.lastRefreshDate}"/></b>
+                                <aura:set attribute="else">
+                                    &nbsp;&nbsp;&nbsp;<b><lightning:formattedText value="NA"/></b>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                    </lightning:layoutItem> -->
+                    <lightning:layoutItem size="4">
+                        <div class="c-container3">
+                            &nbsp;&nbsp;&nbsp;Next Refresh Date<br/>
+                            <aura:if isTrue="{!v.nextRefreshDate != null}">
+                                &nbsp;&nbsp;&nbsp;<b><lightning:formattedText value="{!v.nextRefreshDate}"/></b>
+                                <aura:set attribute="else">
+                                    &nbsp;&nbsp;&nbsp;<b><lightning:formattedText value="NA"/></b>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <aura:set attribute="else">
+                    <!-- Show the message to ui in case of any errors-->
+                    <aura:if isTrue="{!v.showError}">
+                        <div class="slds-notify_alert slds-alert_error" role="alert">
+                            <span class="slds-assistive-text">error</span>
+                            <h1>Error : {!v.errorMessage}</h1>
+                        </div>
+                    </aura:if>
+                    <!--<p style="color:red; width:150%"><lightning:icon size="medium" iconName="utility:error"/>&nbsp; <b>No data has been received from the compliance view service</b></p>-->
+                </aura:set>
+            </aura:if>
+        </lightning:layout>
+        <!--</div>-->
+    </lightning:accordion>
+</aura:component>

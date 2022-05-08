@@ -1,0 +1,194 @@
+<!--
+* Lightning Component for VAS Absa Rewards
+*
+* @author  Clifford Willers : ABSA (IQ Business)
+* @version v1.0
+* @since   2020-11-25
+*
+-->
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+	access="global"
+	controller="VASRewardHelper"
+>
+	<aura:attribute name="activeRewardSections" type="List" default="['Reward']" />
+	<aura:attribute name="opportunityId" type="string" />
+	<aura:attribute name="CCApplicationNumber" type="String" />
+	<aura:attribute name="rewardDateDebitedOptions" type="List" />
+	<aura:attribute name="rewardSectionLabel" type="String" default="Absa Rewards" />
+	<aura:attribute name="rewardSelected" type="Boolean" default="false" />
+	<aura:attribute name="rewardIconName" type="String" default="utility:add" />
+	<aura:attribute name="rewardDebitedFromOptions" type="List" />
+	<aura:attribute name="rewardDebitedFromValue" type="string" />
+	<aura:attribute name="rewardDateDebitedValue" type="string" />
+	<aura:attribute name="rewardTsAndCsChecked" type="Boolean" default="false" />
+	<aura:attribute name="monthlyRewardFee" type="String" />
+	<aura:attribute name="ShowServiceResponse" type="Boolean" default="false" />
+	<aura:attribute name="ServiceResponse" type="String" />
+	<aura:attribute name="isDisabled" type="Boolean" default="false" />
+	<aura:attribute name="isLoading" type="Boolean" default="false" />
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+	<aura:registerEvent name="vasFulfilmentEvent" type="c:BranchVASfulfilmentIndEvent" />
+
+	<aura:handler name="init" value="{! this }" action="{! c.init }" />
+
+	<div class="slds-box slds-theme_default slds-m-top_medium">
+		<lightning:accordion aura:id="accordionReward" allowMultipleSectionsOpen="true" activeSectionName="{! v.activeRewardSections }">
+			<lightning:accordionSection name="Reward" label="{! v.rewardSectionLabel }">
+				<aura:set attribute="actions">
+					<lightning:buttonIcon
+						iconName="{! v.rewardIconName }"
+						disabled="{!v.isDisabled}"
+						size="large"
+						variant="bare"
+						onclick="{! c.rewardButtonIcon }"
+						alternativeText=""
+						title=""
+					/>
+				</aura:set>
+				<aura:set attribute="body">
+					<aura:if isTrue="{!v.showSpinner}">
+						<div class="slds-spinner_container">
+							<lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+						</div>
+					</aura:if>
+					<aura:if isTrue="{! v.rewardSelected }">
+						<div class="slds-border_top slds-var-p-around_x-small">
+							<lightning:layout>
+								<lightning:layoutItem size="2">
+									<div class="slds-m-top_x-small slds-m-bottom_x-small">
+										<label>Monthly fee:</label>
+									</div>
+								</lightning:layoutItem>
+								<lightning:layoutItem size="4">
+									<div class="slds-m-top_x-small slds-m-bottom_x-small">
+										<label
+											><b><lightning:formattedNumber style="currency" currencyCode="ZAR" value="{! v.monthlyRewardFee }" /></b> per
+											month</label
+										>
+									</div>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout>
+								<lightning:layoutItem size="2">
+									<div class="slds-m-bottom_medium">
+										<label>Features and benefits:</label>
+									</div>
+								</lightning:layoutItem>
+								<lightning:layoutItem size="10">
+									<div class="slds-m-bottom_medium">
+										<label
+											>Get up to 30% cash back on everyday purchases from our grocery, fuel and health + beauty partners.
+											<a href="{! $Resource.Rewards_FnB}" target="_blank">More features and benefits.</a></label
+										>
+									</div>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout>
+								<lightning:layoutItem size="6">
+									<div id="{! globalId + '_RewardDebitedFrom' }" class="slds-m-bottom_medium">
+										<lightning:radioGroup
+											aura:id="RewardDebitedFrom"
+											name="rewardDebitedFrom"
+											label="Charges to be debited from:"
+											options="{! v.rewardDebitedFromOptions }"
+											value="{! v.rewardDebitedFromValue }"
+											type="radio"
+										/>
+									</div>
+								</lightning:layoutItem>
+								<lightning:layoutItem size="3">
+									<div id="{! globalId + '_RewardDateDebited' }" class="slds-m-bottom_medium">
+										<lightning:combobox
+											aura:id="RewardDateDebited"
+											name="dateDebited"
+											label="Date to be debited"
+											value="{! v.rewardDateDebitedValue }"
+											placeholder="Please select"
+											options="{! v.rewardDateDebitedOptions }"
+										/>
+									</div>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout>
+								<lightning:layoutItem>
+									<div id="{! globalId + '_RewardTsAndCsDiv' }" class="slds-form-element">
+										<div class="slds-form-element__control">
+											<div class="slds-checkbox">
+												<input
+													type="checkbox"
+													name="RewardTsAndCs"
+													id="{! globalId + '_RewardTsAndCs' }"
+													checked=""
+													onchange="{!c.rewardTsAndCsChange}"
+												/>
+												<label class="slds-checkbox__label" for="{! globalId + '_RewardTsAndCs' }">
+													<span class="slds-checkbox_faux"></span>
+													<span class="slds-form-element__label"
+														>The customer accepts the
+														<a href="{! $Resource.Rewards_TsAndCs}" target="_blank">terms and conditions.</a></span
+													>
+												</label>
+											</div>
+										</div>
+									</div>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout>
+								<lightning:layoutItem size="12">
+									<div class="slds-m-top_small slds-m-bottom_x-small slds-m-right_xx-large slds-float_right">
+										<lightning:button
+											label="Set up Absa Rewards"
+											title="Set up Absa Rewards"
+											disabled="{!v.isLoading}"
+											onclick="{! c.applyReward }"
+										/>
+									</div>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<aura:if isTrue="{! v.ShowServiceResponse }">
+								<div class="slds-m-top_x-small slds-m-bottom_x-small">
+									<p aura:id="responseText" class="error-color">{!v.ServiceResponse}</p>
+								</div>
+							</aura:if>
+						</div>
+						<aura:set attribute="else">
+							<div class="slds-border_top slds-var-p-around_x-small">
+								<lightning:layout>
+									<lightning:layoutItem size="2">
+										<div class="slds-m-top_x-small slds-m-bottom_x-small">
+											<label>Monthly fee:</label>
+										</div>
+									</lightning:layoutItem>
+									<lightning:layoutItem size="4">
+										<div class="slds-m-top_x-small slds-m-bottom_x-small">
+											<label
+												><b><lightning:formattedNumber style="currency" currencyCode="ZAR" value="{! v.monthlyRewardFee }" /></b> per
+												month</label
+											>
+										</div>
+									</lightning:layoutItem>
+								</lightning:layout>
+								<lightning:layout>
+									<lightning:layoutItem size="2">
+										<div class="slds-m-bottom_medium">
+											<label>Features and benefits:</label>
+										</div>
+									</lightning:layoutItem>
+									<lightning:layoutItem size="10">
+										<div class="slds-m-bottom_medium">
+											<label
+												>Get up to 30% cash back on everyday purchases from our grocery, fuel and health + beauty partners.
+												<a href="{! $Resource.Rewards_FnB}" target="_blank">More features and benefits.</a></label
+											>
+										</div>
+									</lightning:layoutItem>
+								</lightning:layout>
+							</div>
+						</aura:set>
+					</aura:if>
+				</aura:set>
+			</lightning:accordionSection>
+		</lightning:accordion>
+	</div>
+</aura:component>

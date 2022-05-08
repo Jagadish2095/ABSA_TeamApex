@@ -1,0 +1,330 @@
+<!--Created By Eduardo Salia 15/03/2021 -->
+<aura:component controller="RecordTransferController"
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global">
+    
+    <!--Attributes and Event handler-->
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="showDetails" type="boolean" default="false"/>
+    <aura:attribute name="value" type="String"/>
+    <aura:attribute name="userid" type="String"/>
+    <aura:attribute name="recordTypeName" type="String"/>
+    <aura:attribute name="objectName" type="String"/>
+    <aura:attribute name="referralCase" type="Case" default=" { 'sobjectType':'Case' }"/>
+    <aura:attribute name="opportunityDetails" type="Opportunity" default=" { 'sobjectType':'Opportunity' }"/>
+    
+    <aura:attribute name="isLoading" type="Boolean" default="false"/>
+    <aura:attribute name="isOpen" type="Boolean" default="false"/>
+    <aura:attribute name="isCaseOpen" type="Boolean" default="false"/>
+    <aura:attribute name="showRadioButtons" type="Boolean" default="true"/>
+    <aura:attribute name="showNotesSection" type="Boolean"/>
+    <aura:attribute name="isFaceToFaceCase" type="Boolean"/>
+    <aura:attribute name="isVirtualAdvisorCase" type="Boolean"/>
+    <aura:attribute name="opportunityId" type="String"/>
+    <aura:attribute name="defaultRecordTypeId" type="String"/>
+    <aura:attribute name="currentOppDetails" type="Opportunity" default=" { 'sobjectType':'Opportunity' }"/>
+    <!--Declare Attributes-->
+    <aura:attribute name="LanguageList" type="List" default="[]" description="Language Picklist Values"/>
+    <aura:attribute name="selectedLanguageList" type="List" default="[]" description="Selected Language Picklist Values"/>
+    
+    <aura:attribute name="SkillList" type="List" default="[]" description="Skill Picklist Values"/>
+    <aura:attribute name="selectedSkillList" type="List" default="[]" description="Selected Skill Picklist Values"/>
+    <aura:attribute name="users" type="List" default="[]" description="searched users list"/>
+    <aura:attribute name="isSearchPerformed" default="false" type="boolean" description="show the seach result message"/>    
+    <aura:attribute name="clientNotes" type="String"/>
+    <!--Added By Divya-->
+   <aura:attribute name="selectedId" type="String"/>
+    <aura:attribute name="showButton" type="boolean"/>
+   
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:attribute name="optionsOnCase" type="List" default="[
+                                                              {'label': 'Virtual Advisor', 'value': 'VA'},
+                                                              {'label': 'Face To Face Advisor', 'value': 'F2F'}
+                                                              ]"/>
+    
+    <aura:attribute name="optionsOnOpportunity" type="List" default="[
+                                                                     {'label': 'External Source Referral (PSG)', 'value': 'Referred - External'},
+                                                                     {'label': 'Internal Source Referral (AIFA)', 'value': 'Referred - Internal AIFA'},
+                                                                     {'label': 'Internal Source Referral (iDirect)', 'value': 'Referred - Internal iDirect'},
+                                                                     {'label': 'Internal Source Referral (Direct Delivery)', 'value': 'Referred - Internal Direct Delivery'},
+                                                                     {'label': 'Internal Source Referral (VA Life)', 'value': 'Referred - Internal VA Life'}
+                                                                     ]"/>
+    <aura:attribute name="optionsOnInvestmentOpp" type="List" default="[
+                                                                       {'label': 'Virtual Advisor', 'value': 'VA'},
+                                                                       {'label': 'Face To Face Advisor', 'value': 'F2F'}
+                                                                       ]"/>
+    
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    
+    <aura:renderIf isTrue="{!v.showDetails}">
+        
+        <aura:renderIf isTrue="{!v.objectName == 'Case'}">
+            
+            <div class="slds-grid1 slds-gutters1 slds-size_12-of-121">
+                
+                <lightning:card iconName="action:new_case" title="Case Transfer Type- Face to Face">
+                    
+                    <div class="c-container">
+                        <!--   <lightning:radioGroup name="clientCaseReferralTypeId"
+                                              label="Please Select An Option"
+                                              options="{!v.optionsOnCase}"
+                                              value="{!v.value}"
+                                              type="radio"
+                                              onchange="{!c.openCaseModal}"
+                                              required="true"/> -->
+                        
+                    </div>
+                    
+                    <!--     <aura:renderIf isTrue="{!v.isFaceToFaceCase}"> -->
+                    
+                    <div class="slds-section slds-is-open slds-size_12-of-12">
+                        <h3 class="slds-section__title slds-theme_shade">
+                            <span class="slds-truncate slds-p-horizontal_large" title="Please Enter Details Below">Please Enter Details Below</span>
+                        </h3>
+                        <div aria-hidden="false" class="slds-section__content">
+                            <c:searchComp recordId="{!v.recordId}" recordTypeName="Client_Review"/>
+                        </div>
+                    </div>
+                    <!--   </aura:renderIf> -->
+                    
+                    <!--     <aura:renderIf isTrue="{!v.isVirtualAdvisorCase}">
+                        
+                        <div class="slds-section slds-is-open">
+                            <h3 class="slds-section__title slds-theme_shade">
+                                <span class="slds-truncate slds-p-horizontal_small" title="Please Enter Details Below">Please Enter Details Below</span>
+                            </h3>
+                            <div aria-hidden="false" class="slds-section__content">
+                                <lightning:layout multipleRows="true">
+                                    
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <ui:outputText value="Virtual Advisor *"/>
+                                        <force:inputField aura:id="virtualAdvisor" value="{!v.referralCase.OwnerId}" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <ui:outputText value="Agent Notes"/>
+                                        <force:inputField aura:id="internalComments" value="{!v.referralCase.Comments}" />
+                                    </lightning:layoutItem>
+                                    
+                                    <div class="slds-align_absolute-center" style="height:5rem">
+                                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{! c.submitVirtualAdvisor }" />
+                                    </div>
+                                    
+                                </lightning:layout>
+                            </div>
+                        </div>
+                    </aura:renderIf> -->
+                </lightning:card>
+                
+            </div>
+        </aura:renderIf>
+        <!-- code for investment opportunity 
+    added by Pravin W. on 2021/07/13
+    --> 
+       
+	
+		 <!--Added Divya On 12-10-2021-->
+		<aura:renderIf isTrue="{!and(v.objectName == 'Opportunity' , v.currentOppDetails.Opportunity_Record_Type_Name__c == 'Investment Opportunity')}">
+            
+            
+            <div class="slds-gutters"> 
+                <lightning:card iconName="action:new_opportunity" title="Client Referral">
+                    <div class="c-container">
+                        
+                        <lightning:radioGroup name="clientCaseReferralTypeId"
+                                              label="Please Select An Option"
+                                              options="{!v.optionsOnInvestmentOpp}"
+                                              value="{!v.value}"
+                                              type="radio"
+                                              onchange="{!c.openCaseModal}"
+                                              required="true"/>
+                        <aura:renderIf isTrue="{!v.isFaceToFaceCase}">
+                            
+                            <div class="slds-section slds-is-open">
+                                <h3 class="slds-section__title slds-theme_shade">
+                                    <span class="slds-truncate slds-p-horizontal_small" title="Please Enter Details Below">Please Enter Details Below</span>
+                                </h3>
+                                <div aria-hidden="false" class="slds-section__content">
+                                    <c:searchComp recordId="{!v.recordId}" recordTypeName="Client_Review"/>
+                                </div>
+                            </div>
+                        </aura:renderIf>
+                        
+                        <aura:renderIf isTrue="{!v.isVirtualAdvisorCase}">
+                            
+                            <div class="slds-section slds-is-open">
+                                <h3 class="slds-section__title slds-theme_shade">
+                                    <span class="slds-truncate slds-p-horizontal_small" title="Please Enter Details Below">Please Enter Details Below</span>
+                                </h3>
+                                <div aria-hidden="false" class="slds-section__content">
+                                    <lightning:layout multipleRows="true">
+                                        <lightning:layoutItem padding="around-small" size="12">
+                                            <lightning:dualListbox aura:id="selectLanguage"
+                                                                   name="Language"
+                                                                   label="Select Language"
+                                                                   sourceLabel="Available Language"
+                                                                   selectedLabel="Selected Language"
+                                                                   options="{!v.LanguageList}"
+                                                                   value="{!v.selectedLanguageList}"
+                                                                   onchange="{!c.handleLanguageChange}"
+                                                                   size="3"/>                                        
+                                            
+                                            
+                                        </lightning:layoutItem>
+                                         <lightning:layoutItem padding="around-small" size="12">
+                                            <label class="slds-form-element__label" for="select-01">
+    										<abbr class="slds-required" title="required">* </abbr>Agent Notes</label>
+                                            <ui:inputTextArea aura:id="refNotes" value="{!v.clientNotes}"/>
+                                        </lightning:layoutItem>	
+                                        <lightning:layoutItem padding="around-small" size="12">
+                                            <lightning:button variant="brand" label="Search Advisors" onclick="{!c.getSelectedFilters}" />
+                                        </lightning:layoutItem>
+                                        
+                                    </lightning:layout>
+                                </div>
+                            </div>
+                            
+                            
+                            <div class="slds-grid slds-wrap">
+                              <aura:renderIf isTrue="{!and(empty(v.users), v.isSearchPerformed)}" >
+                                    No adviser matching criteria, please change the filters and search again. 
+                                    <aura:set attribute="else">
+                                        <aura:iteration items="{!v.users}" var="usr">
+                                            <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                                                <span>
+                                                    <lightning:card class="slds-p-around_small" iconName="utility:user" title="{! usr.Name  }">
+                                                        <aura:set attribute="actions">
+                                                            <aura:renderIf isTrue="{!v.objectName == 'Opportunity'}"> 
+                                                                <ui:inputRadio name="checkThis" class="slds-radio"
+                                                                               text="{!usr.Id}" change="{!c.onRadioChange}"/>   
+                                                            </aura:renderIf>
+                                                            
+                                                        </aura:set>		
+                                                        <lightning:layout verticalAlign="stretch" multipleRows="true" class="x-large" >
+                                                            
+                                                            <lightning:layoutItem  flexibility="grow">
+                                                                <lightning:recordViewForm recordId="{!usr.Id}" objectApiName="User">
+                                                                    <div class="slds-grid slds-gutters slds-p-left_small">
+                                                                        <div class="slds-col ">
+                                                                            <span>
+                                                                                
+                                                                                <lightning:outputField fieldName="LanguageLocaleKey" />
+                                                                                <div class="slds-border_bottom"/>
+                                                                            </span>
+                                                                        </div>
+                                                                        <div class="slds-col">
+                                                                            <span>
+                                                                                
+                                                                                
+                                                                                <lightning:outputField fieldName="Skills_Products__c" />
+                                                                                <div class="slds-border_bottom"/>
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                </lightning:recordViewForm>
+                                                                
+                                                            </lightning:layoutItem>
+                                                            
+                                                        </lightning:layout>
+                                                    </lightning:card>
+                                                </span>
+                                            </div>
+                                        </aura:iteration>
+                                        <aura:renderIf isTrue="{!v.showButton}" >
+                                        <lightning:layoutItem padding="around-small" size="12">
+                                            <lightning:button variant="brand" label="Refer" onclick="{!c.onRadioOpportunity}" />
+                                        </lightning:layoutItem>
+                                        </aura:renderIf>
+                                         
+                                    </aura:set>
+                                    
+                                </aura:renderIf>
+                                
+                            </div>
+                            
+                            
+                        </aura:renderIf>
+                        
+                        
+                    </div>
+                </lightning:card>     
+            </div>      
+        </aura:renderIf>
+       
+        <aura:renderIf isTrue="{!and(v.objectName == 'Opportunity',v.currentOppDetails.Opportunity_Record_Type_Name__c != 'Investment Opportunity')}">
+            
+            <div class="slds-grid slds-gutters">
+                
+                <lightning:card iconName="action:new_opportunity" title="Client Referral Type">
+                    
+                    <div class="c-container">
+                        
+                        <aura:renderIf isTrue="{!v.showRadioButtons}">
+                            <lightning:radioGroup name="clientOpportunityReferralTypeId"
+                                                  label="Please Select An Option"
+                                                  options="{!v.optionsOnOpportunity}"
+                                                  value="{!v.value}"
+                                                  type="radio"
+                                                  onchange="{!c.showNotes}"
+                                                  required="true"/>
+                        </aura:renderIf>
+                        
+                        <aura:renderIf isTrue="{!v.showNotesSection}">
+                            <div class="slds-section slds-is-open">
+                                <h3 class="slds-section__title slds-theme_shade">
+                                    <span class="slds-truncate slds-p-horizontal_small" title="Please Enter Details Below">Please Enter Details Below</span>
+                                </h3>
+                                
+                                <div aria-hidden="false" class="slds-section__content">
+                                    <lightning:layout multipleRows="true">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <ui:outputText value="AIC Consultant Email *"/> 
+                                            <force:inputField aura:id="consultantEmail" value="{!v.opportunityDetails.VA_AIC_Consultant_Email__c}"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <ui:outputText value="Lead Generator Email *"/> 
+                                            <force:inputField aura:id="leadgeneratorEmail" value="{!v.opportunityDetails.Lead_Originator_Email__c}"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <ui:outputText value="Additional Information"/>
+                                            <force:inputField aura:id="refNotes" value="{!v.opportunityDetails.VA_Client_Referral_Notes__c}"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <ui:outputText value="Type of Insurance"/>
+                                            <force:inputField aura:id="insuranceType" value="{!v.opportunityDetails.Type_of_Insurance_Needed__c}"/>
+                                        </lightning:layoutItem>
+                                        
+                                        <div class="slds-align_absolute-center" style="height:5rem">
+                                            <lightning:button variant="brand" label="Submit" title="Submit" onclick="{! c.confirmClientReferral }" />
+                                        </div>
+                                    </lightning:layout>
+                                </div>
+                            </div>
+                        </aura:renderIf>
+                        
+                    </div>
+                </lightning:card>
+                
+            </div>
+        </aura:renderIf>
+        
+        <aura:set attribute="else">
+            <div class="chat-text" aura:id="warningtoggle">
+            <li class="slds-item">
+                <lightning:tile label="Not Applicable for this Case">
+                    <aura:set attribute="media">
+                        <lightning:avatar fallbackIconName="standard:case"/>
+                    </aura:set>
+                </lightning:tile>
+            </li>
+            </div>
+        </aura:set>
+    </aura:renderIf>
+    
+</aura:component>

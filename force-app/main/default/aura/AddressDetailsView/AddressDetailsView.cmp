@@ -1,0 +1,255 @@
+<!--
+  @description       : Address Detail Component (DO NOT EDIT!)
+  @author            : clifford.willers@absa.africa
+  @last modified on  : 2021-10-20
+  @last modified by  : clifford.willers@absa.africa
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                extends="c:ComponentBase"
+                access="global"
+                controller="BranchAddressController" >
+    <!-- aura:component attributes -->
+    <aura:attribute name="readOnly" type="Boolean" default="false" />
+    <aura:attribute name="addressType" type="String" />
+    <aura:attribute name="addressRecordId" type="String" default="" />
+    <aura:attribute name="addressDisabled" type="Boolean" default="false" />
+    <aura:attribute name="addressRequired" type="Boolean" default="false" />
+    <aura:attribute name="addressValueMissingMsg" type="String" default="Your must specify a value."/>
+    <aura:attribute name="searchLabel" type="String" default="Suburb"/>
+    <aura:attribute name="searchRequired" type="Boolean" default="true" />
+    <aura:attribute name="searchValueMissingMsg" type="String" default="Your must specify a value."/>
+    <aura:attribute name="searchVariant" type="String" default="label-hidden"/>
+    <aura:attribute name="searchPattern" type="String" default="[a-zA-Z0-9 _\-]+$"/>
+    <aura:attribute name="searchPatternMismatchMsg" type="String" default="Your entry does not match the allowed pattern."/>
+    <aura:attribute name="countryOptions" type="List" />
+    <aura:attribute name="addressStreet" type="String" />
+    <aura:attribute name="addressStreet2" type="String" />
+    <aura:attribute name="addressProvince" type="String"/>
+    <aura:attribute name="addressSuburb" type="String"/>
+    <aura:attribute name="addressCity" type="String"/>
+    <aura:attribute name="addressPostalCode" type="String"/>
+    <aura:attribute name="addressCountry" type="String"/>
+    <aura:attribute name="areaToSearch" type="String"/>
+    <aura:attribute name="searchResult" type="String"/>
+    <aura:attribute name="canSearchSuburb" type="Boolean" />
+    <aura:attribute name="doneLoading" type="Boolean" default="false"/>
+    <!-- aura:registerEvents -->
+    <aura:registerEvent name="addressRecordEvent" type="c:BranchAddressRecordEvent" />
+    <!-- aura:methods -->
+    <aura:method name="SubmitAddress" action="{! c.submitAddress }" access="PUBLIC" />
+    <aura:method name="AddValidation" action="{! c.addValidation }" access="PUBLIC" >
+        <aura:attribute name="fieldName" type="String"/>
+        <aura:attribute name="fieldError" type="String"/>
+    </aura:method>
+    <aura:method name="RemoveValidation" action="{! c.removeValidation }" access="PUBLIC" >
+        <aura:attribute name="fieldName" type="String"/>
+    </aura:method>
+    <aura:method name="validate" action="{! c.validate }" access="PUBLIC" />
+    <!-- aura:handlers -->
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <aura:handler name="addressSearchEvent" event="c:BranchAddressSearchEvent" action="{! c.handleSearchEvent }"/>
+    <aura:handler name="addressClearEvent" event="c:BranchAddressClearEvent" action="{! c.handleClearEvent }"/>
+
+    <aura:if isTrue="{! v.addressRecordId != '' }">
+        <lightning:recordEditForm aura:id="AddressInfo"
+                                  recordId="{! v.addressRecordId }"
+                                  objectApiName="Address__c"
+                                  density="comfy"
+                                  onload="{! c.addressRecordLoaded }"
+                                  onsubmit="{! c.addressRecordSubmit }"
+                                  onerror="{! c.addressRecordError }"
+                                  onsuccess="{! c.addressRecordSuccess }">
+            <lightning:inputField fieldName="Address_Type__c" class="hidden_field"/>
+            <lightning:inputField fieldName="Shipping_Street__c" class="hidden_field"/>
+            <lightning:inputField fieldName="Shipping_Street_2__c" class="hidden_field"/>
+            <lightning:inputField fieldName="Shipping_Zip_Postal_Code__c" class="hidden_field"/>
+            <lightning:inputField fieldName="Shipping_Suburb__c" class="hidden_field"/>
+            <lightning:inputField fieldName="Shipping_City__c" class="hidden_field"/>
+            <lightning:inputField fieldName="Shipping_State_Province__c" class="hidden_field"/>
+            <lightning:inputField fieldName="Shipping_Country__c" class="hidden_field"/>
+            <lightning:inputField fieldName="Client_Entity_Type__c" class="hidden_field"/>
+            <button id="{! globalId + '_address_submit' }" type="submit" class="hidden_field"/>
+        </lightning:recordEditForm>
+
+        <aura:if isTrue="{! v.readOnly }">
+            <lightning:layout>
+                <lightning:layoutitem padding="horizontal-medium" size="6">
+                    <div class="slds-var-p-around_x-small">
+                        <label id="{! globalId + '_AddressStreetReadOnly_label' }" for="AddressStreet" >{! v.addressType } address line 1</label>
+                        <div id="{! globalId + '_AddressStreetReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                            <b><lightning:formattedText aura:id="AddressStreetReadOnly"
+                                                        name="AddressStreetReadOnly"
+                                                        value="{! v.addressStreet }"/></b>
+                        </div>
+                    </div>
+                </lightning:layoutitem>
+                <aura:if isTrue="{! v.addressType != 'Employers' }">
+                    <lightning:layoutitem padding="horizontal-medium" size="6">
+                        <div class="slds-var-p-around_x-small">
+                            <label id="{! globalId + '_AddressStreet2ReadOnly_label' }" for="AddressStreet2" >{! v.addressType } address line 2 (optional)</label>
+                            <div id="{! globalId + '_AddressStreet2ReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                <b><lightning:formattedText aura:id="AddressStreet2ReadOnly"
+                                                            name="AddressStreet2ReadOnly"
+                                                            value="{! v.addressStreet2 }"/></b>
+                            </div>
+                        </div>
+                    </lightning:layoutitem>
+                </aura:if>
+            </lightning:layout>
+            <lightning:layout>
+                <lightning:layoutitem padding="horizontal-medium" size="6">
+                    <div class="slds-var-p-around_x-small">
+                        <label id="{! globalId + '_AddressSuburbReadOnly_label' }" for="AddressSuburb" >Suburb</label>
+                        <div id="{! globalId + '_AddressSuburbReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                            <b><lightning:formattedText aura:id="AddressSuburbReadOnly"
+                                                        name="AddressSuburbReadOnly"
+                                                        value="{! v.addressSuburb }"/></b>
+                        </div>
+                    </div>
+                    <div class="slds-var-p-around_x-small">
+                        <label id="{! globalId + '_AddressPostalCodeReadOnly_label' }" for="AddressPostalCode" >Postal code/Zip code</label>
+                        <div id="{! globalId + '_AddressPostalCodeReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                            <b><lightning:formattedText aura:id="AddressPostalCodeReadOnly"
+                                                        name="AddressPostalCodeReadOnly"
+                                                        value="{! v.addressPostalCode }"/></b>
+                        </div>
+                    </div>
+                </lightning:layoutitem>
+                <lightning:layoutitem padding="horizontal-medium" size="6">
+                    <div class="slds-var-p-around_x-small" >
+                        <label id="{! globalId + '_AddressCityReadOnly_label' }" for="AddressCity" >City</label>
+                        <div id="{! globalId + '_AddressCityReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                            <b><lightning:formattedText aura:id="AddressCityReadOnly"
+                                                        name="AddressCityReadOnly"
+                                                        value="{! v.addressCity }"/></b>
+                        </div>
+                    </div>
+                    <div class="slds-var-p-around_x-small" >
+                        <label id="{! globalId + '_AddressProvinceReadOnly_label' }" for="AddressProvince" >Province</label>
+                        <div id="{! globalId + '_AddressProvinceReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                            <b><lightning:formattedText aura:id="AddressProvinceReadOnly"
+                                                        name="AddressProvinceReadOnly"
+                                                        value="{! v.addressProvince }"/></b>
+                        </div>
+                    </div>
+                </lightning:layoutitem>
+            </lightning:layout>
+            <lightning:layout>
+                <lightning:layoutitem padding="horizontal-medium" size="6">
+                    <div class="slds-var-p-around_x-small">
+                        <label id="{! globalId + '_AddressCountryReadOnly_label' }" for="AddressCountry" >Country</label>
+                        <div id="{! globalId + '_AddressCountryReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                            <b><lightning:formattedText aura:id="AddressCountryReadOnly"
+                                                        name="AddressCountryReadOnly"
+                                                        value="{! v.addressCountry }"/></b>
+                        </div>
+                    </div>
+                </lightning:layoutitem>
+            </lightning:layout>
+            <aura:set attribute="else">
+                <lightning:layout>
+                    <lightning:layoutitem padding="horizontal-medium" size="6">
+                        <div id="{! globalId + '_AddressStreet' }" class="slds-var-p-around_x-small">
+                            <label for="AddressStreet" >{! v.addressType } address line 1</label>
+                            <lightning:input aura:id="AddressStreet"
+                                                variant="label-hidden"
+                                                value="{! v.addressStreet }"
+                                                required="{! v.addressRequired }"
+                                                messageWhenValueMissing="{! v.addressValueMissingMsg }"
+                                                disabled="{! v.addressDisabled }"
+                                                maxlength="30" />
+                        </div>
+                    </lightning:layoutitem>
+                    <aura:if isTrue="{! v.addressType != 'Employers' }">
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div id="{! globalId + '_AddressStreet2' }" class="slds-var-p-around_x-small">
+                                <label for="AddressStreet2" >{! v.addressType } address line 2 (optional)</label>
+                                <lightning:input aura:id="AddressStreet2"
+                                                    value="{! v.addressStreet2 }"
+                                                    variant="label-hidden"
+                                                    required="false"
+                                                    messageWhenValueMissing="{! v.addressValueMissingMsg }"
+                                                    disabled="{! v.addressDisabled }"
+                                                    maxlength="30" />
+                            </div>
+                        </lightning:layoutitem>
+                    </aura:if>
+                </lightning:layout>
+                <lightning:layout>
+                    <lightning:layoutitem padding="horizontal-medium" size="6">
+                        <div id="{! globalId + '_AddressSuburb' }" class="slds-var-p-around_x-small">
+                            <label for="AddressSuburb" >Suburb</label>
+                            <c:BranchAddressInfo aura:id="branchSuburbSearch"
+                                                    addressType="{! v.addressType }"
+                                                    addressLabel="{! v.searchLabel }"
+                                                    addressRequired="{! v.searchRequired }"
+                                                    addressValueMissingMsg="{! v.searchValueMissingMsg }"
+                                                    addressVariant="{! v.searchVariant }"
+                                                    addressPattern="{! v.searchPattern }"
+                                                    addressPatternMismatchMsg="{! v.searchPatternMismatchMsg }"
+                                                    addressDisabled="{! v.addressDisabled }"
+                                                    addressSuburb="{! v.addressSuburb }" />
+                        </div>
+                        <div id="{! globalId + '_AddressPostalCode' }" class="slds-var-p-around_x-small">
+                            <label for="AddressPostalCode" >Postal code/Zip code</label>
+                            <lightning:input aura:id="AddressPostalCode"
+                                                variant="label-hidden"
+                                                value="{! v.addressPostalCode }"
+                                                required="{! v.addressRequired }"
+                                                messageWhenValueMissing="{! v.addressValueMissingMsg }"
+                                                disabled="{! v.addressDisabled }"
+                                                pattern="[0-9]{4}"/>
+                        </div>
+                    </lightning:layoutitem>
+                    <lightning:layoutitem padding="horizontal-medium" size="6">
+                        <div id="{! globalId + '_AddressCity' }" class="slds-var-p-around_x-small" >
+                            <label for="AddressCity" >City</label>
+                            <lightning:input aura:id="AddressCity"
+                                                variant="label-hidden"
+                                                value="{! v.addressCity }"
+                                                required="{! v.addressRequired }"
+                                                messageWhenValueMissing="{! v.addressValueMissingMsg }"
+                                                disabled="{! v.addressDisabled }" />
+                        </div>
+                        <div id="{! globalId + '_AddressProvince' }" class="slds-var-p-around_x-small" >
+                            <label for="AddressProvince" >Province</label>
+                            <lightning:input aura:id="AddressProvince"
+                                                variant="label-hidden"
+                                                value="{! v.addressProvince }"
+                                                required="{! v.addressRequired }"
+                                                messageWhenValueMissing="{! v.addressValueMissingMsg }"
+                                                disabled="{! v.addressDisabled }" />
+                        </div>
+                    </lightning:layoutitem>
+                </lightning:layout>
+                <lightning:layout>
+                    <lightning:layoutitem padding="horizontal-medium" size="6">
+                        <div id="{! globalId + '_AddressCountry' }" class="slds-var-p-around_x-small">
+                            <label for="AddressCountry" >Country</label>
+                            <lightning:select aura:id="AddressCountry"
+                                                name="selectCountry"
+                                                label=""
+                                                class="label-hidden"
+                                                value="{! v.addressCountry }"
+                                                required="{! v.addressRequired }"
+                                                messageWhenValueMissing="{! v.addressValueMissingMsg }"
+                                                disabled="{! v.addressDisabled }" >
+                                <option value="">please select...</option>
+                                <aura:iteration items="{! v.countryOptions }" var="countryValue">
+                                    <option value="{!countryValue}" selected="{!countryValue==v.addressCountry}">{!countryValue}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </div>
+                    </lightning:layoutitem>
+                </lightning:layout>
+            </aura:set>
+        </aura:if>
+    	<aura:set attribute="else">
+            <lightning:layout >
+                <lightning:layoutItem padding="horizontal-medium" size="6">
+                    <lightning:spinner alternativeText="Loading" size="small" />
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:set>
+    </aura:if>
+</aura:component>

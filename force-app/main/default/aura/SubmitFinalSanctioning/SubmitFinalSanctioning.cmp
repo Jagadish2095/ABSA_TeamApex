@@ -1,0 +1,92 @@
+<!--
+    
+* Lightning Component for final sanctioning decision
+* @author  Almas Aleem : Absa
+* @version v1.0
+* @since   2020-10-19
+* 
+*
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" 
+                controller="SanctioningApprovalController">
+ 	
+    <!--Attribute Decleration -->
+    <aura:attribute name="recordId" type="Id" />  <!--Opportunity Id-->
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="dfieldname" type="String" default="Name"/>
+    <aura:attribute name="showInfo" type ="Boolean" default="false"/>
+    <aura:attribute name="listviewID" type ="Id" />
+    <aura:attribute name="simpleRecord" type="Object"/>
+    
+    <lightning:workspaceAPI aura:id="workspace"/>    
+    
+   <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    
+     <!-- Requested Products-->
+    <aura:attribute name="dataReqProd" type="Object" access="public"/>
+    <aura:attribute name="columnsReqProd" type="List" access="public"/>
+  
+
+     <!--loading spinner start-->
+    <div class="exampleHolder">
+        <lightning:spinner aura:id="mySpinner" class="slds-hide" alternativeText="Loading..." variant="brand"
+                           size="large" />
+    </div>
+    <!-- Loading spinner end-->
+    
+     <!--Read record-->    
+    <aura:attribute name="oppRecord" type="Object"/>
+    
+    
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="Is_Final_Sanctioning_Decision__c"
+                      targetFields="{!v.oppRecord}"
+                      />
+    <!-- sanctioning ui-->
+ <div class="c-container">
+     
+     
+     <!-- ui for product history-->
+     <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12" >
+                    
+                    <lightning:datatable
+                                         data="{!v.dataReqProd}"
+                                         columns="{!v.columnsReqProd}"
+                                         keyField="Id"
+                                         aura:id="submissionHistory"
+                                         hideCheckboxColumn="true"
+                                         
+                                        
+                                         />
+                    
+                </lightning:layoutItem>
+            </lightning:layout>
+     
+     <!-- ui for product history end-->   
+        <!--<aura:if isTrue ="{!v.showInfo}"> -->
+            <lightning:recordEditForm aura:id="recordHandler"
+                                      recordId="{!v.recordId}" objectApiName="Opportunity"   > 
+                <lightning:layout multipleRows="true" > 
+                     <lightning:layoutItem size="6"  class="slds-p-top_large">     
+                        <lightning:inputfield aura:id="finalDecisionConfirmation" fieldName="Is_Final_Sanctioning_Decision__c"   variant="label-hidden"   disabled="{!v.oppRecord.Is_Final_Sanctioning_Decision__c}"/> 
+                        <p>I have made a final decision on this opportunity, and am returning it to the banker.</p>
+                    </lightning:layoutItem>
+                    
+				<lightning:layoutItem size="6" class="slds-p-top_large">
+                        <lightning:button variant="brand" type="submit" name="save" label="Return Final Decision" aura:id="decisionbutton" onclick="{!c.handleSuccess}"   disabled=""/>
+                    </lightning:layoutItem>
+                    
+                     </lightning:layout>
+            </lightning:recordEditForm>   
+        <!-- </aura:if> -->
+    </div>
+          
+</aura:component>

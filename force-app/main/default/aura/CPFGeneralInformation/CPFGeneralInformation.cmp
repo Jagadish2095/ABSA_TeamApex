@@ -1,0 +1,536 @@
+<!--
+  @description       :Lightning Component for GeneralInformation Section
+  @author            :Haritha Polica
+  @last modified on  : 2021-07-23
+  @last modified by  : 
+  Modifications Log
+  Ver   Date         Author   Modification
+  1.0   2021-06-17      Initial Version
+-->
+<aura:component controller = "CPFGeneralInformationController" implements="flexipage:availableForAllPageTypes,force:appHostable,force:lightningQuickAction,force:hasRecordId" access="global" >
+
+    <aura:attribute name="newPortfolioList" type="Application_Portfolio__c[]" />
+    <aura:attribute name="ApplicationProductCPF" type="Application_Product_CPF__c" default="{sobjectType:'Application_Product_CPF__c'}"/>
+
+    <aura:attribute name="showCIFField" type="Boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="showEquityAmtField" type="Boolean" />
+    <aura:attribute name="showOtherEquityField" type="Boolean" default="false"/>
+
+    <aura:attribute name="showfacilityPurposeField" type="Boolean" default="false"/>
+    <aura:attribute name="showThresholdFields" type="Boolean" default="false"/>
+    <aura:attribute name="showDocField" type="Boolean" default="false"/>
+    <aura:attribute name="showApprovedByCreditField" type="Boolean" default="false"/>
+    <aura:attribute name="showcreditPropField" type="Boolean" default="false"/>
+    <aura:attribute name="showPortfolioDescriptionField" type="Boolean" default="false"/>
+    <aura:attribute name="showPropertyDescriptionField" type="Boolean" default="false"/>
+    <aura:attribute name="devproptype" type="Boolean" default="false"/>
+    <aura:attribute name="devloanvatfaciamt" type="string" />
+    <aura:attribute name="devloanfinalrepaypick" type="String"/>
+    <aura:attribute name="vatrepayoptions" type="String" />
+    <!-- <aura:attribute name="vatrepayoptions" type="Boolean" default="false"/>-->
+    <aura:attribute name="vatrepayoptionsinterest" type="Boolean" default="false"/>
+    <aura:attribute name="devloanisvat" type="string" default="No" />
+
+    <aura:attribute name="recordId" type="Id" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <!--<aura:handler name="init" value="{!this}" action="{!c.fetchApplicationPortfolio}"/> -->
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="appPrdctCpfRec" type="Object" />
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute type="Application_Product_CPF__c[]" name="acctList"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:attribute name="transactionalBankingAccounts" type="String" default="No" />
+    <aura:attribute name="includeGuarantors" type="String" default="No" />
+    <aura:attribute name="prodName" type="string" />
+
+    <aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleportfolioApplicationEvent}"/>
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner />
+    </aura:if>
+
+    <lightning:recordEditForm
+                              aura:id="iApplicationRecord"
+                              objectApiName="Application_Product_CPF__c"
+                              recordId="{!v.appPrdctCpfRec.Id}"
+                              onError ="{!c.handleSaveError}"
+                              onSuccess ="{!c.handleSuccess}"
+                              >
+        <lightning:accordion>
+            <lightning:accordionSection name="GeneralInfo" label="General Information">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+
+                            <label class="slds-form-element__label">
+                                <label for="amendment">Amendment and restatement clause applicable</label>
+                                <lightning:helptext icon-name="utility:like" content="The Bank has advanced loans to the Borrower under a loan agreement and/or agreements entered into between the Bank and the Borrower in respect of a loan granted under account number [ACCOUNT NUMBER] prior to the conclusion of the Facility Agreement ('Prior Agreements'). With effect from the fulfilment of the Conditions Precedent, the Prior Loan Agreement shall be amended and restated in the form of the Facility Agreement so that the rights and obligations of the Bank and the Borrower under the Prior Loan Agreement shall be governed by and construed in accordance with the provisions of the Facility Agreement. The Bank and the Borrowe agee further that the Prior Loan Agreements remain in full force and effect and are not novated, but are being amended and restated pursuant to the Facility Agreement, and are constituted by the Facility Agreement." />
+                            </label>
+                            <lightning:inputField fieldName="Amendment_and_restatement_clause_app__c"  aura:id="amendment" variant="label-hidden"  onchange = "{!c.showHiddenFields}" required = "true"/>
+                        </span>
+
+                    </div>
+                    <aura:if isTrue="{!v.showCIFField}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="required">* </span>
+
+                                    <label for="cpfacc">CPF account number</label>
+                                    <lightning:helptext icon-name="utility:like" content="The Bank has advanced loans to the Borrower under a loan agreement and/or agreements entered into between the Bank and the Borrower in respect of a loan granted under account number [ACCOUNT NUMBER] prior to the conclusion of the Facility Agreement ('Prior Agreements'). With effect from the fulfilment of the Conditions Precedent, the Prior Loan Agreement shall be amended and restated in the form of the Facility Agreement so that the rights and obligations of the Bank and the Borrower under the Prior Loan Agreement shall be governed by and construed in accordance with the provisions of the Facility Agreement. The Bank and the Borrowe agee further that the Prior Loan Agreements remain in full force and effect and are not novated, but are being amended and restated pursuant to the Facility Agreement, and are constituted by the Facility Agreement." />
+                                </label>
+                                <lightning:inputField fieldName="CPF_account_number__c"  aura:id="CPFF_accNo" variant="label-hidden"/>
+                            </span>
+                        </div>
+                    </aura:if>
+                    <!--8841 start -->
+                    <div class="slds-col slds-size_1-of-2">
+                        <label class="slds-form-element__label">
+                            <span class="slds-m-right_small">Transactional banking accounts</span>
+                            <lightning:helptext icon-name="utility:like" content="The Borrower Option: [and the Guarantor(s)] undertake(s) to close all of its transactional banking accounts not currently held by the Bank and to move all of its transactional banking accounts to the Bank within a period of 90 (ninety) days from Option: [the Signature Date] Option: [Registration of the Mortgage Bond]. The Borrower Option: [and the Guarantor(s)] must provide the Bank with proof, in form and substance to the satisfaction of the Bank, that all accounts have been moved within the stipulated time period, failure to do so shall constitute an Event of Default."/>
+                        </label>
+
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                        picklistfieldName="Transactional_banking_accounts__c"
+                                                        objectName="Application_Product_CPF__c"
+                                                        value="{!v.transactionalBankingAccounts}"/>
+                    </div>
+                    <aura:if isTrue="{!v.transactionalBankingAccounts == 'Yes'}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Include guarantor(s)</span>
+                                <lightning:helptext icon-name="utility:like" content="The Borrower Option: [and the Guarantor(s)] undertake(s) to close all of its transactional banking accounts not currently held by the Bank and to move all of its transactional banking accounts to the Bank within a period of 90 (ninety) days from Option: [the Signature Date] Option: [Registration of the Mortgage Bond]. The Borrower Option: [and the Guarantor(s)] must provide the Bank with proof, in form and substance to the satisfaction of the Bank, that all accounts have been moved within the stipulated time period, failure to do so shall constitute an Event of Default."/>
+                            </label>
+
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                            picklistfieldName="Include_guarantor_s__c"
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.includeGuarantors}"/>
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">when</span>
+                                    <lightning:helptext icon-name="utility:like" content="The Borrower Option: [and the Guarantor(s)] undertake(s) to close all of its transactional banking accounts not currently held by the Bank and to move all of its transactional banking accounts to the Bank within a period of 90 (ninety) days from Option: [the Signature Date] Option: [Registration of the Mortgage Bond]. The Borrower Option: [and the Guarantor(s)] must provide the Bank with proof, in form and substance to the satisfaction of the Bank, that all accounts have been moved within the stipulated time period, failure to do so shall constitute an Event of Default."/>
+                                </label>
+                                <lightning:inputField fieldName="When__c" aura:id="when" required = "true" variant="label-hidden"/>
+                            </span>
+                        </div>
+
+                    </aura:if>
+                    <!--8841 end -->
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <label for="amendment">Withdrawal or repricing of facility after signature of final Term Sheet</label>
+                                <lightning:helptext icon-name="utility:like" content="The Bank will be entitled to Option: [withdraw the Facility] Option: [review the pricing of the Facility] if at any time after signature of this Term Sheet but prior to the signature of the Facility Agreements: (i) a circumstance which has a material adverse effect on the Borrower occurs; and/or (ii) an economic failure occurs, which in the Bank’s reasonable opinion would have caused it not to make the offer to Loan or to make it on different terms and/or conditions or to offer a lesser loan facility.]" />
+                            </label>
+                            <lightning:inputField fieldName="Withdrawal__c" aura:id="withdrawal" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Monthly_charging_date__c" label="Monthly charging date" aura:id="cDate"/>
+                        </span>
+                    </div>
+                    <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Equity_contributions__c"  aura:id="equity" onchange = "{!c.showHiddenFields}" disabled="true"/>
+                            </span>
+                        </div>
+                    </aura:if>
+                    <aura:if  isTrue="{!or(v.prodName == 'CPF Above R5 Million',v.prodName == 'CPF Development Loan')}"  >
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Equity_contributions__c"  aura:id="equity" onchange = "{!c.showequityFields}" />
+                            </span>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!v.showEquityAmtField}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Equity_contribution_amount__c"  aura:id="eContAmt"/>
+                            </span>
+                        </div>
+                    </aura:if>
+
+                    <aura:if isTrue="{!v.showOtherEquityField}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Other_equity_contributions__c" aura:id="OtherEqContribution" />
+                            </span>
+                        </div>
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Borrower_under_CPA__c" label="Borrower falls under the ambit of the CPA" aura:id="underCPA" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <!-- <label class="slds-form-element__label">
+                <span class="slds-m-right_small">Owner Occupied</span>
+<lightning:helptext icon-name="utility:like" content="Select Yes if Owner occupies more that 75% of the Property" />
+            </label>-->
+                            <lightning:inputField fieldName="Owner_Occupied__c"  aura:id="ownerOccupied" />
+                        </span>
+                    </div>
+                    <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Undertakings_threshold__c" label="Undertakings threshold"  aura:id="threshold" onchange = "{!c.showthresholdFields}" disabled="true"/>
+                            </span>
+                        </div>
+                        <aura:if isTrue="{!v.showThresholdFields}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Threshold_periods__c" label="Threshold periods" aura:id="thresholdPeriods"/>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Undertakings_threshold_amount__c" label="Undertakings threshold amount" aura:id="tAmount" />
+                                </span>
+                            </div>
+                        </aura:if>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Additional_finance_documents_required__c" label="Additional finance documents required" aura:id="additionalDoc" onchange = "{!c.showadditionalDocFields}" disabled="true"/>
+                            </span>
+                        </div>
+                        <aura:if isTrue="{!v.showDocField}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Additional_finance_documents__c" label="Additional finance documents" aura:id="additionalReqDoc"/>
+                                </span>
+                            </div>
+                        </aura:if>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Cross_default_threshold_amount__c" label="Cross default threshold amount" aura:id="crossDefaultThresholdAmt" disabled="true"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Litigation_threshold_amount__c" label="Litigation threshold amount" aura:id="litAmt" disabled="true"/>
+                            </span>
+                        </div>
+                    </aura:if>
+                    <aura:if  isTrue="{!or(v.prodName == 'CPF Above R5 Million',v.prodName == 'CPF Development Loan')}"  >
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Undertakings_threshold__c" label="Undertakings threshold"  aura:id="threshold" onchange = "{!c.showthresholdFields}" />
+                            </span>
+                        </div>
+                        <aura:if isTrue="{!v.showThresholdFields}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Threshold_periods__c" label="Threshold periods" aura:id="thresholdPeriods"/>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Undertakings_threshold_amount__c" label="Undertakings threshold amount" aura:id="tAmount" />
+                                </span>
+                            </div>
+                        </aura:if>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Additional_finance_documents_required__c" label="Additional finance documents required" aura:id="additionalDoc" onchange = "{!c.showadditionalDocFields}" />
+                            </span>
+                        </div>
+                        <aura:if isTrue="{!v.showDocField}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Additional_finance_documents__c" label="Additional finance documents" aura:id="additionalReqDoc"/>
+                                </span>
+                            </div>
+                        </aura:if>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Cross_default_threshold_amount__c" label="Cross default threshold amount" aura:id="crossDefaultThresholdAmt" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Litigation_threshold_amount__c" label="Litigation threshold amount" aura:id="litAmt" />
+                            </span>
+                        </div>
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Further loan options</span>
+                                <lightning:helptext icon-name="utility:like" content="Further Loans Option 1: A Further Advance has been granted and shall apply to this Facility.Option 2: A Further Loan has been granted and shall apply to this Facility.Option 3: A Re-Advance has been granted and shall apply to this Facility.Option 4: There is no Further Loan"/>
+                            </label>
+                            <lightning:inputField fieldName="Further_loan_options__c"  aura:id="furtherLoanOptions" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <aura:if  isTrue="{!v.prodName != 'CPF Development Loan'}"  >
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Facility purpose</span>
+                                    <lightning:helptext icon-name="utility:like" content="Option 1: [INSERT PURPOSE AS APPROVED BY CREDIT].Option 2: [To finance in whole or in part the acquisition of the Property] in respect of Option 2A [an office block]/[shopping centre]/ [industrial warehousing facility]/[a block of flats]/[retail property]/[a sectional title property]/[sectional title parking bays].Option 3:  [To finance in whole or in part the acquisition of a portfolio of Properties.](List properties)"/>
+                                </label>
+                                <lightning:inputField fieldName="Facility_purpose__c" label="Facility purpose" aura:id="fPurpose" onchange = "{!c.showfPurposeFields}" variant="label-hidden"/>
+                            </span>
+                        </div>
+                    </aura:if>
+                    <aura:if  isTrue="{!v.prodName == 'CPF Development Loan'}"  >
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Development Facility purpose</span>
+                                    <lightning:helptext icon-name="utility:like" content="Option: [the acquisition and Development] / Option: [Development of the Property]"/>
+                                </label>
+                                <lightning:inputField fieldName="Development_Facility_purpose__c" label="Development Facility purpose" aura:id="devfaciPurpose" variant="label-hidden"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Property type</span>
+                                    <lightning:helptext icon-name="utility:like" content=" The development to be undertaken on the Property is; Option 1A: [an office block] / [a retail centre]/[a mixed use development]/[an industrial warehouse]/[residential development]/[a sectional title development]/[service station]/[an educational institution]/[a retirement village]/[a church]/[( [FREE FLOW] list any development type not listed"/>
+                                </label>
+                                <lightning:inputField fieldName="Property_type__c" label="Property type" aura:id="devproptype" onchange = "{!c.showdevproptype}" variant="label-hidden"/>
+                            </span>
+                        </div>
+                        <aura:if isTrue="{!v.devproptype}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Other property type</span>
+                                        <lightning:helptext icon-name="utility:like" content="Capture any other property type not catered for."/>
+                                    </label>
+                                    <lightning:inputField fieldName="Other_property_type__c" aura:id="otherproptype" variant="label-hidden"/>
+                                </span>
+                            </div>
+                        </aura:if>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Property description</span>
+                                    <lightning:helptext icon-name="utility:like" content="Capture Property description as per Deed Office"/>
+                                </label>
+                                <lightning:inputField fieldName="Property_description_Dev__c"  aura:id="devpropDescription" variant="label-hidden"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Development description</span>
+                                    <lightning:helptext icon-name="utility:like" content="Capture detail of the Development e.g Two phased Development consisting of 30 units to be known as Golden Gardens."/>
+                                </label>
+                                <lightning:inputField fieldName="Development_description__c"  aura:id="devDescription" variant="label-hidden"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Development loan Is VAT Facility applicable</span>
+                                    <lightning:helptext icon-name="utility:like" content="Select Yes if VAT Facility is applicable." />
+                                </label>
+                                <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                                picklistfieldName="Development_loan_Is_VAT_Facility_applica__c"
+                                                                objectName="Application_Product_CPF__c"
+                                                                value="{!v.devloanisvat}" />
+                            </span>
+                        </div>
+                        <aura:if isTrue="{!v.devloanisvat=='Yes'}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">VAT Facility amount</span>
+                                        <lightning:helptext icon-name="utility:like" content="Select the applicable option."/>
+                                    </label>
+                                    <lightning:inputField fieldName="Development_loan_VAT_Facility_amount__c"  aura:id="devloanvatfaciamt" onchange ="{!c.showdevloanvatfaciamt}" variant="label-hidden"/>
+                                </span>
+                            </div>
+                            <aura:if isTrue="{!v.devloanvatfaciamt=='Aggregate maximum amount'}">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">Aggregate maximum amount</span>
+                                            <lightning:helptext icon-name="utility:like" content=" The aggregate maximum amount that may be advanced under the VAT Facility is R[AMOUNT]."/>
+                                        </label>
+                                        <lightning:inputField fieldName="Aggregate_maximum_amount__c"  aura:id="aggmaxiamt" variant="label-hidden"/>
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!v.devloanvatfaciamt=='Amount outstanding'}">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">Amount outstanding</span>
+                                            <lightning:helptext icon-name="utility:like" content="The total amount that may be outstanding in respect of the VAT Facility from time to time may not exceed R[AMOUNT]."/>
+                                        </label>
+                                        <lightning:inputField fieldName="Amount_outstanding__c"  aura:id="amtoutstanding" variant="label-hidden"/>
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">VAT Facility Term</span>
+                                        <lightning:helptext icon-name="utility:like" content="The VAT Facility is available until the last day of a period of [NUMBER] month(s) calculated from the date of the fulfilment or waiver, as the case may be, of the Conditions Precedent or until the date 95 (ninety five) days post the Practical Completion Date, or until [DATE]; whichever is earlier."/>
+                                    </label>
+                                    <lightning:inputField fieldName="Development_loan_Term__c"  aura:id="devloanterm" variant="label-hidden"/>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">VAT Facility Final Repayment Date</span>
+                                        <lightning:helptext icon-name="utility:like" content="The VAT Facility must be repaid in full by no later than Option:[4 (four) months after the expiry of the Development Period] / [INSERT DATE]."/>
+                                    </label>
+                                    <lightning:inputField fieldName="Development_loan_Final_Repayment_Date__c"  aura:id="devloanfinalrepaypick" onchange="{!c.showdevloanfinalrepaypick}" variant="label-hidden"/>
+                                </span>
+                            </div>
+                            <aura:if isTrue="{!v.devloanfinalrepaypick=='Date'}">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">VAT Facility Final Repayment Date</span>
+                                            <lightning:helptext icon-name="utility:like" content="The VAT Facility must be repaid in full by no later than Option:[4 (four) months after the expiry of the Development Period] / [INSERT DATE]."/>
+                                        </label>
+                                        <lightning:inputField fieldName="Date_of_final_repayment__c"  aura:id="dateoffinalrepay" variant="label-hidden"/>
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">VAT Facility Purpose</span>
+                                        <lightning:helptext icon-name="utility:like" content="The VAT Facility is granted to finance the amount of VAT payable in terms of the Value Added Tax Act 1991, in respect of the Option: [development costs] Option:[purchase price of the Property] Option: [purchase price of the Property and development costs]."/>
+                                    </label>
+                                    <lightning:inputField fieldName="Development_loan_Purpose__c"  aura:id="devloanpurpose" variant="label-hidden"/>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">VAT Facility Fee</span>
+                                        <lightning:helptext icon-name="utility:like" content="VAT Facility Fee: R[AMOUNT]."/>
+                                    </label>
+                                    <lightning:inputField fieldName="VAT_Facility_Fee__c"  aura:id="vatfacifee" variant="label-hidden"/>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">VAT Repayment Options</span>
+                                        <lightning:helptext icon-name="utility:like" content="Select the applicable VAT repayment option."/>
+                                    </label>
+                                    <lightning:inputField fieldName="VAT_Repayment_Options__c"  aura:id="vatrepayoptions" onchange="{!c.showvatrepayoptions}" variant="label-hidden"/>
+                                </span>
+                            </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">Interest service frequency</span>
+                                            <lightning:helptext icon-name="utility:like" content="Interest: Interest shall be serviced [monthly/quarterly/bi-annually/annually]."/>
+                                        </label>
+                                        <lightning:inputField fieldName="Interest_service_frequency__c"  aura:id="insterestfreq" variant="label-hidden"/>
+                                    </span>
+                                </div>
+                                <aura:if isTrue="{!or(v.vatrepayoptions =='Interest and capital repayments with Bullet (VAT input credits)',
+                                v.vatrepayoptions =='Capitalised Interest and capital repayments with Bullet (VAT input credits)')}">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">Instalment Frequency:</span>
+                                        </label>
+                                        {!$Label.c.Instalment_Frequency}
+                                    </span></div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">Final Instalment:</span>
+                                        </label>
+                                        {!$Label.c.Final_Instalment}
+                                    </span></div>
+                            </aura:if>
+                            <aura:if isTrue="{!v.vatrepayoptions=='Interest only with Bullet'}">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">VAT Facility Final instalment amount</span>
+                                            <lightning:helptext icon-name="utility:like" content="Final instalment of [INSERT], plus any outstanding interest due shall be payable on the Final Repayment Date in respect of the VAT Facility."/>
+                                        </label>
+                                        <lightning:inputField fieldName="VAT_Facility_Final_instalment_amount__c"  aura:id="vatfacifinalinstalamt" variant="label-hidden"/>
+                                    </span>
+                                </div>
+                            </aura:if>
+                        </aura:if>
+                    </aura:if>
+
+                    <aura:if isTrue="{!and(v.showPropertyDescriptionField,v.prodName != 'CPF Development Loan')}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="required">* </span>
+                                    <span class="slds-m-right_small">Property description</span>
+                                    <lightning:helptext icon-name="utility:like" content="The Property that the Borrower is buying and Absa is funding. Capture as per Deeds Office description."/>
+                                </label>
+                                <lightning:inputField fieldName="Property_description_property__c"  aura:id="propDescription1" variant="label-hidden"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="required">* </span>
+
+                                    <span class="slds-m-right_small">Property selection</span>
+                                    <lightning:helptext icon-name="utility:like" content="Select the Property type."/>
+                                </label>
+                                <lightning:inputField fieldName="Property_selection__c"  aura:id="propselection" variant="label-hidden"/>
+                            </span>
+                        </div>
+
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.showApprovedByCreditField,v.prodName != 'CPF Development Loan')}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Purpose_as_approved_by_credit__c" label="Purpose as approved by credit" aura:id="purpAsApprovedByCred" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Property description</span>
+                                    <lightning:helptext icon-name="utility:like" content="The Property that the Borrower is buying and Absa is funding. Capture as per Deeds Office description."/>
+                                </label>
+                                <lightning:inputField fieldName="Property_description_property__c"  aura:id="propDescription" variant="label-hidden"/>
+                            </span>
+                        </div>
+                    </aura:if>
+
+                    <aura:if isTrue="{!v.showPortfolioDescriptionField}">
+                        <aura:iteration items="{!v.newPortfolioList}" var="nportfolioAccItem" indexVar="index">
+                            <c:CPFPropertyPortfolioSection aura:id="newAppPortfolio" accItem="{!nportfolioAccItem}" rowindex="{!index}" newPortfolioList="{!v.newPortfolioList}" OppRecId="{!v.recordId}" />
+                        </aura:iteration>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                <lightning:button label="Add property portfolio description" onclick="{!c.addNewPortfolio}" variant="brand" aura:id="ibtn" />
+                            </span>
+                        </div>
+                    </aura:if>
+
+                    <div class="slds-col slds-size_1-of-1">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button aura:Id="SaveBtn" label="Save &amp; Validate" variant="brand" onclick ="{!c.handleSubmit}"/>
+                        </span>
+                    </div>
+                </div>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </lightning:recordEditForm>
+</aura:component>

@@ -1,0 +1,358 @@
+<!--
+* Lightning Component for Merchant MATCH Inquiry (MerchantMATCHInquiry)
+*
+* @author  Jason Quevauvilliers
+* @version v1.0
+* @since   2020-05-19
+*
+-->
+<aura:component access="global"
+                controller="MerchantMATCHInquiryController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+    <aura:attribute name="activeSections" type="List" default="['MATCHInquiry','MATCHInquiryResult']" />
+    <aura:attribute name="matchResponseBean" type="MatchTerminationInquiry_Resp_IB_v1"/>
+    <aura:attribute name="existingMatchData" type="Object"/>
+    <aura:attribute name="matchResponseBeanString" type="String"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="matchData" type="List" default=""/>
+    <aura:attribute name="matchFields" type="List" default=""/>
+    <aura:attribute name="showMatchRiskTable" type="Boolean" default="false"/>
+    <aura:attribute name="errorMessage" type="String" default=""/>
+    <aura:attribute name="approvalStatus" type="String" default=""/>
+    <aura:attribute name="opportunityRecord" type="Opportunity"/>
+    <!-- Commented showMatchInquirySection by Himani for #W-005294-->
+    <!--aura:attribute name="showMatchInquirySection" type="Boolean" default="true"/-->
+    <!-- Tinashe m Shoko W-004848 Client Eligibility /Due Diligence START-->
+    <aura:attribute name="businessName" type="String" default=""/>
+    <aura:attribute name="city" type="String" default=""/>
+    <aura:attribute name="country" type="String" default=""/>
+    <aura:attribute name="operator" type="String" default=""/>
+    <aura:attribute name="dateOfEnquiry" type="String" default=""/>
+    <aura:attribute name="timeOfEnquiry" type="String" default=""/>
+    <aura:attribute name="transactionReferenceNumber" type="String" default=""/>
+    <aura:attribute name="possibleMerchantMatches" type="List" default=""/>
+    <aura:attribute name="possibleMerchantMatchescolumns" type="List" default=""/>
+    <aura:attribute name="merchantData" type="List" default=""/>
+    <aura:attribute name="principalData" type="List" default=""/>
+    <aura:attribute name="matchRequestBeanString" type="String"/>
+    <aura:attribute name="inquiryMerchantData" type="List" default=""/>
+    <aura:attribute name="inquiryPrincipalData" type="List" default=""/>
+    <aura:attribute name="possibleInquiryMerchantMatchesColumns" type="List" default=""/>
+    <!-- Tinashe m Shoko W-004848 Client Eligibility /Due Diligence END-->
+
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <!-- Lightning Spinner -->
+    <center style="z-index:99">
+        <lightning:spinner aura:id="theSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+
+    <!--Start changes By Himani for #W-005294 -->
+    <force:recordData aura:id="opportunityForm"
+                      fields="Approval_Status__c,Trigger_Approval_Process__c,Merchant_Match_Inquiry_Passed__c"
+                      recordId="{!v.recordId}"
+                      targetFields ="{!v.opportunityRecord}"
+                      mode="EDIT"/>
+    <!--End changes By Himani for #W-005294 -->
+    <lightning:accordion  activeSectionName="MATCHInquiry" >
+        <lightning:accordionSection name="MATCHInquiry" label="MATCH Inquiry">
+            <!--Line added by Himani for #W-005294 -->
+            <aura:if isTrue="{!(and(not(v.opportunityRecord.Merchant_Match_Inquiry_Passed__c), not(v.showMatchRiskTable)))}">
+                <lightning:input style="position:absolute" type="checkbox" id="termsConsCheckBox" name="agreeToTermsAndConditions" onchange="{! c.showButtonMATCH }"/>
+
+                <span class="slds-form-element__label" style="padding-left:3%">
+                    I Agree to the   <a onclick="{!c.newPopup}">MATCH system terms &amp; conditions.</a>
+                </span>
+
+                <lightning:button variant="brand"
+                                  class="slds-align_absolute-center slds-m-top_xx-large slds-hide"
+                                  label="Conduct MATCH Inquiry"
+                                  title="Conduct MATCH Inquiry"
+                                  onclick="{! c.callMatchRiskService }"
+                                  aura:id="MATCHbtn"/>
+            </aura:if>
+
+            <aura:if  isTrue="{!(v.showMatchRiskTable)}">
+                <lightning:accordion  activeSectionName="MATCHInquiryResult" allowMultipleSectionsOpen="true" >
+                    <lightning:accordionSection name="MATCHInquiryResult" label="MATCH Inquiry Result">
+
+                        <!--aura:if isTrue="{!not(empty(v.opportunityRecord.Approval_Status__c))}">
+                            <aura:if isTrue="{!v.opportunityRecord.Trigger_Approval_Process__c == 'Match Risk Check'}">
+                                <b>Approval Status : {! v.opportunityRecord.Approval_Status__c } </b> <br/>
+                                <aura:if isTrue="{!v.opportunityRecord.Approval_Status__c == 'Rejected'}">
+                                    <lightning:button variant="brand"
+                                                      class="slds-align_absolute-center slds-m-top_xx-large slds-show"
+                                                      label="Resubmit for Approval"
+                                                      title="Resubmit for Approval"
+                                                      onclick="{! c.callMatchRiskService }"
+                                                      aura:id="resubmitbtn"/>
+                                </aura:if>
+                            </aura:if>
+                        </aura:if-->
+
+                        <aura:if isTrue="{!not(empty(v.matchData))}">
+                            <lightning:datatable data="{! v.matchData }"
+                                                 columns="{! v.matchFields }"
+                                                 keyField="Id"
+                                                 hideCheckboxColumn="true"
+                                                 onrowselection="{!c.openMatchResponseJsonModal}"/>
+
+                            <a onclick="{!c.openMatchResponseJsonModal}">View Match Inquiry Result</a>
+                            <aura:set attribute="else">
+                                <b>Match Inquiry Result is empty.</b>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+            </aura:if>
+
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="recordError">
+                    <br/>
+                    <h2 class="slds-section__title slds-align_absolute-left" style="color:red">{!v.errorMessage}</h2>
+                    <br/>
+                </div>
+            </aura:if>
+
+        </lightning:accordionSection>
+    </lightning:accordion>
+
+    <div role="dialog" tabindex="-1" aria-labelledby="termsAndConsHeader" aura:id="termsAndConsModal" class="slds-modal slds-modal_large">
+        <div class="slds-modal__container" style="width: 65%;">
+            <div class="slds-modal__header">
+                MATCH Systems Terms &amp; Conditions
+            </div>
+            <div class="slds-modal__content slds-p-around--medium">
+                The MasterCard MATCH™ system and data are proprietary and confidential to MasterCard International and its licensed Customers. MATCH system software may not be duplicated, published, or disclosed, in whole or in part, without the prior written permission of MasterCard International.
+                A Customer may use MATCH solely for the purpose of developing enhanced or incremental risk information before entering into a Merchant Agreement; any other use is prohibited.
+                The Standards set forth in Chapter 11 of the MasterCard Security Rules and Procedures set forth Customer rights and obligations pertaining to access to and use of the MATCH. The Standards require, among other things, that an Acquirer conduct an inquiry before acquiring MasterCard-branded transactions from a merchant and that an Acquirer report information pertaining to a merchant that has been terminated for any one or more of a specified number of reasons. The Standards do not require an Acquirer to take any action or any specific action after receiving a response record and do not require that an Acquirer provide any information to or otherwise cooperate with any other Acquirer. MATCH may enable an Acquirer to develop enhanced or incremental risk information concerning a merchant, but does not itself provide risk information. The Acquirer itself must determine whether the merchant that is the subject of a "possible match" response is the same merchant that the Acquirer conducted an inquiry about. A "possible match" response to an inquiry does not mean or suggest that a merchant is a poor risk or greater risk than any other merchant. A Customer itself must determine a merchant poses a risk and, if so, the nature of such risk.
+                MasterCard does not verify, otherwise confirm, or ask for confirmation of either the basis for or accuracy of any information that is reported to or listed in MATCH. MATCH may include incorrect, inaccurate and incomplete information as well as information that should not have been reported. It is possible that facts and circumstances giving rise to a MATCH system report may be subject to interpretation and dispute.
+                Use of MATCH is "Activity", as such term is defined in the Definitions portion of the MasterCard Rules. MATCH is a part of "Systems", as such term is defined in MasterCard Rule 2.3 (Indemnity and Limitation of Liability). A Customer that directly or indirectly has access to or use of MATCH is an "Indemnifying Customer" as such term is defined in MasterCard Rule 2.3. A Customer's direct or indirect access to or use of MATCH is Activity of that Customer and subject to the terms of MasterCard Rule 2.3.
+                Please note that certain data fields contained in MATCH may qualify as sensitive and/or criminal data under applicable laws. By accessing this platform, Customer agrees and warrants that it is responsible for obtaining a valid legal basis for entering such data into MATCH and that it complies with Mastercard's Bylaws, Rules, policies and operating regulations and procedures of Mastercard (the "Standards"), written agreements and privacy laws and regulations applying to the protection of personal data.
+                Mastercard is not responsible for the information entered by Customers into the MATCH system and does not verify, otherwise confirm, or ask for confirmation of either the basis for or accuracy of any information that is reported to or listed in MATCH. Accordingly, MATCH may include incorrect, inaccurate and incomplete information as well as information that should not have been reported. Mastercard DISCLAIMS ALL WARRANTIES IN THE EVENT OF A DISPUTE RELATING TO THE FACTS AND CIRCUMSTANCES GIVING RISE TO A MATCH SYSTEM REPORT.
+                As part of the provision of the MATCH Tool to you, you acknowledge that any personal data collected may be used for the purposes of managing the MATCH Tool and in accordance with Mastercard Bylaws, Rules, policies and operating regulations and procedures of Mastercard (the "Standards") and the Mastercard's Global Privacy Notice, including to contact you in relation to the MATCH Tool.
+            </div>
+            <div class="slds-modal__footer">
+                <lightning:button label="Close" onclick="{!c.closeNewModal}" />
+            </div>
+        </div>
+    </div>
+
+    <div role="dialog" tabindex="-1" aria-labelledby="termsAndConsHeader" aura:id="matchResponseJSONModal" class="slds-modal slds-modal_large">
+        <div class="slds-modal__container" style="width: 65%;">
+            <div class="slds-modal__header">
+                MATCH Inquiry Response Data
+            </div>
+            <div class="slds-modal__content slds-p-around--medium">
+                <table>
+                    <tr>
+                        <th width="50%">BUSINESS NAME</th>
+                        <th width="25%">CITY</th>
+                        <th width="25%">COUNTRY</th>
+                    </tr>
+                    <tr>
+                        <td>{! v.businessName }</td>
+                        <td>{! v.city }</td>
+                        <td>{! v.country }</td>
+                    </tr>
+                    <tr>
+                        <th width="50%">OPERATOR</th>
+                        <th width="25%">DATE OF ENQUIRY</th>
+                        <th width="25%">TIME OF ENQUIRY</th>
+                    </tr>
+                    <tr>
+                        <td>{! v.operator }</td>
+                        <td>{! v.dateOfEnquiry }</td>
+                        <td>{! v.timeOfEnquiry }</td>
+                    </tr>
+                    <tr><th colspan="3">Reference Number</th></tr>
+                    <tr><td colspan="3">{! v.transactionReferenceNumber }</td></tr>
+                </table>
+                <br/>
+                <table>
+                    <tr>
+                        <th colspan="3">
+                            <div class="slds-text-heading--small">
+                                Possible Merchant Matches from Recent Inquiries
+                            </div>
+                        </th>
+                    </tr>
+                    <tr><td>
+                        <lightning:datatable data="{! v.possibleMerchantMatches }"
+                                             columns="{! v.possibleMerchantMatchescolumns }"
+                                             keyField="addedOnDate"
+                                             hideCheckboxColumn="true"
+                                             maxRowSelection="1" />
+                        </td></tr>
+                </table>
+                <br/>
+
+                <aura:iteration items="{!v.merchantData}" var="md">
+                    <table border="0">
+                        <tr>
+                            <th colspan="3">
+                                <div class="slds-text-heading--small">Possible Merchant Matches<br/>
+                                </div>
+                            </th>
+                        </tr>
+                        <!-- /table>
+                <table border="1" -->
+                        <tr>
+                            <th width="20%">&nbsp;</th>
+                            <th width="40%">Inquiry</th>
+                            <th width="40%">{!md.index} of {!md.totalLength}</th>
+                        </tr>
+                        <tr>
+                            <td>Reference Number</td>
+                            <td>{! v.transactionReferenceNumber }</td>
+                            <td>{! v.transactionReferenceNumber }</td>
+                        </tr>
+                        <tr>
+                            <td>Date</td>
+                            <td>{!md.today}</td>
+                            <td>{!md.today}</td>
+                        </tr>
+                        <!-- /table>
+
+                    <table border="1" -->
+                        <tr><th colspan="3" border="0"><br/>Merchant Data<br/></th></tr>
+                        <tr>
+                            <th>Merchant Name</th>
+                            <td>{!md.inquiryBusName}</td>
+                            <td>{!md.merchantName}</td>
+                        </tr>
+                        <tr>
+                            <th>Doing Business As</th>
+                            <td>&nbsp;</td>
+                            <td>{!md.doingBusinessAs}</td>
+                        </tr>
+                        <tr>
+                            <th>Merchant ID</th>
+                            <td>{!md.inquiryDoingBusAs}</td>
+                            <td>{!md.merchantID}</td>
+                        </tr>
+                        <tr>
+                            <th>Merchant Category Code</th>
+                            <td>{!md.inquiryMerchantcategoryCode}</td>
+                            <td>{!md.merchantCategoryCode}</td>
+                        </tr>
+                        <tr>
+                            <th>Line 1</th>
+                            <td>{!md.inquiryAddressLine1}</td>
+                            <td>{!md.line1}</td>
+                        </tr>
+                        <tr>
+                            <th>Line 2</th>
+                            <td>{!md.inquiryAddressLine2}</td>
+                            <td>{!md.line2}</td>
+                        </tr>
+                        <tr>
+                            <th>City</th>
+                            <td>{!md.inquiryAddressCity}</td>
+                            <td>{!md.city}</td>
+                        </tr>
+                        <tr>
+                            <th>Country</th>
+                            <td>{!md.inquiryAddressCountry}</td>
+                            <td>{!md.country}</td>
+                        </tr>
+                        <tr>
+                            <th>Code</th>
+                            <td>{!md.inquiryAddressCode}</td>
+                            <td>{!md.code}</td>
+                        </tr>
+                        <tr>
+                            <th>Phone Number</th>
+                            <td>{!md.inquiryPhoneNumber}</td>
+                            <td>{!md.PhoneNumber}</td>
+                        </tr>
+                        <tr>
+                            <th>Alternative Phone Number</th>
+                            <td>{!md.inquiryAltPhoneNumber}</td>
+                            <td>{!md.altPhoneNumber}</td>
+                        </tr>
+                        <tr>
+                            <th>National Tax ID</th>
+                            <td>{!md.inquiryNationalTaxID}</td>
+                            <td>{!md.nationalTaxID}</td>
+                        </tr>
+                        <tr>
+                            <th>Date added on</th>
+                            <td>{!md.inquirydateAddedOn}</td>
+                            <td>{!md.dateAddedOn}</td>
+                        </tr>
+                        <tr>
+                            <th>Service Provider Legal</th>
+                            <td>&nbsp;</td>
+                            <td>{!md.serviceProviderLegal}</td>
+                        </tr>
+                        <tr>
+                            <th>Service Provider DBA</th>
+                            <td>{!md.inquiryServiceProviderLegal}</td>
+                            <td>{!md.serviceProviderDBA}</td>
+                        </tr>
+                        <tr>
+                            <th>Reason Code</th>
+                            <td>{!md.inquiryServiceProviderDBA}</td>
+                            <td>{!md.reasonCode}</td>
+                        </tr>
+
+                    </table>
+                    <br/>
+                    <div class="slds-text-heading--small">Principal Data</div>
+                    <aura:iteration items="{!v.principalData}" var="pd">
+                        <aura:if isTrue="{!(pd.termId == md.Id)}">
+                            <table border="0">
+                                <tr>
+                                    <td width="20%">&nbsp;</td>
+                                    <td width="40%"><b>Inquiry</b></td>
+                                    <td width="40%">{!pd.id} of {!pd.principalMatchLength}</td>
+                                </tr>
+                                <tr><th>First Name</th><td>{!pd.inqPrincipalFirstName}</td><td>{!pd.PrincipalFirstName}</td></tr>
+                                <tr><th>Middle Initial </th><td>&nbsp;</td><td>{!pd.PrincipalMiddleInitial}</td></tr>
+                                <tr><th>Last Name</th><td>{!pd.inqPrincipalLastname}</td><td>{!pd.PrincipalLastName}</td></tr>
+                                <tr><th>Line 1</th><td>{!pd.inqPrincipalAddrLine1}</td><td>{!pd.PrincipalAddressLine1}</td></tr>
+                                <tr><th>Line 2</th><td>{!pd.inqPrincipalAddrLine2}</td><td>{!pd.PrincipalAddressLine2}</td></tr>
+                                <tr><th>City</th><td>{!pd.inqPrincipalAddrCity}</td><td>{!pd.PrincipalAddressCity}</td></tr>
+                                <tr><th>Country</th><td>{!pd.inqPrincipalAddrCountry}</td><td>{!pd.PrincipalAddressCountry}</td></tr>
+                                <tr><th>Code</th><td>{!pd.inqPrincipalAddrCode}</td><td>{!pd.PrincipalAddressPostalCode}</td></tr>
+                                <tr><th>Phone Number</th><td>{!pd.inqPrincipalPhoneNumber}</td><td>{!pd.PrincipalPhoneNumber}</td></tr>
+                                <tr><th>Alternative Number</th><td>{!pd.inqPrincipalAltPhoneNumber}</td><td>{!pd.PrincipalAltPhoneNumber}</td></tr>
+                                <tr><th>National ID (SSN)</th><td>{!pd.inqPrincipalNationalIDSSN}</td><td>{!pd.PrincipalNationalId}</td></tr>
+                                <tr><th>Driver’s License Number</th><td>{!pd.inqPrincipalDriverLicenseNumber}</td><td>{!pd.PrincipalDriversLicenseNumber}</td></tr>
+                                <tr><th>Driver’s License Country</th><td>{!pd.inqPrincipalDriverLicenseCountry}</td><td>{!pd.PrincipalDriversLicenseCountry}</td></tr>
+
+                            </table>
+                        </aura:if>
+                    </aura:iteration>
+                </aura:iteration>
+                <br/>
+                <table>
+                    <tr>
+                        <th colspan="3">
+                            <div class="slds-text-heading--small">Possible Merchant Matches from Recent Inquiries</div>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <lightning:datatable data="{! v.inquiryMerchantData }"
+                                                 columns="{! v.possibleInquiryMerchantMatchesColumns }"
+                                                 keyField="Id"
+                                                 hideCheckboxColumn="true"
+                                                 maxRowSelection="1" />
+                        </td>
+                    </tr>
+                </table>
+
+            </div>
+            <div class="slds-modal__footer">
+                <lightning:button label="Close" onclick="{!c.closeMatchResponseJsonModal}" />
+            </div>
+        </div>
+    </div>
+
+    <div class="slds-backdrop slds-backdrop--hide" aura:id="Modalbackdrop">
+    </div>
+</aura:component>

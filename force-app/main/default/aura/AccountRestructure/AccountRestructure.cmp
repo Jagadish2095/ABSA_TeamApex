@@ -1,0 +1,381 @@
+<!--This is the Account Restructure Component for AVAF-->
+<!--@author  Humbelani Denge-->
+<!--@Created Date   2021-01-28-->
+<!--@Work Id: W-008832 & W-005674-->
+
+<aura:component controller="AccountRestructureCntr" implements="force:hasRecordId,lightning:availableForFlowScreens"
+    access="global">
+    <!--Attribute Declaration-->
+    <aura:attribute name="isButtonDisabled" type="Boolean" Default="true" />
+    <aura:attribute name="showConfirmation" type="Boolean" />
+    <aura:attribute name="accountNumberFromFlow" type="String" />
+    <aura:attribute name="emailTemplateToFlow" type="String" access="global" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="arBalance" type="Integer" />
+    <aura:attribute name="term" type="Integer" />
+    <aura:attribute name="residual" type="String" />
+    <aura:attribute name="amountFinanced" type="Integer" />
+    <aura:attribute name="remainingTerm" type="Integer" />
+    <aura:attribute name="interestRate" type="String" />
+    <aura:attribute name="iCappay" type="Integer" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="isDynamicTabVisible" type="Boolean" default="false" />
+    <aura:attribute name="accountInArrears" type="Boolean" />
+    <aura:attribute name="newInstallment" type="Integer" />
+    <aura:attribute name="contractNumber" type="String" />
+    <aura:attribute name="newTerm" type="Integer" />
+    <aura:attribute name="iNTerm" type="Integer" />
+    <aura:attribute name="outstandingAmount" type="Integer" />
+    <aura:attribute name="installment" type="String" />
+    <aura:attribute name="nextInstallmentDate" type="String" />
+    <aura:attribute name="corporateCode" type="String" />
+    <aura:attribute name="dynamicLabel" type="String" />
+
+    <!-- Added by Mradul Maheshwari in August 2021-->
+    <aura:attribute name="preValidationResults" type="AccountPreValidationRequest_Resp_IB_v1.Result[]" />
+    <aura:attribute name="isPreValidationButtonDisabled" type="Boolean" Default="true" />
+    <aura:attribute name="stepName" type="String" default="preValidation" />
+    <aura:attribute name="termOptions" type="CalculatorRequest_Resp_IB_v1.CalculatorResult[]" />
+    <aura:attribute name="selectedOption" type="String" default="None" />
+    <aura:attribute name="newResidual" type="String" />
+    <aura:attribute name="newCalculatedInstallmentsNo" type="String" />
+    <aura:attribute name="newContractEndDate" type="String" />
+    <aura:attribute name="advanceAmount" type="Decimal" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false" />
+    <aura:attribute name="showModalSpinner" type="boolean" default="false" />
+    <aura:attribute name="caseRecordId" type="String" access="global" />
+    <aura:attribute name="caseRecordTypeId" type="String" access="global" />
+    <aura:attribute name="templateName" type="String" access="global" />
+    <aura:attribute name="commMethod" type="String" />
+    <aura:attribute name="mandateEmail" type="String" default="" access="global" />
+    <aura:attribute name="isEmailEditable" type="boolean" default="false" />
+    <aura:attribute name="reasonLoanAdjustment" type="String" />
+    <aura:attribute name="modalerrorMessage" type="String" />
+    <aura:attribute name="noSelected" type="boolean" default="false" />
+
+
+    <!-- changes made for Ford/Avaf Indicator by Mradul  W-014878 for Loan Adjustment-->
+    <c:FordAvafIndicator accountNumber="{!v.accountNumberFromFlow}" caseId="{!v.caseRecordId}" />
+
+
+    <aura:attribute name="caseRecord" type="Case" />
+    <force:recordData aura:id="recordLoader" recordId="{!v.caseRecordId}"
+        fields="Client_Email_Address__c,sd_Service_Group__c,Account.ID_Number__pc,Account.Registration_Number__c,Status"
+        targetFields="{!v.caseRecord}" />
+
+    <lightning:recordEditForm aura:id="caseCloseEditForm" objectApiName="Case" recordId="{!v.caseRecordId}"
+        onsuccess="{!c.refreshView}" onerror="{!c.handleError}">
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+        <lightning:inputField aura:id="descriptionField" fieldName="Description" class="slds-hide" />
+    </lightning:recordEditForm>
+
+
+    <!--Handler Declaration-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <article class="slds-card">
+        <!-- Lightning Spinner -->
+        <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand"
+                size="medium" />
+        </aura:if>
+        <!-- Added by Mradul Maheshwari in August 2021-->
+        <aura:if isTrue="{!v.stepName == 'preValidation'}">
+            <div class="slds-card__body slds-card__body_inner ">
+                <article class="slds-card slds-card_boundary slds-form--compound">
+                    <aura:iteration items="{!v.preValidationResults}" var="result">
+                        <div class="slds-form-element__row">
+                            <lightning:input type="text" disabled="true" label="Type" style="text-transform:capitalize"
+                                value="{!result.type}" class="slds-size--1-of-2" />
+                            <lightning:input type="text" disabled="true" label="Allowed"
+                                style="text-transform:capitalize" value="{!result.allowed}" class="slds-size--1-of-2"
+                                fieldLevelHelp="{!result.reason}" />
+                        </div>
+                    </aura:iteration>
+                    <div class="slds-align_absolute-center">
+                        <lightning:button class="slds-button slds-button--brand"
+                            disabled="{!v.isPreValidationButtonDisabled}" onclick="{!c.handlePrevalidation}">Next
+                        </lightning:button>
+
+                    </div>
+                </article>
+            </div>
+        </aura:if>
+
+        <aura:if isTrue="{!or(v.stepName == 'contractDetails',v.stepName == 'termOptions')}">
+            <div class="slds-card__body slds-card__body_inner">
+                <article class="slds-card slds-card_boundary">
+                    <div class="slds-card__body slds-card__body_inner">
+                        <fieldset class="slds-form--compound">
+                            <div class="slds-form-element__row ">
+                                <label class="slds-form-element__control slds-size_1-of-2">
+                                    <lightning:input type="number" formatter="currency" label="Capitalization Amount"
+                                        currencyCode="{!v.record.CurrencyIsoCode}" currencyDisplayAs="symbol"
+                                        value="{!v.advanceAmount}" min="1" step=".01" />
+                                </label>
+                                <label class="slds-form-element__control slds-size_1-of-2">
+                                    <span class="slds-form-element__helper">AR Balance</span>
+                                    <input class="slds-input" style="currency" disabled="true"
+                                        currencyCode="{!v.record.CurrencyIsoCode}" currencyDisplayAs="symbol"
+                                        value="{!v.arBalance}" />
+                                </label>
+                            </div>
+                        </fieldset>
+                        <fieldset class="slds-form--compound">
+                            <div class="form-element__group">
+                                <div class="slds-form-element__row">
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Installment</span>
+                                        <input class="slds-input" style="currency" disabled="true"
+                                            currencyCode="{!v.record.CurrencyIsoCode}" currencyDisplayAs="symbol"
+                                            value="{!v.installment}" />
+                                    </label>
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Financed Amount</span>
+                                        <input class="slds-input" disabled="true" style="currency"
+                                            currencyCode="{!v.record.CurrencyIsoCode}" currencyDisplayAs="symbol"
+                                            value="{!v.amountFinanced}" />
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="slds-form--compound">
+                            <div class="form-element__group">
+                                <div class="slds-form-element__row">
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Outstanding Balance</span>
+                                        <input class="slds-input" disabled="true" style="currency"
+                                            currencyCode="{!v.record.CurrencyIsoCode}" currencyDisplayAs="symbol"
+                                            value="{!v.outstandingAmount}" />
+                                    </label>
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Next Installment Date</span>
+                                        <input class="slds-input" disabled="true" type="text"
+                                            value="{!v.nextInstallmentDate}" />
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="slds-form--compound">
+                            <div class="form-element__group">
+                                <div class="slds-form-element__row">
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Term (Full Contract)</span>
+
+                                        <input class="slds-input" disabled="true" type="text" value="{!v.term}" />
+                                    </label>
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Remaining Term</span>
+                                        <input class="slds-input" disabled="true" type="number"
+                                            value="{!v.remainingTerm}" />
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="slds-form--compound">
+                            <div class="form-element__group">
+                                <div class="slds-form-element__row">
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Balloon Amount</span>
+                                        <input class="slds-input" disabled="true" type="text" value="{!v.residual}" />
+                                    </label>
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Interest Rate</span>
+                                        <input class="slds-input" disabled="true" type="text"
+                                            value="{!v.interestRate}" />
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <div class="slds-align_absolute-center">
+                            <lightning:button class="slds-button slds-button--brand"
+                                onclick="{!c.handlePreviousPreValidation}">
+                                Previous
+                            </lightning:button>
+                            <lightning:button class="slds-button slds-button--brand"
+                                onclick="{!c.getCalculatorOptions}">
+                                Calculator Options
+                            </lightning:button>
+
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!v.stepName == 'termOptions'}">
+            <div class="slds-card__body slds-card__body_inner">
+                <article class="slds-card slds-card_boundary">
+                    <div class="slds-card__body slds-card__body_inner">
+                        <fieldset class="slds-form--compound">
+                            <div class="form-element__group">
+                                <lightning:layout horizontalAlign="space" verticalAlign="center" multipleRows="true">
+                                    <aura:iteration items="{!v.termOptions}" var="term" indexVar="index">
+                                        <lightning:layoutItem flexibility="no-flex" alignmentBump="right" size="12"
+                                            smallDeviceSize="6" mediumDeviceSize="6" largeDeviceSize="6">
+                                            <lightning:input name="radioButtonGroup" label="{!term.restructureType}"
+                                                type="radio" options="{!term.restructureType}"
+                                                value="{!term.restructureType}" onchange="{!c.onRadioSelection}" />
+                                        </lightning:layoutItem>
+                                    </aura:iteration>
+                                </lightning:layout>
+                                <div class="slds-align_absolute-center">
+                                    <lightning:button class="slds-button slds-button--brand"
+                                        onclick="{!c.showAdjustment}">
+                                        Next
+                                    </lightning:button>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </article>
+            </div>
+        </aura:if>
+
+        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+            <div class="recordError">
+                <br />
+                <h2 class="slds-section__title slds-align_absolute-center" style="color: red">
+                    {!v.errorMessage}</h2>
+            </div>
+        </aura:if>
+
+        <aura:if isTrue="{!v.stepName == 'termOptionsoptionSelected'}">
+            <div class="slds-card__body slds-card__body_inner">
+                <article class="slds-card slds-card_boundary">
+                    <div class="slds-card__body slds-card__body_inner">
+                        <fieldset class="slds-form--compound">
+                            <div class="form-element__group">
+                                <div class="slds-form-element__row">
+                                    <label class="slds-form-element__control slds-size--1-of-1">
+                                        <span class="slds-form-element__helper">Capitalization Amount</span>
+                                        <input class="slds-input" value="{!v.advanceAmount}" disabled="true" />
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="slds-form--compound">
+                            <div class="form-element__group">
+                                <div class="slds-form-element__row">
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">New Term</span>
+                                        <input class="slds-input" value="{!v.newTerm}" disabled="true" />
+                                    </label>
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Old Term</span>
+                                        <input class="slds-input" value="{!v.term}" disabled="true" />
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="slds-form--compound">
+                            <div class="form-element__group">
+                                <div class="slds-form-element__row">
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">New Installment (Estimate)</span>
+                                        <input class="slds-input" style="currency"
+                                            currencyCode="{!v.record.CurrencyIsoCode}" currencyDisplayAs="symbol"
+                                            value="{!v.newInstallment}" disabled="true" />
+                                    </label>
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Old Installment</span>
+                                        <input class="slds-input" style="currency"
+                                            currencyCode="{!v.record.CurrencyIsoCode}" currencyDisplayAs="symbol"
+                                            value="{!v.installment}" disabled="true" />
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="slds-form--compound">
+                            <div class="form-element__group">
+                                <div class="slds-form-element__row">
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">New Balloon </span>
+                                        <input class="slds-input" style="currency"
+                                            currencyCode="{!v.record.CurrencyIsoCode}" currencyDisplayAs="symbol"
+                                            value="{!v.newResidual}" disabled="true" />
+                                    </label>
+                                    <label class="slds-form-element__control slds-size--1-of-2">
+                                        <span class="slds-form-element__helper">Old Balloon</span>
+                                        <input class="slds-input" style="currency"
+                                            currencyCode="{!v.record.CurrencyIsoCode}" currencyDisplayAs="symbol"
+                                            value="{!v.residual}" disabled="true" />
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <div>
+                            <lightning:button class="slds-button slds-button--brand" onclick="{!c.previousOptions}">
+                                Previous
+                            </lightning:button>
+                            <lightning:button class="slds-button slds-button--brand" onclick="{!c.confirmOption}">
+                                Next
+                            </lightning:button>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </aura:if>
+
+    </article>
+    <aura:if isTrue="{!v.isModalOpen}">
+
+        <!-- Modal/Popup Box starts here-->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container slds-text-align_center">
+                <!-- Modal/Popup Box Header Starts here-->
+
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{!c.closeModal }" alternativeText="close"
+                        variant="bare-inverse" class="slds-modal__close" />
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Are you sure you want
+                        to adjust the loan?</h2>
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.showModalSpinner}">
+                        <lightning:spinner class="spins slds-align_absolute-center " aura:id="spinner"
+                            alternativeText="Loading" variant="brand" size="medium" />
+                    </aura:if>
+                    <aura:if isTrue="{!not(empty(v.modalerrorMessage))}">
+                        <div class="recordError">
+                            <br />
+                            <h2 class="slds-section__title slds-align_absolute-center" style="color: red">
+                                {!v.modalerrorMessage}</h2>
+                        </div>
+                    </aura:if>
+                    <lightning:card title="">
+                        <h3 class="slds-section__title">
+                            <span class="slds-truncate slds-button slds-section__title-action"
+                                title="Communication Preference">Communication Preference</span>
+                        </h3>
+                        <lightning:recordEditForm aura:id="recordViewForm" recordId="{!v.caseRecordId}"
+                            recordTypeId="{!v.caseRecordTypeId}" objectApiName="Case">
+                            <lightning:inputField fieldName="Communication_Method__c" aura:id="commMethod"
+                                default="Email" disabled="true" />
+                            <aura:if isTrue="{!v.isEmailEditable}">
+                                <lightning:input aura:id="clientEmailAddress" type="email" name="email"
+                                    label="Client Email Address" />
+                                <aura:set attribute="else">
+                                    <lightning:inputField fieldName="Client_Email_Address__c"
+                                        aura:id="clientEmailAddress" />
+                                </aura:set>
+                            </aura:if>
+                            <aura:if isTrue="{!v.noSelected}">
+                                <lightning:input label="Reason" value="{!v.reasonLoanAdjustment}" />
+                            </aura:if>
+                        </lightning:recordEditForm>
+                    </lightning:card>
+                    <lightning:button variant="neutral" label="Cancel Request" title="Cancel Request"
+                        onclick="{!c.stopAdjustment }" />
+                    <lightning:button variant="brand" label="Yes" title="Yes" onclick="{!c.confirmAdjustmentController}"
+                        disabled="{!v.reasonLoanAdjustment}" />
+                </div>
+
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+
+
+</aura:component>

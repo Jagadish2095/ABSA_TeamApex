@@ -1,0 +1,60 @@
+<!--This is the client identification and verification component-->
+<!--@author: Koketso Mpshane-->
+<!--@Created Date: 2021-03-03-->
+<!--@WorkID: W-008290, W-008291-->
+<aura:component controller="ClientIDnVPollingApex" implements="force:appHostable,flexipage:availableForAllPageTypes,force:hasRecordId" access="global">
+	<!--Attribute Declaration-->
+    <aura:attribute name="clientIDnVObjectParent" type="Map" default="{}" />
+	<aura:attribute name="intervalId" type="Integer" />
+	<aura:attribute name="cifCode" type="String" default="" />
+	<aura:attribute name="authenticated" type="boolean" default="false" />
+    <aura:attribute name="reinitializeChild" type="boolean" default="false" />
+	<aura:attribute name="authTypes" type="String" default="" />
+	<aura:attribute name="unauthenticatedReason" type="String" default="" />
+    <aura:attribute name="doAutoRefresh" type="Boolean" default="true" />
+	<aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="pollingUser" type="boolean" default="false" />
+    <aura:attribute name="methodLastUsed" type="String" />
+    
+	<!--Handler Declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:handler name="change" value="{!v.clientIDnVObjectParent}" action="{!c.handleObjectChange}" />
+	
+	<!--Error Message-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<ui:message title="Error" severity="error" closable="true"> {!v.errorMessage} </ui:message>
+	</aura:if>
+
+	<!-- Authenticated / Unauthenticated -->
+	<aura:if isTrue="{!v.authenticated}">
+		<div class="slds-box slds-theme_success">
+			<p><lightning:icon iconName="action:approval" /><b> Authenticated</b> - Authentication Type(s): {!v.authTypes}</p>
+		</div>
+		<aura:set attribute="else">
+			<div class="slds-box" style="background-color: #ffbf00">
+                <p>
+                    <lightning:icon iconName="utility:error" /><b> Unauthenticated</b>{!v.unauthenticatedReason}
+                    <aura:if isTrue="{!not(v.doAutoRefresh)}">
+                        <lightning:button label="Refresh" title="Refresh" onclick="{! c.handleRefresh }" class="slds-float_right" />
+                    </aura:if>
+                    <aura:if isTrue="{!not(empty(v.methodLastUsed))}">
+                        <br /><br />
+                        <span>Last Used Method: {!v.methodLastUsed} </span>
+                    </aura:if>
+                    <br /><br />
+                    <span>Note: The client has not been authenticated, please authenticate them before proceeding with any transaction.</span>
+                </p>
+			</div>
+		</aura:set>
+	</aura:if>
+
+	<lightning:recordEditForm aura:id="accountEditFormIDnV" objectApiName="Account" recordId="{!v.recordId}" onload="{!c.handleAccountLoadIDnV}">
+		<lightning:inputField aura:id="clientCIFFieldIDnV" fieldName="CIF__c" class="slds-hide" />
+	</lightning:recordEditForm>
+
+    <!-- embed the polling component -->
+	<aura:if isTrue="{!not(empty(v.cifCode))}">
+		<c:ClientIDnVPolling clientIDnVObject="{!v.clientIDnVObjectParent}" cifCodeFromParentCmp="{!v.cifCode}" reinitialize="{!v.reinitializeChild}" />
+	</aura:if>
+
+</aura:component>

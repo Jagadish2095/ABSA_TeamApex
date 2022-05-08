@@ -1,0 +1,132 @@
+<!--This is the PolicyBeneficiaryMaintenance Component for ABSA Life-->
+<!--@author  Chandra-->
+<!--@since   2020-10-15-->
+<!--@Work Id: W-006912-->
+
+<aura:component controller="PolicyBeneficiaryMaintenanceCntr" implements="force:hasRecordId,lightning:availableForFlowScreens" access="global">
+    <!--Attribute Declaration-->
+    <aura:attribute name="title" type="String" default="Beneficiaries" />
+    <aura:attribute name="data" type="List" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="resizeColumnDisabled" type="Boolean" default="true" />
+    <aura:attribute name="caseId" type="String" access="global" />
+    <aura:attribute name="policyNumberFromFlow" type="String" default="" access="global" />
+    <aura:attribute name="pendingAction" type="String" />
+    <aura:attribute name="pendingRow" type="Object" />
+    <aura:attribute name="serviceResponse" type="Object" />
+    <aura:attribute name="showDeleteConfirmationModal" type="Boolean" />
+    <aura:attribute name="showMaintainBeneficiaryPercentMsg" type="Boolean" />
+    <aura:attribute name="showSubmitBeneficiary" type="Boolean" />
+    <aura:attribute name="showRefreshButton" type="Boolean" />
+    <aura:attribute name="isSpinner" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" default="" />
+
+    <!--Added by chandra for the changes regarding W-007772,007776,007778,007777,007783 dated 12/02/2021 -->
+    <aura:attribute name="selectedProductTypeFromFlow" type="String" access="global" />
+    <aura:attribute name="exergySessionId" type="String" default="" />
+    <aura:attribute name="keyField" type="String" />
+
+    <!--overlayLibrary for Dynamic Modal-->
+    <lightning:overlayLibrary aura:id="overlayLib" />
+
+    <!--Handler Declaration-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="c:AddUpdatePolicyBeneficiaryEvent" action="{!c.handleApplicationEvent}" />
+
+    <!--Body Start-->
+    <lightning:card>
+        <!-- Spinner -->
+        <aura:if isTrue="{!v.isSpinner}">
+            <lightning:spinner variant="brand" alternativeText="Busy" />
+        </aura:if>
+        <div>
+            <div class="slds-grid slds-wrap">
+                <div class="slds-col slds-size_8-of-12 slds-text-heading_small">
+                    <lightning:icon iconName="standard:currency" size="small" /> &nbsp;&nbsp;{! v.title }
+                </div>
+                <div class="slds-col slds-size_2-of-12"></div>
+                <div class="slds-col slds-size_2-of-12">
+                    <lightning:button
+                        aura:id="addBeneficiary"
+                        variant="brand"
+                        label="Add Beneficiary"
+                        title="Add Beneficiary"
+                        onclick="{! c.handleAddBeneficiary }"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <aura:if isTrue="{!v.showMaintainBeneficiaryPercentMsg}">
+            <div class="slds-box slds-box_xx-small slds-theme_shade slds-m-top_small">
+				<div class="slds-text-heading_small slds-text-color_error slds-text-align_center">Please set the percentage for beneficiaries</div>
+            </div>
+        </aura:if>
+
+        <div>
+            <lightning:datatable
+                aura:id="policyBeneficiaryData"
+                data="{! v.data }"
+                columns="{! v.columns }"
+                keyField="{!v.keyField}"
+                hideCheckboxColumn="true"
+                onrowaction="{!c.handleRowAction}"
+                resizeColumnDisabled="{! v.resizeColumnDisabled }"
+                onsave="{! c.handleSaveEdition }"
+            />
+        </div>
+    </lightning:card>
+
+    <aura:if isTrue="{!v.showSubmitBeneficiary}">
+        <div class="slds-m-top_small slds-align_absolute-center">
+            <lightning:button variant="brand" label="Submit Beneficiary" title="Submit Beneficiary" onclick="{! c.handleSubmitBeneficiary }" />
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.showRefreshButton}">
+        <div class="slds-m-top_small slds-align_absolute-center">
+            <lightning:button variant="brand" label="Refresh" title="Refresh" onclick="{! c.doInit }" />
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title slds-align_absolute-left" style="color: red">{!v.errorMessage}</h2>
+            <br />
+        </div>
+    </aura:if>
+
+    <!--Delete Beneficiary Modal Container W-006906-->
+    <aura:if isTrue="{!v.showDeleteConfirmationModal}">
+        <section
+            role="dialog"
+            tabindex="-1"
+            aria-labelledby="modal-heading-01"
+            aria-modal="true"
+            aria-describedby="modal-content-id-1"
+            class="slds-modal slds-fade-in-open"
+        >
+            <div class="slds-modal__container slds-p-right_xx-large">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon
+                        iconName="utility:close"
+                        onclick="{! c.handleCancelAccConReln}"
+                        alternativeText="close"
+                        variant="bare-inverse"
+                        class="slds-modal__close"
+                    />
+                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Delete Beneficiary</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modalcontent">
+                    <p>Are you sure, you want to delete the beneficiary ?</p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="brand" label="Delete" title="Delete" onclick="{! c.handleDelete }" />
+                    <lightning:button label="Cancel" title="Cancel" onclick="{! c.handleCancel }" />
+                </footer>
+            </div>
+        </section>
+    </aura:if>
+    <!--Body End-->
+</aura:component>

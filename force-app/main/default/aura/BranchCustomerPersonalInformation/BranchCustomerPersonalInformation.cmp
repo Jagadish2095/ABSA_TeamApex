@@ -1,0 +1,342 @@
+<!--
+* Lightning Component for Capturing Customer Personal Information
+*
+* @author  Paul John du Randt : ABSA (IQ Business)
+* @version v1.0
+* @since   2020-09-18
+* @edit	   Clifford Willers : ABSA (IQ Business)
+*
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName" 
+                access="global"
+                controller="BranchCustomerController" >
+    <aura:attribute name="processType" type="string" default="" />
+    <aura:attribute name="dhaAttestation" type="Boolean" default="false" />
+    <aura:attribute name="disabled" type="Boolean" default="false" />
+    <aura:attribute name="errorMap" type="Map" />
+    <aura:attribute name="titleOptions" type="List" />
+    <aura:attribute name="maritalStatusOptions" type="List" />
+    <aura:attribute name="maritalContractTypeOptions" type="List" />
+    <aura:attribute name="countryOfBirthOptions" type="List" />
+    <aura:attribute name="nationalityOptions" type="List" />
+    <aura:attribute name="homeLanguageOptions" type="List" />
+    <aura:attribute name="incomeSourceOptions" type="string" />
+    <aura:attribute name="today" type="string" />
+    <aura:attribute name="personTitle" type="string" />
+    <aura:attribute name="firstName" type="string" />
+    <aura:attribute name="lastName" type="string" />
+    <aura:attribute name="iDNumber" type="string" />
+    <aura:attribute name="dateIssued" type="string" />
+    <aura:attribute name="countryOfBirth" type="string" />
+    <aura:attribute name="nationality" type="string" />
+    <aura:attribute name="maritalStatus" type="string" default="" />
+    <aura:attribute name="maritalContractType" type="string" default="" />
+    <aura:attribute name="maritalTypeDisabled" type="Boolean" default="true" />
+    <aura:attribute name="maritalTypeRequired" type="Boolean" default="false" />
+    <aura:attribute name="homeLanguage" type="string" />
+    <aura:attribute name="homeLanguageOther" type="string" />
+    <aura:attribute name="incomeSource" type="string" />
+    <aura:attribute name="updating" type="Boolean" default="true" />
+    <aura:attribute name="actionClicked" type="string" default="" />
+    <aura:attribute name="clientType" type="string" default="" />
+    <aura:attribute name="clientTypeOptions" type="string" default="" />
+    <aura:attribute name="genderOptions" type="List" default="['Male', 'Female']"/>
+    <aura:attribute name="gender" type="string" />
+    <aura:attribute name="idType" type="string" />
+    <aura:attribute name="clientGroup" type="string" />
+    <aura:attribute name="dateOfBirth" type="string" />
+    
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <aura:handler name="change" value="{! v.maritalStatus }" action="{! c.maritalStatusChanged }" />
+    <div class="slds-is-relative" >
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <lightning:recordEditForm aura:id = "PersonalInformation"
+                                          recordId="{! v.recordId }"
+                                          objectApiName="Account"
+                                          density="comfy"
+                                          onload="{! c.infoRecordLoaded }"
+                                          onsubmit="{! c.infoRecordSubmit }"
+                                          onerror="{! c.infoRecordError }"
+                                          onsuccess="{! c.infoRecordSuccess }">
+                    <lightning:inputField fieldName="FirstName" class="hidden_field"/>
+                    <lightning:inputField fieldName="Titles__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="ID_Number__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="LastName" class="hidden_field"/>
+                    <lightning:inputField fieldName="Date_Issued__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Marital_Status__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Country_of_Birth__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Home_Language__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Home_Language_Other__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Marital_Contract_Type__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Nationality_List__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Income_Source__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Client_Type__c" class="hidden_field"/>
+                    <lightning:inputField fieldName="Valid_Update_Bypass__c" class="hidden_field"/>
+                    <!-- Koketso added required fields for voice -->
+                    <lightning:inputField fieldName="Gender__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="ID_Type__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Client_Group__c" class="hidden_field"/>
+                    <lightning:inputField fieldName="PersonBirthdate" class="hidden_field"/>
+                    <button id="{! globalId + '_personal_submit' }" type="submit" class="hidden_field"/>
+                </lightning:recordEditForm>
+                <lightning:layout >
+                    <lightning:layoutItem padding="around-medium" size="6">
+                        <legend class="slds-text-heading--small slds-p-vertical--medium">
+                            <b>Personal information</b>
+                        </legend>
+                        <lightning:layout>
+                            <lightning:layoutitem size="6" >
+                                <div id="{! globalId + '_ClientType' }" class="slds-var-p-around_x-small">
+                                    <label for="_ClientType" >Client Type</label>
+                                    <lightning:select aura:id="ClientType"
+                                                      name="ClientType"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.clientType }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.clientTypeOptions }" var="clientType">
+                                            <option value="{!clientType}" selected="{!clientType==v.clientType}">{!clientType}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem size="6" >
+                                <div id="{! globalId + '_PersonTitle' }" class="slds-var-p-around_x-small">
+                                    <label for="PersonTitle" >Title</label>
+                                    <lightning:select aura:id="PersonTitle"
+                                                      name="PersonTitle"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.personTitle }"
+                                                      required="true"
+                                                      disabled="{! v.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.titleOptions }" var="titles">
+                                            <option value="{!titles}" selected="{!titles==v.personTitle}">{!titles}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                                                    <!-- Koketso added required fields for voice -->
+                                                    <aura:if isTrue="{!(v.processType == 'Voice Sales Product Onboarding' )}">
+                                                        <lightning:layoutitem size="6" >
+                                                        <div id="{! globalId + '_Gender' }" class="slds-var-p-around_x-small">
+                                                            <label for="Gender" >Gender</label>
+                                                            <lightning:select aura:id="Gender"
+                                                                              name="Gender"
+                                                                              label=""
+                                                                              class="label-hidden"
+                                                                              value="{! v.gender }"
+                                                                              required="true"
+                                                                              disabled="{! v.disabled }">
+                                                                <option value="">please select...</option>
+                                                                <aura:iteration items="{! v.genderOptions }" var="genders">
+                                                                    <option value="{!genders}" selected="{!genders==v.gender}">{!genders}</option>
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </lightning:layoutitem>
+                                                    </aura:if>
+                                                </lightning:layout>
+                                                <lightning:layout>
+                            <lightning:layoutitem size="6">
+                                <div id="{! globalId + '_FirstName' }" class="slds-var-p-around_x-small">
+                                    <label for="FirstName" >Full names</label>
+                                    <lightning:input aura:id="FirstName"
+                                                     name="FirstName"
+                                                     value="{! v.firstName }"
+                                                     required="true"
+                                                     variant="label-hidden"
+                                                     pattern="[a-zA-Z\\ \\'\\-]+"
+                                                     disabled="{! v.dhaAttestation }"/>
+                                </div>
+                                <div id="{! globalId + '_IdNumber' }" class="slds-var-p-around_x-small">
+                                    <label for="IdNumber" >ID number</label>
+                                    <lightning:input aura:id="IdNumber"
+                                                     name="IdNumber"
+                                                     value="{! v.iDNumber }"
+                                                     variant="label-hidden"
+                                                     disabled="true"/>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem size="6">
+                                <div id="{! globalId + '_LastName' }" class="slds-var-p-around_x-small">
+                                    <label for="LastName" >Surname</label>
+                                    <lightning:input aura:id="LastName"
+                                                     name="LastName"
+                                                     value="{! v.lastName }"
+                                                     required="true"
+                                                     variant="label-hidden"
+                                                     pattern="[a-zA-Z\\ \\'\\-]+"
+                                                     disabled="{! v.dhaAttestation }"/>
+                                </div>
+                                <div id="{! globalId + '_DateIdIssued' }" class="slds-var-p-around_x-small">
+                                    <label for="DateIdIssued" >Date issued</label>
+                                    <lightning:input aura:id="DateIdIssued"
+                                                     name="DateIdIssued"
+                                                     type="date"
+                                                     value="{! v.dateIssued }"
+                                                     required="true"
+                                                     variant="label-hidden"
+                                                     placeholder="please select..."
+                                                     max="{! v.today }"
+                                                     disabled="{! v.dhaAttestation }"/>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem size="6" >
+                                <div id="{! globalId + '_SourceOfIncome' }" class="slds-var-p-around_x-small">
+                                    <label for="SourceOfIncome" >Source of income</label>
+                                    <lightning:select aura:id="SourceOfIncome"
+                                                      name="SourceOfIncome"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.incomeSource }"
+                                                      required="true" >
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.incomeSourceOptions }" var="income">
+                                            <option value="{!income}" selected="{!income==v.incomeSource}">{!income}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem size="6" >
+                                <div id="{! globalId + '_MaritalStatus' }" class="slds-var-p-around_x-small">
+                                    <label for="MaritalStatus" >Marital status</label>
+                                    <lightning:select aura:id="MaritalStatus"
+                                                      name="MaritalStatus"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.maritalStatus }"
+                                                      required="true" >
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.maritalStatusOptions }" var="mStatus">
+                                            <option value="{!mStatus}" selected="{!mStatus==v.maritalStatus}">{!mStatus}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem size="6" >
+                                <aura:if isTrue="{! v.maritalStatus == 'Married' }">
+                                    <div id="{! globalId + '_MaritalContractType' }" class="slds-var-p-around_x-small">
+                                        <label for="MaritalContractType" >Marriage type</label>
+                                        <lightning:select aura:id="MaritalContractType"
+                                                          name="MaritalContractType"
+                                                          label=""
+                                                          class="label-hidden"
+                                                          value="{! v.maritalContractType }"
+                                                          disabled="{! v.maritalTypeDisabled }"
+                                                          required="{! v.maritalTypeRequired }">
+                                            <option value="">please select...</option>
+                                            <aura:iteration items="{! v.maritalContractTypeOptions }" var="mContractType">
+                                                <option value="{!mContractType}" selected="{!mContractType==v.maritalContractType}">{!mContractType}</option>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </div>
+                                </aura:if>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem size="6">
+                                <div id="{! globalId + '_CountryOfBirth' }" class="slds-var-p-around_x-small">
+                                    <label for="CountryOfBirth" >Country of birth</label>
+                                    <lightning:select aura:id="CountryOfBirth"
+                                                      name="CountryOfBirth"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.countryOfBirth }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.countryOfBirthOptions }" var="cobValue">
+                                            <option value="{!cobValue}" selected="{!cobValue==v.countryOfBirth}">{!cobValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                                <div id="{! globalId + '_HomeLanguage' }" class="slds-var-p-around_x-small">
+                                    <label for="HomeLanguage" >Home language</label>
+                                    <lightning:select aura:id="HomeLanguage"
+                                                      name="HomeLanguage"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.homeLanguage }"
+                                                      required="true" >
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.homeLanguageOptions }" var="homeValue">
+                                            <option value="{!homeValue}" selected="{!homeValue==v.homeLanguage}">{!homeValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>                               
+                                 <!-- Koketso added required fields for voice -->
+                                <aura:if isTrue="{!(v.processType == 'Voice Sales Product Onboarding' )}">
+                                    <div id="{! globalId + '_DateOfBirth' }" class="slds-var-p-around_x-small">
+                                        <label for="DateOfBirth" >Date of birth</label>
+                                        <lightning:input aura:id="DateOfBirth"
+                                                         name="DateOfBirth"
+                                                         type="date"
+                                                         value="{! v.dateOfBirth }"
+                                                         required="true"
+                                                         variant="label-hidden"
+                                                         placeholder="please select..."
+                                                         max="{! v.today }"
+                                                         disabled="{! v.dhaAttestation }"/>
+                                    </div>
+                                </aura:if>
+
+                            </lightning:layoutitem>
+                            <lightning:layoutitem size="6">
+                                <div id="{! globalId + '_Nationality' }" class="slds-var-p-around_x-small">
+                                    <label for="Nationality" >Nationality</label>
+                                    <lightning:select aura:id="Nationality"
+                                                      name="Nationality"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.nationality }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.nationalityOptions }" var="nationalityValue">
+                                            <option value="{!nationalityValue}" selected="{!nationalityValue==v.nationality}">{!nationalityValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                                <aura:if isTrue="{! v.homeLanguage == 'Other' }">
+                                    <div id="{! globalId + '_HomeLanguageOther' }" class="slds-var-p-around_x-small">
+                                        <label for="HomeLanguageOther" >Please specify</label>
+                                        <lightning:input aura:id="HomeLanguageOther"
+                                                         name="HomeLanguageOther"
+                                                         value="{! v.homeLanguageOther }"
+                                                         required="true"
+                                                         variant="label-hidden"
+                                                         pattern="[a-zA-Z -]+" />
+                                    </div>
+                                </aura:if>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <div>
+                    <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                        availableActions="{! v.availableActions }"
+                                        navigateFlowEvent="{! c.handleNavigate }"/>
+                </div>
+            </lightning:layoutItem>
+            <aura:if isTrue="{! v.updating }">
+                <div class="slds-spinner_container" >
+                    <div role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand" >
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a" />
+                        <div class="slds-spinner__dot-b" />
+                    </div>
+                </div>
+            </aura:if>
+        </lightning:layout>
+    </div>
+</aura:component>

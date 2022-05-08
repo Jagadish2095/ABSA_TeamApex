@@ -1,0 +1,315 @@
+<!--DocumentShare-->
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="DocumentsShareControllerESign">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="data1" type="List"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="columns1" type="List"/>
+    <aura:attribute name="columns2" type="List"/>
+    <aura:attribute name="signatoriesOutput" type="List"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/>
+    <aura:attribute name="selectedRowsCount" type="Integer" default="0"/>
+    <aura:attribute name="maxRowSelection" type="Integer" default="10"/>
+    <aura:attribute name="onScreenSharing" type="boolean" default="false"/>
+    <aura:attribute name="electronicSharing" type="boolean" default="false"/>
+    <aura:attribute name="showAdviserConfirmation" type="boolean" default="false"/>
+    <aura:attribute name="showAssistantConfirmation" type="boolean" default="false"/>
+    <aura:attribute name="showNoAccess" type="boolean" default="false"/>
+    <aura:attribute name="adviserName" type="String" default=""/>
+    <aura:attribute name="oppOwnerName" type="String" default=""/>
+    <aura:attribute name="showESignaturePanel" type="boolean" default="true"/>
+    <aura:attribute name="showESignatureTable" type="boolean" default="false"/>
+    <aura:attribute name="showESignatureDataTable" type="boolean" default="false"/>
+    <aura:attribute name="showSignatoryUpdatePanel" type="boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="emailOptions" type="List"/>
+    <aura:attribute name="selectedEmail" type="String" default=""/>
+    <aura:attribute name="documentId" type="String"/>
+    <aura:attribute name="signatoryId" type="String"/>
+    <aura:attribute name="showAlternativeEmail" type="boolean" default="false"/>
+    <aura:attribute name="alternativeEmail" type="String" default=""/>
+    <aura:attribute name="mobileOptions" type="List"/>
+    <aura:attribute name="selectedMobile" type="String"/>
+    <aura:attribute name="showAlternativeMobile" type="boolean" default="false"/>
+    <aura:attribute name="alternativeMobile" type="String" default=""/>
+    <aura:attribute name="methodOptions" type="List"/>
+    <aura:attribute name="selectedMethod" type="String"/>
+    <aura:attribute name="inProgressOrSignedRequestExists" type="boolean" default="false"/>
+    <aura:attribute name="isRefresh" type="boolean" default="false"/>
+    <aura:attribute name="isRefreshDocuments" type="boolean" default="false"/>
+    <aura:attribute name="emailOptionsSharing" type="List"/>
+    <aura:attribute name="selectedEmailSharing" type="String"/>
+    <aura:attribute name="showAlternativeEmailSharing" type="boolean" default="false"/>
+    <aura:attribute name="alternativeEmailSharing" type="String" default=""/>
+    <aura:attribute name="selectedClientEmail" type="String" default=""/>
+    <aura:attribute name="selectedEmailSignatory" type="String" default=""/>
+    <aura:attribute name="selectedMobileSignatory" type="String" default=""/>
+    <aura:attribute name="updateSignatoryError" type="boolean" default="false"/>
+    <aura:attribute name="isButtonSignatureDisabled" type="boolean" default="false"/>
+    <aura:attribute name="showDocumentScreen" type="boolean" default="false"/>
+    <aura:attribute name="showCasaNotCompleted" type="boolean" default="false"/>
+     <!--Attributes declared W-005270-->
+    <aura:attribute name="Mandatorydocuments" type="Mandatory_Doc__mdt"/>
+    <aura:attribute name="documentsUploaded" type="Object"/>
+    <!--Tinashe Shoko: 20200726: Sort the Documents List-->
+    <aura:attribute name="sortDirection" type="String" default="asc" />
+    <aura:attribute name="defaultSortDirection" type="String" default="asc" />
+    <aura:attribute name="sortedBy" type="String" />
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <!--<aura:if isTrue="{!v.showDocumentScreen}">-->
+        <aura:if isTrue="{!v.showAdviserConfirmation}">
+            <div style="height:640px">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">AIFA Adviser Declaration</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <p>You as an AIFA adviser, {!v.adviserName}, declares that:</p>
+                            <p>- You did read the document you are about to share with the customer.</p>
+                            <p>- Any info related to you as an AIFA Adviser or completed by you on behalf of the customer is correct and true.</p>
+                            <p>- You understand why you are about to share the document with the customer.</p>
+                            <p>- The customer receiving this communication does expect this document.</p>
+                            <p>- You did verify the relevant customers email and sms details before sharing this document.</p>
+                        </div>
+                        <footer class="slds-modal__footer slds-modal__footer_directional">
+                            <lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.cancelAction }"/>
+                            <lightning:button variant="brand" label="Confirm" title="Confirm" onclick="{! c.confirmAction }"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!v.showAssistantConfirmation}">
+            <div style="height:640px">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">AIFA Assistant Declaration</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <p>I , {!v.adviserName},  Adviser assistant for AIFA Adviser, {!v.oppOwnerName},  declares that:</p>
+                            <p>- I understand the details of the documents I am about the share with the proposer and / or Life assured applicant.</p>
+                            <p>- I have verified the customers relevant email and SMS details before sharing these documents with the proposer and / or Life assured applicant.</p>
+                            <p>- These documents have been discussed with the proposer and / or Life assured applicant.</p>
+                            <p>- The proposer and / or Life assured applicant has been informed about their obligations, eligibility and rights.</p>
+                            <p>- I did get approval from my adviser to share this info with the proposer and / or Life assured applicant. </p>
+                        </div>
+                        <footer class="slds-modal__footer slds-modal__footer_directional">
+                            <lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.cancelAction }"/>
+                            <lightning:button variant="brand" label="Confirm" title="Confirm" onclick="{! c.confirmAction }"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div>
+        </aura:if>
+		<aura:if isTrue="{!v.showNoAccess}">
+            <div style="height:640px">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Unable to share document</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <p>You need to be the Opportunity Owner or be on the Opportunity Team to share this document.</p>
+                        </div>
+                        <footer class="slds-modal__footer slds-modal__footer_directional">
+                            <lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.cancelAction }"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </div>
+        </aura:if>
+        <div class="slds-is-relative">
+            <lightning:flow aura:id="flowData" />
+        </div>
+
+        <aura:if isTrue="{!v.showESignatureDataTable}">
+            <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+                <lightning:card title="Signatories" iconName="standard:document" class="slds-m-left_small">
+                    <aura:set attribute="actions">
+                        <lightning:button label="Refresh Signatories" disabled="{!v.isRefresh}" onclick="{!c.refreshSignatories}" aura:id="refreshBtn"/>
+                    </aura:set>
+                    <aura:if isTrue="{!not(empty(v.signatoriesOutput))}" >
+                        <lightning:datatable keyField="Id"
+                                             data="{!v.signatoriesOutput}"
+                                             columns="{!v.columns2}"
+                                             onrowaction="{! c.handleRowActionSignatory}"
+                                             draftValues="{!v.draftValues}"
+                                             onsave="{!c.handleSave}"
+                                             hideCheckboxColumn="true"
+                                             sortable="false"
+                                             wrapTextMaxLines="3"/>
+                    </aura:if>
+                    <aura:if isTrue="{!empty(v.signatoriesOutput)}">
+                        <p>No signatories found for this document type.</p>
+                    </aura:if>
+                    <br/>
+                    <aura:if isTrue="{!v.isButtonSignatureDisabled}">
+                        Please ensure that related contacts for the Account/Opportunity have valid Roles, Salutation, email address and/or mobile number.
+                    </aura:if><br/>
+                    <button class="slds-button slds-button_brand" onclick="{!c.sendForSignature}" disabled= "{!v.isButtonSignatureDisabled}" >Send for Signature</button>
+                </lightning:card>
+            </article>
+            <BR/>
+        </aura:if>
+
+        <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+            <lightning:card title="Documents Sharing and E-Signature" iconName="standard:document" class="slds-m-left_small">
+                <aura:set attribute="actions">
+                    <lightning:button label="Refresh Documents" disabled="{!v.isRefreshDocuments}" onclick="{!c.refreshDocuments}" aura:id="refreshBtnDoc"/>
+                </aura:set>
+
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select aura:id="emailSelectSharing" name="SelectEmailSharing" label="Select Email for Documents Sharing." value="{!v.selectedEmailSharing}" onchange="{!c.onPicklistEmailChangeSharing}" required="true">
+                            <aura:iteration items="{!v.emailOptionsSharing}" var="item">
+                                <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="6">
+                        <ui:inputCheckbox aura:id="completedCheckboxEmailSharing" class="slds-float--left" label="Use Alternative Email for Document Sharing?" change="{!c.onCompletedCheckEmailSharing}"/>
+                    </lightning:layoutItem>
+                </lightning:layout>
+
+                <aura:if isTrue="{!v.showAlternativeEmailSharing}">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input aura:id="altEmailSharing" value="{!v.alternativeEmailSharing}" label="Alternative Email" type="email" required="true"/>
+                    </lightning:layoutItem>
+                </aura:if>
+                <!--<h1>Documents selected: {! v.selectedRowsCount }</h1>-->
+                <lightning:datatable
+                                     columns="{! v.columns }"
+                                     data="{! v.data }"
+                                     keyField="id"
+                                     aura:id="linesTable"
+                                     minColumnWidth="90"
+                                     onrowaction="{! c.handleRowAction }"
+                                     maxRowSelection="{! v.maxRowSelection }"
+                                     onrowselection="{! c.updateSelectedText }"
+                                     defaultSortDirection="{!v.defaultSortDirection}"
+                                     sortedDirection="{!v.sortDirection}"
+                                     sortedBy="{!v.sortedBy}"
+                                     onsort="{!c.handleSort}"/>
+            <br />
+            </lightning:card>
+            <lightning:card title="E-Signature Requests" iconName="standard:document" class="slds-m-left_small">
+                <lightning:datatable
+                                     columns="{! v.columns1 }"
+                                     data="{! v.data1 }"
+                                     keyField="id"
+                                     hideCheckboxColumn="true"
+                                     minColumnWidth="90"/>
+            </lightning:card>
+        </article>
+
+        <aura:if isTrue="{!v.showSignatoryUpdatePanel}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!--###### MODAL BOX CONFIRMATION Start ######
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeConfirmationSignatory}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Close Confirmation</h2>
+                </header>-->
+                    <!--###### MODAL BOX BODY Start ######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem size="12">
+                                <h2 class="slds-section__title">Update Signatory Details</h2>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <lightning:select aura:id="methodSelect" name="SelectMethod" label="Select Method" value="{!v.selectedMethod}" onchange="{!c.onPicklistMethodChange}" required="true">
+                                    <aura:iteration items="{!v.methodOptions}" var="item">
+                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                            <br />
+
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:select aura:id="emailSelect" name="SelectEmail" label="Select Email" value="{!v.selectedEmail}" onchange="{!c.onPicklistEmailChangeSignature}" required="true">
+                                    <aura:iteration items="{!v.emailOptions}" var="item">
+                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                                <ui:inputCheckbox aura:id="completedCheckboxEmail" class="slds-float--right" label="Use Alternative Email for E-Signature?" change="{!c.onCompletedCheckEmail}"/>
+                            </lightning:layoutItem>
+
+                            <aura:if isTrue="{!v.showAlternativeEmail}">
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:input aura:id="altEmail" value="{!v.alternativeEmail}" label="Alternative Email" type="email" required="true"/>
+                                </lightning:layoutItem>
+                            </aura:if>
+                            <br />
+
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:select aura:id="mobileSelect" name="SelectMobile" label="Select Mobile" value="{!v.selectedMobile}" onchange="{!c.onPicklistMobileChange}" required="true">
+                                    <aura:iteration items="{!v.mobileOptions}" var="item">
+                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                                <ui:inputCheckbox aura:id="completedCheckboxMobile" class="slds-float--right" label="Use Alternative Mobile for E-Signature?" change="{!c.onCompletedCheckMobile}"/>
+                            </lightning:layoutItem>
+
+                            <aura:if isTrue="{!v.showAlternativeMobile}">
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:input aura:id="altMobile" value="{!v.alternativeMobile}" label="Alternative Mobile" type="phone" required="true"/>
+                                </lightning:layoutItem>
+                            </aura:if>
+                        </lightning:layout>
+                    </div>
+                    <!--###### MODAL BOX FOOTER Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{!c.closeConfirmationSignatory}"/>
+                        <lightning:button variant="brand"
+                                          label="Confirm"
+                                          title="Confirm"
+                                          onclick="{!c.confrimAndCloseSignatory}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    <!--</aura:if>-->
+    <!--
+    <aura:if isTrue="{!v.showCasaNotCompleted}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <center style="z-index:99; height=150px">
+                    <p style="font-size:18px; margin-top:20px"><lightning:icon size="small" iconName="action:close" alternativeText="Not Completed" /> CASA Screening needs to be completed before Documents can be done.</p>
+                </center>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>-->
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="Entity_Type__c"
+                      targetFields="{!v.opportunityRecord}"
+                      targetError="{!v.recordLoadError}"
+                      />
+</aura:component>

@@ -1,0 +1,247 @@
+<aura:component controller="nqCreateNewOrAddRecipientv2Controller" implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+   
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    
+    <aura:attribute name="clientAccountId" type="String" access="global"  />
+    <aura:attribute name="fullName" type="String" />    
+    <aura:attribute name="email" type="String" /> 
+    <aura:attribute name="mobile" type="String" default="1231"/> 
+    <aura:attribute name="language" type="String"/>
+    <aura:attribute name="tableHeading" type="String" />
+    <aura:attribute name="actionType" type="String" />
+    <aura:attribute name="productType" type="String" />
+    <aura:attribute name="accWrapper" type="Object" />
+    <aura:attribute name="isFirstScreen" type="Boolean" default="true" />
+    <aura:attribute name="contactPref" type="String" />
+    <aura:attribute name="cellPhone" type="String" />
+    <aura:attribute name="all" type="boolean" default="false" /> 
+    <aura:attribute name="payment" type="boolean" default="false"/>
+    <aura:attribute name="withDrawal" type="boolean" default="false" />
+    <aura:attribute name="deposit" type="boolean" default="false"/>
+    <aura:attribute name="transfer" type="boolean" default="false"/>
+    <aura:attribute name="returned" type="boolean" default="false" />
+    <aura:attribute name="scheduled" type="boolean" default="false"/>
+    <aura:attribute name="purchase" type="boolean" default="false"/>
+    <aura:attribute name="notifyTimes" type="String" />
+    <aura:attribute name="balanceUpdates" type="boolean" />
+    <aura:attribute name="minimumAmount" type="String" />
+    <aura:attribute name="isUpdate" type="boolean" default="false"/>
+    <aura:attribute name="isCancel" type="boolean" default="false"/>
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Mobile Number', 'value': 'S'},
+                                                        {'label': 'Email', 'value': 'E'}
+                                                        ]"/>
+    <aura:attribute name="selectedValue" type="String" default="all" />
+    
+    
+    
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="prodTypesList" type="List" />
+    <aura:attribute name="accNumList" type="List" />
+    <aura:attribute name="prodTypesSet" type="Set" />
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    <aura:attribute name="selectedAccountNumber" type="String" />
+    
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" access="global"/>
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"/>
+    <!--<aura:if isTrue="{!v.isFirstScreen}" > -->
+        <div class="slds">
+            <lightning:card title="">
+                
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Account Selection">Account Selection</span>
+                </h3> 
+                
+                <lightning:layout multipleRows="true">
+                    <lightning:spinner aura:id="Spinner" alternativeText="Loading" size="large" variant="brand" class="slds-hide"/>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select value="{!v.selectedProductValue}" class="select-auto-width" aura:id="myProductselection" 
+                                          onchange="{!c.getAccountNumbers}"	label="Select the Product Type">
+                            <option value="">--None--</option>
+                            <aura:iteration items="{!v.prodTypesList}" var="prod" indexVar="key">
+                                <option value="{!prod}">{!prod}</option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select value="{!v.selectedAccountNumber}" class="select-auto-width" aura:id="myAccountselection" 
+                                          onchange="{!c.getSelectedAccount}"	label="Select the Account">
+                            <option value="">--None--</option>
+                            <aura:iteration items="{!v.accNumList}" var="acc" indexVar="key">
+                                <option value="{!acc}">{!acc}</option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select label="Action Type" value="{!v.actionType}" required="true" onchange="{!c.executeActionType}">
+                                        <option value="">Please select</option>
+                                        <option value="register">Register</option>
+                                        <option value="update">Maintain</option>
+                                        <option value="cancel">Cancel</option>
+                                    </lightning:select>
+                    </lightning:layoutItem>
+                    <aura:if isTrue="{!v.isUpdate}">
+                   
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div class="header-column">                    
+                            
+                            <lightning:input name="fullName" label="Full Name" value="{!v.fullName}"/>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div class="header-column">
+                            <lightning:radioGroup name="radioGroup"
+                                                  label="Preferred communication"
+                                                  options="{! v.options }"
+                                                  value="{! v.contactPref }"
+                                                  type="radio"/>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div class="header-column">
+                            <!--{!v.accWrapper[0].lng} -->
+                            
+                            <lightning:select name="language" label="Preferred Notification Language"  value="{!v.language}">
+                                <option value="">Please select</option>
+                                <option value="E">English</option>
+                                <option value="A">Afrikaans</option>
+                            </lightning:select> 
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div class="header-column">
+                            <lightning:input type="email" name="email1" value="{!v.email}" label="Email" />    
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div class="header-column">                      
+                            <lightning:input name="cellPhone" label="Mobile Number" value="{!v.cellPhone}"/>
+                        </div>
+                    </lightning:layoutItem>
+                     </aura:if>
+                   
+                </lightning:layout>
+                 <aura:if isTrue="{!v.isCancel}">
+                     <!--<lightning:accordion aura:id="accordion" activeSectionName="accordion"> -->
+                <lightning:layout multipleRows="true" title="">
+                  <!--  <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Group Header">
+                        Group Header
+                    </lightning:layoutItem> -->
+                    <lightning:layoutItem padding="around-small" size="5">
+                        <lightning:layout multipleRows="true" >
+                            <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="All">
+                                All
+                            </lightning:layoutItem>                            
+                            <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Payment">
+                                Payment
+                            </lightning:layoutItem>                            
+                            <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Withdrawal">
+                                Withdrawal
+                            </lightning:layoutItem>                            
+                            <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Deposit">
+                                Deposit
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Transfer">
+                                Transfer
+                            </lightning:layoutItem>                            
+                            <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Returned">
+                                Returned
+                            </lightning:layoutItem>                                
+                        </lightning:layout>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="7">
+                        <lightning:layout multipleRows="true">                                   
+                            <lightning:layoutItem padding="around-small" size="2"  class="slds-truncate" title="Scheduled">
+                                Scheduled
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="2"  class="slds-truncate" title="Purchase">
+                                Purchase
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="3" class="slds-truncate" title="Natify Times">
+                                Notify Times
+                            </lightning:layoutItem>                            
+                            <lightning:layoutItem padding="around-small" size="3" class="slds-truncate" title="Balance Updates">
+                                Balance Updates
+                            </lightning:layoutItem>                            
+                            <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Minimum Amount">
+                                Minimum Amount
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                
+               <!-- <lightning:accordionSection name="accordion" label="{!v.tableHeading}"> -->
+                    <lightning:layout multipleRows="true" title="">
+                       <!-- <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Group Header">
+                            {!v.accWrapper[0].accountNumber}
+                        </lightning:layoutItem> -->
+                        <lightning:layoutItem padding="around-small" size="5" >
+                            <lightning:layout multipleRows="true" >
+                                <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="All">
+                                    <lightning:input type="checkbox" variant="label-hidden" checked="{!v.all}" onchange="{!c.selectAll}"/>
+                                </lightning:layoutItem>                            
+                                <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Payment">
+                                    <lightning:input type="checkbox" variant="label-hidden" checked="{!v.payment}"/>
+                                </lightning:layoutItem>                            
+                                <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Withdrawal">
+                                    <lightning:input type="checkbox" variant="label-hidden" checked="{!v.withDrawal}"/>
+                                </lightning:layoutItem>                            
+                                <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Deposit">
+                                    <lightning:input type="checkbox" variant="label-hidden" checked="{!v.deposit}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Transfer">
+                                    <lightning:input type="checkbox" variant="label-hidden" checked="{!v.transfer}"/>
+                                </lightning:layoutItem>                            
+                                <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Returned">
+                                    <lightning:input type="checkbox" variant="label-hidden" checked="{!v.returned}"/>
+                                </lightning:layoutItem>                                
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="7">
+                            <lightning:layout multipleRows="true">                                   
+                                <lightning:layoutItem padding="around-small" size="2"  class="slds-truncate" title="Scheduled">
+                                    <lightning:input type="checkbox" variant="label-hidden" checked="{!v.scheduled}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="2" padding="around-small" class="slds-truncate" title="Purchase">
+                                     <lightning:input type="checkbox" variant="label-hidden" checked="{!v.purchase}"/>
+                       
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="3" class="slds-truncate" title="Notify Times">
+                                    <lightning:select variant="label-hidden" value="{!v.notifyTimes}">
+                                        <option value="">Please select</option>
+                                        <option value="L">6pm to 10pm</option>
+                                        <option value="A">24 Hours</option>
+                                        <option value="O">08:00am to 5pm</option>
+                                    </lightning:select>
+                                </lightning:layoutItem>                            
+                                <lightning:layoutItem size="3" class="slds-truncate" title="Balance Updates">
+                                    <lightning:select variant="label-hidden" value="{!v.balanceUpdates}">
+                                        <option value="None">None</option>
+                                        <option value="daily">Daily</option>
+                                        <option value="sunday">Sunday</option>
+                                        <option value="monday">Monday</option>
+                                        <option value="tuesday">Tuesday</option>
+                                        <option value="wednesday">Wednesday</option>
+                                        <option value="thursday">Thursday</option>
+                                        <option value="friday">Friday</option>
+                                        <option value="saturday">Saturday</option>
+                                    </lightning:select>
+                                </lightning:layoutItem>                            
+                                <lightning:layoutItem padding="around-small" size="2" class="slds-truncate" title="Minimum Amount">
+                                    <lightning:input type="text" variant="label-hidden" value="{!v.minimumAmount}"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+
+                 </aura:if>
+                 <lightning:layoutItem padding="around-small" size="12" class="slds-align_absolute-center">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{! c.submitRequest }"/>
+                    </lightning:layoutItem>
+            </lightning:card>
+        </div>
+        
+        
+       
+    <!--</aura:if>-->
+</aura:component>

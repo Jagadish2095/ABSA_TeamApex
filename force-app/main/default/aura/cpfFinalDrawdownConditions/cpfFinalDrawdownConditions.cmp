@@ -1,0 +1,102 @@
+<!--
+  @description       : 
+  @author            : 
+  @last modified on  : 2021-06-14
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-06-14      Initial Version
+-->
+<aura:component controller="CPFPresalescntrlr" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    
+    <aura:attribute name="appPrdctCpfRec" type="Object" />
+    <aura:attribute name="approvedsectitleplans" type="String" default ="No"/> 
+    <aura:attribute name="uponcompofdev" type="String" default ="No"/> 
+    <aura:attribute name="newOtherDrawDownConditions" type="Application_Contract_Clause__c[]" />
+    <aura:attribute name="newOtherFinalDrawDownConditions" type="Application_Contract_Clause__c[]" />
+    
+    
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleOtheDrawdownAppEvent}"/>
+    <aura:handler name="CPFApplicationFinancialAccCreation" event="c:CPFApplicationFinancialAccCreation" action="{!c.handleOtherfinalDrawdownAppEvent}"/>
+
+    
+    <lightning:recordEditForm aura:id="iAppProdcpfRecord" objectApiName="Application_Product_CPF__c" 
+                              recordId="{!v.appPrdctCpfRec.Id}"  
+                              onsuccess="{!c.handleSuccess}"
+                              onerror="{!c.handleError}">
+        
+        <lightning:accordion activeSectionName="Final Drawdown Conditions" allowMultipleSectionsOpen="false"> 
+            <lightning:accordionSection name="Final Drawdown Conditions" label="Final Drawdown Conditions" >
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Approved sectional title plans</span>
+                                <lightning:helptext icon-name="utility:like" content="Copies of the approved sectional title plans and confirmation of the opening of the sectional title register."/>
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Is_Sectional_Title_Plan_Approved__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.approvedsectitleplans}"
+                                                            /> 
+                        </span></div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Final date for drawdown Date</span>
+                                <lightning:helptext icon-name="utility:like" content=" The date on which the final drawdown conditions stipulated in Schedule 2A, Part 2 are satisfied, which date shall be no later than [DATE]." />
+                            </label>
+                            <lightning:inputField fieldName="Final_date_for_drawdown_Date__c" aura:id="finaldatefordrawdown" variant="label-hidden"/>
+                            
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Upon completion of the Development</span>
+                                <lightning:helptext icon-name="utility:like" content="Upon completion of the Development, a supplementary valuation commentary in respect of the Property is to be provided, at the Borrower’s expense (clarifying whether any material issues affect the completed Development and the previous valuation report) as well as a replacement value assessment for insurance purposes." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Is_Upon_Completion_Of_Development__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.uponcompofdev}"
+                                                            /> 
+                        </span></div>
+                    <div class="slds-col slds-size_1-of-1">
+                    <lightning:accordion activeSectionName ="Other Drawdown conditions" allowMultipleSectionsOpen="false">
+                        <lightning:accordionSection name="Other Drawdown conditions" label="Other Drawdown conditions" >
+                            
+                            <aura:iteration items="{!v.newOtherDrawDownConditions}" var="nOtherDrawDownConditionsItem" indexVar="index">
+                                <c:cpfFinalDrawdownConditionsChild aura:id="newotherdrawdownId" otherdrawdownItem="{!nOtherDrawDownConditionsItem}" rowindex="{!index}" otherDrawdownConditions="{!v.newOtherDrawDownConditions}" OppRecId="{!v.recordId}" Type="Other Drawdown conditions"/>
+                            </aura:iteration> 
+                                    <lightning:button label="Add Other Drawdown conditions" onclick="{!c.addOtherdrawdownbtn}" variant="brand" aura:id="ibtn1" />
+                            <br><br></br></br>
+                        </lightning:accordionSection>
+                    </lightning:accordion>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1">
+                    <lightning:accordion activeSectionName ="Other Final Drawdown Conditions" allowMultipleSectionsOpen="false">
+                        <lightning:accordionSection name="Other Final Drawdown Conditions" label="Other Final Drawdown Conditions" >
+                            <aura:iteration items="{!v.newOtherFinalDrawDownConditions}" var="nOtherFinalDrawDownConditionsItem" indexVar="index">
+                                <c:cpfFinalDrawdownConditionsChild aura:id="newotherfinaldrawdownId" otherdrawdownItem="{!nOtherFinalDrawDownConditionsItem}" rowindexfinal="{!index}" otherDrawdownConditions="{!v.newOtherFinalDrawDownConditions}" OppRecId="{!v.recordId}" Type="Other Final Drawdown Conditions"/>
+                            </aura:iteration> 
+                                    <lightning:button label="Add Other Final Drawdown conditions" onclick="{!c.addOtherfinaldrawdownbtn}" variant="brand" aura:id="ibtn1" />
+                        </lightning:accordionSection>
+                        </lightning:accordion>
+                    </div>
+                            
+                    <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                    <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherfinaldrawdownSubmit}" variant="brand" aura:id="ibtn2" />
+                                </span>
+                    </div>
+                        
+                </div>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </lightning:recordEditForm>
+    
+    
+</aura:component>

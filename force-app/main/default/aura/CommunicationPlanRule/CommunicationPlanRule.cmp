@@ -1,0 +1,154 @@
+<aura:component controller="CommunicationPlanRuleController" 
+                implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,lightning:actionOverride,force:hasRecordId" 
+                            access="global" >
+    
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="ruleRecord" type="sd_Communication_Rule__c"/>
+    <aura:attribute name="emailTemplateId" type="String" />
+    <aura:attribute name="emailTemplateAfrId" type="String" />
+    <aura:attribute name="smsTemplateId" type="String" />
+    <aura:attribute name="smsTemplateAfrId" type="String" />
+    <aura:attribute name="emailTemplateEngName" type="String" />
+    <aura:attribute name="emailTemplateAfrName" type="String" />
+    <aura:attribute name="smsTemplateEngName" type="String" />
+    <aura:attribute name="smsTemplateAfrName" type="String" />
+    <aura:attribute name="isTimeTrigger" type="Boolean" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" alternativeText="Loading..."/>
+    </center>
+
+    <div class="slds-col .slds-border_left" style="width:50%" >
+        <lightning:card iconName="action:apex" title="Rule Details">
+            <div class="c-container">
+                <lightning:recordEditForm aura:id="theForm" 
+                                  recordId="{!v.recordId}" 
+                                  objectApiName="sd_Communication_Rule__c">
+                <lightning:layout>
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <span class="slds-truncate slds-button slds-section__title-action" title="Details">Details</span>
+                        </lightning:layoutItem>
+                </lightning:layout>                       
+                <lightning:layout >
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:inputField aura:id="rDesc" fieldName="sd_Rule_Description__c" value="{!v.ruleRecord.sd_Rule_Description__c}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:inputField aura:id="complan" fieldName="sd_Communication_Plan__c" value="{!v.ruleRecord.sd_Communication_Plan__c}" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+                
+                <lightning:layout>
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <span class="slds-truncate slds-button slds-section__title-action" title="Details">Communication Templates</span>
+                        </lightning:layoutItem>
+                </lightning:layout>
+                
+                <lightning:layout>
+                        <lightning:layoutItem padding="around-small" size="12">
+
+                            <c:strike_lookup label="Email Template (ENG)" 
+                            object="EmailTemplate"  
+                            searchField="Name" 
+                            placeholder="{!v.ruleRecord.sd_Email_Template__c}" 
+                            iconName="standard:Account" 
+                            order="Name"  
+                            limit="10"  
+                            showRecentRecords="true"         
+                            value="{!v.emailTemplateId}" 
+                            required="true"              
+                            loadingMessage="Loading..." 
+                            errorMessage="Invalid input"/>
+
+                            <c:strike_lookup label="Email Template (AFR)" 
+                            object="EmailTemplate"  
+                            searchField="Name" 
+                            placeholder="{!v.ruleRecord.sd_Email_Template_AFR__c}"  
+                            iconName="standard:Account" 
+                            order="Name"  
+                            limit="10" 
+                            showRecentRecords="true"        
+                            value="{!v.emailTemplateAfrId}" 
+                            required="true"              
+                            loadingMessage="Loading..." 
+                            errorMessage="Invalid input"/>
+
+                            <c:strike_lookup label="SMS Template (ENG)" 
+                            object="QuickText"  
+                            searchField="Name" 
+                            placeholder="{!v.ruleRecord.sd_SMS_Template__c}" 
+                            iconName="standard:Account" 
+                            order="Name"  
+                            limit="10" 
+                            showRecentRecords="true"        
+                            value="{!v.smsTemplateId}" 
+                            required="true"              
+                            loadingMessage="Loading..." 
+                            errorMessage="Invalid input"/>
+
+                            <c:strike_lookup label="SMS Template (AFR)" 
+                            object="QuickText"  
+                            searchField="Name" 
+                            placeholder="{!v.ruleRecord.sd_SMS_Template_AFR__c}" 
+                            iconName="standard:Account" 
+                            order="Name"  
+                            limit="10" 
+                            showRecentRecords="true"        
+                            value="{!v.smsTemplateAfrId}" 
+                            required="true"              
+                            loadingMessage="Loading..." 
+                            errorMessage="Invalid input"/>
+                            
+                        </lightning:layoutItem>
+                </lightning:layout>  
+                <lightning:layout>
+                        <lightning:layoutItem padding="around-small" size="12"> 
+                            <span class="slds-truncate slds-button slds-section__title-action" title="Details">Rule Condition</span>
+                        </lightning:layoutItem>
+                </lightning:layout>    
+                <lightning:layout >
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:inputField aura:id="robj" fieldName="sd_Object__c" value="{!v.ruleRecord.sd_Object__c}" />
+                        <lightning:inputField aura:id="rtrigger" fieldName="sd_Trigger_Condition__c" value="{!v.ruleRecord.sd_Trigger_Condition__c}" />
+                        <lightning:inputField aura:id="rwhentrigger" fieldName="sd_When_to_Trigger__c" value="{!v.ruleRecord.sd_When_to_Trigger__c}" onchange="{!c.setTriggerType}"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:inputField aura:id="raction" fieldName="sd_Action__c" value="{!v.ruleRecord.sd_Action__c}" />
+                        <lightning:inputField aura:id="remailfield" fieldName="sd_Email_Field__c" value="{!v.ruleRecord.sd_Email_Field__c}" />
+                        <lightning:inputField aura:id="rsmsfield" fieldName="sd_SMS_Field__c" value="{!v.ruleRecord.sd_SMS_Field__c}" />
+                        <lightning:inputField aura:id="rintsrv" fieldName="sd_Integration_Service__c" value="{!v.ruleRecord.sd_Integration_Service__c}" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <aura:if isTrue="{!v.isTimeTrigger}">
+                    <lightning:layout>
+                            <lightning:layoutItem padding="around-small" size="12"> 
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Details">Time Trigger Settings</span>
+                            </lightning:layoutItem>
+                    </lightning:layout>
+                    <lightning:layout >
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField aura:id="rqty" fieldName="sd_Quantity__c" value="{!v.ruleRecord.sd_Quantity__c}" />
+                                <lightning:inputField aura:id="runit" fieldName="sd_Units__c" value="{!v.ruleRecord.sd_Units__c}" />
+                                <lightning:inputField aura:id="rbefore" fieldName="sd_Before_After__c" value="{!v.ruleRecord.sd_Before_After__c}" />
+                                <lightning:inputField aura:id="rfield" fieldName="sd_Trigger_Date_Field__c" value="{!v.ruleRecord.sd_Trigger_Date_Field__c}" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField aura:id="rbhrs" fieldName="sd_Business_Hours__c" value="{!v.ruleRecord.sd_Business_Hours__c}"/>
+                            </lightning:layoutItem>
+                    </lightning:layout> 
+                </aura:if>
+
+                <!-- Custom Buttons -->
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small" size="12" alignmentBump="right">
+                        <lightning:button label="Save" onclick="{!c.saveRule}" variant="brand" aura:id="btnSave"/>
+                        <lightning:button label="Cancel" onclick="{!c.cancelEdit}" variant="brand" aura:id="btnCancel"/>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                </lightning:recordEditForm>
+            </div>
+        </lightning:card>
+    </div>
+</aura:component>

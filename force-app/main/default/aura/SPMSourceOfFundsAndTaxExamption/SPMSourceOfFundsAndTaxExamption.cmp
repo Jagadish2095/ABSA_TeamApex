@@ -1,0 +1,113 @@
+<!--
+  @description       :
+  @author            : muvhuso.nekhubvi@absa.africa
+  @last modified on  : 2021-06-11
+  @last modified by  : muvhuso.nekhubvi@absa.africa
+  Modifications Log
+  Ver   Date         Author                         Modification
+  1.0   2021-06-07   muvhuso.nekhubvi@absa.africa   Initial Version
+-->
+<aura:component
+	controller="SPMServiceDetailsController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+>
+	<aura:attribute name="applicationRecordId" type="String" default="" />
+	<aura:attribute name="application" type="Application__c" default="{ 'sobjectType': 'Application__c' }" />
+	<aura:attribute name="isOtherInvestorType" type="boolean" default="false" />
+	<aura:attribute name="isIndividual" type="boolean" default="false" />
+	<aura:attribute name="disabled" type="boolean" default="false" />
+	<aura:attribute name="oppRec" type="Object" />
+	<!-- <aura:attribute name="oppRecId" type="Id" /> -->
+	<aura:attribute name="recordId" type="Id" />
+	<aura:attribute name="oppId" type="String" />
+	<aura:attribute name="appId" type="Id" />
+	<aura:attribute name="isPlatform" type="Boolean" />
+	<!--NEKHUBVIM-->
+
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:attribute name="isRegulatedIntermediaryChecked" type="boolean" default="false" />
+
+	<lightning:recordEditForm
+		aura:id="appRecord"
+		objectApiName="Application__c"
+		recordId="{!v.appId}"
+		onload="{!c.handleLoad}"
+		onError="{!c.handleSaveError}"
+		onsubmit="{!c.handleSubmit}"
+	>
+		<!--Previously v.appId -->
+		<aura:if isTrue="{!v.isPlatform}">
+			<lightning:accordion>
+				<lightning:accordionSection name="Source Of Funds" label="Source of funds">
+					<lightning:inputField fieldName="Client_Entity_Type__c" class="slds-hide" value="{!v.application.Client_Entity_Type__c}" />
+					<lightning:inputField fieldName="Source_of_Funds_Savings__c" aura:id="SourceofFunds" required="true" />
+				</lightning:accordionSection>
+			</lightning:accordion>
+			<aura:set attribute="else">
+				<lightning:accordion>
+					<aura:if isTrue="{!v.oppRec.Client_Group__c=='Non Individual'}">
+						<aura:if isTrue="{!v.oppRec.Country_Of_Registration__c=='South Africa'}">
+							<lightning:inputField
+								fieldName="Opportunity__c"
+								name="Opportunity Id"
+								label="Opportunity Id"
+								value="{!v.oppId}"
+								class="slds-hide"
+							/>
+							<lightning:accordionSection name="Tax Exemption Declaration" label="Tax Exemption Declaration">
+								<div class="slds-col slds-size_1-of-2">
+									<span>
+										<lightning:inputField fieldName="Investment_Number_s__c" aura:id="investmentNumbers" />
+										<!--  value="{!v.Application__c.Investment_number_s__c}" -->
+										<lightning:inputField fieldName="Investor_Type__c" aura:id="investorType" onchange="{!c.setInvestorTypeFields}" />
+										<aura:if isTrue="{!v.isOtherInvestorType}">
+											<lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+												<lightning:inputField
+													fieldName="Specify_Other_Investment_Type__c"
+													aura:id="otherInvestmentType"
+													required="true"
+												/>
+											</lightning:layoutItem>
+										</aura:if>
+										<lightning:inputField fieldName="Investment_Product_s_please_list_them__c" aura:id="investmentProducts" />
+										<!--added by Manish for W-010767-->
+										<lightning:inputField fieldName="Please_List_All__c" aura:id="listAllProducts" />
+									</span>
+								</div>
+								Is Client a Regulated Intermediary?
+								<br /><br />
+								<div class="slds-form-element">
+									<label class="slds-checkbox_toggle slds-grid">
+										<ui:inputCheckbox change="{!c.selectChange}" />
+										<span id="toggle-desc" class="slds-checkbox_faux_container" aria-live="assertive">
+											<span class="slds-checkbox_faux"></span>
+										</span>
+									</label>
+								</div>
+								<div aura:id="DivID" class="slds-hide">
+									<br />
+									<div class="slds-col slds-size_1-of-2">
+										<span>
+											<label for="applicable">Please indicate the applicable option</label>
+											<lightning:inputField fieldName="applicable_option__c" aura:id="applicableOption" variant="label-hidden" />
+										</span>
+									</div>
+								</div>
+							</lightning:accordionSection>
+							<lightning:accordion>
+								<lightning:accordionSection name="Exemption" label="Exemption">
+									<div class="slds-col slds-size_1-of-2">
+										<span>
+											<lightning:inputField fieldName="Exemption__c" aura:id="exemption" />
+										</span>
+									</div>
+								</lightning:accordionSection>
+							</lightning:accordion>
+						</aura:if>
+					</aura:if>
+				</lightning:accordion>
+				<lightning:button type="submit" label="Save" variant="brand" />
+			</aura:set>
+		</aura:if>
+	</lightning:recordEditForm>
+</aura:component>

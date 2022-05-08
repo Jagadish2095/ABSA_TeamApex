@@ -1,0 +1,106 @@
+<!-- Lightning cmp for Transaction history 
+         Author: Mashudu Raidimi
+         Date : 27/02/2020  -->
+<aura:component access="global" implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:isUrlAddressable"  
+                controller="UserLimitsController">  
+    
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}"/>
+    
+    <!--controller = "transactionHistoryController"-->
+    <!--Source Bank Account -->
+    <aura:attribute name="caseId" type="String" access="global" />
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    <aura:attribute name="selectedAccountNumber" type="String" />
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="data" type="List"/>
+    <aura:attribute name="accountLimits" type="object" access="global"/>
+    <aura:attribute name="customerKey" type="String" />
+    <aura:attribute name="isBusiness" type="Boolean" />
+    <aura:attribute name="selectedUser" type="string"/>
+    <aura:attribute name="userOptions" type="List" />
+    <aura:attribute name="userNumber" type="String" />
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="showCloseCase" type="boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    
+    
+    <!--# Flow Attribute -->
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" access="global"/>
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"  />
+    <force:recordData aura:id="recordLoader" recordId="{!v.recordId}" fields="Id,Account.Name" targetFields="{!v.caseRecord}" />
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <center style="z-index:999">
+            <lightning:spinner aura:id="TheSpinner" variant="brand" size="large"/>
+        </center>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.isBusiness}">
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:select  value="{!v.selectedUser}" label="Users" onchange="{!c.onUserChange}" required ="true">
+                <option >Select user</option>
+                <aura:iteration items="{!v.userOptions}" var="item" indexVar="key">>
+                    <option value="{!item}">{!item}</option>
+                </aura:iteration>
+            </lightning:select>
+        </lightning:layoutItem>
+        
+    </aura:if>
+    
+    
+    
+    <div class="slds-table--header-fixed_container">
+        
+        <div class="slds-scrollable" >
+            
+            <table class="slds-table slds-table_bordered slds-table--header-fixed">
+                <thead>
+                    <tr class="slds-text-title--caps">
+                        <th scope="col">
+                            <div class="slds-truncate">Type</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate">Transaction daily limit</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate">Used today</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate">Available</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <aura:iteration items="{!v.data}"  var="rec">
+                        <tr>
+                            <td scope="row">
+                                <div class="slds-truncate" >{!rec.opportunityName}</div>
+                            </td>
+                            <td scope="row">
+                                <div class="slds-truncate" >{!rec.dailyLimit}</div>
+                            </td>
+                            <td scope="row">
+                                <div class="slds-truncate" >{!rec.todayUsed}</div>
+                            </td>
+                            <td scope="row">
+                                <div class="slds-truncate" >{!rec.available}</div>
+                            </td>
+                            
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <aura:if isTrue="{!v.showCloseCase}">
+        <lightning:layoutItem size="12" padding="around-small">
+            <div class="slds-m-top_small slds-float--right">
+                <lightning:button  variant="brand" label="Close Case" onclick="{!c.closeCase}" />
+            </div><br/>
+        </lightning:layoutItem>
+    </aura:if>
+</aura:component>

@@ -1,0 +1,210 @@
+<aura:component controller="DebtCapacityCalculatorController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+	
+    <aura:attribute name="debtCapacityCalculatorsInputs" type="List" default="[]"/>
+    <aura:attribute name="debtCapacityCalculateResponse" type="List"/>
+    <aura:attribute name="debtCapacityResponseSize" type="Integer"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="GeneralTableData" type="List"/>
+    <aura:attribute name="allStoredGeneralData" type="List"/>
+    <aura:attribute name="mbblResultsTableData" type="List"/>
+    <aura:attribute name="loanData" type="List"/>
+    <aura:attribute name="mbblLoansResultsTableData" type="List"/>
+    <aura:attribute name="mbblEKRResultsTableData" type="List"/>
+    <aura:attribute name="oppId" type="String"/>
+    <aura:attribute name="calcSuccess" type="Boolean" default="false"/>
+    <aura:attribute name="parent" type="Aura.Component"/>
+
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!-- Loader -->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.calcSuccess}">
+        <div class="" style="margin:1%;width:98%;" >
+        <table class="tableBckColor slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                    <tr class="trHeight">
+                        <div class="slds-text-heading_medium">
+                            Debt Capacity Calculator General Results
+                        </div>                           
+                    </tr>
+                </table>
+                <table class="slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">   
+                    <tbody>
+                        <aura:iteration items="{!v.mbblResultsTableData}" var="item" indexVar="index">
+                            <aura:if isTrue="{!item.isHeader == true}">
+                                <tr class="row-head">
+                                    <th scope="row" colspan="{!item.values.length + 1}" style="border-top: 5px solid gray">
+                                        <div class="slds-truncate" title="Header" style="font-weight: bold;">{!item.header}</div>
+                                    </th>
+                                </tr>
+                            </aura:if>
+                            <aura:if isTrue="{!item.isHeader != true}">
+                                <aura:if isTrue="{!item.header != 'Financial Statement Period Ending'}">
+                                    <tr>
+                                    <th scope="row">
+                                        <div class="slds-truncate" title="{!item.header}">{!item.header}</div>
+                                    </th>
+                                    <aura:iteration items="{!item.values}" var="dataValue">
+                                        <aura:if isTrue="{!dataValue != ''}">
+                                            <td style="width: 10%; text-align: end">
+                                                <aura:if isTrue="{!or(item.header=='TTC DG Category',item.header=='MBBL Type')}">
+                                                    <div class="slds-truncate" title="{!dataValue}">
+                                                        {!dataValue}
+                                                    </div>
+                                                    <aura:set attribute="else">
+                                                        <aura:if isTrue="{!item.header == 'Items'}">
+                                                            <strong>{!dataValue}</strong>
+                                                            <aura:set attribute="else">
+                                                                <aura:if isTrue="{!item.header == 'Tenor (Months)'}">
+                                                                    <div class="slds-truncate" title="{!dataValue}">
+                                                                        <lightning:formattedNumber style="decimal" value="{!dataValue}" maximumFractionDigits="0"/>
+                                                                    </div>
+                                                                    <aura:set attribute="else">
+                                                                            <div class="slds-truncate" title="{!dataValue}">
+                                                                    <lightning:formattedNumber style="decimal" value="{!dataValue}" minimumFractionDigits="2" maximumFractionDigits="2"/>
+                                                                </div>
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!dataValue == ''}">
+                                            <td style="border: none; width: 10%; background: #f2f2f2">
+                                                <div class="slds-truncate" title=""></div>
+                                            </td>
+                                        </aura:if>
+                                    </aura:iteration>
+                                </tr>
+                                </aura:if>
+                            </aura:if>         
+                        </aura:iteration>
+                    </tbody>
+                </table>
+                <br/>
+                <br/>
+                <table class="slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">   
+                    <tbody>
+                        <aura:iteration items="{!v.mbblLoansResultsTableData}" var="item" indexVar="index">
+                            <aura:if isTrue="{!item.isHeader != true}">
+                                <aura:if isTrue="{!item.isDarkHeader == true}">
+                                    <tr class="row-head">
+                                    <th scope="row" colspan="{!item.values.length + 1}" style="background: lightgray">
+                                        <div class="slds-truncate" title="Header" style="font-weight: bold;">{!item.header}</div>
+                                    </th>
+                                </tr>
+                                </aura:if>
+                            </aura:if>
+                            <aura:if isTrue="{!item.isHeader == true}">
+                                <tr class="row-head">
+                                    <th scope="row" colspan="{!item.values.length + 1}" style="border-top: 5px solid gray">
+                                        <div class="slds-truncate" title="Header" style="font-weight: bold;">{!item.header}</div>
+                                    </th>
+                                </tr>
+                            </aura:if>
+                            <aura:if isTrue="{!item.isHeader != true}">
+                                <aura:if isTrue="{!item.header != 'Financial Statement Period Ending'}">
+                                    <aura:if isTrue="{!item.isDarkHeader == false}">
+                                        <tr>
+                                            <th scope="row">
+                                                <div class="slds-truncate" title="{!item.header}">{!item.header}</div>
+                                            </th>
+                                            <aura:iteration items="{!item.values}" var="dataValue">
+                                                <aura:if isTrue="{!and(dataValue != '', item.header == 'Type of Loan')}">
+                                                    <td style="width: 10%; text-align: end">
+                                                        <div class="slds-truncate" title="{!dataValue}">
+                                                            {!dataValue}
+                                                        </div>
+                                                    </td>
+                                                </aura:if>
+                                                <aura:if isTrue="{!and(dataValue != '', item.header != 'Type of Loan')}">
+                                                    <td style="width: 10%; text-align: end">
+                                                        <div class="slds-truncate" title="{!dataValue}">
+                                                            <lightning:formattedNumber value="{!dataValue}" minimumFractionDigits="2" maximumFractionDigits="2"/>
+                                                        </div>
+                                                    </td>
+                                                </aura:if>
+                                                <aura:if isTrue="{!dataValue == ''}">
+                                                    <td style="border: none; width: 10%; background: #f2f2f2">
+                                                        <div class="slds-truncate" title=""></div>
+                                                    </td>
+                                                </aura:if>
+                                            </aura:iteration>
+                                        </tr>
+                                    </aura:if>
+                                </aura:if>
+                            </aura:if>         
+                        </aura:iteration>
+                    </tbody>
+                </table>
+                <br/>
+                <br/>
+                <table class="slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">   
+                    <tbody>
+                        <aura:iteration items="{!v.mbblEKRResultsTableData}" var="item" indexVar="index">
+                            <aura:if isTrue="{!item.isHeader == true}">
+                                <tr class="row-head">
+                                    <th scope="row" style="border-top: 5px solid gray">
+                                        <div class="slds-truncate" title="Header" style="font-weight: bold;">{!item.header}</div>
+                                    </th>
+                                    <aura:iteration items="{!item.values}" var="dataValue">
+                                        <td style="border-top: 5px solid gray; width: 10%; text-align: end">
+                                                <div class="slds-truncate" title="{!dataValue}">
+                                                    {!dataValue.value}
+                                                </div>
+                                        </td>
+                                    </aura:iteration>
+                                </tr>
+                            </aura:if>
+                            <aura:if isTrue="{!item.isHeader != true}">
+                                    <tr>
+                                        <th scope="row">
+                                            <div class="slds-truncate" title="{!item.header}">{!item.header}</div>
+                                        </th>
+                                        <aura:iteration items="{!item.values}" var="dataValue">
+                                            <aura:if isTrue="{!dataValue.value != ''}">
+                                                <aura:if isTrue="{!dataValue.isNumber == true}">
+                                                    <td style="width: 10%;">
+                                                        <div class="slds-truncate" title="{!dataValue.value}">
+                                                            <lightning:formattedNumber style="decimal" value="{!dataValue.value}" minimumFractionDigits="2" maximumFractionDigits="2"/>
+                                                        </div>
+                                                    </td>
+                                                    <aura:set attribute="else">
+                                                        <td style="width: 10%; text-align: end">
+                                                            <div class="slds-truncate" title="{!dataValue.value}">
+                                                                {!dataValue.value}
+                                                            </div>
+                                                        </td>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:if>
+                                        </aura:iteration>
+                                    </tr>
+                            </aura:if>         
+                        </aura:iteration>
+                    </tbody>
+                </table>
+                <br/>
+                <br/>
+                <div>
+                    <lightning:button 
+                        variant="brand"
+                        label="Export To PDF"
+                        title="Export To PDF"
+                        class="slds-button slds-m-top--medium slds-float_right"
+                        onclick="{!c.exportToPdf}" />
+                </div>
+                <br/>
+                <br/>
+                <c:rejectCalculatorResults recordId = "{!v.oppId}"/>
+	</div>
+    </aura:if>
+</aura:component>

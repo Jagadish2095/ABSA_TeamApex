@@ -1,0 +1,280 @@
+<!--Lightning component for EB DSV Booking Delivery (EBDSVBookingDeliveryDetails)
+    Author: Bhanumurty Rayala
+    Date : 2021/03/28
+-->
+<aura:component controller="EBDSVCardDeliveryDetailsController" implements="lightning:availableForFlowScreens,force:hasRecordId" access="global">
+	<!-- Component Attributes Declaration-->
+	<aura:attribute name="options" type="List" />
+	<aura:attribute name="selectedDeliveryMethod" type="String" />
+	<aura:attribute name="showSpinner" type="Boolean" default="false" />
+	<aura:attribute name="isModalOpen" type="boolean" default="false" />
+	<aura:attribute name="selectedBranchName" type="String" default="" />
+	<aura:attribute name="selectedBranchCode" type="String" default="" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="indexValue" type="String" default="K" />
+	<aura:attribute name="targetBankName" type="string" default="" />
+	<aura:attribute name="selectedSiteRecord" type="Object" />
+	<aura:attribute name="errorMessageModal" type="String" />
+	<aura:attribute name="isFormReadOnly" type="boolean" default="false" />
+	<aura:attribute name="dataTableRows" type="List" default="[]" />
+
+	<!--Datatable Attributes Declaration-->
+	<aura:attribute name="data" type="Object[]" />
+	<aura:attribute name="columns" type="List" />
+
+	<!--Modal Attributes Declaration-->
+	<aura:attribute name="addLine1" type="String" />
+	<aura:attribute name="addLine2" type="String" />
+	<aura:attribute name="addCountry" type="String" />
+	<aura:attribute name="addressID" type="String" />
+	<aura:attribute name="addSuburb" type="String" />
+	<aura:attribute name="addCity" type="String" />
+	<aura:attribute name="addPostal" type="String" />
+	<aura:attribute name="addType" type="String" />
+	<aura:attribute name="addNotifyNumber" type="String" />
+	<aura:attribute name="addAltNumber" type="String" />
+	<aura:attribute name="addInstruction" type="String" />
+
+	<!--Global Attribute Declaration-->
+	<aura:attribute name="postalCode" type="String" access="global" />
+	<aura:attribute name="personName" type="String" access="global" />
+	<aura:attribute name="regNumber" type="String" access="global" />
+	<aura:attribute name="iDNumber" type="String" access="global" />
+	<aura:attribute name="contactNumber" type="String" access="global" />
+	<aura:attribute name="deliveryType" type="String" access="global" />
+	<aura:attribute name="CaseAccountId" type="String" access="global" />
+	<aura:attribute name="bookAvailSlots" type="String" access="global" />
+	<aura:attribute name="altNumber" type="String" access="global" />
+	<aura:attribute name="splInstruction" type="String" access="global" />
+	<aura:attribute name="addressData" type="String" access="global" />
+	<aura:attribute name="addProvince" type="String" access="global" />
+	<aura:attribute name="issueType" type="String" access="global" />
+	<aura:attribute name="cardNumber" type="String" access="global" />
+	<aura:attribute name="numberOfCards" type="Integer" access="global" />
+	<aura:attribute name="branchCode" type="String" access="global" />
+	<aura:attribute name="isLastCard" type="Boolean" access="global" />
+	<aura:attribute name="processedCards" type="String" access="global" />
+	<aura:attribute name="caseId" type="String" access="global" />
+	<aura:attribute name="addressDataTableList" type="String" access="global" />
+	<aura:attribute name="siteId" type="String"/>
+	<aura:attribute name="showBranchDetails" type="Boolean"/>
+	
+
+	<!-- Component Handler -->
+	<aura:handler name="init" value="{!this}" action="{!c.loadOptions}" />
+
+	<!--Branch site lookup handlers -->
+	<aura:handler name="selectedJobEvent" event="c:selectedJobEvent" action="{!c.handleSelectedJobEvent}" />
+	<aura:handler name="change" value="{!v.siteId}" action="{!c.handleSiteChange}"/>
+
+	<!--Display message-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<!-- Case record Edit Form -->
+	<lightning:recordEditForm aura:id="caseEditForm" objectApiName="Case" recordId="{!v.caseRecordIdFromFlow}">
+		<!-- Hidden Field(s) -->
+		<lightning:inputField aura:id="caseStatusField" fieldName="Status" class="slds-hide" />
+	</lightning:recordEditForm>
+
+	<aura:if isTrue="{!v.isModalOpen}">
+		<!-- Modal/Popup Box starts here-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			class="slds-modal slds-fade-in-open slds-modal_large"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+		>
+			<div class="slds-modal__container">
+				<!-- Modal/Popup Box Header Starts here-->
+
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeModal }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Address Details</h2>
+				</header>
+
+				<!--Modal/Popup Box Body Starts here-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<!-- Error Message -->
+					<aura:if isTrue="{!not(empty(v.errorMessageModal))}">
+						<div class="recordError" style="word-wrap: break-word">
+							<br />
+							<h2 class="slds-section__title" style="color: red">{!v.errorMessageModal}</h2>
+							<br />
+						</div>
+					</aura:if>
+					<lightning:layout multipleRows="true">
+						<lightning:input class="slds-hide" type="text" name="addID" aura:id="addID" value="{!v.addressID}" />
+						<lightning:input class="slds-hide" type="text" name="atype" aura:id="atype" value="{!v.addType}" />
+
+						<lightning:layoutItem padding="around-small" size="4">
+							<lightning:input
+								type="text"
+								aura:id="addressline1"
+								name="AddressLine1"
+								label="Address Line1"
+								value="{! v.addLine1 }"
+								required="true"
+							/>
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="4">
+							<lightning:input
+								type="text"
+								aura:id="addressline2"
+								name="AddressLine2"
+								label="Address Line2"
+								value="{! v.addLine2 }"
+								required="true"
+							/>
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="4">
+							<lightning:input type="text" aura:id="suburb" name="Suburb" label="Suburb" value="{! v.addSuburb }" required="true" />
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="4">
+							<lightning:input type="text" aura:id="city" name="City" label="City" value="{! v.addCity }" required="true" />
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="4">
+							<lightning:input type="text" aura:id="province" name="Province" label="Province" value="{! v.addProvince }" required="true" />
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="4">
+							<lightning:input type="text" aura:id="postal" name="Postal" label="Postal/Zip" value="{! v.addPostal }" required="true" />
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="4">
+							<lightning:input type="text" aura:id="country" name="Country" label="Country" value="{! v.addCountry }" required="true" />
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="4">
+							<lightning:input
+								type="text"
+								aura:id="notinumber"
+								name="input1"
+								label="Notification Phone Number"
+								value="{!v.addNotifyNumber}"
+								required="true"
+							/>
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="4">
+							<lightning:input type="text" aura:id="alternumber" name="input2" label="Alternate Contact Number" value="{!v.addAltNumber}" />
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="4">
+							<lightning:input
+								type="text"
+								aura:id="instruct"
+								name="input3"
+								label="Special Instructions for Delivery"
+								value="{!v.addInstruction}"
+							/>
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="12">
+							<lightning:input type="checkbox" label="Urgent Delivery" name="input1" aura:id="urgentDelivery" />
+						</lightning:layoutItem>
+					</lightning:layout>
+				</div>
+
+				<!-- Modal Footer starts here-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="brand" label="NEXT" title="ADD" onclick="{!c.submitDetails}" aura:id="btnModalNxt" />
+					<lightning:button variant="neutral" label="CLOSE" onclick="{!c.closeModal}" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--MOdal/PopUp Ends Here-->
+	</aura:if>
+	<article class="slds-card slds-p-around_xx-large">
+		<!-- Spinner -->
+		<aura:if isTrue="{!v.showSpinner}">
+			<center style="z-index: 99">
+				<lightning:spinner variant="brand" alternativeText="Busy" size="large" />
+			</center>
+		</aura:if>
+		<lightning:layout multipleRows="true">
+			<h1><b>Delivery Address Details</b></h1>
+			<lightning:layoutItem padding="around-small" size="12">
+				<lightning:select
+					label="Select Delivery Method"
+					aura:id="deliveryMethodSelect"
+					value="{!v.selectedDeliveryMethod}"
+					onchange="{!c.onDeliveryMethodChange}"
+					disabled="{!v.isFormReadOnly}"
+				>
+					<aura:iteration items="{!v.options}" var="item">
+						<option text="{!item.label}" value="{!item.value}" selected="{!item.selected}" />
+					</aura:iteration>
+				</lightning:select>
+			</lightning:layoutItem>
+		</lightning:layout>
+
+		<lightning:layout multipleRows="true">
+			<!--Branch delivery method display layout-->
+			<aura:if isTrue="{!v.selectedDeliveryMethod == 'Branch'}">
+				<lightning:layoutItem padding="around-small" size="12">
+					<label class="slds-float_left" padding="around-small"><span style="color: red" align="left">*</span>Site </label>
+					<c:LookUpField lookupSearchData="SiteLookupSearch" lookupSearchCondition="" icon_name="custom:custom84" selectedRecord ="{!v.selectedSiteRecord}" recordIdString="{!v.siteId}" aura:id="siteID" label="" placeHolder="Search..."/>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small" size="12">
+					<aura:if isTrue="{!v.showBranchDetails}">
+						<lightning:layoutItem padding="around-small" size="12">
+							<aura:if isTrue="{!not(empty(!v.selectedSiteRecord.Name))}">
+							<b>Selected Site:</b><br/>
+							 {!v.selectedSiteRecord.Name}<br/>
+						   </aura:if>
+						   <aura:if isTrue="{!not(empty(!v.selectedSiteRecord.Street__c))}">
+							 {!v.selectedSiteRecord.Street__c}<br/>
+						   </aura:if>
+						   <aura:if isTrue="{!not(empty(!v.selectedSiteRecord.Suburb__c))}">
+							 {!v.selectedSiteRecord.Suburb__c}<br/>
+						   </aura:if>
+						   <aura:if isTrue="{!not(empty(!v.selectedSiteRecord.City__c))}">
+							 {!v.selectedSiteRecord.City__c}<br/>
+						   </aura:if>
+						   <aura:if isTrue="{!not(empty(!v.selectedSiteRecord.State_Province__c))}">
+							 {!v.selectedSiteRecord.State_Province__c}<br/>
+						   </aura:if>
+						   <aura:if isTrue="{!not(empty(!v.selectedSiteRecord.Postal_Code__c))}">
+							 {!v.selectedSiteRecord.Postal_Code__c}
+						   </aura:if>
+				        </lightning:layoutItem>
+						<lightning:button variant="brand" label="Next" title="Next" class="slds-float_right" onclick="{!c.siteSelected}" />
+				</aura:if>
+				</lightning:layoutItem>
+				<aura:set attribute="else">
+					<!-- Lightning DataTable-->
+					<h2>Address Table</h2>
+					<lightning:datatable
+						columns="{! v.columns }"
+						data="{! v.data }"
+						keyField="id"
+						onrowselection="{! c.updateSelectedText }"
+						aura:id="addressTable"
+						hideCheckboxColumn="{!v.isFormReadOnly}"
+						selectedRows="{!v.dataTableRows}"
+						maxRowSelection="1"
+					/>
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:button
+							variant="brand"
+							label="Alternative Address"
+							title="Next"
+							onclick="{!c.alternativeAddressBtnClick}"
+							class="slds-float_left"
+							disabled="{!v.isFormReadOnly}"
+						/>
+					</lightning:layoutItem>
+				</aura:set>
+			</aura:if>
+		</lightning:layout>
+	</article>
+</aura:component>

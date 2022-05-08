@@ -1,0 +1,109 @@
+<!--@author  Divya Podila -->
+<!--@since   2020-01-25 -->
+
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global"
+                controller="LeadOverrideController">
+
+    <!--Attributes and Event handler-->
+    <aura:attribute name="selectedcampaign" type ="String"/>
+    <aura:attribute name="objectType" type ="String"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="showComponent" type="boolean" default="false"/>
+    <aura:attribute name="value" type="String"/>
+    <aura:attribute name="userid" type="String"/>
+    <aura:attribute name="currentUserName" type="String"/>
+    <aura:attribute name="accountIdnumber" type="String"/>
+    <aura:attribute name="accountAVAFNumber" type="String"/>
+    <aura:attribute name="referralLead" type="Lead" default=" { 'sobjectType':'Lead' }"/>
+    <aura:attribute name="opportunityDetails" type="Opportunity" default=" { 'sobjectType':'Opportunity' }"/>
+    <aura:attribute name="isButtonActive" type="Boolean" default="false" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="options" type="Map"/>
+    <aura:attribute name="stioptions" type="Map"/>
+    <aura:attribute name="selCampaignVal" type="String"/>
+    <aura:attribute name="oppRecordtype" type="String"/>
+    <aura:attribute name="isDirectSales" type="boolean"/>
+    <aura:attribute name="isSTI" type="boolean"/>
+    <aura:attribute name="others" type="boolean"/>
+    <aura:attribute name="isAIPColdReferral" type="boolean" default="false"/>
+    <aura:attribute name="isAIPLead" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+
+
+    <lightning:radioGroup name="radioGroup"
+                          label="Refer a Lead"
+                          options="{! v.options }"
+                          value="{! v.value }"
+                          type="radio" onchange="{!c.onSelect}"
+                          aura:id="result"/>
+
+    <aura:renderIf  isTrue="{!v.showComponent}">
+        <div class="slds-box slds-m-top_xx-large">
+
+            <h2 class="header">Please fill below details</h2>
+            <lightning:layout multipleRows="true"> 
+                <aura:renderIf isTrue="{!v.oppRecordtype == 'DD AHP Opportunity'}"> 
+                    <!-- Added for AHP Product
+      				date : 2021/06/17 by Pravin W. -->
+                 <lightning:layoutItem padding="around-small" size="6">
+                    <ui:outputText value="Client First Name"/>
+                    <force:inputField aura:id="clientfname" value="{!v.referralLead.FirstName}"/>
+                </lightning:layoutItem>
+                 <lightning:layoutItem padding="around-small" size="6">
+                    <ui:outputText value="Client Last Name"/>
+                    <force:inputField aura:id="clientlname" value="{!v.referralLead.LastName}"/>
+                </lightning:layoutItem>
+                </aura:renderIf>   
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:outputText value="Client Identity Number (ID)"/>
+                    <force:inputField aura:id="clientid" value="{!v.referralLead.ID_Number__c}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:outputText value="Agent who is referring the lead"/>
+                    <force:inputField aura:id="reflead" value="{!v.referralLead.DD_Agent_Who_Referred_Lead__c}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:outputText value="Agent that is receiving the lead"/>
+                    <force:inputField aura:id="ownersid" value="{!v.referralLead.OwnerId}"/>
+                </lightning:layoutItem>
+                <aura:renderIf isTrue="{!v.selCampaignVal == 'DD - HOT Referral - Advice – STI'}">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <ui:outputText value="AVAF Account Number"/>
+                        <force:inputField aura:id="accNumber" value="{!v.referralLead.DD_AVAF_Account_Number__c}" />
+                    </lightning:layoutItem>
+                </aura:renderIf>
+                <aura:renderIf isTrue="{!v.selCampaignVal == 'Face to Face Advisors' || v.selCampaignVal == 'Direct Delivery Product'}">
+                    <lightning:layoutItem padding="around-small" size="6" >
+                        <ui:outputText value="Potential product of interest"/>
+                        <force:inputField aura:id="prodInterest" value="{!v.referralLead.Financial_Product__c}"/>
+                    </lightning:layoutItem>
+                </aura:renderIf>
+                <aura:renderIf isTrue="{!v.selCampaignVal == 'DD - Referral - Advice - STI' || v.selCampaignVal == 'Virtual Advisors' || v.selCampaignVal == 'DD - Advice - STI Cross-Sell' || v.selCampaignVal == 'Face to Face Advisors' || v.selCampaignVal == 'Direct Delivery Product' || v.selCampaignVal == 'WIMIDD - Referral - Advice - STI' }">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <ui:outputText value="Convenient Time to Call the client"/>
+                        <force:inputField aura:id="Convenienttime" value="{!v.referralLead.DD_Convenient_Time_To_Call__c}" />
+                    </lightning:layoutItem>
+                </aura:renderIf>
+                <div class="slds-align_absolute-center" style="height:5rem">
+                    <lightning:button variant="brand" label="Create Lead" title="Create Lead" onclick="{! c.handleClick1 }" disabled= "{!v.isButtonActive}"/>
+                </div>
+            </lightning:layout>
+
+        </div>
+    </aura:renderIf>
+
+    <aura:if isTrue="{!v.others}">
+        <!--  <li class="slds-item">-->
+        <lightning:tile label="Not Applicable for this Product">
+            <aura:set attribute="media">
+                <lightning:avatar fallbackIconName="standard:opportunity"/>
+            </aura:set>
+        </lightning:tile>
+        <!--</li>-->
+    </aura:if>
+</aura:component>

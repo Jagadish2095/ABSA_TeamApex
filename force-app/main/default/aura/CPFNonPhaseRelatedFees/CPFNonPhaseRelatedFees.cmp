@@ -1,0 +1,166 @@
+<!--
+* Lightning Component for Onboarding CPF Single/Multiple Phase Section Details
+* @author  Diksha Wasekar: Absa
+* @version v1.0
+* @since 04/20/2021
+*
+-->
+<aura:component controller="CPFSingleMultiplePhaseController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+
+
+<aura:attribute name="appPrdctCpfRec" type="Object" />
+<aura:attribute name="latebondreg" type="String" default="No"/>
+<aura:attribute name="cancellationacceptclause" type="String" default="No"/>
+<aura:attribute name="breakagecost" type="String" default="No"/>
+<aura:attribute name="renderfield" type="Boolean" default="false"/>
+
+
+<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+<lightning:accordion activeSectionName="Non Phase Related Fees" allowMultipleSectionsOpen="false">
+<lightning:accordionSection name="Non Phase Related Fees" label="Non Phase Related Fees" >
+<lightning:recordEditForm aura:id="appProdcpf" objectApiName="Application_Product_CPF__c"  recordId="{!v.appPrdctCpfRec.Id}">
+<div class="slds-grid slds-wrap slds-gutters_medium">
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Early termination fee during development</span>
+<lightning:helptext icon-name="utility:like" content="Early termination fee of [NUMBER]% of the Total Facility Limit if the Facility (or any part thereof) is repaid during the Development Period Option: [or does not convert to an Investment Loan Facility or Mortgage Backed Business Loan Facility]." />
+</label>
+<lightning:inputField fieldName="Early_termination_fee_during_development__c" aura:id="earlytermfees" variant="label-hidden"/>
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Late bond registration penalty</span>
+<lightning:helptext icon-name="utility:like" content="Should the Bank’s Mortgage Bond not be registered within a period of 60 days of the Signature Date, the Bank may (at its discretion) charge the Borrower an additional fee of 1% (one percent) per annum of the Facility Amount, levied from the date 60 days from the Signature Date until the date on which the Mortgage Bond(s) is registered, on a pro rata basis." />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+picklistfieldName="Late_bond_registration_penalty__c"
+objectName="Application_Product_CPF__c"
+value="{!v.latebondreg}" />
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Cancellation after acceptance clause</span>
+<lightning:helptext icon-name="utility:like" content="If the Borrower cancels this Facility after signature of the Commercial Terms then the Borrower will nevertheless be liable for payment on demand of the Bank’s administration fees, costs of the Property Valuation, as well any wasted costs incurred by the registration attorney in preparation of loan and security documentation." />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+picklistfieldName="Cancellation_after_acceptance_clause__c"
+objectName="Application_Product_CPF__c"
+value="{!v.cancellationacceptclause}" />
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Are breakage costs applicable	</span>
+<lightning:helptext icon-name="utility:like" content="Breakage Costs as set out above may be payable in addition to any Prepayment Fee." />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+picklistfieldName="Are_breakage_costs_applicable__c"
+objectName="Application_Product_CPF__c"
+value="{!v.breakagecost}" />
+</span>
+</div>
+<div class="slds-col slds-size_1-of-1">
+<span class="slds-m-top_medium; slds-align_absolute-center">
+<lightning:button label="Save &amp; Validate" onclick="{!c.handleNonPhaseUpdate}" variant="brand" aura:id="ibtn1" />
+</span>
+</div>
+</div>
+</lightning:recordEditForm>
+</lightning:accordionSection>
+</lightning:accordion>
+
+<lightning:accordion activeSectionName="Property Valuation" allowMultipleSectionsOpen="false">
+    <lightning:accordionSection name="Property Valuation" label="Property Valuation" >
+        <lightning:recordEditForm aura:id="iAppProdcpfRecord" objectApiName="Application_Product_CPF__c" recordId="{!v.appPrdctCpfRec.Id}"
+                                  onsuccess="{!c.handleSuccess}"
+                                  onerror="{!c.handleError}">
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Body corporate insurance</span>
+                                <lightning:helptext icon-name="utility:like" content="If a Body Corporate is established in respect of the Property in terms of Section 36 of the Sectional Titles Act, 1986, a certificate issued by the insurer of the Body Corporate confirming that the Body Corporate has effected a valid policy of insurance in accordance with the provisions of section 37(1)(f) and that the Bank’s interest has been noted in respect of each unit;" />
+                            </label>
+                            <lightning:inputField fieldName="Body_corporate_insurance__c" aura:id="bodycorporateinsurance" variant="label-hidden" />
+                        </span>
+                    </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Instruct_independent_Valuer__c" aura:id="instructindependentvaluer" />
+                    </span>
+                </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Confirmation__c" aura:id="confirmation" />
+                        </span>
+                    </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Deviation_clause__c" aura:id="deviationclause" />
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="slds-m-right_small">Should there be a material variance</span>
+                            <lightning:helptext icon-name="utility:like" content="Should there be a material variance” should be “Should there be a material variance in the Bank’s opinion between the minimum value of the Property required and the Property Value as per the Property Valuation and/or between minimum net income and/or property ratings required and the actual net income and ratings as per the Property Valuation, the Bank reserves the right to withdraw the Facility" />
+                        </label>
+                        <lightning:inputField fieldName="Should_there_be_a_material_variance__c" aura:id="shouldtherebeamaterialvariance" variant="label-hidden"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Provide_a_full_analysis__c" aura:id="provideafullanalysis" />
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Permitted_Zoning__c" aura:id="permittedzone" />
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="slds-m-right_small">Was a desktop valuation done</span>
+                            <lightning:helptext icon-name="utility:like" content="The Bank shall notify the Borrower in writing of any such additional conditions following receipt of the Property Valuation. Should the Borrower, within 15 (fifteen) Business Days of receipt of the notification, fail to execute an addendum provided by the Bank, which addendum shall incorporate the additional conditions into this Agreement as the Bank may require, the Bank, in its discretion, may withdraw the Facility whereupon the rights and obligations of the parties will be terminated. In such event the Borrower will nevertheless be liable for payment on demand of the Bank’s administration fees, costs of the Property Valuation, as well as any wasted costs incurred by the registration attorney in preparation of loan and security documentation." />
+                        </label>
+
+                        <lightning:inputField fieldName="Was_a_desktop_valuation_done__c" aura:id="wasadesktopvaluationdone" onchange="{!c.renderField}" variant="label-hidden"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Property_valuation_amount__c" aura:id="propertyvaluationamount" />
+                    </span>
+                </div>
+                <aura:If isTrue="{!v.renderfield}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Replacement value</span>
+                                <lightning:helptext icon-name="utility:like" content="Combined commercial and/or fire insurance, which may include cover against subsidence and landslide, if required by the Bank, for not less than the replacement cost of the property and improvements as determined and advised by the Bank in writing from time to time; OPTION: which replacement value is currently [AMOUNT]. Option the replacement cost of the subject property will be advised once the formal valuation is completed." />
+                            </label>
+                            <lightning:inputField fieldName="Replacement_value__c" aura:id="replacementvalue" variant="label-hidden"/>
+                        </span>
+                    </div>
+                </aura:If>
+                <div class="slds-col slds-size_1-of-1">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                        <!--  <lightning:button label="Save &amp; Validate" onclick="{!c.handleSubmit}" variant="brand" aura:id="ibtn1" />-->
+                        <lightning:button class="slds-m-top_small" type="submit" label="Save &amp; Validate" variant="brand" />
+                    </span>
+                </div>
+            </div>
+        </lightning:recordEditForm>
+    </lightning:accordionSection>
+</lightning:accordion>
+
+
+</aura:component>

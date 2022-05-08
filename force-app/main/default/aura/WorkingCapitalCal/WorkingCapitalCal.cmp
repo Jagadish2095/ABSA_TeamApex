@@ -1,0 +1,417 @@
+<aura:component access="global" controller="WorkingCapitalCalController" implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">
+    
+    <aura:attribute name="workingCapitalCalculatorsInputs" type="List" default="[]"/>
+    <aura:attribute name="calculateResponse" type="List"/>
+    <aura:attribute name="firstResponseElement" type="object"/>
+    <aura:attribute name="apiResponseElement" type="object"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="isEditableReceivable" type="Boolean" default="false"/>
+    <aura:attribute name="isEditableInventory" type="Boolean" default="false"/>
+    <aura:attribute name="isEditablePayable" type="Boolean" default="false"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <div style="margin:1%;width:98%;" >
+        
+        <aura:if isTrue="{!v.showSpinner}">
+            <div class="slds-spinner_container">
+                <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+            </div>
+        </aura:if>
+        <aura:if isTrue="true">
+        <div style="margin-top:2%;">
+            <div class="backcolor" style="font-size:25px;background-color:#F9F8F8;color:black;border: 2px solid #DDDBDA;margin-top: 1%;font-weight: bold;">
+                <h1 style="margin:0.3%;">Working capital calculators Results</h1>
+            </div>
+            <table style="border: 2px solid #F3F2F2;" class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" aria-label="Example table of Opportunities with vertical borders">
+                <thead >
+                    <tr class="slds-line-height_reset">
+                        <th class="" scope="col" style="background-color:#F9F8F8;">
+                            Year
+                        </th>
+                        <aura:iteration items="{!v.calculateResponse}" var="calcResponse">
+                            <th class="" scope="col" style="background-color:#F9F8F8;">
+                                Year  {!calcResponse.inputs.year}
+                            </th>
+                        </aura:iteration>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="slds-hint-parent" style="color: black;">
+                        <td>
+                            <a style='text-decoration: none;color:black' href="#" title="Average Receivables Collection Period = 365
+(Sales / Average Receivables)" onclick="return false;"> 
+                                <div class="slds-truncate">Average Recievable Collection Period</div></a>
+                            <!-- <div style="padding-left:2rem;padding-top:5rem;position:relative">
+                                  <button class="slds-button" aria-describedby="help" aria-disabled="true">Help Text</button>
+                                  <div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left" role="tooltip" id="help" style="position:absolute;top:-4px;left:35px">
+                                    <div class="slds-popover__body">Sit nulla est ex deserunt exercitation anim occaecat. Nostrud ullamco deserunt aute id consequat veniam incididunt duis in sint irure nisi.</div>
+                                  </div> 
+                                </div> -->
+                        </td>
+                        <aura:iteration items="{!v.calculateResponse}" var="calcResponse">
+                            <td>
+                                <div class="slds-truncate">{!calcResponse.calculations.averageReceivableCollectionPeriod} days</div> 
+                            </td>
+                        </aura:iteration>
+                    </tr>
+                    <tr class="slds-hint-parent" style="color: black;">
+                        <td>
+                            <a style='text-decoration: none;color:black' href="#" title="Average Inventory Processing Period = 365
+(Cost of Sales / Average Inventory)" onclick="return false;"> 
+                                
+                                <div class="slds-truncate">Average Inventory Processing Period</div></a>
+                        </td>
+                        <aura:iteration items="{!v.calculateResponse}" var="calcResponse">
+                            <td>
+                                <div class="slds-truncate">{!calcResponse.calculations.averageInventoryProcesssingPeriod} days</div>
+                            </td>
+                        </aura:iteration>
+                    </tr>
+                    <tr class="slds-hint-parent" style="color: black;">
+                        <td>
+                            <a style='text-decoration: none;color:black' href="#" title="Payables Payment Period = 365
+(Cost of Sales /Average Trade Payables)" onclick="return false;"> 
+                                
+                                <div class="slds-truncate">Payables Payment Period</div></a>
+                        </td>
+                        <aura:iteration items="{!v.calculateResponse}" var="calcResponse">
+                            <td>
+                                <div class="slds-truncate">{!calcResponse.calculations.payablesPaymentPeriod} days</div>
+                            </td>
+                        </aura:iteration>
+                    </tr>
+                    <tr class="slds-hint-parent" style="color: black;">
+                        <td > <a style='text-decoration: none;color:black' href="#" title="Cash Conversion Cycle = Average Receivables Collection Period
++ Average Inventory Processing Period
+- Payables Payment Period" onclick="return false;"> 
+                            <div class="slds-truncate">Cash Conversion Cycle</div> </a>
+                        </td>
+                        <aura:iteration items="{!v.calculateResponse}" var="calcResponse">
+                            <td > 
+                                <div class="slds-truncate">{!calcResponse.calculations.cashConversionCycle} days</div> 
+                            </td>
+                        </aura:iteration>
+                    </tr>
+                    <tr class="slds-hint-parent" style="color: black;">
+                        <td title='Formula5'>
+                            <a style='text-decoration: none;color:black' href="#" title="Daily Sales = Sales
+Number of Days in Year" onclick="return false;"> 
+                             <div class="slds-truncate">Daily Sales</div></a>
+                        </td>
+                        <aura:iteration items="{!v.calculateResponse}" var="calcResponse">
+                            <td >
+                                <div class="slds-truncate">R <ui:outputNumber value="{!calcResponse.calculations.dailySales}" /></div>
+                            </td>
+                        </aura:iteration>
+                    </tr>
+                    <tr class="slds-hint-parent" style="color: black;">
+                        <td title='Formula6'>
+                            <a style='text-decoration: none;color:black' href="#" title="Daily Cost of Sales = Cost of Sales
+Number of Days in Year" onclick="return false;"> 
+                            <div class="slds-truncate">Daily Cost of Sales</div></a>
+                        </td>
+                        <aura:iteration items="{!v.calculateResponse}" var="calcResponse">
+                            <td>
+                                <div class="slds-truncate">R <ui:outputNumber value="{!calcResponse.calculations.dailyCostOfSales}" /></div>
+                            </td>
+                        </aura:iteration>
+                    </tr>
+                </tbody>
+            </table>            
+            <div style="margin-top:2%;width:80%;">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" aria-label="Example table of Opportunities with vertical borders">
+                    
+                    <thead >
+                        <tr class="slds-line-height_reset" style="border: 2px solid #DDDBDA;">
+                            <th class="" scope="col" style="background-color:#F9F8F8;">
+                               <a style='text-decoration: none;color:black' href="#" title="Working Capital Need = (Average Receivables Collection Period * Daily Sales)
++ (Average Inventory Processing Period *Daily Cost of Sales)
+- (Payables Payment Period * Daily Cost of Sales)" onclick="return false;"> 
+                                   Working Capital Need </a>
+                            </th>
+                            <aura:iteration items="{!v.calculateResponse}" var="calcResponse">
+                                <th data-label="Working Capital Need" style="background-color:#F9F8F8;">
+                                    <div class="slds-truncate" title="Working Capital Need">R <ui:outputNumber value="{!calcResponse.calculations.workingCapitalNeed}" /></div>
+                                </th>
+                            </aura:iteration>
+                        </tr>
+                        <br/>
+                        <tr class="slds-line-height_reset" style="border: 2px solid #DDDBDA;">
+                            <th class="" scope="col" style="background-color:#F9F8F8;">
+                                Working Capital Need (minus cash balance)
+                            </th>
+                            <aura:iteration items="{!v.calculateResponse}" var="calcResponse">
+                                <th style="background-color:#F9F8F8;">
+                                    <div class="slds-truncate">R <ui:outputNumber value="{!calcResponse.calculations.workingCapitalNeedMinusCashBalance}" /></div>
+                                </th>
+                            </aura:iteration>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+        <br/>
+        <!-- Added By Srinivas vara-->
+        <br/><br/>
+        <div style="margin-left: 38.7%;">
+            <table class="tableBckColor slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                <tr>
+                    <th class="fontSize">
+                        <b>Working Capital Need</b>
+                    </th>                           
+                </tr>                    
+            </table>                
+        </div>            
+        <div>
+            <table class="slds-table slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                <tr style="border-bottom: 1px solid black;">
+                    <th rowspan="2" style="width: 38.7%;">
+                        <div style="margin-left: 14px;">Cash Conversion Cycle</div>
+                    </th>
+                    <th style="width: 138px;">
+                        {!v.firstResponseElement.calculations.cashConversionCycle} days
+                    </th>
+                    <th >
+                        R <ui:outputNumber value="{!v.firstResponseElement.adjustedCalculations.adjustedWorkingCapitalNeed}" />
+                    </th>    
+                </tr>
+                <tr>
+                    <th class="slds-border_left" style="border-top: 1px solid #c7c5c5;" >
+                        {!v.apiResponseElement.calculations.cashConversionCycle} days
+                    </th>
+                    <th style="border-top: 1px solid #c7c5c5;">
+                        R <ui:outputNumber value="{!v.apiResponseElement.adjustedCalculations.adjustedWorkingCapitalNeed}" />
+                    </th>
+                </tr>
+            </table>
+        </div>        
+        <br/><br/> 
+        <div style="margin-left: 38.7%;">
+            <table class="tableBckColor slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                <tr>
+                    <th class="fontSize">
+                        <b>Working Capital Need Due to Average Receivable Collection Period</b>
+                    </th>                           
+                </tr>                    
+            </table>                
+        </div>            
+        <div>
+            <table class="slds-table slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                <tr style="border-bottom: 1px solid black;">
+                    <th rowspan="2" style="width: 38.7%;">
+                        <div style="margin-left: 14px;">Average Receivable Collection Period</div>
+                    </th>
+                    <th style="width: 138px;">
+                        {!v.firstResponseElement.calculations.averageReceivableCollectionPeriod} days
+                    </th>
+                    <th >
+                        R <ui:outputNumber value="{!v.firstResponseElement.adjustedCalculations.adjustedAverageReceivableCollectionPeriod}" />
+                    </th>    
+                </tr>
+                <tr>
+                    <th class="slds-border_left" style="border-top: 1px solid #c7c5c5;" >
+                        <div class="c-container">
+                            <lightning:layout >  
+                                <lightning:layoutItem size="10">
+                                    <aura:if isTrue="{!v.isEditableReceivable}">
+                                        <div style="margin-left: 14px;">
+                                            <lightning:input name="noOfDays" value="{!v.apiResponseElement.calculations.averageReceivableCollectionPeriod}" aura:id="numberInput" type="number" min="0"/>
+                                        </div> 
+                                        <aura:set attribute="else">
+                                            <div style="margin-left: 10px;">
+                                                <lightning:input name="noOfDaysDisabled" value="{!v.apiResponseElement.calculations.averageReceivableCollectionPeriod + ' days'}"  readonly="true"/>
+                                            </div>    
+                                        </aura:set>
+                                    </aura:if>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="3">
+                                    <lightning:buttonIcon iconName="utility:edit"    
+                                                          name="{!index}"
+                                                          variant="container" 
+                                                          alternativeText="Edit"   
+                                                          class="slds-m-left_xx-small, resizeButton"                                                              
+                                                          title="Edit"
+                                                          size="x-small"
+                                                          onclick="{!c.editReceivable}">
+                                    </lightning:buttonIcon>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </div>
+                    </th>
+                    <th style="border-top: 1px solid #c7c5c5;">
+                        R <ui:outputNumber value="{!v.apiResponseElement.adjustedCalculations.adjustedAverageReceivableCollectionPeriod}" />
+                    </th>
+                </tr>
+            </table>
+        </div>
+        <br/>
+        <div>
+            <div style="margin-top:2%;">
+                <div style="width:70%;">
+                </div>
+                <div style="float:right;margin-top: -0.15%;margin-bottom: 2.15%;">
+                    <lightning:button label="Save" title="Save" onclick="{! c.saveReceivable }" variant="brand" disabled="{!!v.isEditableReceivable}"/>
+                </div>
+            </div>
+        </div>
+        <br/><br/> 
+        
+        <!-- Added By vara-->
+        <br/><br/>
+        <div style="margin-left: 38.7%;">
+            <table class="tableBckColor slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                <tr>
+                    <th class="fontSize">
+                        <b>Working Capital Need Due to Average Inventory Processing Period</b>
+                    </th>                           
+                </tr>                    
+            </table>                
+        </div>            
+        <div>
+            <table class="slds-table slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                <tr style="border-bottom: 1px solid black;">
+                    <th rowspan="2" style="width: 38.7%;">
+                        <div style="margin-left: 14px;">Average Inventory Processing period</div>
+                    </th>
+                    <th style="width: 138px;">
+                        {!v.firstResponseElement.calculations.averageInventoryProcesssingPeriod} days
+                    </th>
+                    <th >
+                        R <ui:outputNumber value="{!v.firstResponseElement.adjustedCalculations.adjustedAverageInventoryProcesssingPeriod}" />
+                    </th>    
+                </tr>
+                <tr>
+                    <th class="slds-border_left" style="border-top: 1px solid #c7c5c5;" >
+                        <div class="c-container">
+                            <lightning:layout >  
+                                <lightning:layoutItem size="10">
+                                    <aura:if isTrue="{!v.isEditableInventory}">
+                                        <div style="margin-left: 14px;">
+                                            <lightning:input name="noOfDays" value="{!v.apiResponseElement.calculations.averageInventoryProcesssingPeriod}" aura:id="numberInput" type="number" min="0"/>
+                                        </div> 
+                                        <aura:set attribute="else">
+                                            <div style="margin-left: 10px;">
+                                                <lightning:input name="noOfDaysDisabled" value="{!v.apiResponseElement.calculations.averageInventoryProcesssingPeriod + ' days'}"  readonly="true"/>
+                                            </div>    
+                                        </aura:set>
+                                    </aura:if>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="3">
+                                    <lightning:buttonIcon iconName="utility:edit"    
+                                                          name="{!index}"
+                                                          variant="container" 
+                                                          alternativeText="Edit"   
+                                                          class="slds-m-left_xx-small, resizeButton"                                                              
+                                                          title="Edit"
+                                                          size="x-small"
+                                                          onclick="{!c.editInventory}">
+                                    </lightning:buttonIcon>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </div>
+                    </th>
+                    <th style="border-top: 1px solid #c7c5c5;">
+                        R <ui:outputNumber value="{!v.apiResponseElement.adjustedCalculations.adjustedAverageInventoryProcesssingPeriod}" />
+                    </th>
+                </tr>
+            </table>
+        </div>
+        <br/>
+        <div>
+            <div style="margin-top:2%;">
+                <div style="width:70%;">
+                </div>
+                <div style="float:right;margin-top: -0.15%;margin-bottom: 2.15%;">
+                    <lightning:button label="Save" title="Save" onclick="{! c.saveInventory }" variant="brand" disabled="{!!v.isEditableInventory}"/>
+                </div>
+            </div>
+        </div>
+        <br/><br/> 
+        <!-- Added By Ravi-->
+        <br/><br/>
+          <div style="margin-left: 38.7%;">
+            <table class="tableBckColor slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                <tr>
+                    <th class="fontSize">
+                        <b>Working Capital Need Freed Up By Payables Payment Period</b>
+                    </th>                           
+                </tr>                    
+            </table>                
+        </div>          
+        <div>
+            <table class="slds-table slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+                <tr style="border-bottom: 1px solid black;">
+                    <th rowspan="2" style="width: 38.7%;">
+                        <div style="margin-left: 10px;">Payables Payment Period</div>
+                    </th>
+                    <th style="width: 138px;">
+                        {!v.firstResponseElement.calculations.payablesPaymentPeriod} days
+                    </th>
+                    <th >
+                        R <ui:outputNumber value="{!v.firstResponseElement.adjustedCalculations.adjustedPayablesPaymentPeriod}" />
+                    </th>    
+                </tr>
+                <tr>
+                    <th class="slds-border_left" style="border-top: 1px solid #c7c5c5;" >
+                        <div class="c-container">
+                            <lightning:layout >  
+                                <lightning:layoutItem size="10">
+                                    <aura:if isTrue="{!v.isEditablePayable}">
+                                        <div style="margin-left: 14px;">
+                                            <lightning:input name="noOfDays" value="{!v.apiResponseElement.calculations.payablesPaymentPeriod}" aura:id="numberInput" type="number" min="0"/>
+                                        </div> 
+                                        <aura:set attribute="else">
+                                            <div style="margin-left: 10px;">
+                                                <lightning:input name="noOfDaysDisabled" value="{!v.apiResponseElement.calculations.payablesPaymentPeriod + ' days'}"  readonly="true"/>
+                                            </div>    
+                                        </aura:set>
+                                    </aura:if>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="3">
+                                    <lightning:buttonIcon iconName="utility:edit"    
+                                                          name="{!index}"
+                                                          variant="container" 
+                                                          alternativeText="Edit"   
+                                                          class="slds-m-left_xx-small, resizeButton"                                                              
+                                                          title="Edit"
+                                                          size="x-small"
+                                                          onclick="{!c.editPayable}">
+                                    </lightning:buttonIcon>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </div>
+                    </th>
+                    <th style="border-top: 1px solid #c7c5c5;">
+                        R <ui:outputNumber value="{!v.apiResponseElement.adjustedCalculations.adjustedPayablesPaymentPeriod}" />
+                    </th>
+                </tr>
+            </table>
+        </div>
+        
+        <div>
+            <div style="margin-top:2%;">
+                <div style="width:70%;">
+                </div>
+                <div style="float:right;margin-top: -0.15%;margin-bottom: 2.15%;">
+                    <lightning:button label="Save" title="Save" onclick="{! c.savePayable }" variant="brand" disabled="{!!v.isEditablePayable}"/>
+                </div>
+            </div>
+        </div>        
+        <br/><br/>        
+        <div style="margin-top:2.15%;">
+            <div style="width:100%;">
+                <lightning:button label="Cancel" title="Cancle" variant="brand" onclick="{! c.handleCancle }" disabled="true"/>
+            </div>            
+            <div style="float:right;margin-top: -2.5%;" class="exportBtn">
+                <!-- Button component to invoke PDF download -->
+                <lightning:button label="Export to PDF" title="Export to PDF" onclick="{! c.saveAsPdf }"/>
+            <!--<lightning:buttonIcon
+                                      class="slds-button slds-button_icon slds-is-selected slds-button_icon-border-filled"
+                                      iconName="utility:print"
+                                      onclick="{!c.printcomponent}"/> -->
+            </div>
+        </div>
+        </aura:if>
+    </div>
+</aura:component>

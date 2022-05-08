@@ -1,0 +1,112 @@
+<!--
+* Lightning Component for External Banking Relationships
+*
+* @author     Englarmerdge Mongwe: Absa
+* @version    v1.0
+* @since      2021-01-08
+* @UserStory  W-007000
+-->
+<aura:component access="global" controller="LocateCallController"
+    implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="locateCallData" type="Object" />
+    <aura:attribute name="KIMNumberDetail" type="List" />
+    <aura:attribute name="isBusinessTraceComplete" type="String" default="NO" />
+    <aura:attribute name="isSaveDisabled" type="Boolean" default="true" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    <lightning:accordion allowMultipleSectionsOpen="true">
+        <lightning:accordionSection name="businessTrace" label="Business Trace">
+            <lightning:layoutItem size="12" padding="around-small">
+                <div class="slds-truncate slds-size_6-of-12" title="BusinessTraceComplete">Business Trace Complete</div>
+                <div class="slds-truncate slds-size_6-of-12" title="IsBusinessTraceComplete">{!v.isBusinessTraceComplete}</div>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12" padding="around-small">
+                <aura:iteration items="{!v.locateCallData}" var="lcd" indexVar="indexNum" >
+                    <div class="slds-truncate slds-size_6-of-12" title="CompanyName">{!lcd.ResultSet[0].CompanyName}</div>
+                    <table class="slds-table slds-table_cell-buffer">
+                        <thead>
+                            <tr class="slds-var-m-top_small slds-line-height_reset">
+                                <th scope="col">
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="KIMNumber">KIM Number</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="CompanyName">Company Name</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="RegistrationNumber">Registration Number</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="RelatedInfo">Related Info</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Status">Status</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <aura:iteration items="{!lcd.ResultSet}" var="rset">
+                            <tr>
+                                <td>
+                                    <ui:inputRadio aura:Id="idKIInternalNumber" value="{!rset.IsSelected}" text="{!rset.KIInternalNumber}" name="{!'radKIInternalNumber' + indexNum}" change="{!c.onRadioChangeKimNumber}" />
+                                </td>
+                                <td>
+                                    <ui:outputText value="{!rset.KIInternalNumber}" />
+                                </td>
+                                <td>
+                                    <ui:outputText value="{!rset.CompanyName}" />
+                                </td>
+                                <td>
+                                    <ui:outputText value="{!rset.RegistrationNumber}" />
+                                </td>
+                                <td>
+                                    <ui:outputText value="{!rset.RelatedInfo}" />
+                                </td>
+                                <td>
+                                    <ui:outputText value="{!rset.Status}" />
+                                </td>
+                            </tr>
+                        </aura:iteration>
+                        <tr>
+                            <td>
+                                <ui:inputRadio aura:Id="idKIInternalNumber" value="{!lcd.ResultSet[0].IsSelected}" text="{!lcd.ResultSet[0].CompanyName}" name="{!'radKIInternalNumber' + indexNum}" change="{!c.onRadioChangeKimNumber}" />
+                            </td>
+                            <td>
+                                <ui:outputText value="No Match" />
+                            </td>
+                            <td>
+                            </td>
+                            <td>
+                            </td>
+                            <td>
+                            </td>
+                            <td>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <br />
+                </aura:iteration>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12" padding="around-small">
+                <lightning:button class="slds-var-m-top_small slds-float_right" variant="brand" type="submit" name="update" label="Save and Validate" onclick="{!c.submit}" disabled="{!v.isSaveDisabled}" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12" padding="around-small">
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12" padding="around-small">
+                <lightning:button class="slds-var-m-top_small slds-float_right" variant="brand" type="submit" name="update" label="Submit to PowerCurve" onclick="{!c.submitToPco}" />
+            </lightning:layoutItem>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

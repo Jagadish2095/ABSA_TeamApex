@@ -1,0 +1,293 @@
+<!-- Lightning cmp for Transaction history 
+         Author: Mashudu Raidimi
+         Date : 27/02/2020  -->
+<aura:component
+	access="global"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:isUrlAddressable"
+	controller="TransactionListHistoryController"
+>
+	<lightning:workspaceAPI aura:id="workspace" />
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+	<aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}" />
+
+	<aura:attribute name="isBusinessAccountFromFlow" type="String" access="global" />
+	<aura:attribute name="isModalSpinner" type="Boolean" default="false" />
+	<aura:attribute name="caseId" type="String" access="global" />
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="transactionHistoryResp" type="object" />
+	<aura:attribute name="responseList" type="List" />
+	<aura:attribute name="prodTypesList" type="List" />
+	<aura:attribute name="accNumList" type="List" />
+	<aura:attribute name="prodTypesSet" type="Set" />
+	<aura:attribute name="selectedProductValue" type="String" access="global" />
+	<aura:attribute name="selectedAccountNumber" type="String" />
+	<aura:attribute name="selectedAccountBalance" type="Integer" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="columns" type="List" />
+
+	<aura:attribute name="fromDate" type="String" access="global" />
+	<aura:attribute name="toDate" type="String" access="global" />
+	<aura:attribute name="fromDate1" type="Date" access="global" />
+	<aura:attribute name="toDate1" type="Date" access="global" />
+	<aura:attribute name="showModal" type="Boolean" default="false" />
+	<aura:attribute name="clientEmailAddress" type="String" />
+	<aura:attribute name="viewTransactionList" type="object" access="global" />
+	<aura:attribute name="sortedBy" type="String" />
+	<aura:attribute name="sortedDirection" type="Boolean" default="true" />
+	<aura:attribute name="descrTypeoptions" type="List" />
+	<aura:attribute name="todaysDate" type="Date" />
+	<aura:attribute name="iipChecked" type="Boolean" default="false" />
+	<aura:attribute name="iipRefNo" type="String" />
+	<aura:attribute name="iipPayDate" type="Date" />
+	<aura:attribute name="typeChecked" type="Boolean" default="false" />
+	<aura:attribute name="transactionData" type="Object" />
+	<aura:attribute name="data" type="String" />
+	<aura:attribute name="admin" type="String" />
+	<aura:attribute name="airtime" type="String" />
+	<aura:attribute name="accFee" type="String" />
+	<aura:attribute name="immediateDT" type="String" />
+
+	<!--# Flow Attribute -->
+	<aura:attribute name="selectedAccountNumberToFlow" type="String" access="global" />
+	<aura:attribute name="clientAccountIdFromFlow" type="String" access="global" />
+
+	<aura:attribute name="showForm" type="boolean" default="true" />
+	<aura:attribute name="showDataTable" type="boolean" default="false" />
+	<aura:attribute name="showFilter" type="boolean" default="false" />
+
+	<!--Filter attribute-->
+	<aura:attribute name="filterTr" type="String" />
+
+	<lightning:recordEditForm aura:id="caseEditFormModal" objectApiName="Case" recordId="{!v.caseId}" onsuccess="{!c.handleCaseSuccessModal}">
+		<lightning:inputField aura:id="caseStatusFieldModal" fieldName="Status" class="slds-hide" />
+	</lightning:recordEditForm>
+
+	<!--First screen for selecting account-->
+	<aura:if isTrue="{!v.showForm}">
+		<lightning:layoutItem padding="around-small" size="12">
+			<lightning:input
+				type="text"
+				class="select-auto-width"
+				aura:id="myProductselection"
+				disabled="true"
+				label="Select the Product Type"
+				value="{!v.selectedProductValue}"
+			></lightning:input>
+		</lightning:layoutItem>
+		<lightning:layoutItem padding="around-small" size="12">
+			<lightning:input
+				type="text"
+				value="{!v.selectedAccountNumber}"
+				class="select-auto-width"
+				aura:id="myAccountselection"
+				disabled="true"
+				label="Select the Account"
+			></lightning:input>
+		</lightning:layoutItem>
+
+		<!--Button for submitting-->
+		<lightning:layoutItem padding="around-small" size="12">
+			<div class="slds-m-top_small slds-float--right">
+				<lightning:button variant="brand" label="Submit" onclick="{!c.loadTransactionData}" />
+			</div>
+
+			<br /><br />
+		</lightning:layoutItem>
+
+		<!--Screen for transaction history-->
+		<aura:set attribute="else">
+			<article class="slds-card">
+				<aura:if isTrue="{!v.isSpinner}">
+					<center style="z-index: 99">
+						<lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+					</center>
+				</aura:if>
+				<lightning:layout multipleRows="true">
+					<lightning:layoutItem padding="around-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+						<lightning:input label="Account number" value="{!v.selectedAccountNumber}" disabled="true" />
+						<lightning:input label="Balance" value="{!v.selectedAccountBalance}" disabled="true" />
+						<lightning:input type="date" aura:id="fDate" name="From Date" label="From Date" value="{!v.fromDate}" max="{!v.todaysDate}" />
+						<lightning:input type="date" aura:id="tDate" name="To Date" label="To Date" value="{!v.toDate}" max="{!v.todaysDate}" />
+						<br />
+						<div class="slds-button-group" role="group">
+							<lightning:buttonGroup>
+								<lightning:button
+									aura:id="ApplyButtonLoad"
+									iconName="utility:check"
+									variant="brand"
+									label="Load"
+									title="Load"
+									onclick="{!c.loadTransactionData}"
+								/>
+
+								<lightning:button iconName="utility:email" label="Send" title="Send attachment" variant="brand" onclick="{!c.openModal}" />
+
+								<lightning:button
+									aura:id="ApplyButtonFilter"
+									iconName="utility:filterList"
+									variant="brand"
+									label="Apply Filters"
+									title="Apply Filters"
+									onclick="{!c.filterTransactionData}"
+								/>
+								<lightning:button
+									iconName="utility:record_update"
+									aura:id="iCloseCase"
+									variant="brand"
+									label="Close"
+									title="Close Case"
+									onclick="{!c.closeCase}"
+								/>
+							</lightning:buttonGroup>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+						<h2 id="filteringOp" class="slds-text-heading_medium slds-hyphenate">Filtering Options</h2>
+						<br />
+						<h4 id="iipfiltering" class="slds-text-heading_medium slds-hyphenate">Immediate Interbank Payment</h4>
+						<lightning:input
+							aura:id="iipFilter"
+							type="checkbox-button"
+							label="Immediate Interbank Payment"
+							name="iipFilter"
+							value="{!v.iipChecked}"
+							onchange="{!c.handleIIPCheck}"
+						/>
+						<aura:if isTrue="{!v.iipChecked}">
+							<lightning:input type="text" aura:id="iipRef" name="IIP Ref No" label="IIP Ref No" value="{!v.iipRefNo}" />
+							<lightning:input
+								type="date"
+								aura:id="iipPaydate"
+								name="Date Paid"
+								label="Date Paid"
+								value="{!v.iipPayDate}"
+								max="{!v.todaysDate}"
+							/>
+						</aura:if>
+						<h4 id="tfiltering" class="slds-text-heading_medium slds-hyphenate">Transaction Type</h4>
+						<lightning:input
+							aura:id="typeFilter"
+							type="checkbox-button"
+							label="Transaction Type"
+							name="typeFilter"
+							value="{!v.typeChecked}"
+							onchange="{!c.handleTypeCheck}"
+						/>
+						<aura:if isTrue="{!v.typeChecked}">
+							<lightning:layoutItem padding="around-small" size="6">
+								<div class="slds-m-top_small slds-float--left">
+									<lightning:input
+										aura:id="iData"
+										type="checkbox"
+										label="DATA PURCHASE"
+										name="iData"
+										value="DATA PURCHASE"
+										onchange="{! c.handleCheckboxFilter }"
+									/>
+									<lightning:input
+										aura:id="iAdmin"
+										type="checkbox"
+										label="ADMIN CHARGE"
+										name="iAdmin"
+										value="ADMIN CHARGE"
+										onchange="{! c.handleCheckboxFilter }"
+									/>
+									<lightning:input
+										aura:id="iAirtime"
+										type="checkbox"
+										label="AIRTIME PURCHASE"
+										name="iAirtime"
+										value="AIRTIME PURCHASE"
+										onchange="{! c.handleCheckboxFilter }"
+									/>
+									<lightning:input
+										aura:id="iAccFee"
+										type="checkbox"
+										label="MONTHLY ACC FEE"
+										name="iAccFee"
+										value="MONTHLY ACC FEE"
+										onchange="{! c.handleCheckboxFilter }"
+									/>
+									<lightning:input
+										aura:id="iImmediate"
+										type="checkbox"
+										label="IMMEDIATE TRF DT"
+										name="iImmediate"
+										value="IMMEDIATE TRF DT"
+										onchange="{!c.handleCheckboxFilter}"
+									/>
+								</div>
+							</lightning:layoutItem>
+						</aura:if>
+					</lightning:layoutItem>
+				</lightning:layout>
+				<!-- error ui message -->
+				<aura:if isTrue="{!not(empty(v.errorMessage))}">
+					<ui:message title="Error" severity="error" closable="true">{!v.errorMessage}</ui:message>
+				</aura:if>
+				<!-- Datatable -->
+				<div style="height: 285px">
+					<lightning:datatable keyField="id" data="{!v.transactionData}" columns="{!v.columns}" hideCheckboxColumn="true" />
+				</div>
+			</article>
+		</aura:set>
+	</aura:if>
+	<aura:if isTrue="{!v.showModal}">
+		<!-- Modal - Send Transaction History -->
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+			<aura:if isTrue="{!v.isModalSpinner}">
+				<lightning:spinner variant="brand" alternativeText="Busy" class="slds-align_absolute-center" />
+			</aura:if>
+			<div class="slds-modal__container">
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						size="large"
+						variant="bare"
+						onclick="{!c.closeModal }"
+						alternativeText="Close"
+						class="slds-modal__close slds-button_icon-inverse"
+					/>
+					<h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Send Attachment</h2>
+				</header>
+
+				<div class="slds-modal__content slds-p-around--medium">
+					<!-- Account record Edit Form -->
+					<lightning:recordEditForm
+						aura:id="accountEditFormModal"
+						objectApiName="Account"
+						recordId="{!v.clientAccountIdFromFlow}"
+						onload="{!c.handleAccountLoadModal}"
+					>
+						<!-- Hidden Field(s) -->
+						<lightning:inputField aura:id="personEmailFieldModal" fieldName="PersonEmail" class="slds-hide" />
+						<lightning:inputField aura:id="activeEmailFieldModal" fieldName="Active_Email__c" class="slds-hide" />
+					</lightning:recordEditForm>
+					<lightning:layout multipleRows="true" class="slds-align_absolute-center">
+						<lightning:layoutItem size="6">
+							<lightning:input
+								aura:id="clientEmailAddressField"
+								type="email"
+								name="email"
+								label="Target email"
+								value="{!v.clientEmailAddress}"
+								required="true"
+							/>
+						</lightning:layoutItem>
+					</lightning:layout>
+				</div>
+				<div class="slds-modal__footer">
+					<div class="slds-float_right">
+						<lightning:button variant="brand" aura:id="sendEmailCloseCaseBtn" label="Send" onclick="{!c.sendEmailCloseCase}" />
+						<lightning:button variant="brand" aura:id="closeModalBtn" label="Close" onclick="{!c.closeModal}" />
+					</div>
+					<div class="slds-float_left">
+						<c:ChargeTransaction aura:id="chargeTransactionCmp" caseIdFromParentCmp="{!v.caseId}" />
+					</div>
+				</div>
+			</div>
+		</section>
+		<!-- Modal Definitions End -->
+	</aura:if>
+</aura:component>

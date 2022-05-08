@@ -1,0 +1,217 @@
+<!--
+* Lightning Component for Onboarding Risk Rating (Split from Onboarding Casa)
+*
+* @author  Tracy de Bruin : Cloudsmiths
+* @version v1.0
+* @since   2020-08-14
+*
+-->
+<aura:component
+	access="global"
+	controller="OnboardingRiskRatingController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+>
+	<!--Handlers-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+	<!--Attributes-->
+	<aura:attribute name="documentTypes" type="List" default="" />
+	<aura:attribute name="showSpinner" type="Boolean" default="true" />
+	<aura:attribute name="cifopt" type="Boolean" />
+	<aura:attribute name="showSubmitForCasa" type="Boolean" default="true" />
+	<aura:attribute name="recordId" type="Id" />
+	<aura:attribute name="account" type="Account" default="{sobjectType:'Account'}" />
+	<aura:attribute name="opportunityRecord" type="Opportunity" default="{sobjectType:'Opportunity'}" />
+	<aura:attribute name="participantAccountList" type="List" />
+	<aura:attribute name="tradingAsNameList" type="List" />
+	<aura:attribute name="activeCasaSections" type="List" default="['casaScreening','casaScreeningResults']" />
+	<aura:attribute name="activeRiskSections" type="List" default="['RiskRating','RiskRatingResults']" />
+	<aura:attribute name="user" type="string" default="" />
+	<aura:attribute name="operatorCode" type="string" default="" />
+	<aura:attribute name="abNumber" type="string" default="" />
+	<aura:attribute name="columns" type="List" />
+	<aura:attribute name="data" type="List" default="" />
+	<aura:attribute name="siteCode" type="String" />
+	<aura:attribute name="selectedSiteRecord" type="sObject" />
+	<aura:attribute name="searchKeyWord" type="string" />
+	<aura:attribute name="accRecordId" type="String" />
+	<aura:attribute name="currentUserId" type="String" />
+	<aura:attribute name="cifKey" type="String" default="" />
+	<aura:attribute name="record" type="Object" />
+	<aura:attribute name="accountRecord" type="Object" />
+	<aura:attribute name="recordError" type="String" />
+	<aura:attribute name="accountName" type="String" />
+	<aura:attribute name="product" type="String" />
+	<aura:attribute name="respObject" type="object" />
+	<aura:attribute name="docList" type="List" default="" />
+
+	<aura:attribute name="showCasaScreen" type="boolean" default="true" />
+	<aura:attribute name="showRiskButton" type="boolean" default="false" />
+	<aura:attribute name="showGenerateCIFButton" type="boolean" default="false" />
+	<aura:attribute name="showRiskResults" type="boolean" default="false" />
+	<aura:attribute name="showFinishedScreen" type="boolean" default="false" />
+	<aura:attribute name="hideSubmitButton" type="boolean" default="false" />
+	<aura:attribute name="accountRecordType" type="String" />
+	<aura:attribute name="oppRecordType" type="String" />
+	<aura:attribute name="casaScreeningStatus" type="String" />
+
+	<!--New attributes added for W-004683 -->
+	<aura:attribute name="Mandatorydocuments" type="Mandatory_Doc__mdt" />
+	<aura:attribute name="documentsUploaded" type="Object" />
+	<aura:attribute name="entitytype" type="List" />
+	<aura:attribute name="entitytypestring" type="String" />
+
+	<aura:attribute name="relatedPartyManDocs" type="String" />
+	<!-- W-005715 : Anka Ganta : 2020-08-18 -->
+	<aura:attribute name="relPartyInvalidStatusFlag" type="boolean" default="false" />
+	<aura:attribute name="PrimaryClientMandDocs" type="String" />
+	<!-- W-005661-->
+	<aura:attribute name="opportunityRecordTypeId" type="String" /><!-- W-006880-->
+	<!--W-013710 Starts-->
+	<aura:attribute name="isreasonForEDD" type="boolean" default="false" />
+	<aura:attribute name="reasonForEDD" type="String" default="" />
+	<aura:attribute name="showError" type="boolean" default="false" />
+	<!--W-013710 Ends-->
+	<!--loading spinner start-->
+	<div class="exampleHolder">
+		<lightning:spinner aura:id="mySpinner" class="slds-hide" alternativeText="Loading..." variant="brand" size="large" />
+	</div>
+	<!-- Loading spinner end-->
+
+	<!-- Design Attributes -->
+	<aura:attribute name="flowAccountRecId" type="String" access="global" />
+	<aura:attribute name="ProcessName" type="String" default="" />
+
+	<aura:attribute name="opportunityRecord2" type="Object" />
+	<aura:attribute name="recordLoadError" type="String" />
+	<force:recordData
+		aura:id="recordLoader"
+		recordId="{!v.recordId}"
+		fields="Case__c,QA_Complex_Approval_Status__c,Complex_Application__c,CheckMandatoryDocuments__c"
+		targetFields="{!v.opportunityRecord2}"
+		targetError="{!v.recordLoadError}"
+	/>
+
+	<lightning:accordion activeSectionName="RiskRating" allowMultipleSectionsOpen="true">
+		<lightning:accordionSection name="RiskRating" label="Risk Profiling">
+			<!--W-005715 : Anka Ganta : 2020-08-18-->
+			<aura:if isTrue="{!and(v.showFinishedScreen ,v.relPartyInvalidStatusFlag == false)}">
+				<aura:if isTrue="{!v.opportunityRecord.IsClosed == false}">
+					<lightning:input
+						type="checkbox"
+						name="submitRisk"
+						label="I confirm the above information is correct to Submit Risk Profiling"
+						onchange="{! c.showButtonRisk }"
+					/>
+				</aura:if>
+			</aura:if>
+
+			<lightning:button
+				variant="brand"
+				class="slds-align_absolute-center slds-m-top_xx-large slds-hide"
+				label="Submit for Risk Profiling"
+				title="Submit for Risk Profiling"
+				onclick="{! c.saveRiskInfo }"
+				aura:id="submitButtonRisk"
+			/>
+
+			<lightning:accordion activeSectionName="RiskRatingResults" allowMultipleSectionsOpen="true">
+				<div class="slds-hide" aura:id="resultsDiv">
+					<!-- Added this  as a part of W-013710 US the banker can still ask the case to be routed to EDD by Mohammed Junaid U -->
+					<aura:if isTrue="{!and(v.showFinishedScreen ,v.opportunityRecord.Case__c == null )}">
+						<aura:if isTrue="{!v.account.Risk_Status__c == 'Valid'}">
+							<aura:if isTrue="{!v.opportunityRecord.IsClosed == false}">
+								<aura:if isTrue="{!v.opportunityRecord.RecordType.Name == 'Customer Remediation'}">
+									<br />
+									<lightning:input type="checkbox" name="submitEDD" label="EDD Required" onchange="{!c.showEDDReason }" />
+									<aura:if isTrue="{!v.isreasonForEDD}">
+										<br />
+										<aura:if isTrue="{!v.showError}">
+											<div class="slds-notify_alert slds-alert_warning" role="alert">
+												<span class="slds-assistive-text">error</span>
+												<h1>Please Provide the Resaon for EDD transfer</h1>
+											</div>
+										</aura:if>
+										<span>
+											<lightning:input name="eddReason" label="Reason For EDD transfer" value="{!v.reasonForEDD}" required="true" />
+										</span>
+										<lightning:button
+											variant="brand"
+											class="slds-align_absolute-center slds-m-top_xx-large"
+											label="Submit for EDD"
+											title="Submit for EDD"
+											onclick="{!c.submitEDD }"
+										/>
+									</aura:if>
+
+									<br />
+								</aura:if>
+							</aura:if>
+						</aura:if>
+					</aura:if>
+					<!-- Ends here -->
+					<lightning:accordionSection name="RiskRatingResults" label="Risk Rating Results">
+						<aura:if isTrue="{!v.opportunityRecord.Risk_Status__c != 'Incomplete'}">
+							<lightning:datatable keyField="" data="{! v.docList }" columns="{! v.columns }" hideCheckboxColumn="true" />
+							<aura:set attribute="else">
+								<lightning:layoutItem size="12" class="red-color">
+									<b>Risk Rating re-screening required. Primary Client and/or Product(s) changed</b>
+								</lightning:layoutItem>
+							</aura:set>
+						</aura:if>
+					</lightning:accordionSection>
+				</div>
+			</lightning:accordion>
+		</lightning:accordionSection>
+	</lightning:accordion>
+	<!--W-006880 : Anka Ganta : 2020-10-26-->
+	<aura:if isTrue="{!not(empty(v.opportunityRecord.Case__c))}">
+		<lightning:recordEditForm
+			aura:id="OppDetailsForm"
+			recordId="{!v.recordId}"
+			objectApiName="Opportunity"
+			onload="{!c.handleLoad}"
+			onsubmit="{!c.handleSubmit}"
+			onsuccess="{!c.handleSuccess}"
+			onerror="{!c.handleError}"
+			recordTypeId="{!v.opportunityRecordTypeId}"
+		>
+			<h3 class="slds-section-title--divider">Source of Wealth Capitalization Section</h3>
+			<div class="slds-grid slds-wrap slds-gutters_medium">
+				<div class="slds-col slds-size_1-of-2">
+					<span>
+						<lightning:inputField
+							fieldName="Source_of_Wealth_Capitalization__c"
+							aura:id="SourceOfWealthCapitalization"
+							label="Source of Wealth / Capitalization"
+							required="true"
+							value="{!v.opportunityRecord.Source_of_Wealth_Capitalization__c}"
+						/>
+					</span>
+				</div>
+
+				<div class="slds-col slds-size_1-of-2">
+					<span>
+						<lightning:inputField
+							fieldName="Comments_on_Explanation_given_for_Source__c"
+							aura:id="CommentsForSource"
+							label="Comments on Explanation given for Source"
+							required="true"
+							value="{!v.opportunityRecord.Comments_on_Explanation_given_for_Source__c}"
+						/>
+					</span>
+				</div>
+
+				<span class="slds-align_absolute-center">
+					<lightning:button type="submit" label="Save Info" variant="brand" />
+				</span>
+			</div>
+
+			<!-- the messages component is for error messages -->
+			<lightning:messages />
+			<lightning:inputField fieldName="RecordTypeId" aura:id="recordTypeId" class="slds-hide" />
+		</lightning:recordEditForm>
+	</aura:if>
+</aura:component>

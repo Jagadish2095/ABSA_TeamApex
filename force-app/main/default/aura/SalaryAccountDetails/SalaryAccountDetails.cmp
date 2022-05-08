@@ -1,0 +1,126 @@
+<!--
+* Lightning Component for Customer Salary Account Details
+*
+* @author  Clifford Willers : ABSA (IQ Business)
+* @version v1.0
+* @since 2020-10-20
+*
+-->
+
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName" 
+                access="global" 
+                controller="BranchApplicationController" >
+    <aura:attribute name="paymentPlanRecordId" type="String" />
+    <aura:attribute name="financialAccountRecordId" type="String" />
+    <aura:attribute name="bankOptions" type="List" />
+    <aura:attribute name="accountOptions" type="List" />
+    <aura:attribute name="bankName" type="String" />
+    <aura:attribute name="accountName" type="String" />
+    <aura:attribute name="accountNumber" type="String" />
+    <aura:attribute name="accountType" type="String" />
+    <aura:attribute name="updating" type="Boolean" default="true"/>
+    <aura:attribute name="actionClicked" type="string" default=""/>
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <div class="slds-is-relative" >
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <lightning:recordEditForm aura:id= "SalaryAccountDetail"
+                                          recordId="{! v.financialAccountRecordId }"
+                                          objectApiName="Application_Financial_Account__c"
+                                          density= "comfy"
+                                          onload="{! c.salaryRecordLoaded }"
+                                          onsubmit="{! c.salaryRecordSubmit }"
+                                          onerror="{! c.salaryRecordError }"
+                                          onsuccess="{! c.salaryRecordSuccess }">
+                    <!-- Needs one field on RecordEdit to fire onsubmit() -->
+                    <lightning:inputField fieldName="Institution_Name__c" class="hidden_field"/>
+                    <lightning:inputField fieldName="Account_Holder_Name__c" class="hidden_field"/>
+                    <lightning:inputField fieldName="Account_Number__c" class="hidden_field"/>
+                    <lightning:inputField fieldName="Account_Type__c" class="hidden_field"/>
+                    <!-- Submit button needed so that onsubmit is fired from flow to save attribute values -->
+                    <button id="{! globalId + '_financialAccount_submit' }" type="submit" class="hidden_field"/>
+                </lightning:recordEditForm>
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-medium" size="6" >
+                        <legend class="slds-text-heading_small slds-var-p-vertical_medium" >
+                            <b>Salary account details</b>
+                        </legend>
+                        <lightning:layout>
+                            <lightning:layoutitem size="12" >
+                                <div class="slds-var-p-around_x-small" >
+                                    <label>To obtain the customer's last 3 months bank statements, please provide the details for the salary account</label>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem size="6" >
+                                <div id="{! globalId + '_SalaryAccountHolderName' }" class="slds-var-p-around_x-small" >
+                                    <label for="SalaryAccountHolderName" >Account holder name</label>
+                                    <lightning:input aura:id="SalaryAccountHolderName"
+                                                     value="{! v.accountName }"
+                                                     required="true"
+                                                     variant="label-hidden"
+                                                     pattern="[a-zA-Z\\ \\'\\-]+" />
+                                </div>
+                                <div id="{! globalId + '_SalaryAccountNumber' }" class="slds-var-p-around_x-small" >
+                                    <label for="SalaryAccountNumber" >Account number</label>
+                                    <lightning:input aura:id="SalaryAccountNumber"
+                                                     value="{! v.accountNumber }"
+                                                     required="true"
+                                                     variant="label-hidden"
+                                                     pattern="[0-9]+" />
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem size="6" >
+                                <div id="{! globalId + '_SalaryBankName' }" class="slds-var-p-around_x-small" >
+                                    <label for="SalaryBankName" >Banks name</label>
+                                    <lightning:select aura:id="SalaryBankName"
+                                                      name="SalaryBankName"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.bankName }"
+                                                      required="true" >
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.bankOptions }" var="banks">
+                                            <option value="{!banks}" selected="{!banks==v.bankName}">{!banks}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                                <div id="{! globalId + '_SalaryAccountType' }" class="slds-var-p-around_x-small" >
+                                    <label for="SalaryAccountType" >Account type</label>
+                                    <lightning:select aura:id="SalaryAccountType"
+                                                      name="SalaryAccountType"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.accountType }"
+                                                      required="true" >
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.accountOptions }" var="accType">
+                                            <option value="{!accType}" selected="{!accType==v.accountType}">{!accType}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <div>
+                    <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                        availableActions="{! v.availableActions }"
+                                        navigateFlowEvent="{! c.handleNavigate }"/>
+                </div>
+            </lightning:layoutItem>
+            <aura:if isTrue="{! v.updating }">
+                <div class="slds-spinner_container" >
+                    <div role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand" >
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a" />
+                        <div class="slds-spinner__dot-b" />
+                    </div>
+                </div>
+            </aura:if>
+        </lightning:layout>
+    </div>
+</aura:component>

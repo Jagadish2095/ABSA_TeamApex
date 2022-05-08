@@ -1,0 +1,260 @@
+<!--
+* Lightning Component for Validating Origination Details and making PowerCurve  calls 1 to 7
+* PowerCurve_Validations
+* @author  Saurabh : Absa
+* @version v1.0
+* @since   2020-12-07
+* @UserStory : W4925
+-->
+
+
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                controller = "PowerCurveController" access="global" >
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:registerEvent name="creditOriginationEvent" type="c:creditOriginationEvent"/>
+
+    <!-- Attributes-->
+    <aura:attribute name="record" type="Object"/>
+    <aura:attribute name="simpleRecord" type="Object"/>
+    <aura:attribute name="recordError" type="Object"/>
+    <aura:attribute name="recordId" type="string"/>
+    <aura:attribute name="validationMap" type="Map" default="{}" />
+    <aura:attribute name="validationScreen" type="string" />
+    <aura:attribute name="valTwoData" type="Object" access="private"/>
+    <aura:attribute name="isRefreshed" type="boolean" default="false" access="public"/>
+    <!-- Below attributes hold values for each section Validation -->
+
+    <!--Validation1 -->
+    <aura:attribute name="Cheque_OverDraft" type="Boolean" default= "False"/>
+    <aura:attribute name="Credit_Card" type="Boolean" default= "False"/>
+    <aura:attribute name="Bank_Guarantee" type="Boolean" default= "False"/>
+    <aura:attribute name="Non_Scored_Approved_Facilities" type="Boolean"/>
+    <aura:attribute name="Is_Spouse_Captured" type="Boolean"/>
+    <aura:attribute name="Securities_Offered" type="Boolean"/>
+    <aura:attribute name="External_Banking_Relationships" type="Boolean"/>
+    <aura:attribute name="isSoleTraderForced" type="Boolean"/>
+
+    <!--Validation2 -->
+    <aura:attribute name="Applicant_Financials" type="Boolean"/>
+
+    <!--Validation3 -->
+    <aura:attribute name="Principal_Finacials" type="Boolean"/>
+
+    <!--Validation5 -->
+    <aura:attribute name="Income_Expenses" type="Boolean"/>
+    <aura:attribute name="Borrowing_Power" type="Boolean"/>
+    <aura:attribute name="General_Qualitative" type="Boolean"/>
+    <aura:attribute name="IsStage7Done" type="Boolean" default= "False"/>
+
+    <aura:attribute name="oppRecord" type="Object"/>
+    <aura:method name="RefreshFromOriginationTab" action="{!c.refreshValidation}"
+                 access="public">
+
+    </aura:method>
+    <force:recordData aura:id="recordLoader" fields="Id,Account.Client_Type__c"
+                     recordId="{!v.recordId}" targetFields="{!v.oppRecord}" />
+
+    <!-- Loading Spinner-->
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" />
+    </center>
+
+    <!-- Each Section of fields will be displayed based on stage -->
+    <!--<aura:if isTrue="{!v.validationScreen != 'Stage_One'}"> -->
+    <div class="slds-grid slds-wrap slds-gutters_medium">
+        <aura:if isTrue="{!v.validationScreen == '01'}">
+            <div class="slds-col slds-size_6-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium" style="width:9rem">
+                        <span>Cheque and Overdraft</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.Cheque_OverDraft ==True}">
+                            <!-- was hoping to pass a key in map and get the values here bt Aura doesnt support that yet, we will probably creat attributes to hold value for each validation -->
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_6-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium" style="width:9rem">
+                        <span>Credit Card</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.Credit_Card ==True}">
+                            <!-- was hoping to pass a key in map and get the values here bt Aura doesnt support that yet, we will probably creat attributes to hold value for each validation -->
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_6-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium" style="width:9rem">
+                        <span>Bank Guarantee</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.Bank_Guarantee ==True}">
+                            <!-- was hoping to pass a key in map and get the values here bt Aura doesnt support that yet, we will probably creat attributes to hold value for each validation -->
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_6-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium">
+                        <span>External Banking Relationships</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.External_Banking_Relationships ==True}">
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_6-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium">
+                        <span>Securities Offered</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.Securities_Offered ==True}">
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_6-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium ">
+                        <span>Non-Scored Approved Facilities</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.Non_Scored_Approved_Facilities ==True}">
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_5-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium  " style="width:16rem">
+                        <span>Spouse Details (Sole Prop only)</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.Is_Spouse_Captured ==True}">
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </aura:if><!-- Validation 1 end -->
+        <aura:if isTrue="{!v.validationScreen == '03'}">
+            <div class="slds-col slds-size_5-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium  " style="width:16rem">
+                        <span>Applicant Financials</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.Applicant_Financials ==True}">
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                            <aura:set attribute="else">
+                            	<span><lightning:icon iconName="action:reject" size="small" alternativeText="Indicates rejection"/></span>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </aura:if><!-- Validation 2 end -->
+        <aura:if isTrue="{!and(v.validationScreen == '04',v.isSoleTraderForced =='false') }">
+            <div class="slds-col slds-size_5-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium  " style="width:16rem">
+                        <span>Principal Financials</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.Principal_Finacials ==True}">
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                            <aura:set attribute="else">
+                            	<span><lightning:icon iconName="action:reject" size="small" alternativeText="Indicates rejection"/></span>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!v.validationScreen == '07'}">
+            <div class="slds-col slds-size_6-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium  " style="width:16rem">
+                        <span> Income and Expenses </span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.Income_Expenses ==True}">
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_6-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium">
+                        <span>Borrowing Power</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.Borrowing_Power ==True}">
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_5-of-12">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-top_medium">
+                        <span>General Qualitative Tab</span>
+                    </div>
+                    <div class="slds-col slds-p-top_medium">
+                        <aura:if isTrue="{!v.General_Qualitative ==True}">
+                            <span><lightning:icon iconName="action:approval" size="small" alternativeText="Indicates approval"/></span>
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+        </aura:if>
+        <div class="slds-col slds-size_12-of-12">
+            <div class="slds-grid">
+                <div class="slds-col slds-p-top_medium slds-text-align_center ">
+                    <span>
+                        <lightning:button variant="brand"
+                                          aura:id="saveProductBtn"
+                                          label="Refresh Validation"
+                                          title="Refresh Validation"
+                                          class="slds-button slds-button_brand slds-m-top--medium "
+                                          onclick="{!c.refreshValidation}" />
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="slds-col slds-size_12-of-12">
+            <div class="slds-grid">
+                <div class="slds-col slds-p-top_medium slds-text-align_center ">
+                    <span>
+                        <lightning:button variant="brand"
+                                          aura:id="submitPCOBtn"
+                                          label="Submit to PowerCurve"
+                                          title="Submit to PowerCurve"
+                                          class="slds-button slds-button_brand slds-m-top--medium "
+                                          onclick="{!c.submitToPco}" />
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--</aura:if>-->
+    <aura:if isTrue="{!and(v.validationScreen == '03', v.isRefreshed == true)}">
+        <c:PowerCurveFinancialsResponse opportunityId="{!v.recordId}" data="{!v.valTwoData}"/>
+    </aura:if>
+</aura:component>

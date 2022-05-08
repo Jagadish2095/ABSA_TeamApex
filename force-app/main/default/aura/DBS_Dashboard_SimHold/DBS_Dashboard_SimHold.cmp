@@ -1,0 +1,65 @@
+<aura:component access="global" implements="force:appHostable">
+   <aura:attribute name="data" type="Map" default="" /> 
+   <aura:attribute name="selectedSimHold" type="Map" default="" /> 
+   <aura:attribute name="showBtnSpinner" type="Boolean" default="false"/>
+   <aura:attribute name="simHoldReleaseModal" type="boolean" default="false"/>
+   <aura:attribute name="accAccOrIdNum" type="String" default=""/>
+
+   <div class="slds-p-top_medium">
+      <div class="slds-grid">
+         <div class="slds-size--1-of-1 slds-large-size--1-of-3">
+            <div class="slds">        
+               <table class="slds-table--cell-buffer slds-max-medium-table--stacked-horizontal">
+                  <thead>
+                     <tr class="slds-grid slds-wrap apply-text-color slds-p-bottom_medium">
+                        <th class="slds-size_1-of-4">User</th>
+                        <th class="slds-size_1-of-4">Cell</th>
+                        <th class="slds-size_2-of-4">On hold</th>                       
+                     </tr>
+                  </thead>
+                  <tbody>                      
+                      <aura:if isTrue="{!(v.data.simsData.length > 0)}">
+                         <aura:iteration items="{!v.data.simsData}" var="hold" indexVar="key">
+                            <tr class="slds-grid slds-wrap row-hover-class slds-p-top_medium slds-p-bottom_medium">                               
+                               <td class="slds-size_1-of-4 slds-p-top_x-small">
+                                  <div>{!hold.value.user_number}</div>
+                               </td>                                 
+                               <td class="slds-size_1-of-4 slds-p-top_x-small">
+                                  <div>{!hold.value.sim_hold_number}</div> 
+                               </td>                                
+                               <td class="slds-size_2-of-4">
+                                    <div class="slds-grid slds-wrap">
+                                      <div class="{!hold.value.sim_hold_color+ ' slds-col slds-size_1-of-1 slds-medium-size--1-of-3 slds-large-size--1-of-3 slds-p-top_x-small'}">
+                                        <span>{!hold.value.sim_hold_status}</span>
+                                      </div>                                           
+                                      <div class="slds-col slds-size_1-of-1 slds-medium-size--2-of-3 slds-large-size--2-of-3">
+                                        <aura:if isTrue="{!hold.value.sim_hold_status == 'Yes'}">
+                                            <lightning:buttonGroup>
+                                                <button class="{!hold.value.action_button_class+' slds-button button_outline'}" Id="{!hold.key}" aura:id="{!hold.key}" disabled="{!hold.value.action_button_disabled}" onclick="{!c.getSelectedSimHoldRecord}">Release
+                                                    <aura:if isTrue="{!hold.value.show_button_spinner}">
+                                                        <lightning:spinner class="spinner-cls" alternativeText="Loading" size="small" />
+                                                    </aura:if>
+                                                </button> 
+                                            </lightning:buttonGroup>
+                                        </aura:if> 
+                                        <aura:if isTrue="{!hold.value.sim_hold_status_message}">
+                                            <div class="{!hold.value.sim_hold_status_message_class+' slds-text-body_regular slds-p-top_x-small'}">{!hold.value.sim_hold_status_message}</div>                                              
+                                        </aura:if>                                                                                       
+                                      </div>
+                                     </div>                                                                
+                                </td>                                
+                            </tr>
+                         </aura:iteration>      
+                      </aura:if>
+                  </tbody>
+               </table>                
+               <aura:if isTrue="{!(v.data.simsData.length == 0)}"> 
+                   <div class="slds-align_absolute-center slds-p-around_xx-small slds-size--1-of-1">No sim holds found</div>  
+               </aura:if>                  
+            </div>
+         </div>
+      </div>
+   </div> 
+  <c:DBS_Dashboard_Spinner showSpinner="{!v.data.showSpinner.simHolds}" spinnerMsg="{!v.data.showSpinner.simHoldsMsg}"/> 
+  <c:DBS_Dashboard_SimHoldRelease data="{!v.data}" showSpinner="{!v.data.showSpinner.simHolds}" spinnerMsg="{!v.data.showSpinner.simHoldsMsg}" showOverlay="{!v.simHoldReleaseModal}" selectedSim="{!v.selectedSimHold}" accAccOrIdNum="{!v.accAccOrIdNum}"/>  
+</aura:component>

@@ -1,0 +1,154 @@
+<aura:component controller="XDSQnAController"
+                implements="force:hasRecordId,lightning:availableForFlowScreens"
+                access="global">
+
+<lightning:workspaceAPI aura:id="workspace" />
+<aura:attribute name="listResults" type="List" />
+<aura:attribute name="columns" type="List" />
+<aura:attribute name="mapValues" type="Map" />
+<aura:attribute name="recordId" type="String" access="global"/><!--Acc record Id-->
+<aura:attribute name="caseId" type="String" access="global" />
+<aura:attribute name="accountNumber" type="String" access="global" />
+<aura:attribute name="maxRowSelection" type="Integer" default="1"/>
+<aura:attribute name="showXDSVerification" type="boolean" default="false"/>
+<aura:attribute name="idNumber" type="String"/>
+<aura:attribute name="surname" type="String"/>
+<aura:attribute name="mundateEmail" type="String" access="global" />
+<aura:attribute name="mandateMobile" type="String" access="global" />
+<aura:attribute name="isshowError" type="boolean" access="global" default="false"/> <!--xds decision-->
+<aura:attribute name="showAuthenticated" type="boolean" access="global" default="false"/>
+<aura:attribute name="showVerifyButton" type="boolean" access="global" default="true"/>
+<aura:attribute name="xdsDecision" type="boolean" access="global" default="false"/> <!--xds decision-->
+<aura:attribute name="responseBean" type="Object"/>
+<aura:attribute name="xdsMessage" type ="String" access="global"/>
+<aura:attribute name="requestBeanForVerification" type="Object" /> <!--bean to be send for verification -->
+<aura:attribute name="HideSpinner" type ="boolean" default="true"/>
+<aura:attribute name="byPassXDS" type="Boolean" access="global" default="false"/>
+<aura:attribute name="byPassXDSBy" type="String" access="global" />
+<aura:attribute name="byPassXDSDate" type="DateTime" access="global" />
+<aura:handler name="change" value="{!v.byPassXDS}" action="{!c.handleXDSbyPass}" />
+
+<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <!-- class="slds-hide" -->
+    <lightning:card iconName="log_event" >
+        <div class="c-container" width="20%">
+            <aura:if isTrue="{!v.HideSpinner}">
+            	<center style="z-index:99">
+                	<lightning:spinner aura:id="TheSpinnerTest"  variant="brand" size="large"/>
+            	</center>
+            </aura:if>
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Mandate Details</span>
+                </h3>
+
+
+                <lightning:datatable class="table-MandateResult"
+                                     data="{! v.listResults}"
+                                     columns="{! v.columns }"
+                                     keyField="Id"
+                                     onrowselection="{!c.setSelectedMandate}"
+                                     maxRowSelection="{!v.maxRowSelection}"
+
+									 aura:id="clientSearchdataTable"/>
+        </div>
+
+        <aura:if isTrue="{!v.showXDSVerification}">
+        		<!--XDS Question-->
+    	<div class="slds-card slds-card_boundary">
+        <div class="slds-card__body slds-card__body--inner">
+
+            <h3 class="slds-section__title">
+                <span class="slds-truncate slds-button slds-section__title-action" title="Verify Customer">Verify Customer</span>
+            </h3>
+
+           <aura:if isTrue="{!and(v.showVerifyButton,not(v.isshowError))}">
+             <div class="slds-align_absolute-center">
+                <lightning:button label="Verify Customer"  variant="brand"  onclick="{!c.initComp}" />
+            </div>
+            </aura:if>
+            <br/>
+            <div style="align-content: center;">
+                <lightning:input type="checkbox"
+                                label="Client verification has already been done on this interaction"
+                                name="byPassXDS"
+                                checked="{!v.byPassXDS}"
+                                />
+                <br/>
+                <div style="font-weight: bold;">
+                    (This confirms that I have verified the customer. I have ensured that there aren't any<br/>
+                    incorrect verification of information; any lack of or defect in authority by the<br/>
+                    Client or its employees.)
+                </div>
+                <aura:if isTrue="{!v.byPassXDS}">
+                <div>
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:input type="text" label="XDS Bypassed By" value="{!v.byPassXDSBy}" disabled="true"/>
+                            <lightning:input type="text" label="XDS Bypassed Date" value="{!v.byPassXDSDate}" disabled="true"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+                </aura:if>
+            </div>
+
+            <aura:if isTrue="{!v.isshowError}">
+                <!-- Show the message to ui -->
+                <div class="slds-notify slds-notify_toast slds-theme_error">
+                    <span class="slds-assistive-text">error</span>
+                    <div class="slds-notify__content">
+                        <h6 class="slds-text-heading_small">Error Message </h6>
+                        <br/>
+                        <p class="slds-align_absolute-center">{!v.xdsMessage}</p>
+                    </div>
+                </div>
+            </aura:if>
+
+             <aura:if isTrue="{!v.showAuthenticated}">
+                <!-- Show the message to ui -->
+                <div class="slds-notify slds-notify_toast slds-theme--success">
+                    <span class="slds-assistive-text">Success</span>
+                    <div class="slds-notify__content">
+                        <h6 class="slds-text-heading_small">Success Message </h6>
+                        <br/>
+                        <p class="slds-align_absolute-center">{!v.xdsMessage}</p>
+                    </div>
+                </div>
+            </aura:if>
+
+             <aura:if isTrue="{! and(not(v.isshowError),not(v.showAuthenticated))}">
+            <!-- Display Questions Answer -->
+            <lightning:layout multipleRows="true">
+
+                <aura:iteration items="{!v.responseBean.questions.questionDocument}" var="qna"  indexVar="idx">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select aura:id="select{!idx}" name="{!qna.question}"  label="{!qna.question}"  onchange="{!c.handleChange}" required="true" messageWhenValueMissing="please choose answer">
+
+                            <!-- <label>{!qna.question}</label>
+           <select id="{!qna.question}" class="slds-select" name="{!qna.question}"> -->
+                            <option text="-Please Select-" />
+                            <aura:iteration items="{!qna.answers.answerDocument}" var="ans">
+                                <option text="{!ans.answer}" />
+                            </aura:iteration><!-- </select> -->
+                        </lightning:select>
+
+                    </lightning:layoutItem>
+                </aura:iteration>
+            </lightning:layout>
+
+            <!-- Display Questions Answer -->
+
+            <!-- Custom Buttons -->
+            </aura:if>
+
+            <aura:if isTrue="{!and(not(v.showVerifyButton),not(v.byPassXDS))}">
+            <div class="slds-align_absolute-center">
+                <lightning:button label="Submit Answer"  variant="brand"  onclick="{!c.sendAnswers}" />
+            </div>
+           </aura:if>
+            <!-- Custom Buttons -->
+        </div>
+    </div>
+        </aura:if>
+    </lightning:card>
+
+</aura:component>

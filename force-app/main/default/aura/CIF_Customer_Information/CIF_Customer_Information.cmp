@@ -1,0 +1,165 @@
+<!--
+  @description       : 
+  @author            : muvhuso.nekhubvi@absa.africa
+  @last modified on  : 2021-11-30
+  @last modified by  : muvhuso.nekhubvi@absa.africa
+-->
+<aura:component description="CIF_Customer_Information"
+                implements="flexipage:availableForAllPageTypes,force:appHostable,force:lightningQuickAction,force:hasRecordId"
+                controller="CIF_Customer_information">
+
+    <aura:attribute name="cas" type="Case"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="accRecordId" type="String"/>
+    <aura:attribute name="record" type="Object"/>
+    <aura:attribute name="accRecord" type="Object"/>
+    <aura:attribute name="recordError" type="String"/>
+    <aura:attribute name="isVisible" type="Boolean" default="false"/>
+    <aura:attribute name="businessUnit" type="String"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="objInfo" type="account" default="{sobjectType : 'Account'}" />
+    <aura:attribute name="OccupationCategoryoptions" type="List" />
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+     <!--loading spinner start... style=Brand Medium (blue dots)-->
+     <aura:if isTrue="{!v.showSpinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    <!-- Loading spinner end--> 
+
+    <aura:if isTrue="{!v.isVisible}">
+        <force:recordData aura:id="recordEditor"
+        layoutType="COMPACT"
+        recordId="{!v.accRecordId}"
+        targetError="{!v.recordError}"
+        targetRecord="{!v.record}"
+        fields="FirstName,LastName,Nationality__pc,ID_Number__pc,Country_of_Birth__pc,PersonBirthdate,
+                  Country_of_Citizenship__c,Date_Issued__pc,Client_Type__c,Gender__pc,ShippingStreet,
+                  ShippingCity,ShippingState,ShippingPostalCode,ShippingStreet,Suburb_Town_Zip__c,Risk_Rating__c,
+                  State_Province__c,Postal_Code__c,Risk_Rating__pc,Occupation_Status__pc,DD_Source_of_Funds__pc,Occupation_Category__pc,
+                  Source_of_Income__pc,Occupation__pc,FinServ__CustomerSegment__c,FinServ__Status__c,ID_Type__pc,Income_Source__pc,
+                  PersonEmail,Preferred_Communication_Method__pc,Business_Unit__c,Customer_Compliant__c,Compliance_Status__c,Lock_Status__c,
+                  Phone,Active_Email__c,Trading_Name__c,Entity_type__c,Trust_Number__c,Country_of_Incorporation__c,Industry,Home_of_State_and_Nature_of_Relationship__c,Nature_of_Client__c,Registration_Number__c,PersonTitle,Income_Tax_Number__pc,Country_Passport_Issued__pc,PersonHomePhone"
+        targetFields="{!v.accRecord}"
+        mode="EDIT" />
+
+
+    <lightning:accordion aura:id="accordion" allowMultipleSectionsOpen="true">
+        <lightning:accordionSection name="1" label="ID Information">
+            <lightning:input type="text" label="CIF Code" disabled="true" value="{!v.cas.CIF__c}"/>
+             <aura:if isTrue="{!v.cas.RecordType.Name=='AIC'}">
+                <lightning:input type="text" label="Title" value="{!v.accRecord.PersonTitle}"/>
+            </aura:if>
+            <lightning:input type="text" label="Name" value="{!v.accRecord.FirstName}"/>
+            <lightning:input type="text" label="Surname" value="{!v.accRecord.LastName}"/>
+            <lightning:input type="text" label="Nationality" value="{!v.accRecord.Nationality__pc}"/>
+           <!-- <lightning:input type="text" label="ID Type" value="{!v.accRecord.ID_Type__pc}"/> -->
+           <lightning:select name="IDType" value="{!v.accRecord.ID_Type__pc}" label="ID Type">
+            <option value="SA Identity Document">SA Identity Document</option>
+            <option value="Passport">Passport</option>
+            <option value="Temporary ID Document">Temporary ID Document</option>
+            <option value="Registration Number">Registration Number</option>
+           </lightning:select>
+            <lightning:input type="text" label="ID number" value="{!v.accRecord.ID_Number__pc}"/>
+            <lightning:input type="date" label="Date of birth" disabled="true" value="{!v.accRecord.PersonBirthdate}"/>
+            <lightning:input type="text" label="Country of birth" value="{!v.accRecord.Country_of_Birth__pc}"/>
+            <lightning:input type="text" label="Citizenship" value="{!v.accRecord.Country_of_Citizenship__c}"/>
+            <lightning:input type="date" label="ID Date issued" value="{!v.accRecord.Date_Issued__pc}"/>
+            <lightning:input type="text" label="Country of passport Issued" value="{!v.accRecord.Country_Passport_Issued__pc}"/>
+            <lightning:input type="text" label="Client Type" value="{!v.accRecord.Client_Type__c}"/>
+            <lightning:select name="selectGender" value="{!v.accRecord.Gender__pc}" label="Gender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </lightning:select>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="2" label="Proof of Address information">
+            <lightning:input type="text" label="Residential Address 1" value="{!v.accRecord.ShippingStreet}"/>
+            <lightning:input type="text" label="Residential Address 2" value="{!v.accRecord.billing_address_line_2__c}"/>
+            <lightning:input type="text" label="Suburb" value="{!v.accRecord.ShippingState}"/>
+            <lightning:input type="text" label="City" value="{!v.accRecord.ShippingCity}"/>
+           <!--<lightning:input type="text" label="Province" value="{!v.accRecord.ShippingState}"/>--> 
+            <lightning:input type="text" label="Postal Code" value="{!v.accRecord.ShippingPostalCode}"/>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="3" label="Risk Rating">
+            <lightning:input type="text" label="Reason" disabled="true" value="{!v.accRecord.Risk_Rating__c}"/>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="4" label="Employment Information">
+            
+            <lightning:combobox name="Occupation Category" disabled="{!v.cas.RecordType.DeveloperName == 'DSP_Sales'}" label="Occupation Category" value="{!v.accRecord.Occupation_Category__pc}" options="{! v.OccupationCategoryoptions }"/>
+            <lightning:input type="text" disabled="{!v.cas.RecordType.DeveloperName == 'DSP_Sales'}" label="Source of Income" value="{!v.accRecord.Income_Source__pc}"/>
+            <lightning:input type="text" disabled="{!v.cas.RecordType.DeveloperName == 'DSP_Sales'}" label="Occupation" value="{!v.accRecord.Occupation_Status__pc}"/>
+            <aura:if isTrue="{!v.cas.RecordType.Name=='AIC'}">
+                <lightning:input type="text" label="Tax Number" value="{!v.accRecord.Income_Tax_Number__pc}"/>
+            </aura:if>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="5" label="FIC lock status ">
+            <lightning:input type="text" label="Status" disabled="true" value="{!v.accRecord.Lock_Status__c}"/>
+            <lightning:input type="text" label="Compliant Status" disabled="true" value="{!v.accRecord.Compliance_Status__c}"/>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="6" label="Product Information">
+            <lightning:input type="text" label="Product Type" disabled="true" value="{!v.cas.Product_Type__c}"/>
+            <lightning:input type="text" label="Customer segment" value="{!v.accRecord.FinServ__CustomerSegment__c}"/>
+            <lightning:input type="text" label="Account status" value="{!v.accRecord.FinServ__Status__c}"/>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="7" label="Source channel system">
+            <lightning:input type="text" label="{!v.cas.RecordType.DeveloperName == 'DSP_Sales'? 'DSP' : 'AOL or Email'}" disabled="true" value="{!v.cas.Origin}"/>
+            <!-- <lightning:input type="text" label="AOL or Email" disabled="true" value="{!v.cas.Origin}"/> -->
+        </lightning:accordionSection>
+        <lightning:accordionSection name="8" label="Client preferred method of communication">
+            <lightning:select aura:id="select" name="select" label="Method" value="{!v.accRecord.Preferred_Communication_Method__pc}">
+                <option value="SMS">SMS</option>
+                <option value="Email">Email</option>
+                <option value="Phone">Phone</option>
+                <option value="Mail">Mail</option>
+            </lightning:select>
+            <aura:if isTrue="{!and(equals(v.accRecord.Preferred_Communication_Method__pc, 'Email'))}">
+                <lightning:input type="text" label="Email" value="{!v.accRecord.PersonEmail}"/>
+            </aura:if> 
+            <aura:if isTrue="{!and(equals(v.accRecord.Preferred_Communication_Method__pc, 'Phone'))}">
+                <lightning:input type="text" label="Phone" value="{!v.accRecord.Phone}"/>
+            </aura:if>
+            <aura:if isTrue="{!v.cas.RecordType.Name=='AIC'}">
+                <lightning:input type="text" label="Home Phone" value="{!v.accRecord.PersonHomePhone}"/>
+           </aura:if>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="9" label="Business Unit">
+            <lightning:input type="text" label="Business Unit" disabled="true" value="{!v.businessUnit}"/>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="10" label="Auth / Related party information">
+            <lightning:input type="text" label="Name or surname of Authorized person" disabled="true" value="{!v.cas.Last_Name__c}"/>
+        </lightning:accordionSection>
+        <aura:if isTrue="{!v.cas.RecordType.Name=='AIC'}">
+            <lightning:accordionSection name="11" label="Non-Individuals  Customer/Entity Information ">
+                <lightning:input type="text" label="Trading Name" value="{!v.accRecord.Trading_Name__c}"/>
+                <lightning:input type="text" label="Registration Number" value="{!v.accRecord.Registration_Number__c}"/>
+                <lightning:input type="text" label="Entity Type" disabled="true" value="{!v.accRecord.Entity_type__c}"/>
+                <lightning:input type="text" label="Name of Stock Exchange" disabled="true" value="{!v.accRecord.Name_of_Stock_Exchange__c}"/>
+                <lightning:input type="text" label="Trust Number" value="{!v.accRecord.Trust_Number__c}"/>
+                <lightning:input type="text" label="Country of Establishment/Incorporation/Registration"  value="{!v.accRecord.Country_of_Incorporation__c}"/>
+                <lightning:input type="text" label="Industry"  value="{!v.accRecord.Industry}"/>
+                <lightning:input type="text" label="Home of State and Nature of Relationship"  value="{!v.accRecord.Home_of_State_and_Nature_of_Relationship__c}"/>
+                <lightning:input type="text" label="Nature of Business"  value="{!v.accRecord.Nature_of_Client__c}"/>
+            </lightning:accordionSection>
+        </aura:if> 
+    </lightning:accordion>
+    <lightning:button label="Cancel" onclick="{!c.refreshView}"
+                      variant="neutral" class="slds-m-top--medium"/>
+    <lightning:button label="Save" onclick="{!c.handleSaveRecord}"
+                      variant="brand" class="slds-m-top--medium"/>
+
+    <aura:if isTrue="{!not(empty(v.recordError))}">
+        <div class="recordError">
+            <ui:message title="Error" severity="error" closable="true">
+                <p>Something went wrong , {!v.recordError} , {!v.accRecordId}</p>
+            </ui:message>
+        </div>
+    </aura:if>
+    </aura:if>
+</aura:component>

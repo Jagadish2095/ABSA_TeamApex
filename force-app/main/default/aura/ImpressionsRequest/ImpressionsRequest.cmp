@@ -1,0 +1,69 @@
+<aura:component controller="ImpressionsController" implements="force:hasRecordId,flexipage:availableForAllPageTypes,lightning:availableForFlowScreens" access="global">
+    <aura:attribute name="recordId" type="string" access="global"/>
+    <aura:attribute name="workflowIDOutput" type="string" access="global"/>
+    <aura:attribute name="workflowIDInput" type="string" access="global"/>
+    <aura:attribute name="listOfSteps" type="List"/>
+    <aura:attribute name="fileName" type="string"/>
+    <aura:attribute name="fileId" type="string"/>
+    <aura:attribute name="myColumns" type="List"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    <aura:handler event="force:refreshView" action="{!c.isRefreshed}" />
+
+    <!--Declare Spinner-->
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <!-- Lightning Spinner -->
+    <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+
+    <lightning:card>
+        <lightning:layout multipleRows="true">  
+           	<lightning:layoutItem size="12" padding="around-small">
+            	<p>File Name: {! v.fileName }</p>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12" padding="around-small">
+                 <lightning:button label="Refresh" title="Refresh Page" onclick="{! c.refreshPage }"/>
+            </lightning:layoutItem>
+            <lightning:accordion aura:id="accordion">
+                <aura:iteration items="{!v.listOfSteps}" var="ls" indexVar="i">
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <p>Step {!ls.Step}</p>
+                    </lightning:layoutItem>
+                        
+                        <lightning:accordionSection name="{!ls.Step}" label="{! ls.EventStatus + ' - '+ ls.fullname }">
+                            <lightning:layoutItem size="12" padding="around-small">
+                                <lightning:datatable 
+                                                     keyField="event"
+                                                     data="{!ls.auditItems}"
+                                                     columns="{! v.myColumns }"
+                                                     hideCheckboxColumn="true"/>
+                            </lightning:layoutItem>
+                        </lightning:accordionSection>
+                        <lightning:layoutItem size="12" padding="around-small">
+                    		<ul class="slds-button-group-row">
+                    		  <aura:if isTrue="{! ls.EventStatus == 'RUNNING'}">
+								  <li class="slds-button-group-item">
+								    <button class="slds-button slds-button_neutral" onclick="{!c.sendR}" data-value="{!ls.SignatureRequestID}">Send Reminder</button>
+								  </li>
+							  </aura:if>
+							  <aura:if isTrue="{! ls.EventStatus == 'RUNNING'}">
+								  <li class="slds-button-group-item">
+								    <button class="slds-button slds-button_neutral" onclick="{!c.signN}" data-value="{!ls.SignatureRequestID}">Sign Now</button>
+								  </li>
+							  </aura:if>
+							  <aura:if isTrue="{! ls.EventStatus == 'COMPLETE'}">
+								  <li class="slds-button-group-item">
+								    <button class="slds-button slds-button_neutral" onclick="{!c.viewDoc}" data-value="{!ls.SignatureRequestID}">View Doc</button>
+								  </li>
+							  </aura:if>
+							</ul>
+                        </lightning:layoutItem>	
+                </aura:iteration>
+            </lightning:accordion>
+        </lightning:layout>
+    </lightning:card>
+</aura:component>

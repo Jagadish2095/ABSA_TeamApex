@@ -1,0 +1,362 @@
+<!--
+    @description Absa Rewards - voucher reissuing for W-009112
+    @Author Humbelani Denge
+    @Created 2021/05/11  
+-->
+<aura:component
+                access="global"
+                controller="AbsaRewardsController"
+                implements="lightning:isUrlAddressable,lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,lightning:actionOverride"
+                >
+    <!-- attributes -->
+    <aura:attribute name="currCampaignsEngaged" type="Object" />
+    <aura:attribute name="challengeArray" type="Object" />
+    <aura:attribute name="voucherHistoryColumns" type="List" />
+    <aura:attribute name="showConfirmation" type="Boolean" default="false" />
+    <aura:attribute name="currCampaignsNotEngaged" type="Object" />
+    <aura:attribute name="prevCampaignsEngaged" type="Object" />
+    <aura:attribute name="prevCampaignsNotEngaged" type="Object" />
+    <aura:attribute name="vouchersHistory" type="Object" />
+    <aura:attribute name="maxRowSelection" type="Integer" Default="1" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="selTabId" type="string" default="1" />
+    <aura:attribute name="rewardType" type="string" />
+    <aura:attribute name="rewardStatus" type="string" />
+    <aura:attribute name="voucherIssueDate" type="Date" />
+    <aura:attribute name="voucherTypeSelected" type="string" />
+    <aura:attribute name="voucherValue" type="string" />
+    <aura:attribute name="voucherPin" type="string" />
+    <aura:attribute name="pinClaimedWithinAppointedTime" type="string" />
+    <aura:attribute name="challengeProgress" type="Double" />
+    <aura:attribute name="challengeDescription" type="string" />
+    <aura:attribute name="challengeName" type="string" />
+    <aura:attribute name="challengeStartDate" type="string" />
+    <aura:attribute name="challengeEndDate" type="string" />
+    <aura:attribute name="customerChallengeEndDate" type="string" />
+    <aura:attribute name="challengeCompletedInTime" type="string" />
+    <aura:attribute name="caseIdFromFlow" type="string"/>
+    <aura:attribute name="voucherRecordTypeId" type="string"/>
+    <aura:attribute name="showChallengeDetails" type="Boolean" default="false" />
+    <aura:attribute name="showVoucherDetails" type="Boolean" default="false" />
+    <aura:attribute name="currencyCode" type="String"/>
+    <aura:attribute name="cifFromFlow" type="String" access="global"/>
+    <aura:attribute name="idNumberFromFlow" type="String" access="global"/>
+    
+    <aura:attribute name="expiryDate" type="string" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <!-- handlers-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <lightning:card>
+        <!--Spinner-->
+        <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner alternativeText="Loading" variant="brand" />
+        </aura:if>
+        
+        <!--TabSetStart-->
+        <lightning:tabset variant="Brand" selectedTabId="{!v.selTabId}">
+            <lightning:tab label="Current Campaign History" id="1">
+                <!--Current Campaign Content-->
+                <aura:if isTrue="{!v.currCampaignsEngaged.length > 0}">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <lightning:icon iconName="utility:resource_capacity" variant="brand" size="small" />
+                            Participating
+                        </aura:set>
+                        <div>
+                            <lightning:datatable
+                                                 columns="{!v.columns}"
+                                                 data="{!v.currCampaignsEngaged}"
+                                                 maxRowSelection="{!v.maxRowSelection}"
+                                                 keyField="id"
+                                                 onrowselection="{!c.handleRowAction}"
+                                                 />
+                        </div>
+                    </lightning:card>
+                    <aura:set attribute="else">
+                        <ui:message title="Information" severity="info" closable="true"> No challenges currently engaged. </ui:message>
+                    </aura:set>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.currCampaignsNotEngaged.length > 0}">
+                    <!-- Non Previously Engaged Voucher Challenges-->
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <lightning:icon iconName="utility:resource_absence" variant="brand" size="small" />
+                            Non Participating
+                        </aura:set>
+                        <div class="white">
+                            <lightning:datatable
+                                                 columns="{!v.columns}"
+                                                 data="{!v.currCampaignsNotEngaged}"
+                                                 hideCheckboxColumn="true"
+                                                 keyField="id"
+                                                 
+                                                 />
+                        </div>
+                    </lightning:card>
+                    <aura:set attribute="else">
+                        <ui:message title="No current challenges" severity="info" closable="true"> No current challenges that weren't engaged. </ui:message>
+                    </aura:set>
+                </aura:if>
+            </lightning:tab>
+            <!--Previous Campaign Content-->
+            <lightning:tab label="Previous Campaign History" id="2">
+                <!-- Previously Engaged Campaign Voucher Challenges-->
+                <aura:if isTrue="{!v.prevCampaignsEngaged.length > 0}">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <lightning:icon iconName="utility:resource_capacity" variant="brand" size="small" />
+                            Participated
+                        </aura:set>
+                        <div class="white" style="height: 200px">
+                            <lightning:datatable
+                                                 columns="{!v.columns}"
+                                                 data="{!v.prevCampaignsEngaged}"
+                                                 maxRowSelection="{!v.maxRowSelection}"
+                                                 keyField="id"
+                                                 onrowselection="{!c.handleRowAction}"
+                                                 />
+                        </div>
+                    </lightning:card>
+                    <aura:set attribute="else">
+                        <ui:message title="No previously challenges" severity="info" closable="true"> No previously engaged challenges. </ui:message>
+                    </aura:set>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.prevCampaignsNotEngaged.length > 0}">
+                    <!-- Non Previously Engaged Voucher Challenges-->
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <lightning:icon iconName="utility:resource_absence" variant="brand" size="small" />
+                            Non Participated
+                        </aura:set>
+                        <div style="height: 200px">
+                            <lightning:datatable
+                                                 columns="{!v.columns}"
+                                                 data="{!v.prevCampaignsNotEngaged}"
+                                                 
+                                                 keyField="id"
+                                                 
+                                                 />
+                        </div>
+                    </lightning:card>
+                    <aura:set attribute="else">
+                        <ui:message title="Previous Campaigns" severity="info" closable="true"> No previous challenges that weren't engaged. </ui:message>
+                    </aura:set>
+                </aura:if>
+            </lightning:tab>
+            <!--Voucher History-->
+            <lightning:tab label="Voucher History" id="3">
+                <aura:if isTrue="{!v.vouchersHistory.length > 0}">
+                    <lightning:card>
+                        <div style="height: 200px">
+                            <lightning:datatable
+                                                 columns="{!v.voucherHistoryColumns}"
+                                                 data="{!v.vouchersHistory}"
+                                                 maxRowSelection="{!v.maxRowSelection}"
+                                                 keyField="id"
+                                                 onrowselection="{!c.handleVoucherHistoryRowAction}"
+                                                 />
+                        </div>
+                    </lightning:card>
+                    <aura:set attribute="else">
+                        <ui:message title="No voucher history" severity="info" closable="true"> No voucher history. </ui:message>
+                    </aura:set>
+                </aura:if>	
+            </lightning:tab>
+        </lightning:tabset>
+    </lightning:card>
+    <!--Confirmation-Dialog-->
+    <aura:if isTrue="{!v.showConfirmation}">
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <aura:if isTrue="{!v.showSpinner}">
+                <lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+            </aura:if>
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon
+                                          iconName="utility:close"
+                                          size="large"
+                                          variant="bare"
+                                          onclick="{! c.handleCancelClick }"
+                                          alternativeText="Close"
+                                          class="slds-modal__close slds-button_icon-inverse"
+                                          />
+                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Challenge and reward details</h2>
+                    <!--p class="slds-m-top_x-small">The new debit order details of the policy are as follows.</p-->
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.showChallengeDetails}">
+                    <lightning:card title="Challenge Details">
+                        <lightning:layout multipleRows="true">
+                            <div class="slds-form" role="list">
+                                <div class="slds-form__row">
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Challenge Name</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.challengeName}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Challenge Start Date</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.challengeStartDate}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form__row">
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Challenge Completion Date</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.customerChallengeEndDate}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Progress Of The Challenge</span>
+                                            <div class="slds-form-element__control">
+                                                <lightning:formattedNumber class="slds-form-element__static" value="{!v.challengeProgress}" style="percent"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form__row">
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Descriptions</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.challengeDescription}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Challenge Completed Within 14 Days</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.challengeCompletedInTime}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layout>
+                    </lightning:card>
+                    </aura:if>
+                    <aura:if isTrue="{!v.showVoucherDetails}">
+                    <lightning:card title="Reward Details">
+                        <lightning:layout multipleRows="true">
+                            <div class="slds-form" role="list">
+                                <div class="slds-form__row">
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Reward Type</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.rewardType}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Reward Status</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.rewardStatus}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form__row">
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Voucher Issue Date</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.voucherIssueDate}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Voucher Type Selected</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.voucherTypeSelected}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form__row">
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Voucher Value</span>
+                                            <div class="slds-form-element__control">
+                                                <lightning:formattedNumber class="slds-form-element__static" value="{!v.voucherValue}" style="currency" currencyCode="{!v.currencyCode}"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Voucher Pin</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.voucherPin}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form__row">
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Voucher Pin Claimed Within Appointed Time</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.pinClaimedWithinAppointedTime}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-form__item" role="listitem">
+                                        <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked">
+                                            <span class="slds-form-element__label">Expiry Date</span>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-form-element__static">{!v.expiryDate}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layout>
+                    </lightning:card>
+                        </aura:if>
+                    <lightning:recordEditForm
+                                              aura:id="recordEditForm"                     
+                                              onsuccess="{!c.handleSuccess}"
+                                              onsubmit="{!c.handleSubmit}"
+                                              onerror="{!c.handleErrors}"
+                                              objectApiName="Voucher__c"
+                                              >
+                        <lightning:messages />
+                        <lightning:inputField aura:id="rewardType" fieldName="Reward_Type__c" class="slds-hide" />
+                        <lightning:inputField aura:id="rewardStatus" fieldName="Reward_Status__c" class="slds-hide" />
+                        <lightning:inputField aura:id="voucherIssueDate" fieldName="Voucher_Issue_Date__c" class="slds-hide" />
+                        <lightning:inputField aura:id="voucherTypeSelected" fieldName="Voucher_Type_Selected__c" class="slds-hide" />
+                        <lightning:inputField aura:id="voucherValue" fieldName="Amount__c" class="slds-hide" />
+                        <lightning:inputField aura:id="voucherPin" fieldName="Voucher_Pin__c" class="slds-hide" />
+                        <lightning:inputField aura:id="pinClaimedInTime" fieldName="Pin_Claimed_In_Time__c" class="slds-hide" />
+                        <lightning:inputField aura:id="expiryDate" fieldName="Voucher_Expiry_Date__c" class="slds-hide" />
+                        <lightning:inputField aura:id="caseId" fieldName="Case__c" class="slds-hide" />
+                        <lightning:inputField aura:id="challengeCompletedInTime" fieldName="Challenge_Completed_In_Time__c" class="slds-hide" />
+                        <lightning:inputField aura:id="challengeId" fieldName="Name" class="slds-hide" />
+                    </lightning:recordEditForm>
+                </div>
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick="{!c.handleCancelClick}">Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick="{!c.handleOkClick}">Attach Voucher</button>
+                </footer>
+            </div>
+        </section>
+    </aura:if>
+</aura:component>

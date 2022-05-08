@@ -1,0 +1,100 @@
+<!--
+* Lightning Component for Account Selection (CIGetAccountLinkedToClientCodeCmp)
+*
+* @author  Manoj Danthala : Absa
+* @version v1.0
+* @since   2019-09-15
+*
+-->
+
+<aura:component
+	controller="CIGetAccountLinkedToClientCodeController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+	access="global"
+>
+	<lightning:workspaceAPI aura:id="workspace" />
+
+	<!--Handler Declaration-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<!--Attribute Declaration-->
+	<aura:attribute name="responseList" type="List" />
+	<aura:attribute name="prodTypesList" type="List" />
+	<aura:attribute name="accNumList" type="List" />
+	<aura:attribute name="prodTypesSet" type="Set" />
+	<aura:attribute name="selectedProductValue" type="String" access="global" />
+	<aura:attribute name="selectedProductBranch" type="String" access="global" />
+	<aura:attribute name="selectedAccountNumber" type="String" />
+	<aura:attribute name="selectedAccountNumberToFlow" type="String" access="global" />
+	<aura:attribute name="clientAccountIdFromFlow" type="String" access="global" />
+	<aura:attribute name="productTypeFilter" type="String" access="global" />
+	<aura:attribute name="isSpinner" type="Boolean" default="true" />
+	<aura:attribute name="activeCombiAccount" type="String" access="global" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="responseToFlow" type="String" /><!--Added by chandra dated 11/12/2020-->
+	<aura:attribute name="layoutItemSize" type="String" default="12" /><!--Added by chandra dated 21/03/2021-->
+	<aura:attribute name="productTypeLabel" type="String" default="Select the Product Type" /><!--Added by chandra dated 21/03/2021-->
+	<aura:attribute name="selectAccountLabel" type="String" default="Select the Account" /><!--Added by chandra dated 21/03/2021-->
+	<aura:attribute name="showHeading" type="Boolean" default="true" /><!--Added by chandra dated 21/03/2021-->
+	<aura:attribute name="activeCombiAccList" type="List" /><!--Added by SM 23 March 2021-->
+
+	<!--Methods-->
+	<aura:method name="getAccountDetailsMethod" action="{!c.doInit}" />
+
+	<!-- Spinner -->
+	<aura:if isTrue="{!v.isSpinner}">
+		<lightning:spinner variant="brand" alternativeText="Busy" />
+	</aura:if>
+
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<div class="slds">
+		<lightning:card title="">
+			<aura:if isTrue="{!v.showHeading}">
+				<h3 class="slds-section__title">
+					<span class="slds-truncate slds-button slds-section__title-action" title="Account Selection">Account Selection</span>
+				</h3>
+			</aura:if>
+			<lightning:layout multipleRows="true" verticalAlign="start" horizontalAlign="center">
+				<lightning:layoutItem size="{!v.layoutItemSize}" padding="around-small">
+					<lightning:select
+						value="{!v.selectedProductValue}"
+						class="select-auto-width"
+						aura:id="productSelection"
+						onchange="{!c.getAccountNumbers}"
+						label="{!v.productTypeLabel}"
+						disabled="{!empty(v.prodTypesList)}"
+					>
+						<option value="">--None--</option>
+						<aura:iteration items="{!v.prodTypesList}" var="prod" indexVar="key">
+							<!--<option value="{!prod}">{!prod}</option>-->
+							<option value="{!prod.value}">{!prod.label}</option>
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="{!v.layoutItemSize}" padding="around-small">
+					<lightning:select
+						value="{!v.selectedAccountNumber}"
+						class="select-auto-width"
+						aura:id="accountSelection"
+						onchange="{!c.getSelectedAccount}"
+						label="{!v.selectAccountLabel}"
+						disabled="{!empty(v.accNumList)}"
+					>
+						<option value="">--None--</option>
+						<aura:iteration items="{!v.accNumList}" var="acc" indexVar="key">
+							<option text="{!acc.label}" value="{!acc.value}" />
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+			</lightning:layout>
+		</lightning:card>
+	</div>
+</aura:component>

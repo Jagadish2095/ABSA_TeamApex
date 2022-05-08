@@ -1,0 +1,157 @@
+<!--This is the Exergy Member Maintenance Component -->
+<!--@author  Koketso Mpshane-->
+<!--@since   25-06-2021-->
+<!--@Work Id: W-007773, W-007774, W-007784 -->
+<aura:component controller="AbsaLifeMemberMaintenance" implements="flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction,lightning:availableForFlowScreens" access="global" >
+    <!--Attribute Declaration-->
+    <aura:attribute name="memberList" type="List" />
+    <aura:attribute name="memberListColumns" type="List" />
+    <aura:attribute name="rowData" type="Object" />
+    <aura:attribute name="totalPremium" type="String" />
+    <aura:attribute name="caseIdFromFlow" type="String" access="global" />
+    <aura:attribute name="policyNumberFromFlow" type="String" default="" access="global" />
+    <aura:attribute name="errorMessage" type="String" default="" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="showMemberDetails" type="Boolean" default="false" />
+    <aura:attribute name="confirmDeleteMember" type="Boolean" default="false" />
+
+    <!--Handler Declaration-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <!--Error Message-->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <ui:message title="Error" severity="error" closable="true"> {!v.errorMessage} </ui:message>
+    </aura:if>
+
+    <div class="slds-card__body slds-card__body_inner">
+        <article class="slds-card slds-card_boundary">
+            <!-- Lightning Spinner -->
+            <aura:if isTrue="{!v.showSpinner}">
+                <lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+            </aura:if>
+            <div class="slds-card__body slds-card__body_inner">
+                <b><ui:outputText value="Members Details" /></b>
+                <br /><br />
+                <b><ui:outputText value="View and manage members" /></b>
+
+                <!-- Members details layout-->
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div style="height: 250px" class="slds-box slds-theme_default">
+                            <lightning:datatable
+                                                 aura:id="memberListTable"
+                                                 data="{!v.memberList }"
+                                                 columns="{!v.memberListColumns }"
+                                                 keyField="gID"
+                                                 hideCheckboxColumn="true"
+                                                 showRowNumberColumn="true"
+                                                 onrowaction="{!c.handleRowAction}"
+                                                 />
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+
+                <lightning:layout>
+                    <lightning:layoutItem>
+                        <b><ui:outputText value="Total Premium" /></b><br/>
+                        <lightning:input label="Current premium" aura:id="fTotalPremium" value="{!'R' + v.totalPremium + ' / Month'}" disabled="true" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+
+                <aura:if isTrue="{!v.showMemberDetails}">
+                    <!-- Start Show Member Details Modal-->
+                    <section
+                             role="dialog"
+                             tabindex="-1"
+                             aria-labelledby="modal-heading-01"
+                             aria-modal="true"
+                             aria-describedby="modal-content-id-1"
+                             class="slds-modal slds-fade-in-open"
+                             >
+                        <div class="slds-modal__container container-details">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.closeMemberDetails}"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"
+                                                      />
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Manage Member</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <lightning:layout>
+                                    <!-- Lightning Spinner -->
+                                    <aura:if isTrue="{!v.showSpinner}">
+                                        <lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="small" />
+                                    </aura:if>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:input label="Name" aura:id="fName" value="{!v.rowData.firstName}" disabled="true" />
+                                        <lightning:input label="Movement Date" aura:id="fMovementDate" value="{!v.rowData.movementDate}" disabled="true" />
+                                        <lightning:input label="Commencement Date" aura:id="fCommencementDate" value="{!v.rowData.commencementDate}" disabled="true" />
+                                        <lightning:input label="Benefit Term" aura:id="fBenefitTerm" value="{!v.rowData.benefitTerm}" disabled="true" />
+                                        <lightning:input label="Premium Growth" aura:id="fPremiumGrowth" value="{!v.rowData.premiumGrowth}" disabled="true" />
+                                        <lightning:input label="Cover Option" aura:id="fCoverOption" value="{!v.rowData.cover}" disabled="true" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:input label="Surname" aura:id="fSurname" value="{!v.rowData.surname}" disabled="true" />
+                                        <lightning:input label="Date Of Birth" aura:id="fDateOfBirth" value="{!v.rowData.dateOfBirth}" disabled="true" />
+                                        <lightning:input label="Benefit Type" aura:id="fBenefitType" value="{!v.rowData.benefitType}" disabled="true" />
+                                        <lightning:input label="Premium Term" aura:id="fPremiumTerm" value="{!v.rowData.premiumTerm}" disabled="true" />
+                                        <lightning:input label="Cover Growth" aura:id="fCoverGrowth" value="{!v.rowData.coverGrowth}" disabled="true" />
+                                        <lightning:input label="Premium" aura:id="fPremium" value="{!v.rowData.premium}" disabled="true" />
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="Cancel" title="Cancel" aura:id="btnCancel" onclick="{!c.closeMemberDetails}" />
+                                <lightning:button variant="brand" label="Delete" title="Delete" aura:id="btnDelete" onclick="{!c.handleDeleteMember}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                    <!-- End Show Member Details Modal-->
+                </aura:if>
+
+                <aura:if isTrue="{!v.confirmDeleteMember}">
+                    <!-- Start Confirm Delete Member Modal-->
+                    <section
+                             role="dialog"
+                             tabindex="-1"
+                             aria-labelledby="modal-heading-01"
+                             aria-modal="true"
+                             aria-describedby="modal-content-id-1"
+                             class="slds-modal slds-fade-in-open"
+                             >
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.cancelDeleteMember}"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"
+                                                      />
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Delete Member</h2>
+                            </header>
+                            <!--Error Message-->
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <!-- Lightning Spinner -->
+                                <aura:if isTrue="{!v.showSpinner}">
+                                    <lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="small" />
+                                </aura:if>
+                                <ui:outputText value="Are you sure you want to detele this member?" /><br/>
+                                <b><ui:outputText value="{!v.rowData.firstName + ' ' + v.rowData.surname}" /></b>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="Cancel" title="Cancel" aura:id="btnCancelConfirm" onclick="{!c.cancelDeleteMember}" />
+                                <lightning:button variant="brand" label="Confirm" title="Confirm" aura:id="btnConfirm" onclick="{!c.confirmDeleteMember}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                    <!-- End Confirm Delete Member Modal-->
+                </aura:if>
+            </div>
+        </article>
+    </div>
+
+</aura:component>

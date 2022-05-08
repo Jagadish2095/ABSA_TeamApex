@@ -1,0 +1,139 @@
+<aura:component controller="CPFFacilityPrimarySecondaryAccDetails"
+        implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable"
+        access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	 <aura:attribute name="accItem" type="Application_Financial_Account__c" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="newFacilityAccount" type="Application_Financial_Account__c[]" />
+     <aura:attribute name="selectedValue" type="String" />
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="AppPrdctCPFId" type="Id" />
+    <aura:attribute name="OppRecId" type="Id"  />
+    <aura:attribute name="isActiveRemoveAccount" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOtherOverdraftPurpose" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOnceOffOnly" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOnceOffRecurring" type="Boolean" default="false" />
+    <aura:attribute name="variableAmount" type="integer" default="0" />
+    <aura:attribute name="appFinAccRec" type="Id" />
+    <aura:attribute name="rowindex" type="String" />
+    <aura:attribute name="accounttobeclosedoptn" type="String" />
+	 
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading..." />
+        </div>
+    </aura:if>
+    <!-- Register Application Events -->
+    <aura:registerEvent name="CPFApplicationFinancialAccCreation" type="c:CPFApplicationFinancialAccCreation"/>
+    <!-- Register Application Events -->
+    <aura:registerEvent name="CPFApplicationFinAcctobeclosed" type="c:CPFApplicationFinAcctobeclosed"/>
+    
+    <lightning:recordEditForm aura:id="iAppFinAccRecord" objectApiName="Application_Financial_Account__c"  recordId="{!v.appFinAccRecId}" >
+        
+        <div class="slds-grid slds-wrap slds-gutters_medium">
+                                 <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <p>Existing account</p>
+                                        <ui:outputText aura:id="uniqueID" value="{!v.rowindex + 1}"/>
+                                    </span>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Existing Account Number</span>
+                                           <lightning:helptext icon-name="utility:like" content="Balance on existing account [existing account number] as at [balance as at]: [outstanding balance] (To be closed)." />
+        								</label>
+                                        <lightning:inputField fieldName="Existing_Account_Number__c" aura:id="inputAccNmbr" value="{!v.accItem.Existing_Account_Number__c}"  variant="label-hidden"/>
+                                    </span>
+                                </div>
+                                
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Outstanding Balance</span>
+                                           <lightning:helptext icon-name="utility:like" content="Balance on existing account [existing account number] as at [balance as at]: [outstanding balance] (To be closed)." />
+        								</label>
+
+                                        <lightning:inputField fieldName="Outstanding_Balance__c" aura:id="inputOutstandingbalance" value="{!v.accItem.Outstanding_Balance__c}" variant="label-hidden"/>
+                                    </span>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Balance as at</span>
+                                           <lightning:helptext icon-name="utility:like" content="Balance on existing account [existing account number] as at [balance as at]: [outstanding balance] (To be closed)." />
+        								</label>
+                                        <lightning:inputField fieldName="Balance_as_at__c" aura:id="inputBalanceasat" value="{!v.accItem.Balance_as_at__c}" variant="label-hidden"/>
+                                    </span>
+                                </div>
+ 									<div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                         <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Account to be closed</span>
+                                           <lightning:helptext icon-name="utility:like" content="Select Yes if this account must be closed." />
+        								</label>
+
+                                        <!--<lightning:inputField fieldName="Account_to_be_closed__c" aura:id="accclosed" value="{!v.accItem.Account_to_be_closed__c}"/>-->
+                                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Account_to_be_closed__c" 
+                                                            objectName="Application_Financial_Account__c"
+                                                            value="{!v.accItem.Account_to_be_closed__c}"
+                                                            /> 
+                                    </span>
+                                </div>
+                              <div class="slds-col slds-size_1-of-2">
+                                    <span >
+									<ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove This Account" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+           							 <aura:if isTrue="{!v.isActiveRemoveAccount}">
+               						 <lightning:button class="slds-float_right" label="Remove Account" variant="brand" onclick="{!c.removeAccount}" />
+           							 </aura:if>                                   
+                                  </span>
+                                </div>
+                                   
+                            </div>
+                        </lightning:recordEditForm>
+
+    <!--aura:if isTrue="{!v.isActiveNewAccount}"-->
+        <!--<lightning:layoutItem size="12" padding="around-small">
+			<ui:outputText  aura:id="uniqueID" value="{!v.accItem.Id}" />
+            <lightning:input aura:id="uniqueID" readonly="true" disabled = "true" type=""  value="{!v.accItem.Id}" />
+    </lightning:layoutItem>-->
+                            
+             <!--<lightning:layoutItem size="6" padding="around-small">
+            <p>Existing account</p>
+            <ui:outputText aura:id="uniqueID" value="{!v.rowindex + 1}" />
+          </lightning:layoutItem>
+              <lightning:layoutItem size="6" padding="horizontal-small">
+                    <lightning:input aura:id="inputAccNmbr"  type="number" label="Existing account number" value="{!v.accItem.Existing_Account_Number__c}" />
+                </lightning:layoutItem>
+             <lightning:layoutItem size="6" padding="horizontal-small">
+                    <lightning:input aura:id="inputOutstandingbalance"  type="number" label="Outstanding balance" value="{!v.accItem.Outstanding_Balance__c}" />
+                </lightning:layoutItem>
+                
+   			 <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input aura:id="inputBalanceasat"  type="date" label="Balance as at" value="{!v.accItem.Balance_as_at__c}" />
+                    </lightning:layoutItem>-->
+    
+    		<!--<lightning:layoutItem size="6" padding="horizontal-small">
+                       <lightning:select aura:id="select" name="AccounttobeClosed" label="Account to be Closed" onchange="{! c.onChange }">
+        					<option value="None">None</option>
+                           <option value="Yes">Yes</option>
+        					<option value="No">No</option>
+                            </lightning:select>
+                    </lightning:layoutItem>-->
+   <!--<lightning:recordEditForm aura:id="iAppFinAccRecord" objectApiName="Application_Financial_Account__c"  >
+       <lightning:layoutItem padding="horizontal-small" >
+         <lightning:inputField fieldName="Account_to_be_closed__c" aura:id="accclosed" value="{!v.accItem.Account_to_be_closed__c}" />
+                              </lightning:layoutItem>
+        </lightning:recordEditForm>
+        <lightning:layoutItem size="6" padding="around-small">
+            <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove This Account" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+            <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                <lightning:button class="slds-float_right" label="Remove Account" variant="brand" onclick="{!c.removeAccount}" />
+            </aura:if>
+        </lightning:layoutItem>-->
+     <!--<lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:button label="Save &amp; Validate" onclick="{!c.handleSubmit}" variant="brand" aura:id="ibtn1" />
+                    </lightning:layoutItem>-->
+   </aura:component>

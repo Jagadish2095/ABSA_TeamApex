@@ -1,0 +1,52 @@
+<!--Lightning cmp for Member Maintenance (MemberMaintenance)
+    Author: Jason Q
+    Date : 2020/10/15
+-->
+<aura:component controller="MemberMaintenance"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global">
+
+    <!--Handler Declaration-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <!--Attribute Declaration-->
+    <aura:attribute name="selectedAccountNumber" type="string" access="global"/>
+    <aura:attribute name="caseId" type="string" access="global"/>
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="data" type="Object[]"/>
+    <aura:attribute name="columns" type="List"/>
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError"><br/>
+            <h2 class="slds-section__title" style="color:red">{!v.errorMessage}</h2><br/>
+        </div>
+    </aura:if>
+
+    <lightning:recordEditForm aura:id="caseEditForm"
+                            objectApiName="Case"
+                            recordId="{!v.caseId}"
+                            onsuccess="{!c.handleSuccess}"
+                            onerror="{!c.handleError}">
+
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide"/>
+    </lightning:recordEditForm>
+    <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-x-small" size="12">
+                <!-- DataTable of Members -->
+                <lightning:datatable keyField="id"
+                         data="{! v.data }"
+                         columns="{! v.columns }"
+                         hideCheckboxColumn="true"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="12">
+                <lightning:button aura:id="closeCaseBtn" label="Close Case" onclick="{!c.closeCase}" variant="brand" class="slds-float_right"/>
+            </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

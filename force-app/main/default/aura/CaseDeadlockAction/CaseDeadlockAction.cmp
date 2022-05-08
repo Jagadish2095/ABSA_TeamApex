@@ -1,0 +1,37 @@
+<!--
+* @author  Tracy de Bruin : CloudSmiths
+* @version v1.0
+* @since   2018-07-16
+-->
+<aura:component implements="force:lightningQuickAction,flexipage:availableForRecordHome,force:hasRecordId" controller="CaseDeadlockActionExt">
+    <!--Attributes -->
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="deadlockReason" type="String"/>
+    <aura:attribute name="isValid" type="Boolean" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="uploadFormats" type="List" default="['.jpg','.jpeg','.png','.pdf','.msg','.xls','.doc','.Ppt','.xlsx','.docx','.Pptx','.zip','.txt','.wav','.aac','.m4a','.mp3','.wma']"/>
+    
+    
+    <!-- Spinner -->
+    <center style="z-index:99"> 
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    <!-- Body -->
+    <aura:renderIf isTrue="{!v.isValid}">
+        <ui:message title="Case is currently in an Approval Process" severity="info" closable="false">
+            A Case can be in one Approval Process at a time. 
+        </ui:message>
+        <aura:set attribute="else">
+            <lightning:recordEditForm aura:id="iUpdateCase" objectApiName="Case" recordId="{!v.recordId}" >
+                <lightning:inputField fieldName="Deadlock_Reason_Motivation__c" aura:id="iDeadlockReason" disabled="{!v.isValid}"/>
+                <br/>
+                <lightning:fileUpload aura:id="fileId" name="fileUploader" label= " Deadlock Letter" multiple="true" 
+                                                          accept="{!v.uploadFormats}" disabled="false"   
+                                                          recordId="{!v.recordId}" onuploadfinished="{!c.handleFilesChange}" />
+                <lightning:button label="Submit Deadlock for Approval" onclick="{!c.submitDeadlockApproval}" variant="brand" aura:id="ibtn" disabled="{!v.isValid}"/> 
+            </lightning:recordEditForm>
+        </aura:set>
+    </aura:renderIf>
+</aura:component>

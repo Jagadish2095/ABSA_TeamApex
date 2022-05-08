@@ -1,0 +1,56 @@
+<!--Component for handling the Exposures-->
+<!--@author Englarmerdge Mongwe -->
+<!--@since   2020-09-07-->
+<aura:component access="global" Controller="ExposureController" implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+     <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="reLoad" type="String" default="0" />
+    <aura:handler name="change" value="{!v.reLoad}" action="{!c.onChanged}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:registerEvent name="creditOriginationEvent" type="c:creditOriginationEvent"/>
+    
+    <!-- Attribute Declaration -->
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="parentLoaded" type="Boolean" default="false" />
+    <aura:attribute name="ApplicantExposuresData" type="Object" />
+    <aura:attribute name="lastRefresh" type="DateTime" />
+    <aura:attribute name="reLoadCount" type="String" default="0" />
+    <aura:attribute name="riskRecordCreated" type="Boolean" default="false" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"
+                alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    <lightning:layout multipleRows="true">
+        <Lightning:LayoutItem size="6" padding="around-small">
+            <p><b>Exposure</b></p>
+            <p>Review current exposure info</p>
+        </Lightning:LayoutItem>
+        <Lightning:LayoutItem size="6" padding="around-small">
+            <p>Last Refresh Date</p>
+            <p><ui:outputDateTime value="{!v.lastRefresh}" /></p>
+        </Lightning:LayoutItem>
+        <lightning:layoutItem size="12" padding="around-small">
+            <aura:if isTrue="{!v.parentLoaded}">
+                <c:ApplicationExposuresRisk oppId="{!v.recordId}" riskCreated="{!v.riskRecordCreated}" />
+                <c:ApplicantExposureSummary recordId="{!v.recordId}" />
+                <c:ProductTypeExposureDetails recordId="{!v.recordId}" />
+                <c:ApplicantExposures oppId="{!v.recordId}" />
+                <aura:if isTrue="{!v.riskRecordCreated}">
+                    <c:ApplicationExposureRiskIdentifier oppId="{!v.recordId}" />
+                </aura:if>
+                <c:GroupExposures recordId="{!v.recordId}" />
+                <c:CashAndInvestment recordId="{!v.recordId}" />
+                <c:ApplicationExposureFacilities opportunityId="{!v.recordId}" />
+                <c:ApplicationExposureCMS OppId="{!v.recordId}" />
+            </aura:if>
+        </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

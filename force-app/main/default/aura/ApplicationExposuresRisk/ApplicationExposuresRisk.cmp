@@ -1,0 +1,94 @@
+<!--Component for handling the Applicants Risk Exposures-->
+<!--@author  Himani Joshi-->
+<!--@since   2020-09-07-->
+
+<aura:component controller="ApplicationExposuresRiskController"
+    implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+    access="global">
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.onChanged}" />
+    <aura:attribute name="reLoad" type="String" default="0" />
+    <aura:attribute name="reLoadCount" type="String" default="0" />
+    <aura:handler name="change" value="{!v.reLoad}" action="{!c.onChanged}" />
+    <aura:handler event="force:refreshView" action="{!c.onChanged}" />
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="oppId" type="Id" />
+    <aura:attribute name="ApplicantExposuresRiskData" type="Object" />
+    <aura:attribute name="clientCodesandNames" type="Object" />
+    <aura:attribute name="lastRefresh" type="DateTime" />
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />
+    <aura:attribute name="isReloaded" type="Boolean" default="false" />
+    <aura:attribute name="riskCreated" type="Boolean" default="false" />
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+        </div>
+    </aura:if>
+
+    <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion" activeSectionName="ApplicantExposuresRisk">
+        <lightning:accordionSection name="ApplicantExposuresRisk" label="Risk Grade">
+            <aura:if isTrue="{!v.isReloaded}">
+                <h1>Checking Data</h1>
+
+                <aura:set attribute="else">
+                    <p>Risk Grade - Last Refresh:
+                        <ui:outputDateTime value="{!v.lastRefresh}" />
+                    </p>
+                    <table class="slds-table slds-table_cell-buffer">
+                        <thead>
+                            <tr class="slds-var-m-top_small slds-line-height_reset">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="ClientName">Client Name</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="ClientCode">Client Code</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Risk Grade">Risk Grade</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Worst Risk Grade">Worst Risk Grade</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.clientCodesandNames}" var="cli">
+                                <tr class="slds-hint-parent">
+                                    <th data-label="" scope="row">
+                                        <div class="slds-truncate" title=" ">
+                                            {!cli.Client_Name__c}
+                                        </div>
+                                    </th>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!cli.Client_CIF_Code__c}</div>
+                                    </td>
+                                    <td data-label="">
+                                        <aura:iteration items="{!v.ApplicantExposuresRiskData}" var="r">
+                                            <aura:if isTrue="{!r.Client_Code__c == cli.Client_CIF_Code__c}">
+                                                <div>
+                                                    {!r.Risk_Grade__c}
+                                                </div>
+                                            </aura:if>
+                                        </aura:iteration>
+                                    </td>
+                                    <td data-label="">
+                                        <aura:iteration items="{!v.ApplicantExposuresRiskData}" var="r">
+                                            <aura:if isTrue="{!r.Client_Code__c == cli.Client_CIF_Code__c}">
+                                                <div>
+                                                    {!r.Worst_Risk_Grade__c}
+                                                </div>
+                                            </aura:if>
+                                        </aura:iteration>
+                                    </td>
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </aura:set>
+            </aura:if>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

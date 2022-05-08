@@ -1,0 +1,169 @@
+<!--
+* Lightning Component for capturing customer monthly income (CustomerMonthlyIncome)
+*
+* @author  Aaron Castelyn : Absa
+* @version v1.0
+* @since   2020-09-18
+* @last modified on  : 08-31-2021
+* @last modified by  : Aaron Castelyn (ABSA)
+*
+-->
+
+<aura:component access="global" controller="CustomerIncomeExpenseController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName">
+
+    <aura:attribute name="validate" type="Aura.Action" description="IncomeValidate"/>
+    <aura:attribute name="opportunityId" type="String"  />
+    <aura:attribute name="applicationId" type="String"  />
+    <aura:attribute name="applicationNumber" type="String"  />
+    <aura:attribute name="packageId" type="String" default="1234" />
+    <aura:attribute name="pricingSchemeCode" type="String" default="1" />   
+    
+    <aura:attribute name="readOnly" type="Boolean" default="false" />
+    <aura:attribute name="doClientUpdate" type="Boolean" default="true" />
+    <aura:attribute name="isNextDisabled" type="Boolean" default="false" />
+    <aura:attribute name="isPauseDisabled" type="Boolean" default="false" />
+
+    <aura:attribute name="incomeRecord" type="Object" />
+    <aura:attribute name="preAssessedCreditLimit" type="String" />
+    <aura:attribute name="lockVersionId" type="String" default="" />
+    
+    <aura:attribute name="sourceOfFundsList" type="List" default="[]" />
+    <aura:attribute name="optionsSOF" type="List" default="[]" />
+    <aura:attribute name="selectedSOF" type="List" default="[]" />
+
+    <aura:attribute name="expense" type="String" />
+
+    <aura:attribute name="consent" type="List" default="[{'label': 'Yes', 'value': 'true'}, {'label': 'No', 'value': 'false'}]"/>
+
+    <aura:attribute name="bankStatementsConsent" type="String" default="false" />
+    
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+
+    <!--Handlers-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <aura:method name="updateIncome" action="{!c.updateIncome}" access="PUBLIC">
+        <!-- <aura:attribute name="contactId" type="String" />
+        <aura:attribute name="contactName" type="String"  />
+        <aura:attribute name="recordId" type="String"  /> -->
+    </aura:method>
+
+    <lightning:workspaceAPI aura:id="workspace"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="TheSpinner" alternativeText="Loading..." variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.readOnly}">
+        <div class="slds-box slds-theme_default">
+            <lightning:layout>
+                <lightning:layoutItem size="3">
+                    <div class="slds-var-m-bottom_medium">
+                        <p class="slds-text-body_regular"><b>Gross Income</b></p>
+                        <p class="slds-text-body_small">Amount before deductions</p>
+                    </div>                    
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <div class="slds-var-m-bottom_medium">
+                        <p class="slds-text-body_regular"><b><lightning:formattedNumber style="currency" currencyCode="ZAR" value="{!v.incomeRecord.grossIncome.Applicant_Value__c}" /></b></p>
+                    </div>                    
+                </lightning:layoutItem>            
+            </lightning:layout>
+            <lightning:layout>
+                <lightning:layoutItem size="3">
+                    <div class="slds-var-m-bottom_medium">
+                        <p class="slds-text-body_regular"><b>Net Income</b></p>
+                        <p class="slds-text-body_small">Amount deposited into account after deductions</p>
+                    </div>                    
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <div class="slds-var-m-bottom_medium">
+                        <p class="slds-text-body_regular"><b><lightning:formattedNumber style="currency" currencyCode="ZAR" value="{!v.incomeRecord.netIncome.Applicant_Value__c}" /></b></p>
+                    </div>                    
+                </lightning:layoutItem>
+            </lightning:layout>    
+        </div>    
+    <aura:set attribute="else">
+        <div class="slds-box slds-theme_default">
+            <c:BranchMessage mediaBody='Customer&#8217;s monthly income' iconName='standard:account' mediaTheme='' mediaBodyClass='slds-text-heading_large slds-var-p-vertical_medium' />
+            
+            <lightning:layout>                
+                <lightning:layoutItem size="4">
+                    <div class="slds-var-m-bottom_medium">
+                        <lightning:dualListbox aura:id="SOF"
+                                               name="SOF" 
+                                               label="Source of Funds" 
+                                               sourceLabel="Available" 
+                                               selectedLabel="Selected" 
+                                               options="{! v.optionsSOF }"
+                                               value="{! v.selectedSOF }"
+                                               required="true">
+                        </lightning:dualListbox>
+                        <!-- <lightning:select aura:id="SOF"
+                                            name="SOF"
+                                            label="Source of Funds" 
+                                            class="label-hidden"
+                                            value="{! v.incomeRecord.sourceOfFunds }"
+                                            required="true" >   
+                            <option value="">please select...</option>
+                            <aura:iteration items="{! v.sourceOfFundsList }" var="sofValue">
+                                <option value="{!sofValue}" selected="{!sofValue==v.incomeRecord.sourceOfFunds}">{!sofValue}</option>
+                            </aura:iteration>
+                        </lightning:select>                         -->
+                    </div>    
+                </lightning:layoutItem>    
+            </lightning:layout>
+            
+            <lightning:layout>
+                <lightning:layoutItem size="2">
+                    <div class="slds-var-m-bottom_medium">
+                        <lightning:input type="number" aura:id="grossIncome" class="slds-var-m-bottom_medium" name="grossBeforeDeductions" label="Gross monthly salary before deductions" value="{!v.incomeRecord.grossIncome.Applicant_Value__c}" formatter="currency" step="0.01" required="true" />
+                    </div>
+                    <div class="slds-var-m-bottom_medium">
+                        <lightning:input type="number" aura:id="netIncome" class="slds-var-m-bottom_medium" name="netIncomeAfterDeductions" label="Net income after deductions" value="{!v.incomeRecord.netIncome.Applicant_Value__c}" formatter="currency" step="0.01" required="true"/>
+                    <p class="slds-text-body_small">As per proof of income</p>
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>
+    
+            <c:BranchMessage mediaBody='Additional Income' iconName='standard:account' mediaTheme='' mediaBodyClass='slds-text-heading_small slds-var-p-vertical_medium' />
+            
+            <lightning:layout>
+                <lightning:layoutItem size="2">
+                    <div class="slds-var-m-bottom_medium">
+                        <lightning:input type="checkbox" class="slds-var-m-bottom_medium" name="other" label="Other" checked="{!v.incomeRecord.other}" />
+                    </div>
+
+                    <div class="slds-var-m-bottom_medium">
+                        <lightning:input type="number" class="slds-var-m-bottom_medium" name="rentalIncome" label="Rental income" value="{!v.incomeRecord.rentalIncome.Applicant_Value__c}" formatter="currency" step="0.01" disabled="{!not(v.incomeRecord.other)}" />                        
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>
+    
+            <lightning:layout>
+                <lightning:layoutItem>                
+                    <div class="slds-var-m-bottom_medium">
+                        <c:BranchMessage mediaBody="If the customer banks with Nedbank, Standard Bank, African Bank or Absa the bank statements can be sourced at no charge." />
+                    </div>                    
+
+                    <div class="slds-var-m-bottom_medium">
+                        <lightning:radioGroup type="radio" class="slds-var-m-bottom_medium" name="consent"                    
+                            label="Does the customer give consent to the bank to obtain their last 3 months bank statements where their salary is deposited into to serve as proof of income?"
+                            options="{!v.consent}" value="{!v.bankStatementsConsent}" />
+                    </div>                    
+                </lightning:layoutItem>
+            </lightning:layout>
+
+        </div>
+        <div class="slds-var-p-around_x-small">
+            <c:BranchFlowFooter aura:id="branchFlowFooter" availableActions="{! v.availableActions }" navigateFlowEvent="{!c.handleNavigate}" 
+                nextDisabled="{! v.isNextDisabled}" pauseDisabled="{! v.isPauseDisabled}"/>
+        </div>
+    </aura:set>
+    </aura:if>
+
+    
+</aura:component>

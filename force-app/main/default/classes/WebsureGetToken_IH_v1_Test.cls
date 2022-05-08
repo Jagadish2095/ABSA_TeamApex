@@ -1,0 +1,25 @@
+/*
+ * Request Integration Bean for ExergyPolicyGetCover Service
+ * @author Poulami Banerjee
+ * @created 2020-11-03
+ */
+
+ @isTest
+	public class WebsureGetToken_IH_v1_Test {
+	 public static final String POSITIVE_RESPONSE_BODY = '{"Envelope":{"Body": {"access_token":"eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJHenVUR3JXMUVTdWlxc0tzR3RYclVuQXg5WFR1S0VLbGVpLXl1dGFmUDhvIn0.eyJqdGkiOiIyNzg5ZDUyOC0yNWFhLTRlZjctOTAxMy1hYzJkNjAyMDQ1NjciLCJleHAiOjE2NDAyNzUwNDksIm5iZiI6MCwiaWF0IjoxNjQwMjczMjQ5LCJpc3MiOiJodHRwczovL2ppdHRlcmJpdGRldmFnZW50Mi5hYnNhLmNvLnphOjg0NDMvYXV0aC9yZWFsbXMvaml0dGVyYml0MiIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI4NjBhOTFkYS1lYTI0LTRhOGEtOTkyNi1kNGRhMzFhMTc0ZjEiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJzYWxlc2ZvcmNlLWFwaSIsImF1dGhfdGltZSI6MCwic2Vzc2lvbl9zdGF0ZSI6ImFhNDU2ODdkLTk1ZjYtNGFhYi1iNDIxLTY5NDJhMzMxNTFlNyIsImFjciI6IjEiLCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19LCJzYWxlc2ZvcmNlLWFwaSI6eyJyb2xlcyI6WyJzYWxlc2ZvcmNlLWFwaSJdfX0sInNjb3BlIjoiZW1haWwgcHJvZmlsZSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwicHJlZmVycmVkX3VzZXJuYW1lIjoic2FsZXNmb3JjZSIsImVtYWlsIjoic2FsZXNmb3JjZUBhYnNhLmNvLnphIn0.FTvlz7aIHfcwA3wCcP8o42BnA8ioikFiNWJPwqBhgF0yeWsR1if5YzxS1hCdv3aWzGyDlcTbXYcTbYQS19WJ1SahD8_wB0OluigeFbjG4jsK2hB3VajCMDwYzr4NC36YRwCz2_Qn3hDCDWhi0Q1j-n5GFdNlh40NNCYwMJNw8Ak73GDuG91Afl9QF-_UqdKmxKFgvGhaoiccCzID3eZvX61XAi2o_kBmrL_HvZ2oBn4_rat4GG3QbkGldxL99EA3gVotc62-xgj2mhDWQ8vZ32Hu9ZzJo89FlzwqePkVW1h_KsxAfoPdEiTKMGUoMGepNr5sUajedz1nUtBtRuqq_Q","expires_in":1800,"refresh_expires_in":1800,"refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIxYTIyMzcxNC00MjBmLTQ4ZWMtYjE4OS0wYjJjNmI0YWFlZTMifQ.eyJqdGkiOiIzNTVhNWM1ZC1jNGY1LTQ4M2UtOTJiNi0zMTA4YTQ3YTcwYjQiLCJleHAiOjE2NDAyNzUwNDksIm5iZiI6MCwiaWF0IjoxNjQwMjczMjQ5LCJpc3MiOiJodHRwczovL2ppdHRlcmJpdGRldmFnZW50Mi5hYnNhLmNvLnphOjg0NDMvYXV0aC9yZWFsbXMvaml0dGVyYml0MiIsImF1ZCI6Imh0dHBzOi8vaml0dGVyYml0ZGV2YWdlbnQyLmFic2EuY28uemE6ODQ0My9hdXRoL3JlYWxtcy9qaXR0ZXJiaXQyIiwic3ViIjoiODYwYTkxZGEtZWEyNC00YThhLTk5MjYtZDRkYTMxYTE3NGYxIiwidHlwIjoiUmVmcmVzaCIsImF6cCI6InNhbGVzZm9yY2UtYXBpIiwiYXV0aF90aW1lIjowLCJzZXNzaW9uX3N0YXRlIjoiYWE0NTY4N2QtOTVmNi00YWFiLWI0MjEtNjk0MmEzMzE1MWU3IiwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfSwic2FsZXNmb3JjZS1hcGkiOnsicm9sZXMiOlsic2FsZXNmb3JjZS1hcGkiXX19LCJzY29wZSI6ImVtYWlsIHByb2ZpbGUifQ.nq1YnsCayBS75koc0J9L3XPcTvIgmA81YYk0CXECVP8","token_type":"bearer","not-before-policy":0,"session_state":"aa45687d-95f6-4aab-b421-6942a33151e7","scope":"email profile"}}}';
+		
+    	@TestSetup
+    	static void makeData(){
+        	IntegrationTestDataFactory.insertIntegrationSettings(StringConstants.JITTERBIT2, new List<String>{WebsureGetToken_IH_v1.INTEGRATION_SERVICE_NAME});
+    	}
+        
+        @isTest static void testPositive() {
+        	Test.startTest();
+			Test.setMock(HttpCalloutMock.class, new Sys_Utilities_Integration_Mock_ApiRest(StringConstants.POSITIVE_STRING, POSITIVE_RESPONSE_BODY));
+        	WebsureGetToken_Resp_IB_v1 responseBean = new WebsureGetToken_Resp_IB_v1();
+            responseBean = WebsureGetToken_IH_v1.WebsureGetToken();
+        	System.assertEquals(200, responseBean.statusCode);
+        	Test.stopTest();
+    	}
+	
+}

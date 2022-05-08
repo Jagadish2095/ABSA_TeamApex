@@ -1,0 +1,223 @@
+<!--
+* Lightning Component for Pricing And Fees
+* @author  Almas Aleem: Absa
+* @version v1.0
+* @since   2020-11-03
+*
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" 
+                controller="PricingAndFeesController">
+    
+    
+    
+    <!-- Attribute Decleration --> 
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />   
+     <aura:attribute name="processId" type="Id"/>
+    <aura:attribute name="fieldWrapList" type="Object[]" />
+    <aura:attribute name="pricingList" type="Object[]" />
+    <aura:attribute name="userRecord" type="User" />
+    <aura:attribute name="CurrentUser" type="Object" />
+    
+     <aura:attribute name="isReferred" type="Boolean" default="false" />
+    
+    
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    
+    <!-- UI For Pricing -->
+    
+     <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    <!-- read user -->
+    
+     <force:recordData recordId="{!$SObjectType.CurrentUser.Id}"
+                      fields="Profile.Name"
+                      targetFields="{!v.CurrentUser}"/>
+    
+    <!-- Pricing Details -->
+    <lightning:accordion aura:id="accordion">
+        
+        
+        <!-- pricing edition-->
+        <aura:iteration items="{!v.pricingList}" var="prodrec"> 
+            
+            <lightning:accordionSection name="productinfo" label="{!prodrec.appProductLabel}">
+                
+                  
+                <!-- Pricing Section--> 
+                <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+                                                            font-style: normal !important;
+                                                            font-size: 17px !important;
+                                                            text-align: left !important;
+                                                            background-color: rgb(240,235,235) !important;
+                                                            margin:4px !important;">
+                    
+                    <div class="slds-col">Pricing And Fees</div>
+                </div>
+                <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+                                                            font-style: normal !important;
+                                                            font-size: 17px !important;
+                                                            text-align: left !important;
+                                                            background-color: rgb(240,235,235) !important;
+                                                            margin:4px !important;">
+                    <div class="slds-col" style="width:200px !important;">Description</div> 
+                    <div class="slds-col">Existing</div> 
+                    <div class="slds-col">Requested</div>
+                    <div class="slds-col">Offered</div> 
+                    <div class="slds-col">Final</div>
+                    <div class="slds-col">Adjustment</div> 
+                    <div class="slds-col">Decision</div> 
+                    <div class="slds-col">Comment</div>
+                </div>   
+             
+                
+                
+                <aura:iteration items="{!prodrec.pricingList}" var="pricingRec" >
+                    
+                    <lightning:recordEditForm aura:id="priceEdit"  recordId="{!pricingRec.Id}" objectApiName="Terms_Of_Business__c">
+                        <div class="slds-grid slds-gutters marginclass">
+                            <div class="slds-col" style="width:400px !important">
+                                <lightning:inputField  fieldName="Tob_Description__c" variant="label-hidden" readonly="true"/>
+                            </div>
+                          
+                            <aura:iteration items="{!v.fieldWrapList}" var="fieldWrap" indexVar="index">
+                            
+                                <aura:if isTrue="{! pricingRec.Tob_Description__c == fieldWrap.DescText}">
+                             
+                                   <aura:iteration items="{!fieldWrap.editableFields}" var="Editablefield" >
+                                      
+                                    <!--<aura:iteration items="{!fieldWrap.FieldNames}" var="fieldname" > -->
+                                      <!-- value== {! and(Editablefield.fieldName == 'Pricing_Decision__c',v.CurrentUser.Profile.Name !='Standard User (Business Banker)') }-->
+                                      <aura:if isTrue="{! and(Editablefield.fieldName == 'Pricing_Decision__c',v.CurrentUser.Profile.Name !='Standard User (Business Banker)') }">
+                                        <div class="slds-col inputVal" style="width:300px !important;"> 
+                                            <lightning:inputField fieldName="{!Editablefield.fieldName}" aura:id="existValue" variant="label-hidden"  />
+                                        </div>
+                                        <aura:set attribute="else">
+                                           <div class="slds-col inputVal" style="width:300px !important;"> 
+                                            <lightning:inputField fieldName="{!Editablefield.fieldName}" aura:id="existValue" variant="label-hidden" readonly="{! Editablefield.isReadOnly}" />
+                                        	</div>
+                                          
+                                          </aura:set>  
+                                          
+                                       </aura:if>   
+                                    </aura:iteration>
+                                    <!--</aura:iteration>    -->
+                                </aura:if>
+                            </aura:iteration>    
+                            <!-- <div class="slds-col inputVal"> 
+                            
+                            <lightning:inputField fieldName="Existing_Account__c" aura:id="existValue" variant="label-hidden" readonly="true" />
+                        </div>
+                        <div class="slds-col inputVal">
+                            <lightning:inputField fieldName="Requested_Amount__c" aura:id="requestedValue" variant="label-hidden" readonly="true" />    
+                        </div>
+                        <div class="slds-col inputVal">                             
+                            <lightning:inputField fieldName="Offered_by_Powercurve__c" aura:id="powercurveValue" variant="label-hidden" readonly="true" />
+                        </div>
+                        <div class="slds-col inputVal">
+                            <lightning:inputField fieldName="Final_Offered__c" aura:id="finalofferedValue" variant="label-hidden" readonly="true" />    
+                        </div>
+                        <div class="slds-col inputVal">
+                            <lightning:inputField fieldName="Adjusted_by_Sanctioner__c" aura:id="sanctionerValue" variant="label-hidden" />    
+                        </div>
+                        <div class="slds-col inputVal">
+                            <lightning:inputField fieldName="Comments__c" aura:id="commentValue" variant="label-hidden" />    
+                        </div>-->
+                        </div>
+                    </lightning:recordEditForm>
+                    
+                </aura:iteration>
+                
+                
+               <!--  <aura:iteration items="{!prodrec.additionaltobList}" var="tobrec">
+                    
+                    <lightning:recordEditForm aura:id="addtobEdit"  recordId="{!tobrec.Id}" objectApiName="Terms_Of_Business__c">
+                        <div class="slds-grid slds-gutters marginclass">
+                            <div class="slds-col" style="width:400px !important">
+                                <lightning:inputField  fieldName="Tob_Description__c" variant="label-hidden" readonly="true"/>
+                            </div>
+                            <aura:iteration items="{!v.fieldWrapList}" var="fieldWrap" >
+                                
+                                <aura:if isTrue="{! tobrec.Tob_Description__c == fieldWrap.DescText}">
+                                    
+                                    <aura:iteration items="{!fieldWrap.editableFields}" var="Editablefield" >
+                                        
+                                       
+                                        <div class="slds-col "  style="margin-right:5px !important;width:400px !important;"> 
+                                            <lightning:inputField fieldName="{!Editablefield.fieldName}" aura:id="existValue" variant="label-hidden" readonly="true" />
+                                        </div>
+                                    </aura:iteration>
+                                   
+                                </aura:if>
+                            </aura:iteration>  
+                            
+                        </div>
+                    </lightning:recordEditForm>
+                </aura:iteration> -->
+                
+            </lightning:accordionSection>
+        </aura:iteration>
+        <div  style="width:300px !important;margin:10px !important;">
+            
+                </div>
+        
+       
+        <lightning:layout multipleRows="true" >
+            <aura:if isTrue="{! v.CurrentUser.Profile.Name =='Standard User (Business Banker)'}">
+            <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <lightning:button variant="brand" type="submit" name="save" label="Refer For Pricing" aura:id="decisionbutton" onclick="{!c.ReferPricing}" disabled="{!v.isReferred}"/>
+            </lightning:layoutItem>
+            </aura:if>   
+             <aura:if isTrue="{!v.CurrentUser.Profile.Name !='Standard User (Business Banker)'}">
+                     
+        <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <lightning:button variant="brand" type="submit" name="save" label="Submit Pricing" aura:id="decisionbutton" onclick="{!c.submitPricingBack}"   />
+            </lightning:layoutItem>
+                 
+            </aura:if>    
+            
+            <!--<lightning:layoutItem size="6" class="slds-p-top_large">
+                        <lightning:button variant="brand" type="submit" name="save" label="Decline Pricing" aura:id="decisionbutton" onclick="{!c.declinePricing}"   disabled="{! not(v.isReferred)}"/>
+            </lightning:layoutItem> -->
+            
+          </lightning:layout>  
+        <!-- Pricing Section--> 
+                <!--<lightning:accordionSection name="productinfo" label="Decision History">
+            
+                <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+                                                            font-style: normal !important;
+                                                            font-size: 17px !important;
+                                                            text-align: left !important;
+                                                            background-color: rgb(240,235,235) !important;
+                                                            margin:4px !important;">
+                    
+                    <div class="slds-col">Decision History</div>
+                </div>
+                <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+                                                            font-style: normal !important;
+                                                            font-size: 17px !important;
+                                                            text-align: left !important;
+                                                            background-color: rgb(240,235,235) !important;
+                                                            margin:4px !important;">
+                    <div class="slds-col" style="width:400px !important;">Outcome</div> 
+                    <div class="slds-col">Decision</div> 
+                    <div class="slds-col">Detail</div>
+                    <div class="slds-col">Comments</div> 
+                    <div class="slds-col">Sales Manager</div>
+                    <div class="slds-col">Changes</div> 
+                    <div class="slds-col">Date</div>
+                </div>   
+    	</lightning:accordionSection> -->
+    </lightning:accordion>
+</aura:component>

@@ -1,0 +1,157 @@
+<!--
+* Lightning Component for the Risk Profile Calculation
+* @author  Diksha : Absa
+* @version v1.0
+* @since   2020-08-31
+*
+-->
+
+<aura:component controller="onboardingSPMRiskProfileCalculation"
+                implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!--Adding Design Attribute to identify the Context -->
+    <aura:attribute name="ProcessName" type="String" default=""/>
+    <aura:attribute name="AccountName" type="string" default=""/>
+    <aura:attribute name="accId" type="String" />
+    <aura:attribute name="appId" type="String" />
+    <aura:attribute name="totalscore" type="String" />
+    <aura:attribute name="accRec" type="Object" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="isPlatform" type="Boolean"/>
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner />
+    </aura:if>
+
+    <lightning:recordEditForm aura:id="ClientDetails"
+                              recordId= "{!v.appId}"
+                              objectApiName="Application__c"
+                              onsubmit="{!c.handleSubmit}"
+                              onsuccess="{!c.handleSuccess}"
+                              onerror="{!c.handleError}"
+                            >
+        <aura:if isTrue="{!!v.isPlatform}">
+
+        <lightning:accordion aura:id="accordion" allowMultipleSectionsOpen="true" activeSectionName="Risk Profile for Investments (Schedule A)">
+            <lightning:accordionSection name="Risk Profile for Investments (Schedule A)" label="Risk Profile for Investments (Schedule A)" aura:id = "form"  >
+                <h1 class="slds-section__title">
+                    Please provide the following information in order to determine how much risk you want to take with your investments    
+                </h1>
+                
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <aura:if isTrue="{!v.accRec.Client_Type__c =='Sole Trader'}">
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Age_SPM__pc" aura:id="age" value="{!v.accRec.Age_SPM__pc}"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Health__pc" aura:id="health"  value="{!v.accRec.Health__pc}"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Occupation_Status__pc" aura:id="occupationStatus" value="{!v.accRec.Occupation_Status__pc}" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Monthly_Income__pc" aura:id="monthlyincome"  value="{!v.accRec.Monthly_Income__pc}"/>
+                            </span>
+                        </div>
+                    </aura:if> 
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <label for="intendedInvestmentTerm"> 
+                                What is the intended investment term?</label>
+                            <lightning:inputField fieldName="What_is_the_intended_investment_term__c" aura:id="intendedInvestmentTerm"  variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <label for="investmentExperience"> 
+                                What investment experience do you have?</label>
+                            <lightning:inputField fieldName="What_investment_experience_do_you_have__c" aura:id="investmentExperience" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <label for="understandFinancialMarketsandInvest"> How well do you understand financial markets and investment products?</label>
+                            <lightning:inputField fieldName="understand_financial_markets_and_investm__c" aura:id="understandFinancialMarketsandInvest" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <label for="investmentOpportunities"> If you have the following investment opportunities, which one will you choose?</label>
+                            <lightning:inputField fieldName="investment_opportunities__c" aura:id="investmentOpportunities" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 ">
+                        <span>
+                            <label for="numberOfDependants"> Number of dependants?</label>
+                            <lightning:inputField fieldName="Number_of_dependants__c" aura:id="numberOfDependants" variant="label-hidden" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <label for="relationToInflation"> How will your income grow in relation to inflation?</label>
+                            <lightning:inputField fieldName="income_grow_in_relation_to_inflation__c" aura:id="relationToInflation" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <label for="liquidityToCoverEmergencies"> Do you have enough liquidity to cover emergencies?</label>
+                            <lightning:inputField fieldName="liquidity_to_cover_emergencies__c" aura:id="liquidityToCoverEmergencies" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                        <lightning:button type="submit" label="Calculate Score" variant="brand" />
+                    </span>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <label for="TotalScore"> Total Score</label>
+                            <lightning:inputField fieldName="Total_Score__c" aura:id="TotalScore" variant="label-hidden" value="{!v.totalscore}"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <label for="DateofCompletion"> Date of Completion</label>
+                            <lightning:outputField fieldName="Date_of_Completion__c" aura:id="DateofCompletion" variant="label-hidden" />
+                        </span>
+                    </div>
+                </div> 
+            </lightning:accordionSection>
+        </lightning:accordion>
+       </aura:if>
+    </lightning:recordEditForm>
+    <lightning:recordEditForm aura:id="ClientDetails"
+                              recordId= "{!v.accRec.Id}"
+                              objectApiName="Account"
+                              onsubmit="{!c.handleSubmit}"
+                              onsuccess="{!c.handleSuccess}"
+                              onerror="{!c.handleError}"
+                              >
+        <aura:if isTrue="{!!v.isPlatform}">
+        <lightning:accordion aura:id="companycomaccordion" allowMultipleSectionsOpen="true" activeSectionName="Company Communication">
+            <lightning:accordionSection name="Company Communication" label="Company Communication" aura:id = "companycomform"  >
+                <lightning:layout>
+                    <lightning:layoutItem >
+                        <lightning:inputField fieldName="Want_to_receive_companyproxy_other_issue__c" variant="label-hidden" aura:id="recievdocs" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem >
+                        <label for="recievdocs" class="slds-form-element__label">Do you want to receive company reports, proxy forms, notices, circulars and any other issuer communication?</label>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:accordionSection>
+        </lightning:accordion>
+        <span class="slds-m-top_medium; slds-align_absolute-center">
+            <lightning:button type="submit" label="Save" variant="brand" />
+        </span>
+      </aura:if>
+    </lightning:recordEditForm>
+
+</aura:component>

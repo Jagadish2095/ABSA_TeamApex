@@ -1,0 +1,130 @@
+<!--
+  @description ABSA Instant Life Lead capture component
+  @author  Satya Boyenepalli (ABSA)
+  @since 2021-08-10
+-->
+
+<aura:component  access="global" 
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName" controller="AbsaInstantLifeController">
+    
+    <aura:attribute name="CanNavigate" type="Boolean" default="true"/>
+    <aura:attribute name="education" type="string" />
+    <aura:attribute name="firstName" type="string" />
+    <aura:attribute name="lastName" type="string" />
+    <aura:attribute name="idNumber" type="string" />
+    <aura:attribute name="cellphoneNumber" type="string" />
+    <aura:attribute name="telephoneNumber" type="string" />
+    <aura:attribute name="emailAddress" type="string" />
+    <aura:attribute name="age" type="string" />
+    <aura:attribute name="gender" type="string" />
+    <aura:attribute name="qualification" type="string" />
+    <aura:attribute name="updating" type="Boolean" default="true"/>
+    <aura:attribute name="actionClicked" type="string" default=""/>
+    <aura:attribute name="dateofbirth" type="string"/>
+    <aura:attribute name="errorFree" type="string" default="no"/>
+    <aura:attribute name="isErrorFound" type="Boolean" default="false"/>
+    <aura:attribute name="relationshipOptions" type="List" />
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Yes', 'value': 'Y'},
+                                                        {'label': 'No', 'value': 'N'}
+                                                        ]"/>
+    <aura:attribute name="value" type="String" default="N"/>
+    <aura:attribute name="MonthlyIncome" type="String" default=''/>
+    <aura:attribute name="cifkey" type="String"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="Smoker" type="string" default="N"/>
+    <aura:attribute name="ProductCode" type="string"/>
+    <aura:attribute name="LoadStatus" type="string" />
+    <aura:attribute name="InsuredAmount" type="string"/>
+    <aura:attribute name="PremiumAmount" type="string"/>
+    <aura:attribute name="PremiumAmount_Previous" type="string"/>
+    <aura:attribute name="InsuredAmount_Previous" type="string"/>
+    <aura:attribute name="InsuredAmount_Next" type="string"/>
+    <aura:attribute name="PremiumAmount_Next" type="string"/>
+    <aura:attribute name="accountRecordId" type="string" />
+    <aura:attribute name="ErrorFound" type="String"/>
+    <aura:attribute name="accRec" type="object" />
+    <aura:attribute name="Educations" type="string" default="None"/>
+    <aura:attribute name="CoverAmounts" type="string" default="0"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner />
+    </aura:if>
+    
+    
+    <!-- handlers-->
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <div class="slds-is-relative" >
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="12">
+                <lightning:layout >
+                    <lightning:layoutItem padding="around-medium" size="8">
+                        <legend class="slds-text-heading--small slds-p-vertical--large">
+                            <p><lightning:icon iconName="standard:account" title="Account" class = "my-icon" />&nbsp;<b>Absa Instant Life : Personal Details  </b></p>
+                        </legend>
+                        <lightning:layout>
+                             <lightning:layoutitem size="8">
+                                <lightning:input aura:id="firstName" label="Name" required="true" value="{!v.firstName}" class="slds-m-right_xx-large" disabled="true"/>
+                                <lightning:input aura:id="idNumber" label="ID/Passport Number" required="true" value="{!v.idNumber}" class="slds-m-right_xx-large" disabled="true"/>
+                                <lightning:input aura:id="cellphoneNumber" label="Cell Number" required="true" value="{!v.cellphoneNumber}" class="slds-m-right_xx-large"  disabled="true"/>
+                                <lightning:input aura:id="age" label="Age" required="true" value="{!v.age}" class="slds-m-right_xx-large"  disabled="true"/>
+                                <lightning:select aura:id="selectEducation" name="selectEducation" label="Level of Education" required="true"
+                                                  value = "{! v.Educations }" class="slds-m-right_xx-large" onchange="{!c.getEducation }">
+                                    <option value="None">Choose Education</option>
+                                    <option value="NoMatric">NoMatric</option>
+                                    <option value="Matric">Matric</option>
+                                    <option value="PostMatricDiploma">PostMatricDiploma</option>
+                                    <option value="TechnicianDiploma">TechnicianDiploma</option>
+                                    <option value="GraduateDegree">GraduateDegree</option>
+                                    <option value="PostGraduateDegree">PostGraduateDegree</option>
+                                </lightning:select>
+                                <lightning:input aura:id="Monthlyincome" label="Monthly Income" class="slds-m-right_xx-large" 
+                                                 name="MonthlyIncome"  required="true"  type="number"  value="{! v.MonthlyIncome }"  pattern="[0-9]*"/>
+                                
+                            </lightning:layoutitem>
+                            
+                             <lightning:layoutitem size="8">
+                                <lightning:input aura:id="lastName" label="Surname" required="true" value="{!v.lastName}" class="slds-m-right_xx-large" disabled="true"/>
+                               <lightning:input aura:id="emailAddress" label="Email Address" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" type="email" value="{!v.emailAddress}" class="slds-m-right_xx-large" />
+                                <lightning:input aura:id="telephoneNumber" label="Alternative Number" type="tel"  value="{!v.telephoneNumber}" maxlength="10" pattern="[0-9]{10}" class="slds-m-right_xx-large"/>
+                                <lightning:input aura:id="gender" label="Gender" required="true" value="{!v.gender}" class="slds-m-right_xx-large" disabled="true"/>
+                                <lightning:radioGroup aura:id="radioGroupSmoke" name="radioGroupSmoke" required="true"  
+                                                      label=" Smoking Status"
+                                                      options="{!v.options }"
+                                                      value="{! v.value }"
+                                                      type="radio"
+                                                      class="customRadioCls" />
+                                <lightning:select  aura:id="selectCoverAmount"  name="selectCoverAmount" label="Cover Amount" required="true" class="slds-m-right_xx-large"
+                                                   value="{! v.CoverAmounts}"  onchange="{!c.getCoverAmount}">
+                                    <option value="0">Choose Cover Amount</option>
+                                    <option value="1000000">R1 000 000</option>
+                                    <option value="2000000">R2 000 000</option>
+                                    <option value="3000000">R3 000 000</option>
+                                    <option value="4000000">R4 000 000</option>
+                                    <option value="5000000">R5 000 000</option>
+                                    <option value="6000000">R6 000 000</option>
+                                </lightning:select>
+                            </lightning:layoutitem>
+                        </lightning:layout> 
+                        
+                        
+                        
+                    </lightning:layoutItem>
+                </lightning:layout>
+                
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="horizontal-small" size="12">
+                        <aura:if isTrue="{!(v.CanNavigate)}">
+                            <div>
+                                <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                                    availableActions="{! v.availableActions }" 
+                                                    navigateFlowEvent="{! c.handleNavigate }"/>
+                            </div>
+                        </aura:if>
+                    </lightning:layoutItem> 
+                </lightning:layout>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </div>
+</aura:component>

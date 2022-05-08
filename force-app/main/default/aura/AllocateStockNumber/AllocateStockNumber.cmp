@@ -1,0 +1,201 @@
+<!--**
+ * @author Thabo Senkomane
+ * @created 2020-06-02
+ *
+ * @update Englarmerdge Mongwe
+ * @dateUpdated 2020-06-09
+ * Added method to change stage name - W-004631
+ *
+ * @update Englarmerdge Mongwe
+ * @dateUpdated 2020-08-24
+ * Changed Application_Product_Credit__c to Application_Product__c object
+ *
+ * @update Englarmerdge Mongwe
+ * @dateUpdated 2020-09-09
+ * Save principal data as snapshot - W-005598
+ *
+ * @update Ephetehe Mokgopanyane
+ * @dateUpdated 2020-12-18
+ * Added code to relate Application Profile to Account - W-003771
+ *
+ * @update gulafsha
+ * @dateUpdated 2021-01-14
+ * Added code to relate EDF and Franchise
+
+ * @update Saurabh
+ * @dateUpdated 2021-04-119
+ * Added code to store NCA on Application__c from Application Product
+
+** -->
+
+
+
+<aura:component access="global" controller="AllocateStockNumberController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId">
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:handler event="c:clientDetailsSectionCreditEvent" action="{!c.handleUpdateAccount}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <!-- <aura:attribute name="appRecordId" type="String" default = "a0u3N000000KgTvQAK" />-->
+    <aura:attribute name="opportunityId" type="String" />
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="stockNumber" type="Application__c" />
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />
+    <aura:attribute name="application" type="Application__c" default="{sobjectType:'Application__c'}" />
+    <aura:attribute name="isHide" type="Boolean" default="false" />
+    <aura:attribute name="account" type="Object" />
+    <aura:attribute name="selectedPrincipal" type="List"/>
+    <aura:attribute name="selectedMainPrincipal" type="Id" />
+    <aura:attribute name="isPrincipalInfoCorrect" type="Boolean" default="false" />
+    <aura:attribute name="isPrincipalInfoRequired" type="boolean" default="false" />
+    <aura:attribute name="maxNumberSelected" type="Integer" default="0" />
+    <aura:attribute name="principalsDetails" type="Object" />
+    <aura:attribute name="prinMissingInfo" type="String" />
+    <aura:attribute name="isClntValidated" type="Boolean" default="false" />
+    <aura:attribute name="isNcaValidated" type="Boolean" default="false" />
+    <aura:attribute name="isTrustAccount" type="Boolean" default="false" />
+    <aura:attribute name="appId" type="String" />
+
+    <!--for EDF and Franchise attributes-->
+    <aura:attribute name="selectedfranciseRecord" type="sObject"/>
+    <aura:attribute name="searchKeyWord" type="String"/>
+    <aura:attribute name = "FranchiseCodeName" type="String"/>
+    <aura:attribute name="isFranchiseExisting" type="Boolean" default="false" />
+	<aura:attribute name="showFranchiseList" type="Boolean" default="false" />
+    <aura:attribute name="showReqFranchise" type="Boolean" default="false" />
+    <aura:attribute name="isEDFExisting" type="Boolean" default="false" />
+	<aura:attribute name="showEDFList" type="Boolean" default="false" />
+    <aura:attribute name="showEDFReqList" type="Boolean" default="false" />
+    <aura:attribute name = "EDFName" type="String"/>
+    <aura:attribute name = "EDFCode" type="String"/>
+    <aura:attribute name = "ReqEDFName" type="String"/>
+    <aura:attribute name = "ReqEDFCode" type="String"/>
+
+    <aura:attribute name="oppRecord" type="Object"/>
+    <force:recordData aura:id="recordLoader" fields="Id,Account.Client_Type__c,Selected_Product_Family__c"
+                     recordId="{!v.recordId}" targetFields="{!v.oppRecord}" />
+
+    <!--loading spinner start-->
+    <div class="exampleHolder">
+        <lightning:spinner aura:id="mySpinner" class="slds-hide" alternativeText="Loading..." variant="brand"
+            size="large" />
+    </div>
+    <!-- Loading spinner end-->
+    <aura:attribute name="apcId" type="Id" default="" />
+    <aura:attribute name="appProduct" type="Application_Product__c" default="{ 'sobjectType': 'Application_Product__c' }" />
+
+    <lightning:recordEditForm aura:id="appCreditForm" objectApiName="Application__c" recordId="{!v.appId}">
+        <lightning:accordion allowMultipleSectionsOpen="true">
+            <!-- National Credit Act Section -->
+            <lightning:accordionSection name="NCA" label="National Credit Act (NCA) Info">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:inputField fieldName="Credit_Agreement_at_Arms_Length__c"
+                                aura:id="creditAgreement" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:inputField fieldName="Number_of_Trustees__c" aura:id="numberOfTrustees" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:inputField fieldName="Any_Juristic_Trustees__c" aura:id="anyJuristicTrustee" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:inputField fieldName="Annual_Turnover__c" aura:id="annualTurnover" required="true" onchange="{!c.getMaxFieldText}" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:inputField fieldName="Asset_Value__c" aura:id="assetValue" required="true" onchange="{!c.getMaxFieldText}" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:inputField fieldName="Organ_of_State__c" aura:id="clientState" />
+                        </span>
+                    </div>
+                   <!-- <div class="slds-col slds-size_1-of-2">
+                        <span> Organ_of_State__c
+                            <lightning:inputField fieldName="Client_Operates_Under_Existing_Franchise__c"
+                                aura:id="underExistingFranchise" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:inputField fieldName="Part_of_Enterprise_Development_Fund__c"
+                                aura:id="partOfEnterpriseDevFund" />
+                        </span>
+                    </div>-->
+                     <div class="slds-col slds-size_1-of-2">
+                        <aura:if isTrue="{!!v.isFranchiseExisting}">
+                        <span>
+                           <!-- <lightning:inputField fieldName="Client_Operates_Under_Existing_Franchise__c"
+                                                  disabled="{!v.isFranchiseExisting}" onchange="{!c.showfranchiseList}"
+                                aura:id="underExistingFranchise" />-->
+                            <lightning:input type="checkbox" label="Client Operates Under Existing Franchise Agreement"
+                                            checked="{!v.showFranchiseList}" disabled="{!v.isFranchiseExisting}" onchange="{!c.showfranchiseList}"
+                                aura:id="underExistingFranchise" />
+                        </span>
+                        <aura:set attribute="else">
+                        <lightning:input type="checkbox" label="Client Operates Under Existing Franchise Agreement" name="input3" checked="true" disabled="true"/>
+                            </aura:set> </aura:if>
+                    </div>
+                     <div class="slds-col slds-size_1-of-2">
+                        <aura:if isTrue="{!!v.isEDFExisting}">
+                        <span>
+                            <lightning:input type="checkbox" label="Client is part of an Enterprise Development Fund"
+                                            checked="{!v.showEDFList}" disabled="{!v.isEDFExisting}" onchange="{!c.showEDFList}"
+                                aura:id="partOfEnterpriseDevFund" />
+                        </span>
+                        <aura:set attribute="else">
+                        <lightning:input type="checkbox" label="Client is part of an Enterprise Development Fund" name="input3" checked="true" disabled="true"/>
+                            </aura:set> </aura:if>
+                    </div>
+
+                    <aura:if isTrue="{!v.showFranchiseList}">
+                    <div class="slds-col slds-size_1-of-2">
+                    <aura:if isTrue="{!v.showReqFranchise}">
+                         Requested Franchise: {!v.selectedfranciseRecord.Name}
+                         </aura:if>
+                    <div class="slds-col slds-size_1-of-2 slds-var-p-vertical_medium">
+                    <aura:if isTrue="{!v.isFranchiseExisting}">
+                    <lightning:input aura:id="quoteForm"  class="dynamic" disabled="true" value="{!v.FranchiseCodeName}" label="Franchise List" />
+                     <aura:set attribute="else">
+                      <span>
+                        <c:SiteLookup aura:id="siteLookupChild"
+                                      placeholder="franchiseCode"
+                                      objectAPIName="Product2"
+                                      selectedRecord="{!v.selectedfranciseRecord}"
+                                      SearchKeyWord="{!v.searchKeyWord}"
+                                    />
+
+                    </span>
+                     </aura:set>
+                    </aura:if>
+
+                        </div>  </div></aura:if>
+                <aura:if isTrue="{!v.showEDFList}">
+                    <div class="slds-col slds-size_1-of-2">
+                    <div class="slds-col slds-size_1-of-2 slds-var-p-vertical_medium">
+                    <aura:if isTrue="{!v.isEDFExisting}">
+                    <lightning:input aura:id="EDFCode"  class="dynamic" disabled="true" value="{!v.EDFCode}" label="Development Fund Partner Client Code"/>
+                    <lightning:input aura:id="EdFName"  class="dynamic" disabled="true" value="{!v.EDFName}" label="Development Fund Name" />
+                    <aura:set attribute="else">
+                    <lightning:input aura:id="ReqEDFCode"  class="dynamic" disabled="false" value="{!v.ReqEDFCode}" label="Development Fund Partner Client Code" maxlength="10"/>
+                    <lightning:input aura:id="ReqEDFName"  class="dynamic" disabled="false" value="{!v.ReqEDFName}" label="Development Fund Name" maxlength="50"/>
+                     </aura:set>
+                    </aura:if>
+                    </div>  </div></aura:if>
+                </div>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </lightning:recordEditForm>
+    <lightning:button variant="brand" class="slds-align_absolute-center slds-var-m-top_xx-large"
+        label="Validate and Continue" onclick="{!c.validateAndContinue}" />
+</aura:component>

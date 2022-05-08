@@ -1,0 +1,212 @@
+<!--
+* Lightning Component for Onboarding SPM Client Eligibility
+*@author  Haritha P : Absa
+* @version v1.0
+* @since   2020-08-26
+*
+-->
+<aura:component access="global" controller="onboardingSPMRiskProfileCalculation" implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+    
+    <!--Attributes-->
+    <aura:attribute name="USCitizenshipOptions" type="List" default="[
+                                                                     {'label': 'Yes', 'value': 'Y'},
+                                                                     {'label': 'No', 'value': 'N'}
+                                                                     ]"/>
+    <aura:attribute name="otherBankOptions" type="List" default="[
+                                                                 {'label': 'Yes', 'value': 'Y'},
+                                                                 {'label': 'No', 'value': 'N'}
+                                                                 ]"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    
+    <aura:attribute name="optionGiven" type="String" />  
+    <aura:attribute name="optionGivenforotherbank" type="String" />
+    <aura:attribute name="usoption" type="boolean" />
+    <aura:attribute name="appSource" type="string" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="showCitizenshipmessage" type="String"   />
+    <aura:attribute name="showOtherBankmessage" type="String"  />
+    <aura:attribute name="OpportunityRecordId" type="String" default = "" />
+    <aura:attribute name="IsstageClosed" type="Boolean" />
+    <aura:attribute name="Isotherbankoptiongiven" type="Boolean" />
+    <aura:attribute name="Isapplcomplex" type="Boolean" default = "false"/>
+    <aura:attribute name="accId" type="String" />
+     <aura:attribute name="accRec" type="object" />
+    <aura:attribute name="account" type="Account" default="{sobjectType:'Account'}"/>
+    <aura:attribute name="opp" type="Opportunity" default="{ 'sobjectType': 'Opportunity' }"/>
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="appId" type="String" />
+     <aura:attribute name="appPrdctId" type="String" />
+    <aura:attribute name="selectedPm" type="string" />
+    <aura:attribute name="selectedRm" type="string" />
+    <aura:attribute name="selectedWm" type="string" />
+    <aura:attribute name="selectedLf" type="string" />
+    <aura:attribute name="selectedStatus" type="String" />
+    <aura:attribute name="pmList" type="User[]" />
+    <aura:attribute name="rmList" type="User[]" />
+    <aura:attribute name="wmList" type="User[]" />
+    <aura:attribute name="lfList" type="User[]" />
+    <aura:attribute name="advisorCode" type="string" default=""/>
+    <aura:attribute name="isFullDiscretionary" type="Boolean" default = "false"/> 
+    <aura:attribute name="isPlatform" type="Boolean" />
+    <aura:attribute name="Platform" type="String" default=""/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner />
+    </aura:if>
+    <!-- Loading spinner end-->
+    <lightning:accordion activeSectionName="Product &amp; Absa Branch information" > 
+            <lightning:accordionSection name="ProductAbsaBranchinformation" label="Product &amp; Absa Branch information" >
+               <div>
+                   
+              <lightning:radioGroup name="citizenshipGroup" fieldName="Client_Or_Person_On_US_Citizenship__c"
+                                      label="Is the client or person you are applying on behalf of a citizen of the United States of America?"
+                                      options="{!v.USCitizenshipOptions }"
+                                      value="{!v.optionGiven}"
+                                      onchange="{!c.handleChange}"
+                                      type="button"/>
+                
+                <aura:if isTrue="{!v.showCitizenshipmessage =='No'}">
+                    <span>
+                        <lightning:radioGroup name="otherbankname" fieldName="Client_Has_Accs_Prdcts_Relationship_Bank__c"
+                                              label="Has the client had any bank account/products/relationships closed on instruction from other banks?"
+                                              options="{!v.otherBankOptions }"
+                                              value="{!v.optionGivenforotherbank}"
+                                              onchange="{!c.handleChangeofOtherBanks}"
+                                              type="button"/>                        
+                    </span>
+                      </aura:if>
+                     </div>
+                    <aura:if isTrue="{!and(v.showOtherBankmessage =='No',v.showCitizenshipmessage=='No' )}">
+                        <lightning:recordEditForm aura:id="iAccountRecord" objectApiName="Account" recordId="{!v.accRec.Id}" recordTypeId="{!v.accRec.RecordTypeId}"  >
+                            <div class="slds-grid slds-wrap slds-gutters_medium">
+                            <div class="slds-col slds-size_1-of-2">
+                   			 <span >
+                                 
+                        		<lightning:inputField fieldName="SPM_Region__c" aura:id="spmregion"  />
+                    		</span>
+                         </div>
+                                
+                            <aura:if isTrue="{!and(v.accRec.ID_Type__pc=='Passport',v.accRec.Business_Unit__c=='Stockbroking' )}">
+                       <div class="slds-col slds-size_1-of-2">
+                   			 <span >
+                        		<lightning:inputField fieldName="Passport_Expiry_Date__c" aura:id="pasportexpiry" onchange="{!c.checkValidity }" />
+                    		</span>
+                         </div>
+                   </aura:if>
+                                </div>
+                          </lightning:recordEditForm>
+                            <lightning:recordEditForm aura:id="iOpportunityRecord" objectApiName="Opportunity" recordId="{!v.recordId}"  onsubmit="{!c.handleSubmit}" onsuccess="{!c.handleOnSuccess}"  > 	
+						<div class="slds-col slds-size_1-of-2">
+                   			 <span style="display: none">
+                        		<lightning:inputField fieldName="StageName" aura:id="stageid" value="{!v.opp.StageName}" />
+                    		</span>
+                         </div>
+                             </lightning:recordEditForm>
+                        <lightning:recordEditForm aura:id="iAppPrdctRecord" objectApiName="Application_Product__c" recordId="{!v.appPrdctId}"   >
+                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                           
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="Application_Source__c" aura:id="Applicationsource" disabled="{!v.isPlatform}" value="{!v.appSource}" />
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="Management_Type_Managed_Code__c" aura:id="managementTypeId" onchange="{!c.onManagementTypeChenge}" />
+                                </span>
+                            </div>
+                            <!--<div class="slds-col slds-size_1-of-2">
+    							<span>
+          							<lightning:inputField fieldName="Platform__c" aura:id="platform"  disabled="true" value="{!v.accRec.Platform__c}"/>
+    							</span>
+  						   </div>
+                          <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="Product_Wrapper__c" aura:id="productwrapper" disabled="{!v.isFullDiscretionary}" />
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="House_Portfolio__c" aura:id="housePortfolio" disabled="{!v.isFullDiscretionary}" />
+                                </span>
+                            </div>-->
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="Independent_Financial_Advisor__c" aura:id="independentfinadvisor"  />
+                                </span>
+                            </div>
+                            
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="PRI_Number__c" aura:id="prinumber"  />
+                                </span>
+                            </div>
+                            <!--<div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="Management_Type_Managed_Code__c" aura:id="managementTypeId"  />
+                                </span>
+                            </div> -->
+                             </div>
+                         </lightning:recordEditForm>       
+                        
+                         <!-- Added by Diksha for W-007104 11/9/2020 --> 
+                       <lightning:recordEditForm aura:id="iAppRecord" objectApiName="Application__c" recordId="{!v.appId}"   >
+                            <div class="slds-grid slds-wrap slds-gutters_medium">
+                                 <div class="slds-col slds-size_1-of-2">
+    							<span>
+          							<lightning:inputField fieldName="Platform__c" aura:id="platform"  disabled="true" value="{!v.accRec.SPM_Platform_Type__c}"/>
+    							</span>
+  						   </div>
+                          <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="Product_Wrapper__c" aura:id="productwrapper" disabled="{!v.isFullDiscretionary}" />
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="House_Portfolio__c" aura:id="housePortfolio" disabled="{!v.isFullDiscretionary}" />
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                   			 <span >
+                                <lightning:inputField fieldName="Purpose_of_Account__c" aura:id="purposeOfAcc" required="true" default="SPM"/>
+                    		</span>
+                         </div>
+                           <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Purpose_of_Account_Text__c" aura:id="purposeOfAcctText"/>
+                            </span></div>
+                          <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Account_Activity_Calculator__c" aura:id="accActTracker" required="true" />
+                              </span></div>
+                           </div>
+                        
+                        </lightning:recordEditForm>
+                      <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <!--<lightning:button type="submit" label="Save &amp; Validate" variant="brand"/>-->
+                          <lightning:button label="Save &amp; Validate" onclick="{!c.handleSubmit}" variant="brand" aura:id="ibtn" />
+                        </span>
+                                 </aura:if>
+                    <!--<aura:if isTrue="{!and(v.showOtherBankmessage =='Yes',v.showCitizenshipmessage=='Yes')}">
+                        <span>
+                            <p  class="UScitizenmsg">SPM are prohibited from opening a stockbroking account for clients who have had their bank accounts / products / relationships closed on instruction from other banks </p>
+                        </span>
+                    </aura:if>-->
+               <aura:if isTrue="{!and(v.showOtherBankmessage =='Yes',v.showCitizenshipmessage=='No')}">
+                        <span>
+                            <p  class="UScitizenmsg">SPM are prohibited from opening a stockbroking account for clients who have had their bank accounts / products / relationships closed on instruction from other banks </p>
+                        </span>
+                    </aura:if>
+                <aura:if isTrue="{!v.showCitizenshipmessage == 'Yes'}">
+                    <span>
+                        <p  class="otherBankmsg">SPM are prohibited from opening a stockbroking account for clients who are US citizens or who have relations with US citizens</p>
+                    </span>
+                </aura:if>
+                
+                
+            </lightning:accordionSection>
+        </lightning:accordion>
+    
+    
+    
+</aura:component>

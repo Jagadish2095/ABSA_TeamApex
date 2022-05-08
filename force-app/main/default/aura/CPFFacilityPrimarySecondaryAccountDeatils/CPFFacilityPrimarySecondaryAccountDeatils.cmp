@@ -1,0 +1,705 @@
+<!--
+* Lightning Component for Onboarding CPF Facility Primary Secondary Account Details
+*@author  Haritha P : Absa
+* @version v1.0
+* @since   2020-11-20
+*
+-->
+<aura:component controller="CPFFacilityPrimarySecondaryAccDetails" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <!--Attributes-->
+    <aura:attribute name="secondaryaccOptions" type="List" default="[
+                                                                    {'label': 'Yes', 'value': 'Y'},
+                                                                    {'label': 'No', 'value': 'N'}
+                                                                    
+                                                                    ]"/>
+    <aura:attribute name="IncluderepaymentscheduleOptions" type="List" default="[
+                                                                                {'label': 'Yes', 'value': 'Y'},
+                                                                                {'label': 'No', 'value': 'N'}
+                                                                                
+                                                                                ]"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="secondaryaccoptionGiven" type="String" default="N" />
+    
+    <aura:attribute name="IncluderepaymentscheduleoptionGiven" type="String" default="N"/>
+    <aura:attribute name="marginRate" type="String" />
+    <aura:attribute name="finalRepaymentDate" type="String" />
+    <aura:attribute name="showFacilityAndRepayment" type="String" />
+    <aura:attribute name="renderfield" type="boolean" default="false" />
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="appPrdctCpfRec" type="Object" />
+    <aura:attribute name="appFinAccRecId" type="Id" />
+    <aura:attribute name="appPrimaryRecId" type="Id" />
+    <aura:attribute name="newSecondaryAcctRepaymentReq" type="Application_Repayment_Account_CPF__c[]" />
+    <aura:attribute name="RepaymentType" type="String" />
+    <aura:attribute name="isPrimary" type="boolean" default="false"/>
+    <aura:attribute name="accounttobeclosedoptn" type="String" />
+    <aura:attribute name="prodName" type="string" /> 
+    <aura:attribute name="interestratebasis" type="string" />   
+    <aura:attribute name="repaymentoptions" type="string" default="Equal Instalment"/> 
+    <aura:attribute name="showIntrestServiceFreq" type="boolean" default="false"/>
+    <aura:attribute name="showInstallmentPeriod" type="boolean" default="false"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <!--c:CPFApplicationFinancialAccCreation
+    <aura:handler name="CPFApplicationFinancialAccCreation" event="c:CPFApplicationFinancialAccCreation" action="{!c.handleApplicationEvent}"/>-->
+    <!--c:CPFApplicationFinancialAccCreation-->
+    <aura:handler name="CPFApplicationFinAcctobeclosed" event="c:CPFApplicationFinAcctobeclosed" action="{!c.handleAppFinAcctobeClosedEvent}"/>
+    <aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleApplicationEvent}"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner />
+    </aura:if>
+    <!-- Loading spinner end-->
+    <aura:attribute name="ApplicationProductCPF" type="Application_Product_CPF__c" default="{sobjectType:'Application_Product_CPF__c'}"/>
+    <lightning:accordion activeSectionName="Facility Only / Primary + Secondary Account Details" allowMultipleSectionsOpen="false"> 
+        <lightning:accordionSection name="facilityonlyprimarysecondaryaccountdetails" label="Facility Only / Primary + Secondary Account Details" >
+            
+            <lightning:radioGroup name="secondaryaccapplicable" fieldName="Secondary_Account_Applicable__c"
+                                  label="Secondary Account Applicable"
+                                  options="{!v.secondaryaccOptions }"
+                                  value="{!v.secondaryaccoptionGiven}"
+                                  onchange="{!c.handleChange}"
+                                  type="button"/>
+            
+            <aura:if isTrue="{!v.showFacilityAndRepayment =='No'}">
+                <lightning:accordion activeSectionName="Facility Repayment Requirements" allowMultipleSectionsOpen="false"> 
+                    <lightning:accordionSection name="FacilityRepaymentRequirements" label="Facility Repayment Requirements" >
+                        <lightning:recordEditForm aura:id="iAppProdcpfRecord" objectApiName="Application_Product_CPF__c" recordId="{!v.appPrdctCpfRec.Id}"  >
+                            <div class="slds-grid slds-wrap slds-gutters_medium">
+                                <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Repayment_options__c" aura:id="repaymentoptions" disabled="true" />
+                                        </span>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <label class="slds-form-element__label">
+                                                <span class="slds-m-right_small">Instalment amount</span>
+                                                <lightning:helptext icon-name="utility:like" content="." />
+                                            </label>
+                                            <lightning:inputField fieldName="Instalment_amount__c" aura:id="Instalmentamount" variant="label-hidden"/>
+                                        </span>
+                                    </div>
+                                </aura:if>                  
+                                <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  > 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Repayment_options__c" aura:id="repaymentoptions" onchange = "{!c.showFieldsRepaymentOptions}" />
+                                        </span>
+                                    </div>
+                                    <aura:if isTrue="{!or(v.repaymentoptions == 'Equal Instalment' || v.repaymentoptions == 'Equal instalment (Bullet)' || v.repaymentoptions == 'Interest only (Bullet)' || v.repaymentoptions == 'Capitalised interest (Bullet)'||
+                                                     v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Amortising)' 
+                                                     || v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Bullet)' || v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Amortising)'
+                                                     || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Amortising)'|| v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)'
+                                                     || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Bullet)'|| v.repaymentoptions == 'Stepped capital (Amortising)'
+                                                     || v.repaymentoptions == 'Stepped instalment (Amortising)'|| v.repaymentoptions == 'Stepped capital (Bullet)'
+                                                     || v.repaymentoptions == 'Stepped instalment (Bullet)') }">
+                                        
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <aura:if isTrue="{!or(v.repaymentoptions == 'Equal Instalment' || v.repaymentoptions == 'Equal instalment (Bullet)' || v.repaymentoptions == 'Interest only (Bullet)' || v.repaymentoptions == 'Capitalised interest (Bullet)') }">
+                                                    <label class="slds-form-element__label">
+                                                        <span class="slds-m-right_small">Instalment amount</span>
+                                                        <lightning:helptext icon-name="utility:like" content="." />
+                                                    </label>
+                                                </aura:if>
+                                                <aura:if isTrue="{!or(v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Amortising)' 
+                                                                 || v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Bullet)' || v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Amortising)'
+                                                                 || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Amortising)'|| v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)'
+                                                                 || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Bullet)'|| v.repaymentoptions == 'Stepped capital (Amortising)'
+                                                                 || v.repaymentoptions == 'Stepped instalment (Amortising)'|| v.repaymentoptions == 'Stepped capital (Bullet)'
+                                                                 || v.repaymentoptions == 'Stepped instalment (Bullet)') }">
+                                                    <span >
+                                                        <label class="slds-form-element__label">
+                                                            <span class="slds-m-right_small">Initial instalment</span>
+                                                            <lightning:helptext icon-name="utility:like" content="R[AMOUNT] (indicative) for a period of [NUMBER] months, after which the Facility shall be repayable in stepped instalments starting at R[AMOUNT] (indicative) and thereafter escalating at [NUMBER]% per annum, as further detailed in the indicative Repayment Schedule (if applicable)." />
+                                                        </label>
+                                                    </span>
+                                                </aura:if>
+                                                <lightning:inputField fieldName="Instalment_amount__c" aura:id="Instalmentamount" variant="label-hidden"/>
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!or(v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Amortising)' || v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Bullet)' 
+                                                     || v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Amortising)' || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Amortising)'
+                                                     || v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)') }">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <lightning:inputField fieldName="Interest_Only_Period__c" aura:id="interestonlyperiods" />
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!or(v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Amortising)' || v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Bullet)' 
+                                                     ) }">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <lightning:inputField fieldName="Equal_Instalments__c" aura:id="equalinstalments" />
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!or(v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Amortising)' || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Amortising)' 
+                                                     ||v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)'||v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Bullet)') }">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <lightning:inputField fieldName="Starting_Stepped_Instalment__c" aura:id="startingsteppedinstal" />
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!or(v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Amortising)' || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Amortising)' 
+                                                     ||v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)'||v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Bullet)'
+                                                     ||v.repaymentoptions == 'Stepped capital (Amortising)'||v.repaymentoptions == 'Stepped instalment (Amortising)'
+                                                     ||v.repaymentoptions == 'Stepped capital (Bullet)'||v.repaymentoptions == 'Stepped instalment (Bullet)'
+                                                     ) }">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <lightning:inputField fieldName="Escalating_Perc__c" aura:id="escalatingper" />
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.repaymentoptions != 'Capitalised interest (Bullet)' 
+                                                     }">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <lightning:inputField fieldName="Number_of_periods_after_first_drawdown__c" aura:id="numberofperiodsfrstdrawn" />
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.repaymentoptions != 'Capitalised interest (Bullet)' 
+                                                     }">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <lightning:inputField fieldName="Instalment_periods__c" aura:id="instalmentperiods" />
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Interest_service_frequency__c" aura:id="Interestservicefreq"  />
+                                        </span>
+                                    </div>
+                                    <aura:if isTrue="{!or(v.repaymentoptions == 'Equal instalment (Bullet)' || v.repaymentoptions == 'Interest only (Bullet)' 
+                                                     ||v.repaymentoptions == 'Capitalised interest (Bullet)'||v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Bullet)'
+                                                     ||v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)'||v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Bullet)'
+                                                     ||v.repaymentoptions == 'Stepped capital (Bullet)'||v.repaymentoptions == 'Stepped instalment (Bullet)'
+                                                     ) }">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <lightning:inputField fieldName="Final_Instalment_Amount__c" aura:id="finalinstalamt" />
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    
+                                </aura:if>  
+                                <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Interest_rate_basis__c" aura:id="interestratebasis" disabled="true"/>
+                                        </span>
+                                    </div>
+                                </aura:if>   
+                                <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  > 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Interest_rate_basis__c" aura:id="interestbasis" onchange = "{!c.showFieldsReqOnInterestBasis}"/>
+                                        </span>
+                                    </div>
+                                </aura:if>  
+                                <aura:if  isTrue="{!v.interestratebasis == 'Fixed rate with net margin'}"  > 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Net_margin__c" aura:id="netmargin" />
+                                        </span>
+                                    </div>
+                                </aura:if> 
+                                <aura:if  isTrue="{!v.interestratebasis == 'Fixed rate with all in risk margin'}"  > 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="All_in_risk_margin__c" aura:id="allinriskmargin" />
+                                        </span>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Fixed_rate_period__c" aura:id="fixedrateperiod" />
+                                        </span>
+                                    </div>
+                                </aura:if>   
+                                <aura:if  isTrue="{!v.interestratebasis == 'Prime Rate'}"  > 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Prime_rate_margin__c" aura:id="primeratemargin" onchange = "{!c.showHiddenFields}"/>
+                                        </span>
+                                    </div>
+                                    <aura:if isTrue="{!or(v.marginRate =='Plus per annum',v.marginRate =='Minus per annum')}">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <lightning:inputField fieldName="Margin__c" aura:id="margin" />
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                </aura:if>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">Include repayment schedule</span>
+                                            <lightning:helptext icon-name="utility:like" content="Select Yes if repayment schedule must be inserted when generating templates." />
+                                        </label>
+                                        <lightning:radioGroup name="Includerepaymentschedule" fieldName="Include_repayment_schedule__c"
+                                                              options="{!v.IncluderepaymentscheduleOptions }"
+                                                              value="{!v.IncluderepaymentscheduleoptionGiven}"
+                                                              onchange="{!c.IncluderepaymentschedulehandleChange}"
+                                                              type="button"/>                    		
+                                    </span>
+                                </div>
+                                <!--  <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <lightning:inputField fieldName="Instalment_amount__c" aura:id="Instalmentamount"  required="true" />
+                                    </span>
+                                </div>-->
+                                <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Interest_service_frequency__c" aura:id="Interestservicefreq" disabled="true" />
+                                        </span>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Number_of_periods_after_first_drawdown__c" aura:id="numberofperiodsfrstdrawn" disabled="true"/>
+                                        </span>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Instalment_periods__c" aura:id="imstalmentperiods" disabled="true" />
+                                        </span>
+                                    </div>
+                                </aura:if>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <lightning:inputField fieldName="Term__c" aura:id="term" />
+                                    </span>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">Final repayment date</span>
+                                            <lightning:helptext icon-name="utility:like" content="Final Repayment Date: Option 1: In respect of the Facility, [DATE] Option 2: [The date falling [NUMBER] [days]/[month(s)/[years] after the date of first drawdown of the Facility.]Option 3: [The date falling [NUMBER] [days]/[month(s)]/[years] after the Signature Date.]" />
+                                        </label>
+                                        <lightning:inputField fieldName="Final_repayment_date__c" aura:id="finalrepaymentdate" onchange = "{!c.showFinalRepaymentHiddenFields}" variant="label-hidden"/>
+                                    </span>
+                                </div>
+                                <aura:if isTrue="{!v.finalRepaymentDate =='Date'}">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Date_of_final_repayment__c" aura:id="dateofFinalrepayment" />
+                                        </span>
+                                    </div>
+                                </aura:if>
+                                <aura:if isTrue="{!or(v.finalRepaymentDate =='after the date of first drawdown',v.finalRepaymentDate =='after the Signature Date')}">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <lightning:inputField fieldName="Number_of_periods_months__c" aura:id="numberofPeriodsMonths" />
+                                        </span>
+                                    </div>
+                                </aura:if>
+                                <div class="slds-col slds-size_1-of-1">
+                                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                                        <lightning:button label="Save &amp; Validate" onclick="{!c.handleFacityRepaymentSubmit}" variant="brand" aura:id="ibtn2" />
+                                    </span>
+                                </div>
+                            </div>
+                        </lightning:recordEditForm>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+            </aura:if>
+        </lightning:accordionSection>
+    </lightning:accordion>
+    <!-- Added by Haritha for Primary Account Repayment Requirments -->
+    
+    <aura:if isTrue="{!v.showFacilityAndRepayment =='Yes'}">
+        <lightning:accordion activeSectionName="Primary Account Repayment Requirements" allowMultipleSectionsOpen="false"> 
+            <lightning:accordionSection name="PrimaryAccountRepaymentRequirements" label="Primary Account Repayment Requirements" >
+                <lightning:recordEditForm aura:id="iAppRepaymentcpfRecord" objectApiName="Application_Repayment_Account_CPF__c"  recordId="{!v.appPrimaryRecId}">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Repayment_options__c" aura:id="primaryrepaymentoptions" disabled="true" />
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Instalment amount</span>
+                                        <lightning:helptext icon-name="utility:like" content="." />
+                                    </label>
+                                    <lightning:inputField fieldName="Instalment_amount__c" aura:id="primaryinstalmentamount" variant="label-hidden"/>
+                                </span>
+                            </div>
+                        </aura:if>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  > 
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Repayment_options__c" aura:id="primaryrepaymentoptions"   onchange = "{!c.showFieldsRepaymentOptions}"/>
+                                </span>
+                            </div>
+                            <aura:if isTrue="{!or(v.repaymentoptions == 'Equal Instalment' || v.repaymentoptions == 'Equal instalment (Bullet)' || v.repaymentoptions == 'Interest only (Bullet)' || v.repaymentoptions == 'Capitalised interest (Bullet)'||
+                                             v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Amortising)' 
+                                             || v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Bullet)' || v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Amortising)'
+                                             || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Amortising)'|| v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)'
+                                             || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Bullet)'|| v.repaymentoptions == 'Stepped capital (Amortising)'
+                                             || v.repaymentoptions == 'Stepped instalment (Amortising)'|| v.repaymentoptions == 'Stepped capital (Bullet)'
+                                             || v.repaymentoptions == 'Stepped instalment (Bullet)') }">
+                                
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <aura:if isTrue="{!or(v.repaymentoptions == 'Equal Instalment' || v.repaymentoptions == 'Equal instalment (Bullet)' || v.repaymentoptions == 'Interest only (Bullet)' || v.repaymentoptions == 'Capitalised interest (Bullet)') }">
+                                            <label class="slds-form-element__label">
+                                                <span class="slds-m-right_small">Instalment amount</span>
+                                                <lightning:helptext icon-name="utility:like" content="." />
+                                            </label>
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Amortising)' 
+                                                         || v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Bullet)' || v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Amortising)'
+                                                         || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Amortising)'|| v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)'
+                                                         || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Bullet)'|| v.repaymentoptions == 'Stepped capital (Amortising)'
+                                                         || v.repaymentoptions == 'Stepped instalment (Amortising)'|| v.repaymentoptions == 'Stepped capital (Bullet)'
+                                                         || v.repaymentoptions == 'Stepped instalment (Bullet)') }">
+                                            <span >
+                                                <label class="slds-form-element__label">
+                                                    <span class="slds-m-right_small">Initial instalment</span>
+                                                    <lightning:helptext icon-name="utility:like" content="R[AMOUNT] (indicative) for a period of [NUMBER] months, after which the Facility shall be repayable in stepped instalments starting at R[AMOUNT] (indicative) and thereafter escalating at [NUMBER]% per annum, as further detailed in the indicative Repayment Schedule (if applicable)." />
+                                                </label>
+                                            </span>
+                                        </aura:if>
+                                        <lightning:inputField fieldName="Instalment_amount__c" aura:id="primaryinstalmentamount" variant="label-hidden"/>
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!or(v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Amortising)' || v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Bullet)' 
+                                             || v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Amortising)' || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Amortising)'
+                                             || v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)') }">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <lightning:inputField fieldName="Interest_Only_Period__c" aura:id="primaryinterestonlyperiods" />
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!or(v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Amortising)' || v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Bullet)' 
+                                             ) }">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <lightning:inputField fieldName="Equal_Instalments__c" aura:id="primaryequalinslament" />
+                                    </span>
+                                </div>
+                            </aura:if>
+                            
+                            <aura:if isTrue="{!or(v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Amortising)' || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Amortising)' 
+                                             ||v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)'||v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Bullet)') }">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <lightning:inputField fieldName="Starting_Stepped_Instalment__c" aura:id="primarystartingsteppedinstal" />
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!or(v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Amortising)' || v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Amortising)' 
+                                             ||v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)'||v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Bullet)'
+                                             ||v.repaymentoptions == 'Stepped capital (Amortising)'||v.repaymentoptions == 'Stepped instalment (Amortising)'
+                                             ||v.repaymentoptions == 'Stepped capital (Bullet)'||v.repaymentoptions == 'Stepped instalment (Bullet)'
+                                             ) }">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <lightning:inputField fieldName="Escalating_Perc__c" aura:id="primaryescalatingper" />
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!v.repaymentoptions != 'Capitalised interest (Bullet)' 
+                                             }">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <lightning:inputField fieldName="Number_of_periods_after_first_drawdown__c" aura:id="primarynumberofperiodsfrstdrawn" />
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!v.repaymentoptions != 'Capitalised interest (Bullet)' 
+                                             }">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <lightning:inputField fieldName="Instalment_periods__c" aura:id="primaryinstalmentperiods" />
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Interest_service_frequency__c" aura:id="primaryinterestservicefreq"  />
+                                </span>
+                            </div>
+                            <aura:if isTrue="{!or(v.repaymentoptions == 'Equal instalment (Bullet)' || v.repaymentoptions == 'Interest only (Bullet)' 
+                                             ||v.repaymentoptions == 'Capitalised interest (Bullet)'||v.repaymentoptions == 'Interest only period with equal instalment period thereafter (Bullet)'
+                                             ||v.repaymentoptions == 'Interest only period with stepped instalment period thereafter (Bullet)'||v.repaymentoptions == 'Interest only period with stepped capital period thereafter (Bullet)'
+                                             ||v.repaymentoptions == 'Stepped capital (Bullet)'||v.repaymentoptions == 'Stepped instalment (Bullet)'
+                                             ) }">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <lightning:inputField fieldName="Final_Instalment_Amount__c" aura:id="primaryfinalinstalamt" />
+                                    </span>
+                                </div>
+                            </aura:if>
+                            
+                        </aura:if>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Interest_rate_basis__c" aura:id="primaryinterestratebasis" disabled="true"/>
+                                </span>
+                            </div>
+                        </aura:if>   
+                        <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  > 
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Interest_rate_basis__c" aura:id="primaryinterestratebasis" onchange = "{!c.showFieldsReqOnInterestBasis}"/>
+                                </span>
+                            </div>
+                        </aura:if>   
+                        <aura:if  isTrue="{!v.interestratebasis == 'Fixed rate with net margin'}"  > 
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Net_margin__c" aura:id="netmargin" />
+                                </span>
+                            </div>
+                        </aura:if>   
+                        <aura:if  isTrue="{!v.interestratebasis == 'Fixed rate with all in risk margin'}"  > 
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="All_in_risk_margin__c" aura:id="allinriskmargin" />
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Fixed_rate_period__c" aura:id="fixedrateperiod" />
+                                </span>
+                            </div>
+                        </aura:if> 
+                        <aura:if  isTrue="{!v.interestratebasis == 'Prime Rate'}"  > 
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Prime_rate_margin__c" aura:id="primaryprimeratemargin" onchange = "{!c.showHiddenFields}"/>
+                                </span>
+                            </div>
+                            <aura:if isTrue="{!or(v.marginRate =='Plus per annum',v.marginRate =='Minus per annum')}">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <lightning:inputField fieldName="Margin__c" aura:id="primarymargin" />
+                                    </span>
+                                </div>
+                            </aura:if>
+                        </aura:if>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Include repayment schedule</span>
+                                    <lightning:helptext icon-name="utility:like" content="Select Yes if repayment schedule must be inserted when generating templates." />
+                                </label>
+                                
+                                <lightning:radioGroup name="Includerepaymentschedule" fieldName="Include_repayment_schedule__c"
+                                                      options="{!v.IncluderepaymentscheduleOptions }"
+                                                      value="{!v.IncluderepaymentscheduleoptionGiven}"
+                                                      onchange="{!c.IncluderepaymentschedulehandleChange}"
+                                                      type="button"/>                    		
+                            </span>
+                        </div>
+                        <!--<div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Instalment_amount__c" aura:id="primaryInstalmentamount" required="true" />
+                            </span>
+                        </div>-->
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Interest_service_frequency__c" aura:id="Interestservicefreq" disabled="true" />
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Number_of_periods_after_first_drawdown__c" aura:id="primarynumberofperiodsfrstdrawn" disabled="true"/>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Instalment_periods__c" aura:id="imstalmentperiods" disabled="true" />
+                                </span>
+                            </div>
+                        </aura:if>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Term__c" aura:id="primaryterm" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Final repayment date</span>
+                                    <lightning:helptext icon-name="utility:like" content="Final Repayment Date: Option 1: In respect of the Facility, [DATE] Option 2: [The date falling [NUMBER] [days]/[month(s)/[years] after the date of first drawdown of the Facility.]Option 3: [The date falling [NUMBER] [days]/[month(s)]/[years] after the Signature Date.]" />
+                                </label>
+                                
+                                <lightning:inputField fieldName="Final_repayment_date__c" aura:id="primaryfinalrepaymentdate" onchange = "{!c.showFinalRepaymentHiddenFields}" variant="label-hidden"/>
+                            </span>
+                        </div>
+                        <aura:if isTrue="{!v.finalRepaymentDate =='Date'}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Date_of_final_repayment__c" aura:id="primarydateofFinalrepayment" />
+                                </span>
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{!or(v.finalRepaymentDate =='after the date of first drawdown',v.finalRepaymentDate =='after the Signature Date')}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <lightning:inputField fieldName="Number_of_periods_months__c" aura:id="primarynumberofPeriodsMonths" />
+                                </span>
+                            </div>
+                        </aura:if>
+                        <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                <lightning:button label="Save &amp; Validate" onclick="{!c.handlePrimaryRepaymentSubmit}" variant="brand" aura:id="ibtn2" />
+                            </span>
+                        </div>
+                    </div>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </aura:if>
+    
+    <!-- Added by Diksha for W-007842 Secondary Acct Repayment Requirement -->
+    <aura:if isTrue="{!v.showFacilityAndRepayment =='Yes'}">
+        <lightning:accordion activeSectionName="Secondary Account Repayment Requirements" allowMultipleSectionsOpen="false"> 
+            <lightning:accordionSection name="SecondaryAccountRepaymentRequirements" label="Secondary Account Repayment Requirements" >
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <aura:iteration items="{!v.newSecondaryAcctRepaymentReq}" var="nSecondaryAcctRepayementReq" indexVar="index">
+                        <c:cpfSecondaryAcctRepaymentReq aura:id="nSecondaryAcctRepayementReqId" accItem="{!nSecondaryAcctRepayementReq}" rowindex="{!index}" newSecondaryAcctRepaymentReq="{!v.newSecondaryAcctRepaymentReq}" prodName="{!v.prodName}" 
+                                                        interestratebasis="{!v.interestratebasis}" repaymentoptions="{!v.repaymentoptions}" showIntrestServiceFreq="{!v.showIntrestServiceFreq}" showInstallmentPeriod="{!v.showInstallmentPeriod}"/>
+                    </aura:iteration>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button label="Add new secondary account" onclick="{!c.addNewSecondaryAccount}" variant="brand" aura:id="ibtn" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleSubmit}" variant="brand" aura:id="ibtn1" />
+                        </span>
+                    </div>
+                </div>
+            </lightning:accordionSection>
+        </lightning:accordion> 
+    </aura:if>
+    
+    <!-- End of the Section -->
+    
+    <!-- Added by Diksha For W-7691 Property Valuation Section -->  
+    <lightning:accordion activeSectionName="Property Valuation" allowMultipleSectionsOpen="false"> 
+        <lightning:accordionSection name="Property Valuation" label="Property Valuation" >
+            <lightning:recordEditForm aura:id="iAppProdcpfRecord" objectApiName="Application_Product_CPF__c" recordId="{!v.appPrdctCpfRec.Id}" 
+                                      onsuccess="{!c.handleSuccess}"
+                                      onerror="{!c.handleError}">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Body corporate insurance</span>
+                                    <lightning:helptext icon-name="utility:like" content="If a Body Corporate is established in respect of the Property in terms of Section 36 of the Sectional Titles Act, 1986, a certificate issued by the insurer of the Body Corporate confirming that the Body Corporate has effected a valid policy of insurance in accordance with the provisions of section 37(1)(f) and that the Bank’s interest has been noted in respect of each unit;" />
+                                </label>
+                                <lightning:inputField fieldName="Body_corporate_insurance__c" aura:id="bodycorporateinsurance" variant="label-hidden" disabled="true"/>
+                            </span>
+                        </div>
+                    </aura:if>
+                    <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  > 
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Body corporate insurance</span>
+                                    <lightning:helptext icon-name="utility:like" content="If a Body Corporate is established in respect of the Property in terms of Section 36 of the Sectional Titles Act, 1986, a certificate issued by the insurer of the Body Corporate confirming that the Body Corporate has effected a valid policy of insurance in accordance with the provisions of section 37(1)(f) and that the Bank’s interest has been noted in respect of each unit;" />
+                                </label>
+                                <lightning:inputField fieldName="Body_corporate_insurance__c" aura:id="bodycorporateinsurance" variant="label-hidden" />
+                            </span>
+                        </div>
+                    </aura:if>
+                    
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Instruct_independent_Valuer__c" aura:id="instructindependentvaluer" />
+                        </span>
+                    </div>
+                    <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Confirmation__c" aura:id="confirmation" disabled="true"/>
+                            </span>
+                        </div>
+                    </aura:if>
+                    <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  > 
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Confirmation__c" aura:id="confirmation" />
+                            </span>
+                        </div>
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Deviation_clause__c" aura:id="deviationclause" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Should there be a material variance</span>
+                                <lightning:helptext icon-name="utility:like" content="Should there be a material variance” should be “Should there be a material variance in the Bank’s opinion between the minimum value of the Property required and the Property Value as per the Property Valuation and/or between minimum net income and/or property ratings required and the actual net income and ratings as per the Property Valuation, the Bank reserves the right to withdraw the Facility" />
+                            </label>
+                            
+                            <lightning:inputField fieldName="Should_there_be_a_material_variance__c" aura:id="shouldtherebeamaterialvariance" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Provide_a_full_analysis__c" aura:id="provideafullanalysis" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Was a desktop valuation done</span>
+                                <lightning:helptext icon-name="utility:like" content="The Bank shall notify the Borrower in writing of any such additional conditions following receipt of the Property Valuation. Should the Borrower, within 15 (fifteen) Business Days of receipt of the notification, fail to execute an addendum provided by the Bank, which addendum shall incorporate the additional conditions into this Agreement as the Bank may require, the Bank, in its discretion, may withdraw the Facility whereupon the rights and obligations of the parties will be terminated. In such event the Borrower will nevertheless be liable for payment on demand of the Bank’s administration fees, costs of the Property Valuation, as well as any wasted costs incurred by the registration attorney in preparation of loan and security documentation." />
+                            </label>
+                            
+                            <lightning:inputField fieldName="Was_a_desktop_valuation_done__c" aura:id="wasadesktopvaluationdone" onchange="{!c.renderField}" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Property_valuation_amount__c" aura:id="propertyvaluationamount" />
+                        </span>
+                    </div>
+                    <aura:If isTrue="{!v.renderfield}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Replacement value</span>
+                                    <lightning:helptext icon-name="utility:like" content="Combined commercial and/or fire insurance, which may include cover against subsidence and landslide, if required by the Bank, for not less than the replacement cost of the property and improvements as determined and advised by the Bank in writing from time to time; OPTION: which replacement value is currently [AMOUNT]. Option the replacement cost of the subject property will be advised once the formal valuation is completed." />
+                                </label>
+                                <lightning:inputField fieldName="Replacement_value__c" aura:id="replacementvalue" variant="label-hidden"/>
+                            </span>
+                        </div>
+                    </aura:If>    
+                    <div class="slds-col slds-size_1-of-1">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <!--  <lightning:button label="Save &amp; Validate" onclick="{!c.handleSubmit}" variant="brand" aura:id="ibtn1" />-->
+                            <lightning:button class="slds-m-top_small" type="submit" label="Save &amp; Validate" variant="brand" />
+                        </span>
+                    </div>
+                </div>
+            </lightning:recordEditForm>
+        </lightning:accordionSection>
+    </lightning:accordion>
+    
+</aura:component>

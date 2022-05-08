@@ -1,0 +1,146 @@
+<!-- Lightning cmp for Transaction history 
+         Author: Mashudu Raidimi
+         Date : 27/02/2020  -->
+<aura:component access="global" implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:isUrlAddressable"  
+                controller="JournalHistoryController">  
+    
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}"/>
+    
+    <!--controller = "transactionHistoryController"-->
+    <!--Source Bank Account -->
+    <aura:attribute name="caseId" type="String" access="global" />
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="prodTypesList" type="List" />
+    <aura:attribute name="accNumList" type="List" />
+    <aura:attribute name="prodTypesSet" type="Set" />
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    <aura:attribute name="selectedAccountNumber" type="String"  default="4048154906"/>
+    <aura:attribute name="selectedAccountBalance" type="Integer"/>
+    <aura:attribute name="columns" type="List"/>
+    
+    <aura:attribute name="fromDate" type="String" access="global"/>
+    <aura:attribute name="toDate" type="String" access="global"/>
+    <aura:attribute name="fromDate1" type="Date" access="global"/>
+    <aura:attribute name="toDate1" type="Date" access="global"/>
+    
+    <aura:attribute name="viewTransactionList" type="object" access="global"/>
+    <aura:attribute name="sortedBy" type="String" />
+    <aura:attribute name="sortedDirection" type="Boolean" default="true" />
+    <aura:attribute name="descrTypeoptions" type="List" />
+    <aura:attribute name="todaysDate" type="Date" />
+    <aura:attribute name="iipChecked" type="Boolean" default="false" />
+    <aura:attribute name="iipRefNo" type="String" />
+    <aura:attribute name="iipPayDate" type="Date" />
+    <aura:attribute name="typeChecked" type="Boolean" default="false" />
+    <aura:attribute name="transData" type="Transaction_Filter_List__c[]" />
+    <aura:attribute name="transactionData" type="Transaction_Filter_List__c[]" />
+    <aura:attribute name="data" type="String" />
+    <aura:attribute name="admin" type="String" />
+    <aura:attribute name="airtime" type="String" />
+    <aura:attribute name="credit" type="String" default="JOURNAL CREDIT" />
+    <aura:attribute name="creditTest" type="String" />
+    <aura:attribute name="debit" type="String" default="JOURNAL DEBIT" />
+    <aura:attribute name="debitTest" type="String" />
+    <aura:attribute name="Correction" type="String" default="CORCR - Credit Correction"/>
+    <aura:attribute name="accFee" type="String" />
+    <aura:attribute name="immediateDT" type="String" />
+    <aura:attribute name="caseRecord" type="Object"/>
+     <force:recordData aura:id="recordLoader" recordId="{!v.recordId}" fields="Id,Account.Name" targetFields="{!v.caseRecord}" />
+    
+    
+    <!--# Flow Attribute -->
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" access="global"/>
+    <aura:attribute name="selectedProductTypeToFlow" type="String" access="global"  />
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"  />
+    
+    <aura:attribute name="showForm" type="boolean" default="true"/>
+    <aura:attribute name="showDataTable" type="boolean" default="false"/>
+    <aura:attribute name="showFilter" type="boolean" default="false"/>
+    
+    <!--Filter attribute-->
+    <aura:attribute name="filterTr" type="String" />
+    
+    <center style="z-index:999">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">   
+                    <lightning:input label = "Account number" value= "{!v.selectedAccountNumberToFlow}" disabled="true" />
+                    <lightning:input label = "Product type" value= "{!v.selectedProductTypeToFlow}" disabled="true" />
+                    
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                    <lightning:input type="date" aura:id='fDate' name="From Date" label="From Date" value ="{!v.fromDate}" max="{!v.todaysDate}"/>
+                    <lightning:input type="date" aura:id='tDate' name="To Date" label="To Date" value ="{!v.toDate}" max="{!v.todaysDate}" />
+                    <br/>
+                    
+                </lightning:layoutItem>
+                <div class="slds-m-top_small slds-float--left">
+                    <lightning:button aura:id="ApplyButtonLoad" variant="brand-outline" label="Load" title="Load" onclick="{!c.filterTransactionData}" />
+                </div>
+                <div class="slds-m-top_small slds-float--right">
+                    <lightning:button aura:id="iCloseCase" variant="brand-outline" label="Close Case" title="Close Case" onclick="{! c.closeCase}"/>
+                    
+                </div>
+                
+            </lightning:layout>
+            
+            <!--Datatable for displaying transaction history-->
+            <div class="slds-table--header-fixed_container">
+                
+                <div class="slds-scrollable" style="width:100%;">
+                    
+                    <table class="slds-table slds-table_bordered slds-table--header-fixed">
+                        <thead>
+                            <tr class="slds-text-title--caps">
+                                <th scope="col">
+                                    <div class="slds-truncate">Date</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate">Transaction Type</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate">Event Number</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate">Transaction Amount</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate">Balance</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.transactionData}"  var="rec">
+                                <tr>
+                                    <td scope="row">
+                                        <div class="slds-truncate" >{!rec.Processing_Date__c}</div>
+                                    </td>
+                                    <td scope="row">
+                                        <div class="slds-truncate" >{!rec.Description1__c}</div>
+                                        
+                                    </td>
+                                    <td scope="row">
+                                        <div class="slds-truncate" >{!rec.Event_Number__c}</div>
+                                    </td>
+                                    <td scope="row">
+                                        <div class="slds-truncate" >{!rec.Transaction_Amount__c}</div>
+                                        
+                                    </td>
+                                    <td scope="row">
+                                        <div class="slds-truncate" >{!rec.Balance_After_Transaction__c}</div>
+                                    </td>
+                                    <td scope="row">
+                                        
+                                    </td>                                  
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+</aura:component>

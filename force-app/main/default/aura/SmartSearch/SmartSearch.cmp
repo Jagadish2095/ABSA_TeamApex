@@ -1,0 +1,88 @@
+<!--
+* Lightning Component  for implementing server side Smart Search
+*
+* @author  Simangaliso Mathenjwa : Absa
+* @version v1.0
+* @since   01 March 2021
+* @WorkID: W-009929
+-->
+
+
+<aura:component
+	implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName"
+	access="global"
+	controller="SmartSearchController" 
+>
+	<!--Attribute Declaration-->
+	<aura:attribute name="searchKeyword" type="String" default="" />
+	<aura:attribute name="placeHolder" type="String" default="Search Beneficiary..." />
+	<aura:attribute
+		name="lookupSearchData"
+		type="String"
+		default="AbsaListedBeneficiaries"
+		description="Lookup Search Field Query custom matadata label to get the query string for records"
+	/>
+	<aura:attribute name="lookupSearchQuery" type="String" default="" description="To store a query received from Lookup Search Field Query custom matadata" />
+	<aura:attribute name="listOfRecords" type="List" description="This will Store returned list of records from server" />
+	<aura:attribute name="unfilteredData" type="List" description="This will Store unfiltered data" />
+	<aura:attribute name="selectedAccountNumberToFlow" type="String" access="global" />
+	<aura:attribute name="selectedRecord" type="sObject" default="{}" description="Will store the selected record" />
+	<aura:attribute name="recordIdString" type="String" />
+	<aura:attribute name="hideTable" type="Boolean" />
+
+	<!--Handlers-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:handler name="selected_record_event" event="c:SelectedRecordEvent" action="{!c.handleEvent}" />
+
+	<!--Display errors-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title slds-align_absolute-center" style="color: red">{!v.errorMessage}</h2>
+		</div>
+    </aura:if>
+	
+	<!--Input field and Search button-->
+	<lightning:layout verticalAlign="start" horizontalAlign="center">
+		<lightning:layoutItem flexibility="auto" size="8">
+			<div class="slds-input-has-icon slds-input-has-icon--right">
+				<div aura:id="lookup_field" class="slds-show">
+					<aura:if isTrue="{!v.showLoadingSpinner}">
+						<lightning:spinner alternative-text="Loading" size="small" variant="brand" alternativeText="Processing" />
+					</aura:if>
+					<lightning:icon class="slds-input__icon slds-show" iconName="utility:search" size="x-small" alternativeText="search" />
+					<span class="slds-icon_container slds-combobox__input-entity-icon" title="record">
+						<span class="slds-assistive-text"></span>
+					</span>
+					<ui:inputText
+						click="{!c.handleMouseClick}"
+						updateOn="keyup"
+						keyup="{!c.handleKeyUp}"
+						class="slds-lookup__search-input slds-input leftPaddingClass"
+						value="{!v.searchKeyword}"
+						placeholder="{!v.placeHolder}"
+					/>
+				</div>
+			</div>
+		</lightning:layoutItem>
+		<lightning:layoutItem size="4" flexibility="auto" padding="horizontal-small"
+			><lightning:button label="Clear Search" onclick="{!c.clearSearch}"
+		/></lightning:layoutItem> </lightning:layout
+	><br />
+
+	<!--Table-->
+	<table class="slds-table slds-table--bordered">
+		<thead>
+			<tr>
+				<th>Beneficiary Name</th>
+				<th>Account Number</th>
+				<th>Branch Code</th>
+			</tr>
+		</thead>
+		<tbody>
+			<aura:iteration items="{!v.listOfRecords}" var="row" indexVar="rowIndex">
+				<c:SmartSearchResult object_record="{!row}" />
+			</aura:iteration>
+		</tbody>
+	</table>
+</aura:component>

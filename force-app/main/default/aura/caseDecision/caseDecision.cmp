@@ -1,0 +1,227 @@
+<!--
+  @description       : 
+  @author            : almas.aleem@absa.africa
+  @last modified on  : 2021-11-16
+  @last modified by  : almas.aleem@absa.africa
+-->
+<aura:component controller="caseDecisionController" 
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    
+    
+    <aura:attribute type="Boolean" name="agreeToTerms" default="false" />
+    <aura:attribute type="Boolean" name="showTermsAndConditionsBtn" default="false" />
+    <aura:attribute name="recordId" type="Id" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+     <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:handler name="init" value="this" action="{!c.doInit}"/>
+    <aura:attribute name="storeResponse" type="String" default=""/>
+    
+    <aura:attribute name="caseStatus" type="String"/>
+    <aura:attribute name="caseProductId" type="String"/>
+    <aura:attribute name="details" type="String"/>
+    <aura:attribute name="comments" type="String"/>
+    <aura:attribute name="UserName" type="String" default=""/>
+    <aura:attribute name="approver" type="string"/>
+    <!--<aura:attribute name="approver" type="string"/>-->
+    <aura:attribute name="caseProduct" type="string"/> <!--added by haritha for getting product name-->
+    <aura:attribute name="option" type="Boolean" default="true"/>
+    <aura:attribute name="isReducingType" type="Boolean" default="false"/>
+    <aura:attribute name="responseValue" type="List"/>
+    <aura:attribute name="row" type="List"/>
+    <aura:attribute name="queueMembers" type="List"  />    
+    <aura:attribute name="accntNu" type="string" />
+    
+    <aura:attribute name="selectedOption" type="String" default="Accepted"/>
+    <aura:attribute name="selectedMandatedOfficialsList" type="List" default="[]" description="Selected Reasons"/>
+  
+    <aura:attribute name="mandatedOfficialsList" type="List" default="[
+        { label: 'Company Document/s Not Provided', value: 'Company Document/s Not Provided' },
+        { label: 'Credit Conditions of Grant Not Met', value: 'Credit Conditions of Grant Not Met' },
+        { label: 'Document Incorrectly Completed', value: 'Document Incorrectly Completed' },
+        { label: 'Document Missing Page/s', value: 'Document Missing Page/s' },
+        { label: 'Entity Status Not Confirmed on CIPC', value: 'Entity Status Not Confirmed on CIPC' },
+        { label: 'Insurance over CCMB not in place without credit approval to waive', value: 'Insurance over CCMB not in place without credit approval to waive'},
+        { label: 'Insurance over GNB not in place without credit approval to waive',value: 'Insurance over GNB not in place without credit approval to waive'}, 
+        { label:'Marital Statuses Not Confirmed',value:'Marital Statuses Not Confirmed'},
+        { label:'Marital statuses Not Updated on CIF',value:'Marital statuses Not Updated on CIF'},
+        { label:'Missing Document/s',value:'Missing Document/s'},
+        { label:'Spousal Consent Not Received',value:'Spousal Consent Not Received'},
+        { label:'Application related',value:'Application related'},
+        { label:'Casa',value:'Casa'},
+        { label:'Cif maintenance/errors',value:'Cif maintenance/errors'},
+        { label:'Mini CIF',value:'Mini CIF'},
+        { label:'Debit order related',value:'Debit order related'},
+        { label:'NCA',value:'NCA'},
+        { label:'Credit approval',value:'Credit approval'}]"/>
+    <aura:if  isTrue="{!(v.caseProduct == 'COVID-19 Bank Guarantee')}">
+    <c:CreditDebitOrder recordId="{!v.recordId}" isCaseDecision="true"></c:CreditDebitOrder>
+    <c:PaymentDetails recordId="{!v.recordId}"></c:PaymentDetails>
+    </aura:if>
+      <!--loading spinner start-->
+    <div class="exampleHolder">
+        <lightning:spinner aura:id="mySpinner" class="slds-hide" alternativeText="Loading..." variant="brand"
+            size="large" />
+    </div>
+    <!-- Loading spinner end-->
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+   
+    <aura:attribute name="defaultApprover" type="String"/>  
+    <aura:handler name="change" value="{!v.options}" action="{!c.onDuplicateStatement}"/>
+    <aura:attribute name="decisionOutcomeOptions" type="List" default="[
+                                                                       {'label': 'Accepted', 'value': 'Accepted'},
+                                                                       {'label': 'Request More Information', 'value': 'Requested More Information'}
+                                                                       ]"/>
+    
+    <form class="slds-form--stacked">   
+        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="decisionUpdate">
+            <!-- Decision Update (VISIBILITY: FULFILMENT TEAM ONLY) -->
+            <lightning:accordionSection name="decisionUpdate" label="Decision Update">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_2-of-2">
+                        <span>
+                            <lightning:radioGroup name="decisionButton"
+                                                  label="Decision"
+                                                  options="{!v.decisionOutcomeOptions }"
+                                                  value="{!v.selectedOption }"
+                                                  aura:id="selectedOption"
+                                                  onchange="{!c.decisionChanged}"
+                                                  type="button"
+                                                  /> 
+                        </span>
+                    </div>
+                    <aura:if  isTrue="{!(v.selectedOption == 'Accepted')}">    
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:select name="details" label="Details" aura:id="details" required="true">
+                                    <option value="Accepted As Is">Accepted As Is</option>
+                                </lightning:select>
+                            </span>
+                        </div>
+                    </aura:if>
+                            <aura:if  isTrue="{!(v.selectedOption == 'Requested More Information')}">    
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span>
+                                        <!--lightning:select name="details" label="Reason for More Info" aura:id="details" required="true">
+                                            <option value="Company Document/s Not Provided">Company Document/s Not Provided</option>
+                                            <option value="Credit Conditions of Grant Not Met ">Credit Conditions of Grant Not Met </option>
+                                            <option value="Document Incorrectly Completed">Document Incorrectly Completed</option>
+                                            <option value="Document Missing Page/s ">Document Missing Page/s </option>
+                                            <option value="Entity Status Not Confirmed on CIPC">Entity Status Not Confirmed on CIPC</option>
+                                            <option value="Insurance over CCMB not in place without credit approval to waive">Insurance over CCMB not in place without credit approval to waive</option>
+                                            <option value="Insurance over GNB not in place without credit approval to waive">Insurance over GNB not in place without credit approval to waive</option>
+                                            <option value="Marital Statuses Not Confirmed">Marital Statuses Not Confirmed </option>
+                                            <option value="Marital statuses Not Updated on CIF">Marital statuses Not Updated on CIF </option>
+                                            <option value="Missing Document/s">Missing Document/s</option>
+                                            <option value="Spousal Consent Not Received">Spousal Consent Not Received</option>
+                                            <option value="Application related">Application related</option>
+                                            <option value="Casa">Casa</option>
+                                            <option value="Cif maintenance/errors">Cif maintenance/errors</option>
+                                            <option value="Mini CIF">Mini CIF</option>
+                                            <option value="Debit order related">Debit order related</option>
+                                            <option value="NCA">NCA</option>
+                                            <option value="Credit approval">Credit approval</option>
+                                        </lightning:select-->
+                                        <lightning:dualListbox name="details"
+                                                                label= "Reason for More Info"
+                                                                aura:id="details"
+                                                                sourceLabel="Available"
+                                                                selectedLabel="Selected"
+                                                                fieldLevelHelp="Security Mandated official(s)"
+                                                                options="{!v.mandatedOfficialsList}"
+                                                               	value="{!v.selectedMandatedOfficialsList}"
+                                                                
+                                                                />
+                                    </span>
+                                </div>
+                            </aura:if>
+                    <br/>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:textarea name="comments" aura:id="comments" label="Comments" required="true" />
+                        </span>
+                    </div> 
+                    <aura:if isTrue="{!v.agreeToTerms}">
+                    <aura:if  isTrue="{!(v.caseProduct == 'Overdraft')}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:input type="number" name="MandateNum" aura:id="MandateNum" required="true" label="Mandate Number"/>
+                        </span>
+                    </div> 
+                        </aura:if></aura:if>
+                    <aura:if  isTrue="{!(v.selectedOption == 'Accepted')}">    
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                              Default Approver/Submitter : <ui:outputText  aura:id="approver" value="{!v.defaultApprover}" />  
+                        </span>
+                    </div>
+                    </aura:if>
+                   
+               <aura:if  isTrue="{!(v.selectedOption == 'Requested More Information')}">    
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <aura:iteration items="{!v.responseValue}" var="option">
+                                    <lightning:select name="approver" label="Information Source:" aura:id="approver" value="{!v.approver}"> 
+                                        <!-- <option text="" value="" selected=" "/>-->
+                                        <aura:if  isTrue="{!(option.Relationship_Banker__r.Name != NULL)}"> 
+                                            <option text="{! option.Relationship_Banker__r.Name + ' (Relationship Banker)'}" value="{! option.Relationship_Banker__r.Id}" selected=" "/>
+                                        </aura:if>
+                                        <aura:if  isTrue="{!(option.Banker_RE__r.Name != NULL)}"> 
+                                            <option text="{! option.Banker_RE__r.Name + ' (Banker)'}" value="{! option.Banker_RE__r.Id}" selected=" "/>
+                                        </aura:if>
+                                        <aura:if  isTrue="{!(option.Collateral_Validator__r.Name != NULL)}"> 
+                                            <option text="{! option.Collateral_Validator__r.Name + ' (Collateral Validator)'}" value="{! option.Collateral_Validator__r.Id}" selected=" "/>
+                                        </aura:if>
+                                        <aura:if  isTrue="{!(option.Collateral_Consultant__r.Name != NULL)}"> 
+                                            <option text="{! option.Collateral_Consultant__r.Name + ' (Colateral Consulntant)'}" value="{! option.Collateral_Consultant__r.Id}" selected=" "/>
+                                        </aura:if>
+                                        <aura:if  isTrue="{!(option.Fulfilment_Consultant__r.Name != NULL)}"> 
+                                            <option text="{! option.Fulfilment_Consultant__r.Name + ' (Fulfilment Consultant)'}" value="{! option.Fulfilment_Consultant__r.Id}" selected=" "/>
+                                        </aura:if>
+                                        <aura:if  isTrue="{!(option.Collateral_Processing_Consultant__r.Name != NULL)}"> 
+                                            <option text="{! option.Collateral_Processing_Consultant__r.Name + ' (Collateral Processing Consultant)'}" value="{! option.Collateral_Processing_Consultant__r.Id}" selected=" "/>
+                                        </aura:if>
+                                        <aura:if  isTrue="{!(option.Sanctioner__r.Name != NULL)}"> 
+                                            <option text="{! option.Sanctioner__r.Name + ' (Sanctioner)'}" value="{! option.Sanctioner__r.Id}" selected=" "/>
+                                        </aura:if>
+                                        <aura:if  isTrue="{!(option.Credit_Card_Consultant__r.Name != NULL)}"> 
+                                            <option text="{! option.Credit_Card_Consultant__r.Name + ' (Credit Card Consultant)'}" value="{! option.Credit_Card_Consultant__r.Id}" selected=" "/>
+                                        </aura:if>
+                                        <aura:if  isTrue="{!(option.Credit_Sanctioner__r.Name != NULL)}"> 
+                                            <option text="{! option.Credit_Sanctioner__r.Name + ' (Credit Sanctioner)'}" value="{! option.Credit_Sanctioner__r.Id}" selected=" "/>
+                                        </aura:if>
+                                        <aura:if  isTrue="{!(option.QA_Officer__r.Name != NULL)}"> 
+                                            <option text="{! option.QA_Officer__r.Name + ' (QA Officer)'}" value="{! option.QA_Officer__r.Id}" selected=" "/>
+                                        </aura:if>
+                                    </lightning:select> 
+                                </aura:iteration>  
+                            </span>
+                        </div>
+                    </aura:if>
+                    
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:input name="accountNum" aura:id="accountNum" label="Account Number" required="true" value="{!v.accntNu}" /> <!-- -->
+                        </span>
+                    </div> 
+             
+                    <div class="slds-col slds-size_1-of-2">
+                        <br />
+                        <span>
+                            <ui:inputCheckbox class="slds-float--left" label="&nbsp; I understand that this decision cannot be changed once submitted." aura:id="iTermsAndConditions" change="{!c.showBtn}"/>
+                            <aura:if isTrue="{!v.agreeToTerms}">
+                                <span>
+                                    <lightning:button variant="brand" class="slds-align_absolute-center slds-m-top_xx-large"
+                                                      label="Submit Decision" onclick="{!c.submitDecision}" />
+                                </span>
+                            </aura:if>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                    </div>
+                </div>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </form>
+
+
+</aura:component>

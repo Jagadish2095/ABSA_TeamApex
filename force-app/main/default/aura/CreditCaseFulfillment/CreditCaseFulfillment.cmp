@@ -1,0 +1,163 @@
+<!--
+* Lightning Component for Credit Case Fullfillment Details
+* @author  Almas Aleem: Absa
+* @version v1.0
+* @since   2020-06-25
+*
+-->
+
+<!---
+*This code currently catering for 1 product details i.e.Overdraft stored in custom meta data
+*It will get change once finialization of multiple products and related fields
+*
+*/
+
+-->
+
+
+<aura:component  implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" controller="CreditCaseFulfillmentController" >
+    <!-- Event Handler Decleration -->
+    
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />  
+    <aura:handler name="init" value="{!this}" action="{!c.handleOnLoad}"/>
+    
+    <!-- Attribute Decleration --> 
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />   
+    <aura:attribute name="caseRecord" type="Object"/>
+    <aura:attribute name="fieldnames" type="list"/>  <!-- Field names to be display -->
+    <aura:attribute name="productFields" type="Object"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner />
+    </aura:if>
+    
+    <force:recordData aura:id="recordLoader"
+      fields="Opportunity__c,Product__c,Application_Product_Id__c"
+      recordId="{!v.recordId}"
+      targetFields="{!v.caseRecord}"  
+      recordUpdated="{!c.handleOnLoad}"
+                      
+      />
+    <lightning:accordion>
+        <lightning:accordionSection name="FulFillmentDetails" label="FulFillment Details">
+          <aura:if isTrue="{! not( empty( v.caseRecord.Application_Product_Id__c ) ) }">  <!-- record id gets load in render cycle -->
+           <lightning:recordViewForm recordId="{!v.caseRecord.Application_Product_Id__c}" 
+                                      objectApiName="Application_Product__c"> 
+                
+                
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12" class="productHeader">
+                    <h3 class="slds-section__title"><b>View the Parent Opportunity to review the credit application details</b></h3>
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <ui:outputText value="Overall status, Responses from Powercurve, and other details"/>
+                            </span>
+                            <span>
+                                <br/>
+                                <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help"></lightning:icon>
+                                <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Help text and hyperlink" tooltip="Help text and hyperlink" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:button label="View the Parent Opportunity"  variant="brand" onclick="{!c.redirectOpportunity}" />
+                            </span>
+                        </div>
+                    </div>
+                </lightning:layoutItem>
+                <br/>
+                <lightning:layoutItem size="12" class="slds-border_bottom">
+                    <!-- Draw a line  -->
+                    
+                </lightning:layoutItem>
+                    <aura:iteration items="{!v.fieldnames}" var="fname"> <!-- dynamically  load Application product Credit Data-->
+                       
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:outputField fieldName="{!fname}"/>
+                        </lightning:layoutItem>
+                        
+                        
+                    </aura:iteration>
+               </lightning:layout>
+                
+                
+            </lightning:recordViewForm> 
+              
+              
+                        <!--<lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.productName}" label="Product Name" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.ActionRequired}" label="Action Required" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="checkbox" value="{!v.productFields.CMSACBLimit}" label="CMS or/and ACB Limit Only" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.OverdraftType}" label="Overdraft Type" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              
+              			 <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="checkbox" value="{!v.productFields.ReviewOnly}" label="Review Only" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.productAmount}" label="Overdraft Limit" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              
+              			<lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="checkbox" value="{!v.productFields.Creditliferequired}" label="Credit Life Required" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+               			<lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.productAccountNumber}" label="Domicible Branch Code" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.DomicibleBranchCode}" label="Domicible Branch Code" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              
+              			<lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.InitiationFee}" label="Initiation Fee" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.ExpiryDate}" label="Expiry Date" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              
+                       <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.DebitinterestType}" label="Debit Interest Type" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              
+              			<lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.ReviewDate}" label="Review Date" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              
+              			<lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.InterestType}" label="Interest Type" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+                 <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.RegularPayday}" label="Regular Payday" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.Margin}" label="Margin%" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              
+               <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.Scoringrequired}" label="Scoring Required" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              
+ 					 <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.EffectiveRate}" label="Effective Rate" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+              
+                <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:input type="text" value="{!v.productFields.EconomicEmpowermentClassification}" label="Economic Empowerment Classification" readonly="true" disabled="true"/>
+                        </lightning:layoutItem>
+                           
+              </lightning:layout>-->
+            </aura:if>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

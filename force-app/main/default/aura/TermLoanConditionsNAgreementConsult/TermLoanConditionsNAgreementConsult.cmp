@@ -1,0 +1,166 @@
+<!--
+* Lightning Component for Fulfillment -Term Loans Conditions and Agreements 
+* 
+* @author  Almas Aleem
+* @version v1.0
+* @since   2020-12-10
+* @UserStory W-008016 Enhancements
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" 
+                controller="TermloanConditionsController">
+    
+    <!-- Event Handler-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <!--Attribute Declaration -->
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="securityCessionList" type="Object" /><!-- picklist values-->
+    <aura:attribute name="selectedSecurity" type="String" />
+    
+    <aura:attribute name="activeSections" type="List" default="['Conditions of Agreement']" />
+    
+    <aura:attribute name="landlordWaiver" type="Object" /><!-- picklist values-->
+    <aura:attribute name="selectedlandlordWaiver" type="String" />
+    <aura:attribute name="Insurance" type="Object" /><!-- picklist values-->
+    <aura:attribute name="selectedInsurance" type="String" />
+    
+    <aura:attribute name="electronicTransfer" type="Object" /><!-- picklist values-->
+    <aura:attribute name="selectedelectronicTransfer" type="String" />    
+    
+    <aura:attribute name="contractSigned" type="Object" /><!-- picklist values-->
+    <aura:attribute name="selectedcontractSigned" type="String" /> 
+    
+    <aura:attribute name="mandateNumber" type="Integer" />
+    <aura:attribute name="tellerNumber" type="Integer" />
+    <aura:attribute name="ABFAcctStatusResponse" type="Object" />
+    <aura:attribute name="calculationStatus" type="String" /> <!-- Result -->
+    
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    <!-- UI -->
+    <aura:attribute name="caseRecord" type="Object"/>
+    <force:recordData aura:id="recordLoader"
+                      fields="Opportunity__c,Product__c,Application_Product_Id__c"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.caseRecord}"  
+                      
+                      />
+    <aura:if isTrue="{!v.caseRecord}" >
+        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections }">
+            <lightning:accordionSection name="Conditions of Agreement"  label="Conditions of Agreement">
+                <lightning:recordEditForm recordId="{!v.caseRecord.Application_Product_Id__c}" objectApiName="Application_Product__c"> 
+                    <lightning:layout multipleRows="true" >
+                        <lightning:layoutItem size="4">
+                            <p>Security/Surety Cession and Pledge</p> <lightning:inputField aura:id="securityindi" variant="label-hidden" fieldName="Security_Cession_Indicator__c" value="No"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="2">
+                        </lightning:layoutItem> 
+                        
+                        <lightning:layoutItem size="4" padding="around-small">
+                            <p>Landlord Waiver</p> <lightning:inputField aura:id="LandlordWaiverIndi" variant="label-hidden" fieldName="Land_Lord_Waiver_Indicator__c" value="No"/>  
+                        </lightning:layoutItem> 
+                        
+                        <lightning:layoutItem size="4">
+                            <p>Insurance</p> <lightning:inputField aura:id="InsuranceIndi" variant="label-hidden" fieldName="Insurance_Indicator__c" value="No"/>
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="2">
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="4" padding="around-small">
+                            <p>Electronic Transfer</p> <lightning:inputField aura:id="ElectronicTransferIndi" variant="label-hidden" fieldName="Electronic_Transfer_Indicator__c" value="No"/>  
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="4" padding="around-small">
+                            <p>Contract Signed</p><lightning:inputField aura:id="ContractSignedIndi" variant="label-hidden" fieldName="Contract_Signed_Indicator__c" value="No"/>  
+                        </lightning:layoutItem>  
+                        
+                        <lightning:layoutItem size="2">
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <lightning:button variant="brand" type="submit" label="Save" onclick="{!c.save}"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </aura:if>   
+    
+    <!--
+    <lightning:accordion allowMultipleSectionsOpen="true">
+        <lightning:accordionSection name="ConditionsNAgreement Input"  label="Conditions of Agreement">
+          <lightning:layout multipleRows="true" >
+                <lightning:layoutItem size="12">
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="conditionsForm"  label="Security/Surety Cession and Pledge" class="dynamic" value="{!v.selectedSecurity}" required="true" >
+                        <aura:iteration items="{!v.securityCessionList}" var="securityVar">
+                            <option class="{!securityVar.class}" text="{!securityVar.label}" value="{!securityVar.value}" selected="{!securityVar.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                
+      <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="conditionsForm"  label="Landlord Waiver" class="dynamic" value="{!v.selectedlandlordWaiver}" required="true" >
+                        <aura:iteration items="{!v.landlordWaiver}" var="wavierVar">
+                            <option class="{!wavierVar.class}" text="{!wavierVar.label}" value="{!wavierVar.value}" selected="{!wavierVar.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+     </lightning:layoutItem>
+     
+     <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="conditionsForm"  label="Insurance" class="dynamic" value="{!v.selectedInsurance}" required="true" >
+                        <aura:iteration items="{!v.Insurance}" var="InsuVar">
+                            <option class="{!InsuVar.class}" text="{!InsuVar.label}" value="{!InsuVar.value}" selected="{!InsuVar.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+     </lightning:layoutItem>
+     
+    <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="conditionsForm"  label="Electronic Transfer" class="dynamic" value="{!v.selectedelectronicTransfer}" required="true" >
+                        <aura:iteration items="{!v.electronicTransfer}" var="etVar">
+                            <option class="{!etVar.class}" text="{!etVar.label}" value="{!etVar.value}" selected="{!etVar.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+     </lightning:layoutItem>
+     
+     <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="conditionsForm"  label="Contract Signed" class="dynamic" value="{!v.selectedcontractSigned}" required="true" >
+                        <aura:iteration items="{!v.contractSigned}" var="contVar">
+                            <option class="{!contVar.class}" text="{!contVar.label}" value="{!contVar.value}" selected="{!contVar.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+     </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input  aura:id="conditionsForm"   label="Mandate Number"  value="{!v.mandateNumber}"  />
+                </lightning:layoutItem> 
+                
+                 <lightning:layoutItem size="6" padding="around-small">
+                     <Lightning:input  aura:id="conditionsForm"   label="Teller Number/Operator Card Number"  value="{!v.tellerNumber}"  />
+                </lightning:layoutItem> 
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <b><p>Calculation Status</p></b>
+                    <ui:outputText value="{!v.calculationStatus}"/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Save" variant="brand" onclick="{!c.calculateConditions}" />
+                </lightning:layoutItem>
+            
+                
+            </lightning:layout>
+       </lightning:accordionSection>  
+    </lightning:accordion> -->
+</aura:component>

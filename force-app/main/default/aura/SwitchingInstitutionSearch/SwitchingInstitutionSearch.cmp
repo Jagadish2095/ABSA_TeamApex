@@ -1,0 +1,108 @@
+<!--
+  @description       : Switching Institution Search Component
+  @author            : André Pietersen (IQ Business)
+  @last modified on  : 2021-08-16
+  @last modified by  : André Pietersen (IQ Business)
+  Modifications Log
+  Ver   Date         Author                          Modification
+  1.0   2021-06-15   André Pietersen (IQ Business)   Initial Version
+  1.1   2021-08-16   André Pietersen (IQ Business)   Force deployment
+-->
+<aura:component
+	access="global"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+	controller="SwitchingInstitutionController"
+>
+	<aura:attribute type="Boolean" name="searchInstitutionInfo" default="false" />
+	<aura:attribute type="Boolean" name="addInstitutionInfo" default="false" />
+	<aura:attribute type="Boolean" name="isSaving" default="false" />
+	<aura:attribute name="institutionData" type="Object" default="[]" />
+	<aura:attribute name="columns" type="List" />
+	<aura:attribute name="saveBtnHeading" type="String" default="Save" />
+	<aura:attribute name="searchHeading" type="String" />
+	<aura:attribute name="institutionToSearch" type="String" />
+	<aura:attribute name="institutionResult" type="String" />
+	<aura:attribute name="institutionName" type="String" />
+	<aura:attribute name="institutionParticipation" type="String" />
+	<aura:attribute name="addInstitutionName" type="String" />
+	<aura:attribute name="addInstitutionContactEmail" type="String" />
+	<aura:attribute name="serviceResponse" type="String" />
+	<aura:attribute name="showParticipation" type="Boolean" default="true" />
+	<aura:attribute name="ShowSpinner" type="boolean" default="false" />
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:if isTrue="{!v.searchInstitutionInfo}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container full-width">
+				<header class="slds-modal__header">
+					<h2 id="modal-heading-01" class="customSectionButton">{! v.searchHeading}</h2>
+				</header>
+				<div style="height: 500px">
+					<lightning:datatable
+						data="{! v.institutionData }"
+						columns="{! v.columns}"
+						keyField="Id"
+						resizeStep="20"
+						hideCheckboxColumn="false"
+						maxRowSelection="1"
+						onrowselection="{! c.selectInstitution}"
+					/>
+					<!-- Loading Spinner-->
+					<aura:if isTrue="{!v.ShowSpinner}">
+						<center style="z-index: 99">
+							<lightning:spinner aura:id="TheSpinner" variant="brand" size="large" />
+						</center>
+					</aura:if>
+				</div>
+				<aura:if isTrue="{!v.addInstitutionInfo}">
+					<footer class="slds-modal__footer">
+						<lightning:layout multipleRows="true">
+							<lightning:layoutItem padding="horizontal-small" size="5">
+								<lightning:input
+									type="text"
+									aura:id="addInstitutionName"
+									name="addInstitutionName"
+									value="{!v.addInstitutionName}"
+									class="slds-text-align_left upper-case"
+									label="Institution Name"
+								/>
+							</lightning:layoutItem>
+							<lightning:layoutItem padding="horizontal-small" size="5">
+								<lightning:input
+									type="text"
+									aura:id="addInstitutionContactEmail"
+									name="addInstitutionContactEmail"
+									value="{!v.addInstitutionContactEmail}"
+									class="slds-text-align_left"
+									label="Contact Email (Optional)"
+								/>
+							</lightning:layoutItem>
+							<lightning:layoutItem padding="horizontal-small" size="2">
+								<lightning:button
+									variant="brand"
+									class="save-btn"
+									label="{!v.saveBtnHeading}"
+									title="{!v.saveBtnHeading}"
+									disabled="{!v.isSaving}"
+									onclick="{! c.saveInstitution }"
+								/>
+							</lightning:layoutItem>
+							<p class="serviceResponse">{!v.serviceResponse}</p>
+						</lightning:layout>
+					</footer>
+				</aura:if>
+				<footer class="slds-modal__footer">
+					<lightning:button variant="brand" class="slds-float_left" label="Add Institution" title="Add Institution" onclick="{! c.addInstitution }" />
+					<lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeSearch }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+	</aura:if>
+</aura:component>

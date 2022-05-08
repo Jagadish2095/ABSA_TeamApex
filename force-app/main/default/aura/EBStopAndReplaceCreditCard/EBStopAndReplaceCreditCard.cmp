@@ -1,0 +1,371 @@
+<!--This is the Stop and Replace Credit Card Component for Everyday Banking -->
+<!--@author  Simangaliso Mathenjwa-->
+<!--@Created Date   23 June 2021-->
+<!--@Work Id: W-008923 -->
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+	access="global"
+	controller="EBStopAndReplaceCreditCardController"
+>
+	<!--Attributes-->
+	<aura:attribute
+		name="stopOptions"
+		type="List"
+		default="[  {'label': 'Stop Card', 'value': 'Stop Card'},
+                    {'label': 'Stop and Replace Card', 'value': 'Stop and Replace Card'}
+                ]"
+	/>
+
+	<aura:attribute
+		name="checkBoxGroupOptions"
+		type="List"
+		default="[  {'label': 'Was the card signed', 'value': 'cardSigned'},
+                    {'label': 'Did card have a safe pin', 'value': 'safePin'},
+                    {'label': 'Is this the primary account holder', 'value': 'primaryAccountHolder'},
+                    {'label': 'Was customer told not to use other cards', 'value': 'noOtherCards'},
+                ]"
+	/>
+	<aura:attribute name="checkBoxGroupOptionsValueList" type="List" access="global" />
+	<aura:attribute name="cifFromFlow" type="String" access="global" />
+	<aura:attribute name="cardList" type="List" access="global" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="creditCardAccountNumberList" type="List" access="global" />
+	<aura:attribute name="cardDetailsList" type="List" access="global" />
+	<aura:attribute name="reasonsList" type="List" access="global" />
+	<aura:attribute name="circumstancesList" type="List" access="global" />
+	<aura:attribute name="deliveryMethodList" type="List" access="global" />
+	<aura:attribute name="reason" type="String" access="global" />
+	<aura:attribute name="circumstance" type="String" access="global" />
+	<aura:attribute name="checked" type="Boolean" access="global" default="false" />
+	<aura:attribute name="showForm" type="Boolean" access="global" default="false" />
+	<aura:attribute name="selectedRecord" type="Object" access="global" />
+	<aura:attribute name="stopOptionsValue" type="String" access="global" />
+	<aura:attribute name="showReplaceFields" type="Boolean" access="global" default="false" />
+	<aura:attribute name="showStopOptions" type="Boolean" access="global" default="false" />
+	<aura:attribute name="showSelectedRecord" type="Boolean" access="global" default="false" />
+	<aura:attribute name="deliveryMethodValue" type="String" access="global" />
+	<aura:attribute name="selectedSiteRecord" type="Site__c" />
+	<aura:attribute name="siteLookUpSearchLabel" type="String" access="global" />
+	<aura:attribute name="stoppedCardNumber" type="String" access="global" />
+	<aura:attribute name="showSpinner" type="Boolean" default="false" />
+	
+	<!--Handler Declaration-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<!--Display Errors-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<lightning:tile>
+		<aura:if isTrue="{!v.showSpinner}">
+			<center style="z-index: 99">
+				<lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+			</center>
+		</aura:if>
+		<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+			<aura:if isTrue="{!!v.showSelectedRecord}">
+				<aura:iteration items="{!v.cardList}" var="rec">
+					<lightning:layoutItem size="6" class="slds-form__item slds-form-element_readonly" padding="around-small">
+						<!--<ui:inputCheckbox aura:id="checkBox" text="{!rec}" change="{!c.checkboxSelect}" /><br />-->
+                        <ui:inputRadio aura:id="radio" name="others" text="{!rec}" change="{!c.checkboxSelect}"/><br/>
+						<div class="slds-size_5-of-6">
+							<div class="slds-box slds-box_x-small slds-m-around_x-small filterStyle" style="color: silver">
+								Card Holder Name
+								<p>{!rec.cardHolderName}</p>
+								<br />
+								Card Number
+								<p>{!rec.oaccntnbr}</p>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item" padding="around-small">
+						<aura:if isTrue="{!rec.transactionList.length !=0}">
+							<table class="slds-table slds-table--bordered">
+								<thead>
+									<tr>
+										<th>Transaction Description</th>
+										<th>Transaction Date</th>
+										<th>Transaction Amount</th>
+									</tr>
+								</thead>
+								<tbody>
+									<aura:iteration items="{!rec.transactionList}" var="row" indexVar="rowIndex">
+										<tr class="slds-hint-parent">
+											<td>{!row.dt1TxnDesc}</td>
+											<td>{!row.dt1TxnDt}</td>
+											<td><ui:outputCurrency value="{!row.dt1TxnAmt}" /></td>
+										</tr>
+									</aura:iteration>
+								</tbody>
+							</table>
+						</aura:if>
+					</lightning:layoutItem>
+				</aura:iteration>
+			</aura:if>
+
+			<!--Selected record-->
+			<aura:if isTrue="{!v.showSelectedRecord}">
+				<lightning:layoutItem size="6" class="slds-form__item" padding="around-small">
+					<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<ui:inputCheckbox
+									aura:id="selectedRecordCheckBox"
+									value="{!v.checked}"
+									text="{!v.selectedRecord}"
+									change="{!c.checkboxSelect}"
+								/>
+								<div class="slds-size_5-of-6">
+									<div class="slds-box slds-box_x-small slds-m-around_x-small filterStyle" style="color: silver">
+										Card Holder Name
+										<p>{!v.selectedRecord.cardHolderName}</p>
+										<br />
+										Card Number
+										<p>{!v.selectedRecord.oaccntnbr}</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item" padding="around-medium">
+					<aura:if isTrue="{!v.selectedRecord.transactionList.length !=0}">
+						<table class="slds-table slds-table--bordered">
+							<thead>
+								<tr>
+									<th>Transaction Description</th>
+									<th>Transaction Date</th>
+									<th>Transaction Amount</th>
+								</tr>
+							</thead>
+							<tbody>
+								<aura:iteration items="{!v.selectedRecord.transactionList}" var="row" indexVar="rowIndex">
+									<tr class="slds-hint-parent">
+										<td>{!row.dt1TxnDesc}</td>
+										<td>{!row.dt1TxnDt}</td>
+										<td><ui:outputCurrency value="{!row.dt1TxnAmt}" /></td>
+									</tr>
+								</aura:iteration>
+							</tbody>
+						</table>
+					</aura:if>
+				</lightning:layoutItem>
+
+				<!--Stop Type Options Radio-->
+				<lightning:layoutItem size="8" class="slds-form__item" padding="around-small">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:radioGroup
+									name="radioGroupRequired"
+									variant="label-hidden"
+									options="{!v.stopOptions}"
+									value="{!v.stopOptionsValue}"
+									type="radio"
+									required="true"
+									style="display: inline-block !important"
+									onchange="{!c.handleStopOptionSelect}"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+
+                <!--Form-->
+				<aura:if isTrue="{!v.showForm}">
+					<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+						<lightning:layoutItem size="6" class="slds-form__item" padding="around-small">
+							<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<lightning:select aura:id="reasonsField" value="{!v.reason}" label="Reason for stopping card" required="true">
+											<option value="">Please Select</option>
+											<aura:iteration items="{!v.reasonsList}" var="item">
+												<option value="{!item.External_Value__c}">{!item.Internal_Value__c}</option>
+											</aura:iteration>
+										</lightning:select>
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+						<lightning:layoutItem size="6" class="slds-form__item" padding="around-small">
+							<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<lightning:select aura:id="circumstancesField" value="{!v.circumstance}" label="Circumstances" required="true">
+											<option value="">Please Select</option>
+											<aura:iteration items="{!v.circumstancesList}" var="item">
+												<option value="{!item.External_Value__c}">{!item.Internal_Value__c}</option>
+											</aura:iteration>
+										</lightning:select>
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+						<lightning:layoutItem size="6" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<ui:inputText aura:id="lostPlacedField" required="true" class="field" label="Where was the card lost / stolen" />
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+						<lightning:layoutItem size="6" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<lightning:input
+											type="datetime-local"
+											name="minDate"
+											label="When was the card lost / stolen"
+											aura:id="whenLostField"
+											max="{!v.maxDateValue}"
+											required="true"
+										/>
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+						<lightning:layoutItem size="6" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<ui:inputText aura:id="lastUsedPlaceField" required="true" class="field" label="Where was the card last used" />
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+						<lightning:layoutItem size="6" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<lightning:input
+											type="datetime-local"
+											name="minDate"
+											label="When was the card last used"
+											aura:id="whenLastUsedField"
+											max="{!v.maxDateValue}"
+											required="true"
+										/>
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+						<lightning:layoutItem size="12" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<lightning:textArea
+											name="howLostField"
+											aura:id="howLostField"
+											required="true"
+											label="How was the card lost"
+											placeholder="Was there any special circumstances that led to loss or theft"
+										/>
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+						<lightning:layoutItem size="8" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<lightning:checkboxGroup
+											aura:id="checkBoxGroup"
+											options="{!v.checkBoxGroupOptions}"
+											value="{! v.checkBoxGroupOptionsValueList}"
+											variant="label-hidden"
+										/>
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+						<lightning:layoutItem size="6" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<ui:inputText aura:id="homePhoneField" required="true" class="field" label="Home Phone" />
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+						<lightning:layoutItem size="6" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<ui:inputText aura:id="officePhoneField" required="true" class="field" label="Office Phone" />
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+						<aura:if isTrue="{!v.showReplaceFields}">
+							<lightning:layoutItem size="12" class="slds-form__item">
+								<h3 class="slds-section__title slds-theme_shade" style="width: 100%">
+									<span class="slds-truncate slds-p-horizontal_small" title="Section Title">Delivery Options</span>
+								</h3>
+							</lightning:layoutItem>
+							<lightning:layoutItem size="6" class="slds-form__item">
+								<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+									<div class="slds-form-element__control">
+										<div class="slds-form-element__static">
+											<lightning:select
+												aura:id="deliveryMethodField"
+												value="{!v.deliveryMethodValue}"
+												label="Delivery Method"
+												required="true"
+											>
+												<option value="">Please Select</option>
+												<aura:iteration items="{!v.deliveryMethodList}" var="item">
+													<option value="{!item.External_Value__c}">{!item.Internal_Value__c}</option>
+												</aura:iteration>
+											</lightning:select>
+										</div>
+									</div>
+								</div>
+							</lightning:layoutItem>
+							<lightning:layoutItem size="6" class="slds-form__item">
+								<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+									<div class="slds-form-element__control">
+										<div class="slds-form-element__static">
+											<aura:if isTrue="{!v.deliveryMethodValue == 'CB'}">
+												<c:LookUpField
+													lookupSearchData="Site"
+													icon_name="custom:custom24"
+													selectedRecord="{!v.selectedSiteRecord}"
+													aura:id="siteLookUp"
+													label="{!v.siteLookUpSearchLabel}"
+													placeHolder="Search Branch"
+												/>
+											</aura:if>
+										</div>
+									</div>
+								</div>
+							</lightning:layoutItem>
+						</aura:if>
+						<lightning:layoutItem size="6" class="slds-form__item">
+							<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+								<div class="slds-form-element__control">
+									<div class="slds-form-element__static">
+										<lightning:button
+											aura:id="stopButton"
+											iconName="utility:stop"
+											label="{!v.stopOptionsValue}"
+											onclick="{!c.handleStopReplaceCard}"
+											variant="destructive"
+										/>
+									</div>
+								</div>
+							</div>
+						</lightning:layoutItem>
+					</lightning:layout>
+				</aura:if>
+			</aura:if>
+		</lightning:layout>
+	</lightning:tile>
+</aura:component>

@@ -1,0 +1,109 @@
+<!--
+* Lightning Component for Credit Card NCA Quote Details
+*
+* @author  Almas Aleem
+* @version v1.0
+* @since   2021-05-06
+*
+-->
+
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global"
+                controller="GenerateCCQuoteController">
+
+     <!-- Attribute Decleration -->
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="appProdId" type="Id"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />
+    <aura:attribute name="showQuote" type="Boolean" default="false" />
+    <aura:attribute name="quoteWrap" type="Object" />
+    <aura:attribute name="CardOptions" type="list"/>
+
+    <!-- aura handler for init -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <!-- UI -->
+      <lightning:accordion allowMultipleSectionsOpen="true" >
+    <lightning:accordionSection name="Quote Details" label="Quote Details">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="6">
+                <p style="margin:5px !important;">Approved Card Type</p>
+                <lightning:select class="fontClass" aura:id="cardType" name="SelectMethod" value="{!v.quoteWrap.APcardType}" onchange="" >
+                    <aura:iteration items="{!v.CardOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <p style="margin:10px !important">Optional Credit Insurance</p>
+                <lightning:input class="fontClass" value="{!v.quoteWrap.creditInsurance}" />
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <p style="margin:10px !important">Credit Advanced </p>
+                <lightning:input class="fontClass" value="{!v.quoteWrap.creditAdvanced}" />
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <p style="margin:10px !important">Monthly Service Fee</p>
+                <lightning:input class="fontClass" value="{!v.quoteWrap.serviceFee}"  />
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <p style="margin:10px !important">Variable annual interest rate</p>
+                <lightning:input class="fontClass" value="{!v.quoteWrap.annualinterestRate}"  />
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <p style="margin:10px !important">Annual % interest rate -(variable rate) </p>
+                <lightning:input class="fontClass" value="{!v.quoteWrap.annualinterestRateP}"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <p style="margin:10px !important">Initiation fee to be charged upfront</p>
+                <lightning:input class="fontClass" value="{!v.quoteWrap.UpfrontInitiationfees}"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:button aura:id="Calculate" variant="brand" name="Calculate" label="Calculate" class="" onclick="{!c.calculateQ}" />
+            </lightning:layoutItem>
+        </lightning:layout>
+    </lightning:accordionSection>
+    <aura:if isTrue="{!v.showQuote}">
+        <lightning:accordionSection name="optional section" label="Quotation And Agreement Outputs">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="6">
+                    <p style="margin:10px !important"> Annual Service fees </p><lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.annualservicefees}" maximumFractionDigits="2"/>
+
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="6">
+                    <p style="margin:10px !important"> Annual Credit insurance</p><lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.CreditInsurAggre}" maximumFractionDigits="2"/>
+
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <p style="margin:10px !important"> Monthly instalment including interest and fees</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.monthlyinstalment}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <p style="margin:10px !important"> * Total interest (assuming that the interest rate stays the same)</p>
+                    <lightning:formattedNumber  class="fontClass" value="{!v.quoteWrap.totalinterest}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <p style="margin:10px !important"> * Total interest and fees (assuming that the interest rate and fees stay the same)</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.totalinterestandfees}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <p style="margin:10px !important"> * Total to be repaid (credit advanced + interest + fees+optional credit insurance)</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.totaltoberepaid}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p style="margin:10px !important"> Total cost of credit </p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.totalCreditCost}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p style="margin:10px !important"> Credit Cost Multiple </p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.creditcostmultiple}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p style="margin:10px !important"> Other fees </p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.otherfees}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+    </aura:if>
+    </lightning:accordion>
+</aura:component>

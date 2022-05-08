@@ -1,0 +1,264 @@
+<!--
+* Lightning Component for General Qualitative Information
+*
+* @author  Englarmerdge Mongwe: Absa
+* @version v1.0
+* @since   2020-08-11
+* @UserStory W-003784
+-->
+<aura:component access="global" controller="GeneralQualitativeInformationController"
+    implements="lightning:isUrlAddressable,lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:registerEvent name="creditOriginationEvent" type="c:creditOriginationEvent"/>
+
+    <!--Custom Lookup Attributes-->
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="gqInfo" type="Object" />
+    <aura:attribute name="limitOther" type="Map[]" />
+    <aura:attribute name="selBorrowingPowerLimit" type="Object" />
+    <aura:attribute name="selBusinessPropertyState" type="Object" />
+    <aura:attribute name="elementIds" type="Object" />
+    <aura:attribute name="isActiveQuestions" type="Boolean" default="false" />
+    <aura:attribute name="isActiveKeyManagementPers" type="Boolean" default="false" />
+    <aura:attribute name="isActiveBusinessDirection" type="Boolean" default="false" />
+    <aura:attribute name="isActiveExposureIncrease" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOtherFinancialInstitutions" type="Boolean" default="false" />
+    <aura:attribute name="isActiveArreasOrSars" type="Boolean" default="false" />
+    <aura:attribute name="isActiveDisputeBetweenParties" type="Boolean" default="false" />
+    <aura:attribute name="isActiveWriteoffFailure" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOtherKnowledge" type="Boolean" default="false" />
+    <aura:attribute name="isActiveDebtorBookFunding" type="Boolean" default="false" />
+    <aura:attribute name="isActiveIndustryLegislation" type="Boolean" default="false" />
+    <aura:attribute name="isActiveSuccessionPlanning" type="Boolean" default="false" />
+    <aura:attribute name="isActiveSupportApplication" type="Boolean" default="false" />
+    <aura:attribute name="isActiveFixedAmount" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOther" type="Boolean" default="false" />
+    <aura:attribute name="isActiveBorrowingPower" type="Boolean" default="false" />
+    <aura:attribute name="isBorrowingPowerSel" type="Boolean" default="false" />
+
+    <aura:attribute name="oppRecord" type="Object"/>
+    <force:recordData aura:id="recordLoader" fields="Id,Account.Client_Type__c"
+                     recordId="{!v.recordId}" targetFields="{!v.oppRecord}" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.isActiveQuestions}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12" padding="around-small">
+                <p><b>Info about General Qualitative Information</b></p>
+                <p>Please complete the required details below</p>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <lightning:input aura:id="qqNumberOfEmployees" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <lightning:select aura:id="qqBusinessPropertyState">
+                    <aura:iteration items="{!v.selBusinessPropertyState}" var="option">
+                        <option text="{!option.label}" value="{!option.value}" selected="{!option.selected}" />
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left" label="&nbsp; " aura:id="qqKeyManagementPersonnelChanges" name="KeyManagementPersonnelChanges" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqKeyManagementPersonnelChanges" name="KeyManagementPersonnelChanges" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveKeyManagementPers}">
+                    <lightning:input aura:id="qcKeyManagementPersonnelChanges" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left" label="&nbsp; " aura:id="qqBusinessDirectionChanges" name="BusinessDirectionChanges" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqBusinessDirectionChanges" name="BusinessDirectionChanges" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveBusinessDirection}">
+                    <lightning:input aura:id="qcBusinessDirectionChanges" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left" label="&nbsp; " aura:id="qqExposureIncrease" name="ExposureIncrease" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqExposureIncrease" name="ExposureIncrease" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveExposureIncrease}">
+                    <lightning:input aura:id="qcExposureIncrease" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left" label="&nbsp; " aura:id="qqOtherFinancialInstitutions" name="OtherFinancialInstitutions" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqOtherFinancialInstitutions" name="OtherFinancialInstitutions" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveOtherFinancialInstitutions}">
+                    <lightning:input aura:id="qcOtherFinancialInstitutions" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left" label="&nbsp; " aura:id="qqArreasOrSars" name="ArreasOrSars" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqArreasOrSars" name="ArreasOrSars" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveArreasOrSars}">
+                    <lightning:input aura:id="qcArreasOrSars" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left" label="&nbsp; " aura:id="qqDisputeBetweenParties" name="DisputeBetweenParties" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqDisputeBetweenParties" name="DisputeBetweenParties" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveDisputeBetweenParties}">
+                    <lightning:input aura:id="qcDisputeBetweenParties" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left wrapData" label="&nbsp; " aura:id="qqWriteOffFailure" name="WriteoffFailure" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqWriteOffFailure" name="WriteoffFailure" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveWriteoffFailure}">
+                    <lightning:input aura:id="qcWriteOffFailure" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left wrapData" label="&nbsp; " aura:id="qqOtherKnowledge" name="OtherKnowledge" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqOtherKnowledge" name="OtherKnowledge" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveOtherKnowledge}">
+                    <lightning:input aura:id="qcOtherKnowledge" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left wrapData" label="&nbsp; " aura:id="qqDebtorBookFunding" name="DebtorBookFunding" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqDebtorBookFunding" name="DebtorBookFunding" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveDebtorBookFunding}">
+                    <lightning:input aura:id="qcDebtorBookFunding" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left" label="&nbsp; " aura:id="qqIndustryLegislation" name="IndustryLegislation" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqIndustryLegislation" name="IndustryLegislation" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveIndustryLegislation}">
+                    <lightning:input aura:id="qcIndustryLegislation" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left" label="&nbsp; " aura:id="qqSuccessionPlanning" name="SuccessionPlanning" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqSuccessionPlanning" name="SuccessionPlanning" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveSuccessionPlanning}">
+                    <lightning:input aura:id="qcSuccessionPlanning" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <ui:inputCheckbox class="slds-float_left" label="&nbsp; " aura:id="qqSupportApplication" name="SupportApplication" change="{!c.onCheckedChange}" />
+                <!--lightning:input type="checkbox" aura:id="qqSupportApplication" name="SupportApplication" onchange="{!c.onCheckedChange}" /-->
+            </lightning:layoutItem>
+            <lightning:layoutItem size="6" padding="around-small">
+                <aura:if isTrue="{!v.isActiveSupportApplication}">
+                    <lightning:input aura:id="qcSupportApplication" label="Comments" />
+                </aura:if>
+            </lightning:layoutItem>
+        </lightning:layout>
+        <aura:if isTrue="{!v.isActiveBorrowingPower}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>Info about Borrowing Power</b></p>
+                    <p>Please complete Borrowing Power details below for the following: Private companies, Incorporated Companies.</p>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="qqBorrowingPowerLimit" onchange="{!c.onLimitChange}" required="true">
+                        <aura:iteration items="{!v.selBorrowingPowerLimit}" var="power">
+                            <option class="{!power.class}" text="{!power.label}" value="{!power.value}" selected="{!power.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                </lightning:layoutItem>
+                <aura:if isTrue="{!v.isActiveFixedAmount}">
+                    <lightning:layoutItem size="6" padding="around-small">
+                        <lightning:input type="number" aura:id="qqFixedAmount" step="0.01" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="around-small">
+                    </lightning:layoutItem>
+                </aura:if>
+                <aura:if isTrue="{!v.isActiveOther}">
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <table class="slds-table slds-table_cell-buffer slds-var-m-top_small tableStyle">
+                            <thead>
+                                <tr class="slds-var-m-top_small slds-line-height_reset">
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="ShareholderFunds">Shareholder Funds</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="BorrowingPercentage">Borrowing Percentage</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Rands">Rands</div>
+                                    </th>
+                                    <th scope="col" class="inputColumnR">
+                                        <div class="slds-truncate" title="Totals">Totals</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.limitOther}" var="limO">
+                                    <tr>
+                                        <td class="widthTd">
+                                            <div class="slds-truncate" title="ShareholderFunds">
+                                                <aura:if isTrue="{!limO.IsVisible}">
+                                                    {!limO.ShareholderFunds}
+                                                    <aura:set attribute="else">
+                                                        <b>{!limO.ShareholderFunds}</b>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                        </td>
+                                        <td class="inputColumnC">
+                                            <aura:if isTrue="{!limO.IsVisible}">
+                                                <lightning:input type="number" value="{!limO.BorrowingPercentage}" onchange="{!c.calTotals}" step="0.01" />
+                                            </aura:if>
+                                        </td>
+                                        <td class="inputColumnC">
+                                            <aura:if isTrue="{!limO.IsVisible}">
+                                                <lightning:input type="number" value="{!limO.Rands}" onchange="{!c.calTotals}" step="0.01" />
+                                            </aura:if>
+                                        </td>
+                                        <td class="inputColumnR">
+                                            <div class="slds-truncate" title="Totals">
+                                                <aura:if isTrue="{!limO.IsVisible}">
+                                                    R {!limO.Total}
+                                                    <aura:set attribute="else">
+                                                        <b>R {!limO.Total}</b>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </lightning:layoutItem>
+                </aura:if>
+            </lightning:layout>
+        </aura:if>
+    </aura:if>
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem size="12" padding="around-small">
+            <lightning:button class="slds-float_right" label="Save and Validate" variant="brand"
+                onclick="{!c.saveAndValidate}" />
+        </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

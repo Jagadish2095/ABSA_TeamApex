@@ -1,0 +1,223 @@
+<!--
+  @description       :
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             :
+  @last modified on  : 2021-09-28
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+  Modifications Log
+  Ver   Date         Author                               Modification
+  1.0   02-04-2021   ChangeMeIn@UserSettingsUnder.SFDoc   Initial Version
+                  -->
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+	access="global"
+	controller="EntityInformationStokvelController"
+>
+	<aura:html tag="style"
+		>.toastMessage.forceActionsText{white-space : pre-line !important;}</aura:html
+	>
+	<!--Handlers-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+	<aura:attribute name="accountRecord" type="Account" default="{sobjectType:'Account'}" />
+	<aura:attribute name="isSameAsPhysical" type="boolean" default="true" />
+	<aura:attribute name="recordId" type="String" />
+	<aura:attribute name="MainAccountID" type="String" />
+	<aura:attribute name="accountRecId" type="String" access="global" />
+    <aura:attribute name="communicationLanguage" type="string" />
+	<aura:attribute name="communicationLanguageOptions" type="List" />
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="addressesAreTheSame" type="Boolean" default="false" />
+	<aura:attribute name="addressOptions" type="List" default="[{'label': 'Postal address is the same as the physical address', 'value': 'isSame'}]" />
+	<aura:attribute name="addressChairperson" type="List" default="[{'label': 'Use chairperson address', 'value': 'isSame'}]" />
+	<aura:attribute name="addressValue" type="List" />
+	<aura:attribute name="isBtnDisabled" type="Boolean" default="false" />
+	<aura:attribute name="Entityname" type="String" />
+    <aura:attribute name="communicationMethodOptions" type="List" />
+    <aura:attribute name="communicationMethod" type="string" />
+	<!-- Spinner -->
+	<aura:if isTrue="{!v.isSpinner}">
+		<lightning:spinner variant="brand" alternativeText="Busy" />
+	</aura:if>
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+	<!-- Opportunity Record Edit Form -->
+
+	<!-- Account Record Edit Form -->
+	<lightning:recordEditForm
+		aura:id="recordStokEditForm"
+		recordId="{!v.accountRecId}"
+		objectApiName="Account"
+		onload="{!c.handleAccountLoad}"
+		onsuccess="{!c.handleAccountSuccess}"
+		onerror="{!c.handleAccountError}"
+        onsubmit="{!c.handleSubmit}">
+    <lightning:inputField fieldName="Preferred_Communication_Method__c" class="hidden_field"/>
+    <button id="{! globalId + '_postal_submit' }" type="submit" class="hidden_field"/>
+    <!-- Submit button needed so that onsubmit is fired from flow to save attribute values -->
+
+    <button id="{! globalId + '_contact_submit' }" type="submit" class="hidden_field"/>
+		<div class="slds-box slds-align_absolute-center" style="width: 75%">
+			<lightning:layout multipleRows="true">
+				<lightning:layoutItem size="12">
+					<b><h2 class="slds-section__title">Entity information</h2></b>
+				</lightning:layoutItem>
+				<div style="display: none">
+					<!--hidden as we want to default to individual-->
+					<lightning:inputField aura:id="iCASARefNumber" fieldName="CASA_Reference_Number__c" />
+					<lightning:inputField aura:id="iCASAScreenDate" fieldName="CASA_Screening_Date__c" />
+					<lightning:inputField aura:id="iCASAScreenStatus" fieldName="CASA_Screening_Status__c" />
+					<lightning:inputField fieldName="Client_Group__c" aura:id="iClient_Group__c" />
+					<lightning:inputField fieldName="Client_Type__c" aura:id="iClient_Type__c" />
+					<lightning:inputField fieldName="ID_Type__c" aura:id="iIdtype" />
+					<lightning:inputField fieldName="Valid_Update_Bypass__c" aura:id="iValidUpdateBypass" />
+                </div>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="Name">Entity Name</label>
+					<lightning:inputField variant="label-hidden" fieldName="Name" aura:id="iTrading_Name__c" label="Entity Name" />
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="Country_of_Residence__c">Country of Establishment</label>
+					<lightning:inputField variant="label-hidden" fieldName="Country_of_Registration__c" aura:id="iCountryOfEstablishment" disabled="true" />
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="Country_of_Operation__c">Country Traded with</label>
+					<lightning:inputField variant="label-hidden" fieldName="Country_of_Foreign_tax__c" aura:id="iCountryOfOrigin" disabled="true" />
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="Country_of_Incorporation__c">Country of Operation</label>
+					<lightning:inputField variant="label-hidden" fieldName="Country_of_Incorporation__c" aura:id="iCountryOfOperation" disabled="true" />
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="Standard_Industry_SIC_Category__c">SIC Code Category</label>
+					<lightning:inputField variant="label-hidden" fieldName="Standard_Industry_SIC_Category__c" aura:id="iSICCategory" disabled="true" />
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="Standard_Industry_SIC_Code__c">SIC Code </label>
+					<lightning:inputField fieldName="Standard_Industry_SIC_Code__c" aura:id="iSICCode" variant="label-hidden" disabled="true" />
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="Number_of_Participants__c">Forecast of Members</label>
+					<lightning:inputField variant="label-hidden" fieldName="Number_of_Participants__c" required="true" aura:id="iNumberOfEmployees" />
+				</lightning:layoutItem>
+
+				<lightning:layoutItem size="12">
+					<b><h2 class="slds-section__title">Income</h2></b>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small" size="12">
+					<lightning:inputField fieldName="Source_of_Income__c" aura:id="sourceOfIncome" required="true" disabled="true" />
+                    
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="Income_Tax_Number__c">Income Tax</label>
+					<lightning:inputField variant="label-hidden" fieldName="Income_Tax_Number__c" aura:id="iIncome_Tax_Number__c" />
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small" size="6">
+				<div id="{! globalId + '_CommunicationLanguage' }" class="slds-var-p-around_x-small">
+
+					<lightning:select aura:id="CommunicationLanguage"
+									  name="CommunicationLanguage"
+									  label="Communication Language"									  
+									  value="{! v.communicationLanguage }"
+									  required="true"
+									   >
+						<option value="">please select...</option>
+						<aura:iteration items="{! v.communicationLanguageOptions }" var="clValue">
+							<option value="{!clValue}" selected="{!clValue==v.communicationLanguage}">{!clValue}</option>
+						</aura:iteration>
+					</lightning:select>
+				</div>
+			</lightning:layoutItem>
+				<lightning:layoutItem size="12">
+					<b><h2 class="slds-section__title">Entity Address</h2></b>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small" size="6">
+					<input type="checkbox" aura:id="useCharipersonAddress1" name="useCharipersonAddress" checked="true" disabled="true" />
+
+					<label for="NumberOfEmployees">Use Chairperson address</label>
+				</lightning:layoutItem>
+				<!-- Physical Address -->
+				<div style="display: none">
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:inputField variant="label-hidden" fieldName="BillingAddress" aura:id="iBillingAddress" />
+					</lightning:layoutItem>
+					<!-- Check Box btn -->
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:checkboxGroup
+							name="addressCheckboxGroup"
+							options="{!v.addressOptions}"
+							value="{!v.addressValue}"
+							onchange="{!c.postalSameAsPhysical}"
+						/>
+					</lightning:layoutItem>
+					<!-- Postal Address -->
+					<aura:if isTrue="{!not(v.addressesAreTheSame)}">
+						<lightning:layoutItem padding="around-small" size="12">
+							<lightning:inputField variant="label-hidden" fieldName="ShippingAddress" aura:id="iShippingAddress" />
+						</lightning:layoutItem>
+					</aura:if>
+				</div>
+				<lightning:layoutItem size="12">
+					<b><h2 class="slds-section__title">Entity Contact Details</h2></b>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="PersonOtherPhone"> Cellphone Number</label>
+					<lightning:inputField fieldName="Phone" aura:id="iPersonOtherPhone" required="true" variant="label-hidden" />
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="Employer_Phone__c">Alternate Number</label>
+					<lightning:inputField fieldName="Employer_Phone__c" aura:id="iAlternatePhone" variant="label-hidden" />
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<label for="PersonEmail">Email</label>
+					<lightning:inputField variant="label-hidden" fieldName="Active_Email__c" required="true" aura:id="iPersonEmail" />
+                    
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+                        <div id="{! globalId + '_PreferredCommunicationMethod' }" >
+							<lightning:select
+								aura:id="PreferredCommunicationMethod"
+								name="PreferredCommunicationMethod"	
+                                label="Preferred Communication Channel"							
+								value="{! v.communicationMethod }"
+								required="true"
+								messageWhenValueMissing="Please choose one">
+								<option value="">please select...</option>
+								<aura:iteration items="{! v.communicationMethodOptions }" var="cmValue">
+									<option value="{!cmValue}" selected="{!cmValue==v.communicationMethod}">{!cmValue}</option>
+								</aura:iteration>
+							</lightning:select>
+						</div>
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="12">
+					<div style="float: right">
+						<lightning:button
+							variant="brand"
+							aura:id="btncreateStokvelenity"
+							label="Next"
+							title="Save"
+							onclick="{!c.createStokvelEntity}"
+							disabled="{!v.isBtnDisabled}"
+						/>
+					</div>
+				</lightning:layoutItem>
+			</lightning:layout>
+		</div>
+	</lightning:recordEditForm>
+</aura:component>

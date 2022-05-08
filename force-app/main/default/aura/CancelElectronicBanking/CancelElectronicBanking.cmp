@@ -1,0 +1,150 @@
+<!-- Lightning cmp for cancellation of electronic banking(Telephonic) 
+         Author: Lulu Rankwe
+         Date : 04/05/2020 -->
+<aura:component access="global" controller="CancelElectronicBankingController" implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">
+    
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    
+    <aura:attribute name="productType" type="String" />
+    <aura:attribute name="selectedAccountNumber" type="String" />
+    <aura:attribute name="selectedReasons" type="String" />
+    <aura:attribute name="description" type="String" />
+    
+    <!-- DECLARTION OF LIST VARIABLE  -->
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="prodTypeList" type="List" />
+    <aura:attribute name="accNumList" type="List" />
+    <aura:attribute name="value" type="List" default="option1"/>
+    <aura:attribute name="reasonsList" type="List" />
+    
+    <!-- DECLARTION OF CHECKBOX VARIABLE  -->
+    <aura:attribute name="telephoneBanking" type="String" default ="N" />
+    <aura:attribute name="atm" type="String" default = "N" />
+    <aura:attribute name="debitOrder" type="String" default = "N" />
+    <aura:attribute name="pickPay" type="String" default = "N" />
+    <aura:attribute name="storeVender" type="String" default = "N" />
+    <aura:attribute name="mobile" type="String" default = "N" />
+    <aura:attribute name="none" type="String" default = "N" />
+    
+    <!-- DECLARE SUCCESS AND ERROR MESSAGE-->
+    <aura:attribute name="showPaymentStatusSuccess" type="boolean" default="false"/>
+    <aura:attribute name="showPaymentStatusError" type="boolean" default="false"/>
+    <aura:attribute name="showPaymentStatusErrorMsg" type="String" />
+    
+    <!--# Flow Attribute -->
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"  />
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" access="global"/>
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    
+    <lightning:card iconName="log_event" >        
+        <div class="c-container"> 
+            <lightning:layout multipleRows="true">  
+                
+                <lightning:layoutItem padding="around-small" size="6">  
+                    <lightning:input  type="text"  class="select-auto-width" aura:id="myProductselection" 
+                                     disabled="true" label="Select the Product Type" value="{!v.selectedProductValue}"></lightning:input>
+                </lightning:layoutItem> 
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input type="text"  value="{!v.selectedAccountNumber}" class="select-auto-width" aura:id="myAccountselection" 
+                                     disabled="true" label="Selected the Account" onchange="{!c.getSelectedAccount}"></lightning:input>    
+                </lightning:layoutItem>
+            </lightning:layout>
+            
+    <lightning:layout multipleRows="true">   
+        <lightning:layoutItem padding="around-small" size="6">
+            <lightning:select aura:id= "selectReasonId" class="select-auto-width" label="Reasons for cancellation" value="{!v.selectedReasons}" required="true">
+                <option value="">--None--</option>
+                <aura:iteration items="{!v.reasonsList}" var="item">
+                    <option text="{!item.label}" value="{!item.value}"/>
+                </aura:iteration>
+            </lightning:select>
+        </lightning:layoutItem>
+        
+        <lightning:layoutItem padding="around-small" size="6">
+            <lightning:textarea value="{!v.description}" label="Details" maxlength="60"/>
+        </lightning:layoutItem>
+            </lightning:layout>  
+            
+            <!-- DECLARTION OF CHECKBOX SELECTION  -->
+            <h3 class="slds-section__title"  size="12">
+                <span class="slds-truncate slds-button slds-section__title-action" title="Account Selection">What is used as a replacement?</span>
+            </h3>
+            <lightning:layout multipleRows="true">   
+            <p> </p>
+            
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="teleBankingCheck" type="checkbox" name ="telephoneBanking" label="telephoneBanking" onchange="{! c.onTelephoneBanking }"/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="atmCheck" type="checkbox" name ="ATM" label="ATM" onchange="{! c.onATMCheck }" />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="debitOrderCheck" type="checkbox" name ="debitOrder" label="Debit Order" onchange="{! c.onDebit}"/>
+                </lightning:layoutItem>
+                
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="pickPayCheck" type="checkbox" name ="pickPay" label="Pick 'n Pay" onchange="{! c.onPickNPay}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="storeVenderCheck" type="checkbox" name ="storeVender" label="Store/ Vendor" onchange="{! c.onStoreVendor}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="mobileCheck" type="checkbox" name ="mobile" label="Mobile" onchange="{! c.onMobile}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="noneCheck" type="checkbox" name ="none" label="None" onchange="{! c.onNone}"/>
+                </lightning:layoutItem>
+            </lightning:layout>  <br/>  
+            
+            
+    <!-- Successfull message -->
+    <lightning:layout multipleRows="true">
+        <aura:if isTrue="{!v.showPaymentStatusSuccess}">  
+            <lightning:layoutItem padding="around-small" size="6"> 
+                <div class="slds-notify slds-notify_toast slds-theme--success  slds-size_12-of-12">
+                    <span class="slds-assistive-text"> </span>
+                    <div class="slds-notify__content">
+                        <h5 class="slds-text-heading_small slds-align_absolute-right">Successful Transaction </h5>
+                        <br/>
+                        <p class="slds-align_absolute-center"> Status : Successful </p>                
+                    </div>
+                </div>   
+            </lightning:layoutItem>
+        </aura:if>
+        
+        <!-- DISPLAY ERROR MESSAGE -->
+        <aura:if isTrue="{!v.showPaymentStatusError}">
+            <lightning:layoutItem padding="around-small" size="6"> 
+                <!-- Show the message to ui -->
+                <div class=" slds-notify slds-notify_toast slds-theme_error  slds-size_12-of-12">
+                    <span class="slds-assistive-text">error</span>
+                    <div class="slds-notify__content">
+                        <h5 class="slds-text-heading_small slds-align_absolute-right">Error Message :{!v.showPaymentStatusErrorMsg} </h5>
+                        <br/>
+                        <p class="slds-align_absolute-center"> Status : Unsuccessful</p>                
+                    </div>
+                </div> 
+            </lightning:layoutItem>
+        </aura:if>
+    </lightning:layout>
+            
+    <h5 class="slds-align_absolute-center"> Are you sure you want to cancel Electronic Banking? </h5><br/>    
+    <div class="slds-align_absolute-center">  
+        
+        <lightning:buttonGroup >
+            <lightning:button aura:id="submitYesButton" variant="brand" label="Yes" onclick="{!c.submitYes}"/>
+            <lightning:button aura:id="submitNoButton" label="No" onclick="{!c.submitNo}"/>
+        </lightning:buttonGroup>
+            </div>   
+            
+        </div>
+    </lightning:card>
+    
+    <br/><br/><br/>
+
+    
+</aura:component>

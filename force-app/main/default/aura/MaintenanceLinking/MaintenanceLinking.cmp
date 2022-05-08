@@ -1,0 +1,252 @@
+<aura:component  access="global" 
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName" controller="PackageLinkController">
+   
+        <!-- attributes -->
+    <aura:attribute name="opportunityId" type="String" />
+    <aura:attribute name="Products" type="String"/>    
+    <aura:attribute name="CifKey" type="String"/>
+    <aura:attribute name="customerCode" type="String"/>
+     <aura:attribute name="productType" type="String"/>
+     <aura:attribute name="productId" type="String" default="11032" />
+    <aura:attribute name="clientKey" type="String"/>
+    <aura:attribute name="chequeAccount" type="String"/>
+    <aura:attribute name="creditCardNumber" type="String"/>
+    <aura:attribute name="pricingCode" type="String"/>
+    <aura:attribute name="packageName" type="String"/>
+    <aura:attribute name="CanNavigate" type="Boolean" default="true" />
+    <aura:attribute name="packageId" type="String"/>
+    <aura:attribute name="flowName" type="String" Default="PackageLinkDisplayAccountProduct" />
+    <aura:attribute name="lstProductPremium" type="FnbSynopsesWrapper.Product[]"/>    
+    <aura:attribute name="lstProducts" type="FnbSynopsesWrapper.Product[]"/>
+    <aura:attribute name="prodList" type="list"/>    
+    <aura:attribute name="applicationId" type="String"/> 
+    <aura:attribute name="NopackagesFound" type="String" default=''/>
+    <!-- data table attributes -->
+    <aura:attribute name="data" type="Object" />
+    <aura:attribute name = "selectedAccts" type="List"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="maxRowSelection" type="Integer" default="1"/>
+    <aura:attribute name="isNoPackageFound" type="Boolean" default="false"/>
+     <aura:attribute name="displayedSection" type="string" default=""/>
+    <!-- handlers-->
+    <aura:handler name="init" value="{!this}" action="{!c.init }"/>
+    
+    <lightning:layout >
+      <lightning:layoutitem padding="around-small" size="12">
+        <legend class="slds-text-heading--medium slds-p-vertical--large">
+          <p><lightning:icon iconName="standard:account" title="Account" class = "my-icon" />&nbsp;<b>Current Products</b></p>
+        </legend>
+            <aura:if isTrue="{!(v.isNoPackageFound)}">
+              <div class="slds-modal__content slds-p-around--medium">
+                  <b> {!v.NopackagesFound}</b>
+              </div>
+          </aura:if>
+          <div aura:id="ProductTable" class="slds-grid slds-gutters slds-hide">
+              <div class="slds-col slds-size_3-of-3" >  
+                  <p><b>Please select the desired Package from the options below</b></p>
+                  <lightning:card>
+                      <lightning:datatable class="table-ClientResult"
+                                           keyField="Id"
+                                           data="{! v.data }"
+                                           columns="{! v.columns }"
+                                           maxRowSelection="{! v.maxRowSelection }"
+                                           onrowselection="{!c.handleSelect1}"
+                                           hideCheckboxColumn="false"
+                                           aura:id="produtTable"/>
+                      
+                  </lightning:card>
+              </div>
+          </div>
+          </lightning:layoutitem>
+        </lightning:layout>
+   <div aura:id="firstsection" class="{!if(v.displayedSection == 'sectionGold','slds-show','slds-hide')}">
+		<lightning:layout>
+        <lightning:layoutitem padding="around-small" size="12">
+    <legend class="slds-text-heading--medium slds-p-vertical--large">
+          <p><lightning:icon iconName="standard:account" title="Account" class = "my-icon" />&nbsp;<b>Available Packages</b></p>
+        </legend>
+      </lightning:layoutitem>
+    </lightning:layout>
+    <lightning:layout >
+      <lightning:layoutitem padding="around-small" size="10">
+     <lightning:accordion aura:id="goldvalue"> 
+         <aura:iteration items="{!v.lstProducts}" var="product" >
+                    <lightning:accordionSection  aura:id="productLine" name="{!product.Description}" label="{!product.Description}" class="slds-box" >
+                        <aura:set attribute="actions">
+                            <div data-prodid="{!product.ProductId}" onchange="{!c.handleSectionToggle}">
+                                <!--lightning:input type="checkbox" aura:id="productLine" checked="{!product.IsSelected}" /-->
+                            </div>
+                        </aura:set>
+                        <hr></hr>
+                        <div class="slds-grid slds-grid_align-spread">
+                            <legend class="slds-col slds-size_1-of-3">
+                                <span><p>Recommended Income:</p><p><b>{!product.RecommendedIncome}</b></p></span>
+                            </legend> 
+                            <legend class="slds-col slds-size_1-of-3">
+								<aura:if isTrue="{!or(not(empty(product.ChequeFee)),
+									not(empty(product.CreditCardFee)),
+									not(empty(product.FacilityFee)))}">
+									<div class="slds-grid slds-grid_align-spread">
+										<legend class="slds-col slds-size_1-of-1">
+											<span><p><b>Monthly Account Fees:</b></p></span>
+										</legend>
+									</div>
+								</aura:if>
+                                <aura:if isTrue="{!not(empty(product.ChequeFee))}">
+                                    <div class="slds-grid slds-grid_align-spread">
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span><p>Cheque Service Fee:</p></span>
+                                        </legend>
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span
+                                                ><p>{!product.ChequeFee}</p></span
+                                            >
+                                        </legend>
+                                    </div>
+                                </aura:if>
+                                <aura:if isTrue="{!not(empty(product.CreditCardFee))}">
+                                    <div class="slds-grid slds-grid_align-spread">
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span><p>Credit Card Account Fee:</p> </span>
+                                        </legend>
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span
+                                                ><p>{!product.CreditCardFee}</p></span
+                                            >
+                                        </legend>
+                                    </div>
+                                </aura:if>
+                                <aura:if isTrue="{!not(empty(product.FacilityFee))}">
+                                    <div class="slds-grid slds-grid_align-spread">
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span><p>Credit Card Facility Fee:</p></span>
+                                        </legend>
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span
+                                                ><p>{!product.FacilityFee}</p></span
+                                            >
+                                        </legend>
+                                    </div>
+                                </aura:if>
+								<aura:if isTrue="{!not(empty(product.MonthlyFee))}">
+									<div class="slds-grid slds-grid_align-spread">
+										<legend class="slds-col slds-size_1-of-2">
+											<span><p><b>Total Monthly Fee:</b></p> </span>
+										</legend>
+										<legend class="slds-col slds-size_1-of-2">
+											<span
+												><p><b>{!product.MonthlyFee}</b></p></span
+											>
+										</legend>
+									</div>
+								</aura:if>
+                            </legend>
+                            <legend class="slds-col slds-size_1-of-3">
+                                <span>                 
+                                    <lightning:formattedUrl value="{!product.PdfUrl}" 
+                                                            label="Features and benefits." target="_blank" /></span>                        
+                            </legend>
+                        </div>
+                    </lightning:accordionSection>               
+                </aura:iteration>
+            </lightning:accordion>
+    </lightning:layoutitem>
+    </lightning:layout>
+    </div>
+    <div aura:id="secondsection" class="{!if(v.displayedSection == 'sectionPremium','slds-show','slds-hide')}">
+        <lightning:layout>
+        <lightning:layoutitem padding="around-small" size="12">
+    <legend class="slds-text-heading--medium slds-p-vertical--large">
+          <p><lightning:icon iconName="standard:account" title="Account" class = "my-icon" />&nbsp;<b>Available Packages</b></p>
+        </legend>
+      </lightning:layoutitem>
+    </lightning:layout>
+        <lightning:layout>
+        <lightning:layoutitem padding="around-small" size="10">
+     <lightning:accordion aura:id="premiumvalue">
+         <aura:iteration items="{!v.lstProductPremium}" var="product" >
+                    <lightning:accordionSection  aura:id="productLine" name="{!product.Description}" label="{!product.Description}" class="slds-box" >
+                        <aura:set attribute="actions">
+                            <div data-prodid="{!product.ProductId}" onchange="{!c.handleSectionToggle}">
+                                <!--lightning:input type="checkbox" aura:id="productLine" checked="{!product.IsSelected}" /-->
+                            </div>
+                        </aura:set>
+                        <hr></hr>
+                        <div class="slds-grid slds-grid_align-spread">
+                            <legend class="slds-col slds-size_1-of-3">
+                                <span><p>Recommended Income:</p><p><b>{!product.RecommendedIncome}</b></p></span>
+                            </legend>
+                            <legend class="slds-col slds-size_1-of-3">
+								<aura:if isTrue="{!or(not(empty(product.ChequeFee)),
+									not(empty(product.CreditCardFee)),
+									not(empty(product.FacilityFee)))}">
+									<div class="slds-grid slds-grid_align-spread">
+										<legend class="slds-col slds-size_1-of-1">
+											<span><p><b>Monthly Account Fees:</b></p></span>
+										</legend>
+									</div>
+								</aura:if>
+                                <aura:if isTrue="{!not(empty(product.ChequeFee))}">
+                                    <div class="slds-grid slds-grid_align-spread">
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span><p>Cheque Service Fee:</p></span>
+                                        </legend>
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span
+                                                ><p>{!product.ChequeFee}</p></span
+                                            >
+                                        </legend>
+                                    </div>
+                                </aura:if>
+                                <aura:if isTrue="{!not(empty(product.CreditCardFee))}">
+                                    <div class="slds-grid slds-grid_align-spread">
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span><p>Credit Card Account Fee:</p> </span>
+                                        </legend>
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span
+                                                ><p>{!product.CreditCardFee}</p></span
+                                            >
+                                        </legend>
+                                    </div>
+                                </aura:if>
+                                <aura:if isTrue="{!not(empty(product.FacilityFee))}">
+                                    <div class="slds-grid slds-grid_align-spread">
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span><p>Credit Card Facility Fee:</p></span>
+                                        </legend>
+                                        <legend class="slds-col slds-size_1-of-2">
+                                            <span><p>{!product.FacilityFee}</p></span>
+                                        </legend>
+                                    </div>
+                                </aura:if>
+								<aura:if isTrue="{!not(empty(product.MonthlyFee))}">
+									<div class="slds-grid slds-grid_align-spread">
+										<legend class="slds-col slds-size_1-of-2">
+											<span><p><b>Total Monthly Fee:</b></p> </span>
+										</legend>
+										<legend class="slds-col slds-size_1-of-2">
+											<span><p><b>{!product.MonthlyFee}</b></p></span
+											>
+										</legend>
+									</div>
+								</aura:if>
+                            </legend>
+                            <legend class="slds-col slds-size_1-of-3">
+                                <span>            
+                                    <lightning:formattedUrl value="{!product.PdfUrl}" 
+                                                            label="Features and benefits." target="_blank" /></span>                        
+                            </legend>
+                        </div>
+                    </lightning:accordionSection>
+                </aura:iteration>
+            </lightning:accordion>
+    </lightning:layoutitem>
+    </lightning:layout>
+    </div>
+     <aura:if isTrue="{!(v.CanNavigate)}">
+    <div class="slds-var-p-around_x-small">
+        <c:BranchFlowFooter aura:id="branchFlowFooter" availableActions="{! v.availableActions }" navigateFlowEvent="{!c.handleNavigate}"/>
+    </div>
+    </aura:if>
+</aura:component>

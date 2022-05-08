@@ -1,0 +1,88 @@
+<!--
+* Lightning Component for Merchant MATCH MCC High Risk Check
+*
+* @author  Himani Joshi
+* @version v1.0
+* @since   2020-08-27
+*
+-->
+<aura:component access="global"
+                controller="MerchantMCCHighRiskCheck"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="errorMessage" type="String" default=""/>
+    <aura:attribute name="opportunityRecord" type="Opportunity"/>
+    <aura:attribute name="showMCCData" type="Boolean" default="false"/>
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="showApprovalStatus" type="Boolean" default="false"/>
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <force:recordData aura:id="opportunityForm"
+                    fields="Approval_Status__c,Trigger_Approval_Process__c,Merchant_Experian_Inquiry_Passed__c,MCC_Code__c,Sales_Activity_Description__c,Merchant_High_Risk_MCC_Passed__c"
+                    recordId="{!v.recordId}"
+                    targetFields ="{!v.opportunityRecord}"
+                    mode="EDIT"/>
+
+    <lightning:accordion  activeSectionName="High Risk MCC Check" >
+        <lightning:accordionSection name="MCCCheck" label="High Risk MCC Check">
+
+            <!-- Display Lightning Data Service errors, if any -->
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="recordError">
+                    <br/>
+                    <h2 class="slds-section__title" style="color:red">{!v.errorMessage}</h2>
+                    <br/>
+                </div>
+            </aura:if>
+
+            <aura:if isTrue="{!and(v.opportunityRecord.Merchant_Experian_Inquiry_Passed__c, not(v.showMCCData))}">
+                <lightning:input style="position:absolute" type="checkbox" id="termsConsCheckBox" name="agreeToTermsAndConditions" onchange="{! c.showMCCData}"/>
+                 <span class="slds-form-element__label" style="padding-left:3%">
+                    I Agree to the   <a onclick="{!c.newPopup}">MCC system terms &amp; conditions.</a>
+                </span>
+            </aura:if>
+
+            <lightning:recordEditForm aura:id="opportunityEditForm"
+                                    recordId="{!v.recordId}"
+                                    objectApiName="Opportunity"
+                                    onsuccess="{!c.handleSuccess}"
+                                    onload="{!c.handleLoad}"
+                                    onerror="{!c.handleError}">
+
+                <lightning:messages />
+
+                <lightning:inputField fieldName="MCC_Code__c" aura:id="oppMccCode" class="{!if((v.showMCCData), '', 'slds-hide')}" required="true"/>
+                <lightning:inputField fieldName="Sales_Activity_Description__c" aura:id="oppSalesActivityDescription" class="{!if((v.showMCCData), '', 'slds-hide')}" required="true"/>
+                <lightning:inputField fieldName="Approval_Status__c" aura:id="oppApprovalStatus" class="slds-hide"/>
+                <lightning:inputField fieldName="Trigger_Approval_Process__c" aura:id="oppTriggerApprovalProcess" class="slds-hide"/>
+                <lightning:inputField fieldName="Merchant_High_Risk_MCC_Passed__c" aura:id="oppMCCPassed" class="slds-hide"/>
+
+                <div class="{!if((or(and(not(empty(v.opportunityRecord.Approval_Status__c)), v.opportunityRecord.Trigger_Approval_Process__c == 'MATCH/TransUnion/Experian/MCC Risk Check'), v.showApprovalStatus)), '', 'slds-hide')}">
+                    <lightning:layoutItem padding="around-small" size="12">
+                                Approval Status : <lightning:outputField fieldName="Approval_Status__c" aura:id="oppApprovalStatusOutput" variant="label-hidden"/>
+                    </lightning:layoutItem>
+                </div>
+
+                <div class="{!if((v.opportunityRecord.Merchant_High_Risk_MCC_Passed__c), '', 'slds-hide')}">
+                    <lightning:layoutItem padding="around-small" size="12">
+                                Merchant Risk Checks Complete
+                    </lightning:layoutItem>
+                </div>
+
+                <lightning:button variant="brand"
+                            class="slds-align_absolute-center slds-m-top_xx-small slds-show"
+                            label="Save and Validate Product Risk Checks"
+                            title="Save and Validate Product Risk Checks"
+                            onclick="{! c.validateProductRiskChecks}"
+                            aura:id="submitbtn"
+                            disabled="{!if((v.showMCCData), false, true)}"/>
+
+            </lightning:recordEditForm>
+         </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

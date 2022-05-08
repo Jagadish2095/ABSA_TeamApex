@@ -1,0 +1,223 @@
+<!-- Lightning cmp for adding beneficiary(Telephonic)
+Author: Simangaliso Mathenjwa
+Date : 07/03/2021  -->
+
+<aura:component
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes"
+    access="global"
+    controller="AddBeneficiaryController"
+>
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}" />
+
+    <!--Bank Account -->
+
+    <aura:attribute name="prodTypesSet" type="Set" />
+    <aura:attribute name="beneficiaryName" type="String" access="global" />
+    <aura:attribute name="beneficiaryReference" type="String" access="global" />
+    <aura:attribute name="ownReference" type="String" access="global" />
+    <aura:attribute name="accountNumber" type="String" />
+    <aura:attribute name="accAccountNumber" type="String" />
+    <aura:attribute name="showForm" type="boolean" default="true" />
+    <aura:attribute name="selectedTargetAccType" type="string" />
+    <aura:attribute name="targetAccTypeOptions" type="List" />
+    <aura:attribute name="errorMessage" type="String" default="" />
+    <aura:attribute name="showBeneficiaryStatusSuccess" type="boolean" default="false" />
+    <aura:attribute name="showBeneficiaryStatusError" type="boolean" default="false" />
+    <aura:attribute name="showBeneficiaryStatusErrorMsg" type="String" />
+    <aura:attribute name="showSubmitButton" type="boolean" default="true" />
+
+    <!-- Bank And Branch Name/Code  -->
+    <aura:attribute name="selectedBankName" type="string" default="" />
+    <aura:attribute name="branchCode" type="string" default="" />
+
+    <!--# Flow Attribute -->
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" default="" access="global" />
+    <aura:attribute name="selectedProductTypeFromFlow" type="String" default="" access="global" />
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global" />
+    <aura:attribute name="respFromCIGetAccLink" type="String" />
+    <aura:attribute name="selectedProductValue" type="String" />
+
+    <aura:if isTrue="{!v.showForm}">
+        <lightning:layoutItem size="12">
+            <h3 class="slds-section__title">Account Details</h3>
+        </lightning:layoutItem>
+
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="6">
+                <!--Product Type-->
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="myProductselection" label="Product Type" readonly="true" value="{!v.selectedProductTypeFromFlow}" />
+                </lightning:layoutItem>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem padding="around-small" size="6">
+                <!--Source Account number-->
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="myAccountselection" label="Source Account number" readonly="true" value="{!v.selectedAccountNumberToFlow}" />
+                </lightning:layoutItem>
+            </lightning:layoutItem>
+        </lightning:layout>
+
+        <!--SCREEN 1-->
+        <!-- Add Beneficiary Layout-->
+
+        <lightning:layoutItem size="12">
+            <h3 class="slds-section__title">Beneficiary Details</h3>
+        </lightning:layoutItem>
+
+        <!--Beneficiary name-->
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:input aura:id="BeneficiaryName" label="Beneficiary name" required="true" value="{!v.beneficiaryName}" />
+        </lightning:layoutItem>
+
+        <!--Account number-->
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:input aura:id="accountNumber" label="Account number" required="true" value="{!v.accountNumber}" />
+        </lightning:layoutItem>
+
+        <!--Bank number and branch code-->
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="6">
+                <label class="slds-float_left" padding="around-small"><span style="color: red" align="left" label="{!v.selectedBankName}">*</span>Bank </label>
+                <c:customLookUp dselectedAccBankName="{!v.selectedBankName}" IconName="custom:custom17" selectedRecord="{!v.selectedBankName}" />
+            </lightning:layoutItem>
+
+            <lightning:layoutItem padding="around-small" size="6">
+                <label class="slds-float_left" padding="around-small" value="{!v.branchCode}"
+                    ><span style="color: red" align="left">*</span>Select Branch Name
+                </label>
+                <c:dependentCutomLookup dselectedBankName="{!v.selectedBankName}" IconName="custom:custom16" selectedRecord="{!v.branchCode}" label="" />
+            </lightning:layoutItem>
+        </lightning:layout>
+
+        <!--Picklist for Account types-->
+
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:select aura:id="targetAccType" value="{!v.selectedTargetAccType}" label="Account type" required="true">
+                <aura:iteration items="{!v.targetAccTypeOptions}" var="item">
+                    <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}" />
+                </aura:iteration>
+            </lightning:select>
+        </lightning:layoutItem>
+
+        <!--Beneficiary references-->
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:input aura:id="BeneficiaryReference" label="Beneficiary reference" required="true" value="{!v.beneficiaryReference}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:input aura:id="ownReference" label="Own reference" required="true" value="{!v.ownReference}" />
+        </lightning:layoutItem>
+        <!--Button for adding beneficiary-->
+        <lightning:layoutItem padding="around-small" size="12">
+            <div class="slds-m-top_small slds-float--right">
+                <lightning:button variant="brand" label="Add Beneficiary" onclick="{!c.checkFields }" />
+            </div>
+            <br />
+        </lightning:layoutItem>
+
+        <!--SCREEN 2-->
+        <!--Output for user input -->
+        <aura:set attribute="else">
+            <lightning:layoutItem size="6">
+                <h3 class="slds-section__title">Beneficiary Details</h3>
+            </lightning:layoutItem>
+
+            <lightning:layout multipleRows="true">
+                <!--Output : Beneficiary name-->
+                <lightning:layoutItem padding="around-small" size="6"
+                    ><h6>Beneficiary Name</h6>
+                    <ui:outputText value="{!v.beneficiaryName}" />
+                </lightning:layoutItem>
+
+                <!--Selected Bank name-->
+                <lightning:layoutItem padding="around-small" size="6"
+                    ><h6>Bank</h6>
+                    <ui:outputText value="{!v.selectedBankName}" />
+                </lightning:layoutItem>
+
+                <!--Selected Branch Code-->
+                <lightning:layoutItem padding="around-small" size="6"
+                    ><h6>Branch code</h6>
+                    <ui:outputText value="{!v.branchCode}" />
+                </lightning:layoutItem>
+
+                <!--Output : Account number-->
+                <lightning:layoutItem padding="around-small" size="6"
+                    ><h6>Account number</h6>
+                    <ui:outputText value="{!v.accountNumber}" />
+                </lightning:layoutItem>
+            </lightning:layout>
+
+            <!--Output : Account type-->
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="6"
+                    ><h6>Account type</h6>
+                    <ui:outputText value="{!v.selectedTargetAccType}" />
+                </lightning:layoutItem>
+
+                <!--Output : Beneficiary reference-->
+                <lightning:layoutItem padding="around-small" size="6"
+                    ><h6>Beneficiary reference</h6>
+                    <ui:outputText value="{!v.beneficiaryReference}" />
+                </lightning:layoutItem>
+
+                <!--Output : Statement reference-->
+                <lightning:layoutItem padding="around-small" size="6"
+                    ><h6>Own reference</h6>
+                    <ui:outputText value="{!v.ownReference}" />
+                </lightning:layoutItem>
+            </lightning:layout>
+
+            <!--popUp : Successful status-->
+            <lightning:layout multipleRows="true">
+                <aura:if isTrue="{!v.showBeneficiaryStatusSuccess}">
+                    <lightning:layout multipleRows="true">
+                        <div class="slds-notify slds-notify_toast slds-theme--success slds-size_12-of-12">
+                            <span class="slds-assistive-text"> </span>
+                            <div class="slds-notify__content">
+                                <h5 class="slds-text-heading_small slds-align_absolute-right">Beneficiary Added Successfully</h5>
+                                <br />
+                                <p class="slds-align_absolute-center">Adding Beneficiary Status: Successful</p>
+                            </div>
+                        </div>
+                    </lightning:layout>
+                </aura:if>
+
+                <!--popUp : Unsuccessful status-->
+                <aura:if isTrue="{!v.showBeneficiaryStatusError}">
+                    <lightning:layout multipleRows="true">
+                        <div class="slds-notify slds-notify_toast slds-theme_error slds-size_12-of-12">
+                            <span class="slds-assistive-text"> </span>
+                            <div class="slds-notify__content">
+                                <h5 class="slds-text-heading_small slds-align_absolute-right">Error Message :{!v.showBeneficiaryStatusErrorMsg}</h5>
+                                <br />
+                                <p class="slds-align_absolute-center">Adding Beneficiary Status: Unsuccessful</p>
+                            </div>
+                        </div>
+                    </lightning:layout>
+                </aura:if>
+            </lightning:layout>
+
+            <aura:if isTrue="{!v.showSubmitButton}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div class="slds-m-top_small slds-float--right">
+                            <!--<lightning:button variant="brand" label="Edit" onclick="{!c.editForm }" />-->
+                            <lightning:button variant="brand" label="Submit" onclick="{!c.addBeneficiaryJS }" />
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </aura:if>
+        </aura:set>
+    </aura:if>
+
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title slds-align_absolute-left" style="color: red">{!v.errorMessage}</h2>
+            <br />
+        </div>
+    </aura:if>
+</aura:component>

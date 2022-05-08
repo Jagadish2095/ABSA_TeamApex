@@ -1,0 +1,129 @@
+<!--
+* Lightning Component for Trading as Name
+*
+* @author  Tracy de Bruin
+* @since   2020-05-06
+*s
+-->
+<aura:component access="global" controller="OnboardingTradingAsNameController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" >
+    
+    <!--Attributes-->
+    <aura:attribute name="accRecId" type="String" />
+    <aura:attribute name="tradingNameRecId" type="String" />
+    <aura:attribute name="tradingNameRecord" type="Trading_as_Name__c" default="{'sobjectType': 'Trading_as_Name__c'}"/> 
+    <aura:attribute name="tradingAsNamesList" type="Object" />
+    <aura:attribute name="showNewTradingNameModal" type="Boolean" />
+    <aura:attribute name="showDeleteConfirmation" type="boolean" default="false"/>
+    <aura:attribute name="tradingAsNameDeleteId" type="String"/>
+    <aura:attribute name="tradingAsNameEditId" type="String"/>
+    
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="errors" type="Object" default="[]"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/>
+    
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+    
+    <!--<aura:handler action="{!c.doAction}" name="init" value="{!this}" />-->
+    <aura:method name="getAccountId" action="{!c.doAction}"
+                 description="Sample method with parameters"> 
+        <aura:attribute name="accId" type="String" /> 
+    </aura:method>
+
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="" size="12" smallDeviceSize="12" mediumDeviceSize="12">
+            <lightning:button class="slds-float_right"
+                              variant="neutral" 
+                              label="New Trading as Name"
+                              title="New Trading as Name"
+                              onclick="{! c.openNewTradingNameModal }"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="" size="12" smallDeviceSize="12" mediumDeviceSize="12">
+            <div style="height: 150px">
+                <lightning:datatable aura:id="dtTable"
+                                     columns="{! v.columns }"
+                                     data="{! v.tradingAsNamesList }"
+                                     keyField="Id"
+                                     errors="{! v.errors }"
+                                     draftValues="{! v.draftValues }"
+                                     onrowaction="{! c.handleRowAction }"
+                                     onsave="{! c.handleSave }"
+                                     hideCheckboxColumn="true"
+                                     />
+            </div>
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+    <!-- Create new Trading as Name Modal -->
+    <aura:if isTrue="{!v.showNewTradingNameModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeNewTradingNameModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Trading as Name</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        
+                        <!-- Loading Spinner-->
+                        <center style="z-index:99">  
+                            <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" />
+                        </center>
+                        
+                        <lightning:recordEditForm aura:id="newTradingNameForm" 
+                                                  objectApiName="Trading_as_Name__c" 
+                                                  recordId="{!v.tradingNameRecId}"> 
+                            <lightning:layout multipleRows="true" >
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField fieldName="Account__c" value="{!v.tradingNameRecord.Account__c}" disabled="true"/>
+                                    <lightning:input fieldName="Name" value="{!v.tradingNameRecord.Name}" required="true" />  
+                                    
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button class="slds-float_left"
+                                      variant="neutral" 
+                                      label="Cancel" 
+                                      title="Cancel"
+                                      onclick="{! c.closeNewTradingNameModal }"/>
+                    <lightning:button variant="brand" 
+                                      label="Save"
+                                      title="Save"
+                                      onclick="{! c.createTradingNameRecord}"/> 
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        
+        
+    </aura:if>
+    
+    <!-- Delete confirmation Modal -->
+     <aura:if isTrue="{!v.showDeleteConfirmation}">
+        <div style="height:640px">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Delete Trading as Name</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p>Are you sure you want to delete this Trading as Name?</p>
+                    </div>
+                    <footer class="slds-modal__footer slds-modal__footer_directional">
+                        <lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.cancelDeleteAction }"/>
+                        <lightning:button variant="brand" label="Delete" title="Confirm" onclick="{! c.confirmDeleteAction }"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+    </aura:if>
+</aura:component>

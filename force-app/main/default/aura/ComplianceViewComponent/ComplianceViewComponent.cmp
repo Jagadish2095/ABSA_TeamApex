@@ -1,0 +1,113 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="ComplianceViewController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:attribute name="dataFound" type="Boolean" default="true"/>
+    
+    <aura:attribute name="missingData" type="List"/>
+    <aura:attribute name="missingDocuments" type="List"/>
+    
+    <aura:attribute name="refreshableData" type="Object"/>
+    <aura:attribute name="refreshableColumns" type="List"/>
+    
+    <aura:attribute name="reusableData" type="Object"/>
+    <aura:attribute name="reusableColumns" type="List"/>
+    
+    <aura:attribute name="addressAttestedCheckbox" type="boolean"/>
+    <aura:attribute name="idAttestedCheckbox" type="boolean"/>
+    
+    <aura:attribute name="activeSections" type="List" default="['A','B','C', 'D']"/>
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem size="12">
+            <aura:if isTrue="{!v.dataFound}">
+                <lightning:accordion
+                                     allowMultipleSectionsOpen="true"
+                                     activeSectionName="{! v.activeSections }">
+                    
+                    <lightning:accordionSection name="A" label="Missing Data">
+                        <aura:if isTrue="{!v.missingData.length > 0}">
+                            <ol class="slds-list--ordered">
+                                <aura:iteration items="{!v.missingData}" var="data">
+                                    <li>{!data}</li>
+                                </aura:iteration>
+                            </ol> 
+                            
+                            <aura:set attribute="else">
+                                <p style="color:green; width:100%"><lightning:icon size="xx-small" iconName="utility:smiley_and_people"/>&nbsp; There is currently no missing data</p>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:accordionSection>
+                    
+                    <lightning:accordionSection name="B" label="Missing Documents">
+                        <aura:if isTrue="{!v.missingDocuments.length > 0}">
+                            <ol class="slds-list--ordered">
+                                <aura:iteration items="{!v.missingDocuments}" var="data">
+                                    <li>{!data}</li>
+                                </aura:iteration>
+                            </ol> 
+                            
+                            <aura:set attribute="else">
+                                <p style="color:green; width:100%"><lightning:icon size="xx-small" iconName="utility:smiley_and_people"/>&nbsp; There are currently no missing documents</p>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:accordionSection>
+                    
+                    <lightning:accordionSection name="C" label="Refreshable Documents">
+                        <aura:if isTrue="{!v.refreshableData.length > 0}">
+                            <lightning:datatable
+                                                 aura:id="dataTableCmp"
+                                                 columns="{!v.refreshableColumns}"
+                                                 data="{!v.refreshableData}"
+                                                 keyField="id"
+                                                 hideCheckboxColumn="true"               
+                                                 showRowNumberColumn="true"
+                                                 maxColumnWidth="2000"
+                                                 minColumnWidth="100"/>
+                            
+                            <aura:set attribute="else">
+                                <p style="color:green; width:100%"><lightning:icon size="xx-small" iconName="utility:smiley_and_people"/>&nbsp; There are currently no refreshable documents</p>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:accordionSection>
+                    
+                    <lightning:accordionSection name="D" label="Reusable Documents">
+                        <aura:if isTrue="{!v.reusableData.length > 0}">
+                            <lightning:datatable
+                                                 aura:id="dataTableCmp"
+                                                 columns="{!v.reusableColumns}"
+                                                 data="{!v.reusableData}"
+                                                 keyField="id"
+                                                 hideCheckboxColumn="true"               
+                                                 showRowNumberColumn="true"
+                                                 maxColumnWidth="2000"
+                                                 minColumnWidth="100"/>
+                            
+                            <aura:set attribute="else">
+                                <p style="color:green; width:100%"><lightning:icon size="xx-small" iconName="utility:smiley_and_people"/>&nbsp; There are currently no reusable documents</p>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                
+            	<hr/>
+                
+                <ui:inputCheckbox class="slds-float--left" aura:id="addressCheckbox" label="&nbsp; Address Attested?" change="{!c.addressAttestedCheck}"/>
+                <ui:inputCheckbox class="slds-float--left" aura:id="idCheckbox" label="&nbsp; ID attested?" change="{!c.idAttestedCheck}"/>
+                
+                <lightning:button class="slds-float--right" aura:id="validateButton" variant="brand" type="submit" name="add" label="Update" onclick="{!c.updateChecks}"/>
+                
+                <aura:set attribute="else">
+                    <p>There was an issue retrieving the compliance data. There may be no CIF or ID number on the account record, the client may not exist in MDM or the service may be down. Please contact an administrator.</p>
+                </aura:set>
+            </aura:if>
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+</aura:component>

@@ -1,0 +1,78 @@
+<!--/*
+* Lightning Component SendStaticSms
+* @author  Humbelani Denge
+* @version v2.0
+* @since   2021-08-31
+*/-->
+<aura:component controller="StaticSMSController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction,flexipage:availableForAllPageTypes"
+	access="global">
+	<aura:attribute name="pickListMap" type="String" />
+	<aura:attribute name="dependantOptions" type="List" default="[]" />
+	<aura:attribute name="mainPickListOptions" type="List" default="[]" />
+	<aura:attribute name="forbearancePickListOptions" type="List" default="[]" />
+	<aura:attribute name="isPicklistDisabled" type="Boolean" default="true" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="record" type="Object" />
+	<aura:attribute name="showSpinner" type="Boolean" default="false" />
+	<aura:attribute name="caseRecordId" type="String" access="global" />
+	<aura:attribute name="accountCategory" type="String" />
+	<aura:attribute name="clientAccountRecord" type="Object" />
+	<aura:attribute name="clientAccountId" type="String" access="global" />
+	<aura:attribute name="selectedAccNo" type="String" access="global" />
+
+	<aura:attribute name="smsPreview" type="String" />
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<!-- changes made for Ford/Avaf Indicator by Mradul  W-016021 for  Send SMS-->
+	<c:FordAvafIndicator aura:id="fordAvaf" caseId="{!v.caseRecordId}" accountNumber="{!v.selectedAccNo}" />
+
+
+	<article class="slds-card">
+		<aura:if isTrue="{!v.showSpinner}">
+			<lightning:spinner class="spins" variant="brand" size="large" alternativeText="Loading content" />
+		</aura:if>
+		<div class="slds-card__body">
+			<!--Error Message-->
+			<aura:if isTrue="{!not(empty(v.errorMessage))}">
+				<ui:message title="Please review errors " severity="error"> {!v.errorMessage} </ui:message>
+			</aura:if>
+			<force:recordData recordId="{!$SObjectType.CurrentUser.Id}" layoutType="FULL"
+				targetFields="{!v.record}" />
+			<force:recordData recordId="{!v.clientAccountId}" layoutType="FULL"
+				targetFields="{!v.clientAccountRecord}" />
+
+			<div class="demo-only demo-only--sizing slds-grid slds-wrap">
+				<div class="slds-size_1-of-2">
+					<div class="slds-box slds-box_x-small slds-text-align_center slds-m-around_x-small">
+						<lightning:combobox aura:id="selectItem" name="Sms" label="SMS"
+							placeholder="SMS SELECTION" value="" onchange="{!c.handleMainPickListChange}"
+							options="{!v.mainPickListOptions}" />
+					</div>
+				</div>
+				<div class="slds-size_1-of-2">
+					<div class="slds-box slds-box_x-small slds-text-align_center slds-m-around_x-small">
+						<lightning:combobox aura:id="forbearanceSms" name="Sms" label="Forbearance"
+							placeholder="SMS SELECTION" value="" disabled="{!v.isPicklistDisabled}"
+							onchange="{!c.handleForbearancePickListChange}"
+							options="{!v.forbearancePickListOptions}" />
+					</div>
+				</div>
+				<div class="slds-size_2-of-2">
+					<div class="slds-box slds-box_x-small slds-text-align_center slds-m-around_x-small">
+						<div class="slds-form-element__control">
+							<lightning:textarea name="preview" required="true" label="Preview"
+								messageWhenValueMissing="This field is required." value="{!v.smsPreview}" />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<footer class="slds-card__footer">
+			<lightning:layoutItem size="12" padding="around-small">
+				<lightning:button aura:id="submitButton" variant="brand" label="SEND SMS" title="SEND SMS"
+					onclick="{!c.sendStaticSms}" />
+			</lightning:layoutItem>
+		</footer>
+	</article>
+</aura:component>

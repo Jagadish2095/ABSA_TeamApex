@@ -1,0 +1,589 @@
+<!--
+* Lightning Component for External Banking Relationships
+*
+* @author       Englarmerdge Mongwe: Absa
+* @version      v1.0
+* @since        2020-08-26
+* @UserStory    W-003759
+-->
+<aura:component controller="ExternalBankingRelationshipsCtrl"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable"
+    access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler name="saveItems" event="c:ExternalBankingRelationsEvent" action="{!c.submitExtBankRel}"/>
+
+    <aura:attribute name="recordId" type="Id" />
+
+    <!--Custom Lookup Attributes-->
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="extBankRelData" type="Object" />
+    <aura:attribute name="landBankLoan" type="Map[]" />
+    <aura:attribute name="coOperativeDebt" type="Map[]" />
+    <aura:attribute name="externalChequeAccounts" type="Map[]" />
+    <aura:attribute name="externalBusinessCreditCard" type="Map[]" />
+    <aura:attribute name="externalTermLoan" type="Map[]" />
+    <aura:attribute name="externalAssetAndVehicleFinance" type="Map[]" />
+    <aura:attribute name="externalMortgageLoans" type="Map[]" />
+    <aura:attribute name="externalSavingsAccount" type="Map[]" />
+    <aura:attribute name="externalInvestment" type="Map[]" />
+    <aura:attribute name="externalRetailCommitments" type="Map[]" />
+    <!--aura:attribute name="underDebtCounseling" type="Map[]" /-->
+    <aura:attribute name="selInstitution" type="Object" />
+    <aura:attribute name="selFrequency" type="Object" />
+    <aura:attribute name="selectedProduct" type="String" default="Add all relevant account details" />
+    <aura:attribute name="isOtherBankNameReqChq" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqChq1" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqBus" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqBus1" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqVeh" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqVeh1" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqMLn" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqMLn1" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqMLn2" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqMLn3" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqSav" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqSav1" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqInv" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqInv1" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqTerm" type="boolean" default="false" />
+    <aura:attribute name="isOtherBankNameReqTerm1" type="boolean" default="false" />
+    <aura:attribute name="isActiveLandBank" type="boolean" default="false" />
+    <aura:attribute name="isActiveCoOp" type="boolean" default="false" />
+    <aura:attribute name="isActiveShowSpinner" type="boolean" default="false" />
+    <aura:attribute name="minDate" type="Date" />
+
+
+    <aura:attribute name="oppRecord" type="Object"/>
+    <force:recordData aura:id="recordLoader" fields="Id,Account.Client_Type__c"
+                     recordId="{!v.recordId}" targetFields="{!v.oppRecord}" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+
+    <lightning:accordion allowMultipleSectionsOpen="true" >
+        <aura:if isTrue="{!v.isActiveLandBank}">
+            <lightning:accordionSection name="accLandBankLoan" label="{!'Land Bank Loan (' + v.landBankLoan.length + ')'}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <p><b>Land Bank Loan</b></p>
+                        <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                        <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                        <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <lightning:button class="slds-float_right" label="Add Land Bank Loan" variant="brand" onclick="{!c.addExternalRelation}" />
+                    </lightning:layoutItem>
+                    <aura:iteration items="{!v.landBankLoan}" var="item">
+                        <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.landBankLoan}" />
+                        <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Account Limit:" value="{!item.AccountLimit}" step="0.01" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Outstanding Balance:" value="{!item.OutstandingBalance}" step="0.01" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Arrears Amount:" value="{!item.ArrearsAmount}" step="0.01" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Repayment Amount:" value="{!item.RepaymentAmount}" step="0.01" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:select aura:id="inputExt" required="true" name="{! 'LndBankLn ' + item.UqId}" label="Repayment Frequency:" value="{!item.RepaymentFrequency}" onchange="{!c.onFrequencyChange}">
+                                    <aura:iteration items="{!v.selFrequency}" var="option">
+                                        <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Monthly Repayment:" value="{!item.MonthlyRepayment}" step="0.01" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Term Of Finance:" value="{!item.TermOfFinance}" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="date" label="Expiry Date:" value="{!item.ExpiryDate}" min="{!v.minDate}" />
+                            </lightning:layoutItem>
+                        </div>
+                    </aura:iteration>
+                </lightning:layout>
+            </lightning:accordionSection>
+        </aura:if>
+        <aura:if isTrue="{!v.isActiveCoOp}">
+            <lightning:accordionSection name="coOperativeDebt" label="{!'Co-Operative Debt (' + v.coOperativeDebt.length + ')'}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <p><b>Co-Operative Debt</b></p>
+                        <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                        <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                        <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <lightning:button class="slds-float_right" label="Add Co-Operative Debt" variant="brand" onclick="{!c.addExternalRelation}" />
+                    </lightning:layoutItem>
+                    <aura:iteration items="{!v.coOperativeDebt}" var="item">
+                        <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.coOperativeDebt}" />
+                        <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:select aura:id="inputExt" name="copDebt" label="Institution Name:" value="{!item.InstitutionName}">
+                                    <aura:iteration items="{!v.selInstitution}" var="option">
+                                        <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Account Limit:" value="{!item.AccountLimit}" step="0.01" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Outstanding Balance:" value="{!item.OutstandingBalance}" step="0.01" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Arrears Amount:" value="{!item.ArrearsAmount}" step="0.01" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Repayment Amount:" value="{!item.RepaymentAmount}" step="0.01" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:select aura:id="inputExt" required="true" name="{! 'CoOpDebt ' + item.UqId}" label="Repayment Frequency:" value="{!item.RepaymentFrequency}" onchange="{!c.onFrequencyChange}">
+                                    <aura:iteration items="{!v.selFrequency}" var="option">
+                                        <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="number" label="Monthly Repayment:" value="{!item.MonthlyRepayment}" step="0.01" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input aura:id="inputExt" required="true" type="date" label="Expiry Date:" value="{!item.ExpiryDate}" min="{!v.minDate}" />
+                            </lightning:layoutItem>
+                        </div>
+                    </aura:iteration>
+                </lightning:layout>
+            </lightning:accordionSection>
+        </aura:if>
+
+        <lightning:accordionSection name="accExternalChequeAccounts" label="{!'External Cheque Accounts (' + v.externalChequeAccounts.length + ')'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>External Cheque Accounts</b></p>
+                    <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                    <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                    <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Add External Cheque Account" variant="brand" onclick="{!c.addExternalRelation}" />
+                </lightning:layoutItem>
+                <aura:iteration items="{!v.externalChequeAccounts}" var="item">
+                    <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.externalChequeAccounts}" />
+                    <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="inputExt" name="{!item.UqId + 'ExternalChequeAccount'}" label="Institution Name (NB PLEASE ENTER MAIN CHEQUE ACCOUNT DETAILS FIRST):" value="{!item.InstitutionName}" onchange="{!c.onBankNameChange}">
+                                <aura:iteration items="{!v.selInstitution}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!item.UqId==1}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqChq}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!item.UqId==2}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqChq1}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Overdraft Limit:" value="{!item.OverdraftLimit}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Maximum Overdraft Limit:" value="{!item.MaximumOverdraftLimit}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Balance:" value="{!item.Balance}" step="0.01" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Maximum Debit Balance:" value="{!item.MaximumDebitBalance}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Account Number:" value="{!item.AccountNumber}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="false" type="number" label="Reduction Amount:" value="{!item.ReductionAmount}" step="0.01" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="inputExt" required="true" name="{!item.UqId}" label="Reduction Frequency:" value="{!item.ReductionFrequency}" onchange="{!c.onFrequencyChange}">
+                                <aura:iteration items="{!v.selFrequency}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Monthly Reduction:" value="{!item.MonthlyReduction}" step="0.01" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Turnover For The Period:" value="{!item.TurnoverForThePeriod}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Period Of The Bank Statement/s:" value="{!item.PeriodOfTheBankStatements}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Number Of Returned Items:" value="{!item.NumberOfReturnedItems}" />
+                        </lightning:layoutItem>
+                    </div>
+                </aura:iteration>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="accExternalBusinessCreditCard" label="{!'External Business Credit Card (' + v.externalBusinessCreditCard.length + ')'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>Business Credit Cards</b></p>
+                    <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                    <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                    <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Add Business Credit Card" variant="brand" onclick="{!c.addExternalRelation}" />
+                </lightning:layoutItem>
+                <aura:iteration items="{!v.externalBusinessCreditCard}" var="item">
+                    <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.externalBusinessCreditCard}" />
+                    <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="inputExt" name="{!item.UqId + 'ExternalBankCredit'}" label="Institution Name:" value="{!item.InstitutionName}" onchange="{!c.onBankNameChange}">
+                                <aura:iteration items="{!v.selInstitution}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!item.UqId==1}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqBus}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                         <aura:if isTrue="{!item.UqId==2}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqBus1}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Credit Card Limit:" value="{!item.CreditCardLimit}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Current Balance:" value="{!item.CurrentBalance}" step="0.01" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Monthly Repayment:" value="{!item.MonthlyRepayment}" step="0.01" />
+                        </lightning:layoutItem>
+                    </div>
+                </aura:iteration>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="accExternalTermLoan" label="{!'External Term Loan (' + v.externalTermLoan.length + ')'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>External Term Loans</b></p>
+                    <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                    <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                    <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Add External Term Loan" variant="brand" onclick="{!c.addExternalRelation}" />
+                </lightning:layoutItem>
+                <aura:iteration items="{!v.externalTermLoan}" var="item">
+                    <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.externalTermLoan}" />
+                    <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="inputExt" name="{!item.UqId + 'ExternalTermLoan'}" label="Institution Name:" value="{!item.InstitutionName}" onchange="{!c.onBankNameChange}">
+                                <aura:iteration items="{!v.selInstitution}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!item.UqId==1}">
+                           <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqTerm}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                    </aura:if>
+                        <aura:if isTrue="{!item.UqId==2}">
+                            <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqTerm1}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                    </aura:if>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Outstanding Balance:" value="{!item.OutstandingBalance}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="inputExt" required="true" name="{! 'ExtTermLoans ' + item.UqId}" label="Repayment Frequency:" value="{!item.RepaymentFrequency}" onchange="{!c.onFrequencyChange}">
+                                <aura:iteration items="{!v.selFrequency}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Instalment:" value="{!item.Instalment}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Monthly Repayment:" value="{!item.MonthlyRepayment}" step="0.01" />
+                        </lightning:layoutItem>
+                    </div>
+                </aura:iteration>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="accExternalAssetAndVehicleFinance" label="{!'External Asset And Vehicle Finance (' + v.externalAssetAndVehicleFinance.length + ')'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>External Asset And Vehicle Finance</b></p>
+                    <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                    <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                    <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Add External Asset And Vehicle Finance" variant="brand" onclick="{!c.addExternalRelation}" />
+                </lightning:layoutItem>
+                <aura:iteration items="{!v.externalAssetAndVehicleFinance}" var="item">
+                    <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.externalAssetAndVehicleFinance}" />
+                    <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="inputExt" name="{!item.UqId + 'AssetVehicle'}" label="Institution Name:" value="{!item.InstitutionName}" onchange="{!c.onBankNameChange}">
+                                <aura:iteration items="{!v.selInstitution}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!item.UqId==1}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqVeh}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                            <aura:if isTrue="{!item.UqId==2}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqVeh1}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Outstanding Balance:" value="{!item.OutstandingBalance}" step="0.01" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Instalment:" value="{!item.Instalment}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="inputExt" required="true" name="{! 'ExtVhAssFin ' + item.UqId}" label="Repayment Frequency:" value="{!item.RepaymentFrequency}" onchange="{!c.onFrequencyChange}">
+                                <aura:iteration items="{!v.selFrequency}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Monthly Repayment:" value="{!item.MonthlyRepayment}" step="0.01" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="date" label="Last Payment Date:" value="{!item.LastPaymentDate}" />
+                        </lightning:layoutItem>
+                    </div>
+                </aura:iteration>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="accExternalMortgageLoans" label="{!'External Mortgage Loans (' + v.externalMortgageLoans.length + ')'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>External Mortgage Loans</b></p>
+                    <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                    <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                    <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Add External Mortgage Loan" variant="brand" onclick="{!c.addExternalRelation}" />
+                </lightning:layoutItem>
+                <aura:iteration items="{!v.externalMortgageLoans}" var="item">
+                    <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.externalMortgageLoans}" />
+                    <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="inputExt" name="{!item.UqId + 'MortgageLoans'}" label="Institution Name:" value="{!item.InstitutionName}" onchange="{!c.onBankNameChange}">
+                                <aura:iteration items="{!v.selInstitution}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!item.UqId==1}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqMLn}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!item.UqId==2}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqMLn1}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!item.UqId==3}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqMLn2}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!item.UqId==4}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqMLn3}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Outstanding Balance:" value="{!item.OutstandingBalance}" step="0.01" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Instalment:" value="{!item.Instalment}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="inputExt" required="true" name="{! 'ExtMortLoans ' + item.UqId}" label="Repayment Frequency:" value="{!item.RepaymentFrequency}" onchange="{!c.onFrequencyChange}">
+                                <aura:iteration items="{!v.selFrequency}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Monthly Repayment:" value="{!item.MonthlyRepayment}" step="0.01" />
+                        </lightning:layoutItem>
+                    </div>
+                </aura:iteration>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="accExternalSavingsAccount" label="{!'External Savings Account (' + v.externalSavingsAccount.length + ')'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>External Savings Accounts</b></p>
+                    <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                    <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                    <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Add External Savings Account" variant="brand" onclick="{!c.addExternalRelation}" />
+                </lightning:layoutItem>
+                <aura:iteration items="{!v.externalSavingsAccount}" var="item">
+                    <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.externalSavingsAccount}" />
+                    <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                        <lightning:layoutItem size="6" padding="around-small">
+                             <lightning:select aura:id="inputExt" name="{!item.UqId + 'SavingAccount'}" label="Institution Name:" value="{!item.InstitutionName}" onchange="{!c.onBankNameChange}">
+                                <aura:iteration items="{!v.selInstitution}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!item.UqId==1}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqSav}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!item.UqId==2}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqSav1}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Balance:" value="{!item.Balance}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Monthly Interest Earned:" value="{!item.MonthlyInterestEarned}" />
+                        </lightning:layoutItem>
+                    </div>
+                </aura:iteration>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="accExternalInvestment" label="{!'External Investment (' + v.externalInvestment.length + ')'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>External Investments</b></p>
+                    <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                    <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                    <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Add External Investment" variant="brand" onclick="{!c.addExternalRelation}" />
+                </lightning:layoutItem>
+                <aura:iteration items="{!v.externalInvestment}" var="item">
+                    <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.externalInvestment}" />
+                    <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="inputExt" name="{!item.UqId + 'ExternalInvestment'}" label="Institution Name:" value="{!item.InstitutionName}" onchange="{!c.onBankNameChange}">
+                                <aura:iteration items="{!v.selInstitution}" var="option">
+                                    <option class="{!option.class}" text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!item.UqId==1}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqInv}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                             <aura:if isTrue="{!item.UqId==2}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="{!v.isOtherBankNameReqInv1}" label="Other Bank Name:" value="{!item.OtherBankName}" />
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Balance:" value="{!item.Balance}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Monthly Interest And Dividends Earned:" value="{!item.MonthlyInterestAndDividendsEarned}" />
+                        </lightning:layoutItem>
+                    </div>
+                </aura:iteration>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="accExternalRetailCommitments" label="{!'Retail And Other External Commitments (' + v.externalRetailCommitments.length + ')'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>Retail And Other External Commitments</b></p>
+                    <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                    <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                    <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Add Retail And Other External Commitment" variant="brand" onclick="{!c.addExternalRelation}" />
+                </lightning:layoutItem>
+                <aura:iteration items="{!v.externalRetailCommitments}" var="item">
+                    <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.externalRetailCommitments}" />
+                    <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" label="Creditor Name:" value="{!item.CreditorName}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Outstanding Balance:" value="{!item.OutstandingBalance}" step="0.01" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input aura:id="inputExt" required="true" type="number" label="Monthly Repayment:" value="{!item.MonthlyRepayment}" step="0.01" />
+                        </lightning:layoutItem>
+                    </div>
+                </aura:iteration>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <!--lightning:accordionSection name="accUnderDebtCounselingExternal" label="{!v.underDebtCounselingExternal.length == 0 ? 'Under Debt Counseling - External (0)' : 'External Banking Relationships (' + v.underDebtCounselingExternal.length + ')'}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>Under Debt Counseling - External</b></p>
+                    <p><ui:outputText value="{!v.selectedProduct}"/></p>
+                    <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                    <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Add Under Debt Counseling - External" variant="brand" onclick="{!c.addExternalRelation}" />
+                </lightning:layoutItem>
+                <aura:iteration items="{!v.underDebtCounselingExternal}" var="item">
+                    <c:ExternalRelationDetails extRelationDet="{!item}" newExtRelationDet="{!v.underDebtCounselingExternal}" />
+                    <div class="slds-grid slds-wrap slds-var-p-around_small slds-size_12-of-12">
+                        <lightning:layoutItem size="6" padding="around-small">
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                        </lightning:layoutItem>
+                    </div>
+                </aura:iteration>
+            </lightning:layout>
+        </lightning:accordionSection-->
+    </lightning:accordion>
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem size="12" padding="around-small">
+            <lightning:button class="slds-float_right" label="Save and Validate" variant="brand"
+                onclick="{!c.submitExtBankRel}" />
+        </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

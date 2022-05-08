@@ -1,0 +1,927 @@
+<aura:component controller="Fic_CaseAuraListCtlr"
+                implements="lightning:isUrlAddressable,lightning:hasPageReference,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName"
+                access="global">
+
+    <aura:attribute name="mycolumn" type="Object[]"/>
+    <aura:attribute name="myCasesColumn" type="Object[]"/>
+    <aura:attribute name="queuedCases" type="Object[]"/>
+    <aura:attribute name="NTBCases" type="Case[]"/>
+    <aura:attribute name="NTPCases" type="Case[]"/>
+    <aura:attribute name="MaintenanceCases" type="Case[]"/>
+    <aura:attribute name="ReferralCases" type="Case[]"/>
+    <aura:attribute name="DisputeCases" type="Case[]"/>
+    <aura:attribute name="RemediationCases" type="Case[]"/>
+    <aura:attribute name="newRequestCases" type="Case[]"/>
+    <aura:attribute name="unassignedCases" type="Case[]"/>
+    <aura:attribute name="awaitingDocumentsCases" type="Case[]"/>
+    <aura:attribute name="archivedCases" type="Case[]"/>
+    <aura:attribute name="assignedCases" type="Case[]"/>
+    <aura:attribute name="voiceInboundCases" type="Case[]"/>
+    <aura:attribute name="voiceOutboundCases" type="Case[]"/>
+    <aura:attribute name="userCases" type="Case[]"/>
+    <aura:attribute name="CaseKeyWordSearch" type="String"/>
+    <aura:attribute name="CaseKeyLocalSearch" type="String"/>
+    <aura:attribute name="CasesFromGlobalSearch" type="Case[]"/>
+    <aura:attribute name="CasesFromLocalSearch" type="Case[]"/>
+    <aura:attribute name="selTabId" type="String"/>
+    <aura:attribute name="showMaintenance" type="Boolean" default="true"/>
+    <aura:attribute name="showNTB" type="Boolean" default="true"/>
+    <aura:attribute name="showNTP" type="Boolean" default="true"/>
+    <aura:attribute name="showReferral" type="Boolean" default="true"/>
+    <aura:attribute name="showDispute" type="Boolean" default="true"/>
+    <aura:attribute name="showRemediation" type="Boolean" default="true"/>
+    <aura:attribute name="showNewRequest" type="Boolean" default="true"/>
+    <aura:attribute name="showUnassigned" type="Boolean" default="true"/>
+    <aura:attribute name="showAwaitingDocuments" type="Boolean" default="true"/>
+    <aura:attribute name="showArchived" type="Boolean" default="true"/>
+    <aura:attribute name="showAssigned" type="Boolean" default="true"/>
+    <aura:attribute name="showVoiceInbound" type="Boolean" default="true"/>
+    <aura:attribute name="showVoiceOutbound" type="Boolean" default="true"/>
+    <aura:attribute name="showUserCases" type="Boolean" default="true"/>
+    <aura:attribute name="superUser" type="Boolean" default="false"/>
+    <aura:attribute name="maxRowSelection" type="Integer" default="1" access="private"/>
+    <aura:attribute name="chosenCase" type="Case"/>
+
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <br/><br/>
+    <div>
+        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_left">
+            <lightning:input label="" onchange="{!c.findCase}" type="text" name="searchKey"
+                             value="{!v.CaseKeyWordSearch}" aura:id="searchKey"
+                             placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+        </div>
+    </div>
+    <br/><br/>
+    <aura:if isTrue="{!v.CasesFromGlobalSearch.length > 0 }">
+        <div>
+            <lightning:datatable data="{!v.CasesFromGlobalSearch }"
+                                 columns="{!v.mycolumn }"
+                                 keyField="id"
+                                 hideCheckboxColumn="true"
+            />
+        </div>
+        <br/><br/>
+    </aura:if>
+    <lightning:tabset selectedTabId="{!v.selTabId}" onselect="{! c.doInit}">
+        <br/><br/>
+        <br/><br/>
+        <lightning:tab label="label" id="New To Bank">
+            <aura:set attribute="label">
+                New To Bank({!v.NTBCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.NTBCases.length > 0}">
+
+                <aura:if isTrue="{! !v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.NTBCases}"
+                                                typeOfButton="Start processing applications"/>
+                    <aura:if isTrue="{!v.showNTB}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+
+                        <lightning:datatable data="{!v.NTBCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"
+                        />
+
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+
+                    </aura:if>
+                </aura:if>
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.NTBCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+
+                    <aura:if isTrue="{!v.showNTB}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.NTBCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"
+                                             onrowselection="{!c.getCaseIdFromTable}"/>
+
+
+                    </aura:if>
+
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+        <lightning:tab label="label" id="New To Product">
+            <aura:set attribute="label">
+                New To Product({!v.NTPCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.NTPCases.length > 0}">
+
+                <aura:if isTrue="{! !v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.NTPCases}"
+                                                typeOfButton="Start processing applications"/>
+                    <aura:if isTrue="{!v.showNTP}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+
+                        <lightning:datatable data="{!v.NTPCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.NTPCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+
+                    <aura:if isTrue="{!v.showNTP}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+
+                        <lightning:datatable data="{!v.NTPCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+
+
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+        <lightning:tab label="label" id="Maintenance">
+            <aura:set attribute="label">
+                Maintenance({!v.MaintenanceCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.MaintenanceCases.length > 0}">
+
+                <aura:if isTrue="{! !v.superUser}">
+
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.MaintenanceCases}"
+                                                typeOfButton="Start processing applications"/>
+                    <aura:if isTrue="{!v.showMaintenance}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.MaintenanceCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.MaintenanceCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+
+                    <aura:if isTrue="{!v.showMaintenance}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.MaintenanceCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+        <lightning:tab label="label" id="Referral">
+            <aura:set attribute="label">
+                Referral({!v.ReferralCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.ReferralCases.length > 0}">
+
+                <aura:if isTrue="{! !v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.ReferralCases}"
+                                                typeOfButton="Start processing applications"/>
+                    <aura:if isTrue="{!v.showReferral}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.ReferralCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.ReferralCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+                    <aura:if isTrue="{!v.showReferral}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.ReferralCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+        <lightning:tab label="label" id="Dispute">
+            <aura:set attribute="label">
+                Dispute({!v.DisputeCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.DisputeCases.length > 0}">
+
+                <aura:if isTrue="{! !v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.DisputeCases}"
+                                                typeOfButton="Start processing applications"/>
+                    <aura:if isTrue="{!v.showDispute}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.DisputeCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.DisputeCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+                    <aura:if isTrue="{!v.showDispute}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.DisputeCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+        <lightning:tab label="label" id="Remediation">
+            <aura:set attribute="label">
+                Remediation({!v.RemediationCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.RemediationCases.length > 0}">
+
+                <aura:if isTrue="{! !v.superUser}">
+                    <aura:if isTrue="{!v.showRemediation}">
+                        <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.RemediationCases}"
+                                                    typeOfButton="Start processing applications"
+                                                    selectedCase="{!v.chosenCase}"/>
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.RemediationCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"
+                        />
+
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.RemediationCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+                    <aura:if isTrue="{!v.showRemediation}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.RemediationCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"
+                        />
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+
+        <lightning:tab label="label" id="New Request">
+            <aura:set attribute="label">
+                New Request({!v.newRequestCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.newRequestCases.length > 0}">
+
+                <aura:if isTrue="{! !v.superUser}">
+
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.newRequestCases}"
+                                                typeOfButton="Start processing applications"
+                                                selectedCase="{!v.chosenCase}"/>
+                    <aura:if isTrue="{!v.showNewRequest}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.newRequestCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.NTBCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+                    <aura:if isTrue="{!v.showNewRequest}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.newRequestCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+
+        <lightning:tab label="label" id="Unassigned">
+            <aura:set attribute="label">
+                Unassigned({!v.unassignedCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.unassignedCases.length > 0}">
+
+                <aura:if isTrue="{! !v.superUser}">
+
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.unassignedCases}"
+                                                typeOfButton="Start processing applications"
+                                                selectedCase="{!v.chosenCase}"/>
+                    <aura:if isTrue="{!v.showUnassigned}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.unassignedCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.NTBCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+                    <aura:if isTrue="{!v.showUnassigned}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.unassignedCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+
+        <lightning:tab label="label" id="Awaiting documents">
+            <aura:set attribute="label">
+                Awaiting documents({!v.awaitingDocumentsCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.awaitingDocumentsCases.length > 0}">
+
+                <aura:if isTrue="{! !v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" typeOfButton="Start processing applications"
+                                                queueCases="{!v.awaitingDocumentsCases}" blockButton="true"/>
+                    <aura:if isTrue="{!v.showAwaitingDocuments}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+
+                        <lightning:datatable data="{!v.awaitingDocumentsCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" typeOfButton="Change case owner"
+                                                queueCases="{!v.awaitingDocumentsCases}"
+                                                selectedCase="{!v.chosenCase}"/>
+
+                    <aura:if isTrue="{!v.showAwaitingDocuments}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.awaitingDocumentsCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+
+        <lightning:tab label="label" id="Archive">
+            <aura:set attribute="label">
+                Archive({!v.archivedCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.archivedCases.length > 0}">
+                <aura:if isTrue="{! !v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" typeOfButton="Start processing applications"
+                                                queueCases="{!v.archivedCases}" blockButton="true"/>
+                    <aura:if isTrue="{!v.showArchived}">
+                        <lightning:input label="" onchange="{!c.findLocalArchiveCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.archivedCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalArchiveCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.archivedCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+                    <aura:if isTrue="{!v.showArchived}">
+
+                        <lightning:input label="" onchange="{!c.findLocalArchiveCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.archivedCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalArchiveCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+
+        <lightning:tab label="label" id="Assigned">
+            <aura:set attribute="label">
+                Assigned({!v.assignedCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.assignedCases.length > 0}">
+                <aura:if isTrue="{! !v.superUser}">
+                    <aura:if isTrue="{!v.showAssigned}">
+                        <c:FIC_Case_StartProcessing label="{!v.selTabId}" typeOfButton="Start processing applications"
+                                                    queueCases="{!v.assignedCases}"/>
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.assignedCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.assignedCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+
+                    <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                     value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                     placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                    <br></br>
+                    <lightning:datatable data="{!v.assignedCases}"
+                                         columns="{!v.mycolumn }"
+                                         keyField="id"
+                                         hideCheckboxColumn="true"/>
+
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+
+        <lightning:tab label="label" id="VoiceInbound">
+            <aura:set attribute="label">
+                Voice Inbound({!v.voiceInboundCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.voiceInboundCases.length > 0}">
+                <aura:if isTrue="{! !v.superUser}">
+                    <aura:if isTrue="{!v.showVoiceInbound}">
+                        <c:FIC_Case_StartProcessing label="{!v.selTabId}" typeOfButton="Start processing applications"
+                                                    queueCases="{!v.voiceInboundCases}"/>
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.voiceInboundCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.voiceInboundCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+
+                    <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                     value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                     placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                    <br></br>
+                    <lightning:datatable data="{!v.voiceInboundCases}"
+                                         columns="{!v.mycolumn }"
+                                         keyField="id"
+                                         hideCheckboxColumn="true"/>
+
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+        <lightning:tab label="label" id="VoiceOutbound">
+            <aura:set attribute="label">
+                Voice Outbound({!v.voiceOutboundCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.voiceOutboundCases.length > 0}">
+                <aura:if isTrue="{! !v.superUser}">
+                    <aura:if isTrue="{!v.showVoiceOutbound}">
+                        <c:FIC_Case_StartProcessing label="{!v.selTabId}" typeOfButton="Start processing applications"
+                                                    queueCases="{!v.voiceOutboundCases}"/>
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.voiceOutboundCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.voiceOutboundCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+
+                    <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                     value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                     placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                    <br></br>
+                    <lightning:datatable data="{!v.assignedCases}"
+                                         columns="{!v.mycolumn }"
+                                         keyField="id"
+                                         hideCheckboxColumn="true"/>
+
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+        <lightning:tab label="label" id="My Cases">
+            <aura:set attribute="label">
+                My Cases({!v.userCases.length})
+            </aura:set>
+            <aura:if isTrue="{!v.userCases.length > 0}">
+                <aura:if isTrue="{! !v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" typeOfButton="Start processing applications"
+                                                queueCases="{!v.userCases}"  blockButton="true"/>
+                    <aura:if isTrue="{!v.showUserCases}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.userCases}"
+                                             columns="{!v.myCasesColumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.myCasesColumn }"
+                                             keyField="id"
+                                             hideCheckboxColumn="true"/>
+                    </aura:if>
+                </aura:if>
+
+                <aura:if isTrue="{! v.superUser}">
+                    <c:FIC_Case_StartProcessing label="{!v.selTabId}" queueCases="{!v.userCases}"
+                                                typeOfButton="Change case owner" selectedCase="{!v.chosenCase}"/>
+                    <aura:if isTrue="{!v.showUserCases}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+                        <lightning:datatable data="{!v.userCases}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"
+                                             onrowselection="{!c.getCaseIdFromTable}"/>
+
+
+                    </aura:if>
+                    <aura:if isTrue="{!v.CasesFromLocalSearch.length > 0}">
+
+                        <lightning:input label="" onchange="{!c.findLocalCase}" type="text" name="searchKeyLocal"
+                                         value="{!v.CaseKeyLocalSearch}" aura:id="searchKeyLocal"
+                                         placeholder="Track and trace-search by Case number,CIF,CASA reference, CASA sequence or status"/>
+                        <br></br>
+
+                        <lightning:datatable data="{!v.CasesFromLocalSearch}"
+                                             columns="{!v.mycolumn }"
+                                             keyField="id"
+                                             maxRowSelection="{!v.maxRowSelection}"/>
+
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+        </lightning:tab>
+    </lightning:tabset>
+</aura:component>

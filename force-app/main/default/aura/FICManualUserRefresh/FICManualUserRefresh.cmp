@@ -1,0 +1,635 @@
+<!--
+* Lightning Component for FIC Manual User Refresh for attestation process
+*
+* @author  Saiteja : Absa
+* @version v1.0
+* @since   2021-02-23
+* @W-008750
+-->
+
+
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global" controller="ManualRefreshController" >
+    
+    <!--Attribute Initializations-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="upload" event="c:manualRefresh" action="{!c.handleComponentEvent}"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="clientProducts" type="List" />
+    <aura:attribute name="clientAcctInfo" type="Account" />
+    <aura:attribute name="clientProdInfo" type="Application_Product__c[]"/>
+    <aura:attribute name="clientAcctAddrs" type="Address__c[]" />
+    <aura:attribute name="busAddr" type="String" />
+    <aura:attribute name="postalAddr" type="String" />
+    <aura:attribute name="regAddr" type="String" />
+    <aura:attribute name="headOfcAddr" type="String" /> 
+    <aura:attribute name="nxtRefreshDate" type="String"/>
+    <aura:attribute name="CompliancenxtRefreshDate" type="String"/> <!-- Creating atrribute to get the Next Refresh dates from FICA Engines by Mohammed Junaid U-->
+    <aura:attribute name="NACompliancenxtRefreshDate" type="String"/>
+    <aura:attribute name="dateStamp" type="String"/>
+    <aura:attribute name="rowValue" type="String"/>
+    <aura:attribute name="emailid" type="String"/>
+    
+    <aura:attribute name="documenttemplate" type="String" />
+    <aura:attribute name="docInfo" type="Document__c[]"/>
+    <aura:attribute name="docId" type="String"/>
+    <aura:attribute name="dataAudit" type="Object" />
+    <aura:attribute name="columnsAudit" type="List" />
+    <aura:attribute name="errorMessageViewDocuments" type="String" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    
+    
+    <aura:attribute name="adviceOptions" type="List" default="[{'label': 'Yes', 'value': 'Yes'},
+                                                              {'label': 'No', 'value': 'No'}
+                                                              ]"/>
+    
+    
+    <aura:attribute name="objDetail" type="Account" default="{'sobjectType' : 'Account'}"/> 
+    <aura:attribute name="clientGrpFieldAPI" type="string" default="Client_Group__c" description="field API name of Client Group field"/>
+    <aura:attribute name="controllingFieldAPI" type="string" default="Client_Type__c" description="store field API name of Controller field"/>
+    <aura:attribute name="dependingFieldAPI" type="string" default="Place_of_Residence__c" description="store field API name of dependent field"/>
+    <aura:attribute name="listClientGrpValues" type="list" default="[]" description="to store client group field values"/>
+    <aura:attribute name="listControllingValues" type="list" default="[]" description="to store controller field values"/>
+    <aura:attribute name="listDependingValues" type="list" default="['--- None ---']" description="to store dependent field values"/>
+    <aura:attribute name="dependentFieldMap" type="map" description="map to store dependent values with controlling value"/>
+    <aura:attribute name="bDisabledDependentFld" type="boolean" default="true"/> 
+    <aura:attribute name="riskRatingVal" type="map" />
+    
+    <aura:attribute name="gridColumns" type="List" access="PRIVATE" />
+    <aura:attribute name="gridData" type="Object" access="public" />
+    <aura:attribute name="sortedBy" type="String" default="Controllinginterest"/>
+    <aura:attribute name="sortedDirection" type="String" default="asc"/>
+    <aura:attribute name="accRecordId" type="String" />
+    <aura:attribute name="selectedRows" type="list" />
+    
+    
+    
+    <aura:attribute name="isShowInit" type="boolean" default="false"/>
+    <aura:attribute name="isexpandedclInfo" type="Boolean" default="true" />
+    <aura:attribute name="isexpandedclProd" type="Boolean" default="true" />
+    <aura:attribute name="isexpandedattstatus" type="Boolean" default="true" />
+    <aura:attribute name="isClientInfo" type="Boolean" default="true" />
+    <aura:attribute name="isAttSuccess" type="Boolean" default="false" />
+    <aura:attribute name="isGenAttDoc" type="Boolean" default="false" />
+    <aura:attribute name="isCompAttDocProc" type="Boolean" default="false" />
+    <aura:attribute name="isDeclineAtt" type="Boolean" default="false" />
+    <aura:attribute name="ischeckedValue" type="Boolean" default="false" />
+    <aura:attribute name="isShowDocuments" type="Boolean" default="false" />
+    <aura:attribute name="isShowUpload" type="Boolean" default="false" />
+    <aura:attribute name="isOpen" type="Boolean" default="false" />
+    <aura:attribute name="isemailShare" type="Boolean" default="false" />
+    <aura:attribute name="isShowUploadBtn" type="Boolean" default="false" />
+    <aura:attribute name="isGenerateButton" type="Boolean" default="false" />
+    <aura:attribute name="isUploadButton" type="Boolean" default="false" />
+    <aura:attribute name="isCheckedButton" type="Boolean" default="false" />
+    
+    <aura:attribute name="fToFCInt" type="String" />
+    <aura:attribute name="cltInfoAcc" type="String" />
+    <aura:attribute name="cltPartAcc" type="String" />
+    <aura:attribute name="cltProdAcc" type="String" />
+    <aura:attribute name="jointandseveral" type="String" default="Joint &amp; Several"/>
+    <aura:attribute name="expandClientPartiesStatus" type="Boolean" default="true" />
+    <aura:attribute name="clientRelatedData" type="Object" access="public" />
+    <aura:attribute name="clientRelatedColumns" type="List" access="PRIVATE" />
+    <aura:attribute name="employersAddr" type="String" />
+    <aura:attribute name="physicalAddr" type="String" />
+    <aura:attribute name="residentialAddr" type="String" />
+    <aura:attribute name="commonAddress" type="String" />
+    <aura:attribute name="isIndividual" type="Boolean" default="false" />
+    <aura:attribute name="isJointEntity" type="Boolean" default="false" />
+    <aura:attribute name="isNonIndividual" type="Boolean" default="false" />
+    <aura:attribute name="sourceOfIncome" type="String" />
+    
+    <aura:if isTrue="{!v.isClientInfo}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container"> 
+                <aura:if isTrue="{!v.showSpinner}">
+                    <lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+                </aura:if>
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">User Refresh</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div  style="padding-bottom:30px;">
+                        <h3 class="slds-section__title slds-theme_shade" style="width:100%;background-color: #f3f2f2;" onclick="{!c.expandClientInfo}">
+                            <lightning:buttonIcon iconName="{! if(v.isexpandedclInfo, 'utility:chevrondown', 'utility:chevronright')}" variant="bare" alternativeText="Information" title="Information"/>&nbsp;Client Information
+                        </h3>
+                        <aura:if isTrue="{!v.isexpandedclInfo}">
+                            <div style="padding-left:30px">
+                                
+                                <lightning:layout multipleRows="true">
+                                    
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Full Name of Client</p>
+                                        <p><lightning:formattedText value="{!v.clientAcctInfo.Name}"/></p>
+                                    </lightning:layoutItem>
+                                    <aura:if isTrue="{! !v.isIndividual }">
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Registration / incorporation number</p>
+                                        <p><lightning:formattedText value="{!v.clientAcctInfo.Registration_Number__c}"/></p>
+                                    </lightning:layoutItem>
+                                    </aura:if>
+                                    <aura:if isTrue="{! v.isIndividual }">
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Identification Number</p>
+                                        <p><lightning:formattedText value="{!v.clientAcctInfo.ID_Number__pc}"/></p>
+                                    </lightning:layoutItem>
+                                    </aura:if>
+                                    
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Nature of Client</p>
+                                        <p><lightning:formattedText value="{!v.clientAcctInfo.Client_Group__c}" /></p>
+                                    </lightning:layoutItem>
+                                    
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Source of income</p>
+                                        <p><lightning:formattedText value="{!v.sourceOfIncome}" /></p>
+                                    </lightning:layoutItem>
+                                    
+                                    <aura:if isTrue="{!v.isNonIndividual}">
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Business Address</p>
+                                        <p><lightning:formattedText value="{!v.busAddr}" /></p>
+                                    </lightning:layoutItem>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!or(v.isIndividual , v.isJointEntity)}">
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Postal Address</p>
+                                        <p><lightning:formattedText value="{!v.postalAddr}" /></p>
+                                    </lightning:layoutItem>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!v.isIndividual}">
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Physical Address</p>
+                                        <p><lightning:formattedText value="{!v.physicalAddr}" /></p>
+                                    </lightning:layoutItem>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!v.isIndividual}">
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Residential Address</p>
+                                        <p><lightning:formattedText value="{!v.residentialAddr}" /></p>
+                                    </lightning:layoutItem>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!v.isNonIndividual}">
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Registered Address</p>
+                                        <p><lightning:formattedText value="{!v.regAddr}" /></p>
+                                    </lightning:layoutItem>
+                                    
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Head Office Address</p>
+                                        <p><lightning:formattedText value="{!v.headOfcAddr}" /></p>
+                                    </lightning:layoutItem>
+                                    </aura:if>
+                                </lightning:layout>
+                            </div>
+                        </aura:if>
+                    </div>
+                    <aura:if isTrue="{! v.clientAcctInfo.Client_Type__c == v.jointandseveral }"> 
+                        <div  style="padding-bottom:30px;">
+                            <h3 class="slds-section__title slds-theme_shade" style="width:100%;background-color: #f3f2f2" onclick="{!c.expandClientParties}">
+                                <lightning:buttonIcon iconName="{! if(v.expandClientPartiesStatus, 'utility:chevrondown', 'utility:chevronright')}" variant="bare" alternativeText="Status" title="Status"/>&nbsp;Client Parties
+                            </h3>
+                            <aura:if isTrue="{!v.expandClientPartiesStatus}">
+                                <div style="padding-left:10px">
+                                    <lightning:card variant="Narrow" title="Related Parties" iconName="standard:account">
+                                        
+                                        <!--aura:set attribute="actions">
+            <lightning:button variant="brand" label="Add" title="Add" onclick="{!c.handleAdd}"/>
+            <lightning:button label="Refresh" title="Refresh" onclick="{!c.refreshRecords}"/>
+        </aura:set-->
+                                        
+                                        <div>
+                                            <lightning:datatable
+                                                                 data="{!v.clientRelatedData}"
+                                                                 columns="{!v.clientRelatedColumns}"
+                                                                 keyField="Id"
+                                                                 hideCheckboxColumn="true"
+                                                                 onrowselection="{!c.setParticipantSelection}"
+                                                                 maxRowSelection="{!v.maxRowSelection}"
+                                                                 aura:id="clientParticipantsDataTable"
+                                                                 />
+                                            
+                                            
+                                        </div>
+                                    </lightning:card>
+                                    
+                                </div>
+                            </aura:if>
+                        </div>
+                    </aura:if>
+                   <!-- <aura:if isTrue="{!v.clientAcctInfo.Client_Group__c == 'Non Individual'}"> -->
+                    <aura:if isTrue="{!v.isNonIndividual}">
+                        <div  style="padding-bottom:30px;">
+                            <h3 class="slds-section__title slds-theme_shade" style="width:100%;background-color: #f3f2f2" onclick="{!c.expandAttStatus}">
+                                <lightning:buttonIcon iconName="{! if(v.isexpandedattstatus, 'utility:chevrondown', 'utility:chevronright')}" variant="bare" alternativeText="Status" title="Status"/>&nbsp;Client Parties
+                            </h3>
+                            <aura:if isTrue="{!v.isexpandedattstatus}">
+                                <div style="padding-left:10px">
+                                    <lightning:card variant="Narrow" title="UBO/Shareholder Structure" iconName="standard:account">
+                                        
+                                        <!--aura:set attribute="actions">
+            <lightning:button variant="brand" label="Add" title="Add" onclick="{!c.handleAdd}"/>
+            <lightning:button label="Refresh" title="Refresh" onclick="{!c.refreshRecords}"/>
+        </aura:set-->
+                                        
+                                        <div>
+                                            <lightning:treeGrid columns="{! v.gridColumns }"
+                                                                data="{! v.gridData }"
+                                                                keyField="recordId"
+                                                                aura:id="mytree"
+                                                                hideCheckboxColumn="true"
+                                                                onrowaction="{! c.handleRowAction }"
+                                                                onrowselection="{! c.onSelected }"
+                                                                selectedRows="{! v.selectedRows }"
+                                                                sortedBy="{!v.sortedBy}"  
+                                                                sortedDirection="{!v.sortedDirection}"/>
+                                            
+                                            
+                                        </div>
+                                    </lightning:card>
+                                    
+                                </div>
+                            </aura:if>
+                        </div>
+                    </aura:if> 
+                    
+                    <div  style="padding-bottom:30px;">
+                        <h3 class="slds-section__title slds-theme_shade" style="width:100%;background-color: #f3f2f2;" onclick="{!c.expandClientProd}">
+                            <lightning:buttonIcon iconName="{! if(v.isexpandedclProd, 'utility:chevrondown', 'utility:chevronright')}" variant="bare" alternativeText="Products" title="Products"/>&nbsp;Client Products
+                        </h3>
+                        <aura:if isTrue="{!v.isexpandedclProd}">
+                            <div style="padding-left:30px">
+                                <b>Products</b>
+                                <table class="slds-table slds-table_cell-buffer "> 
+                                    <thead>
+                                        <tr class="slds-text-title_caps">
+                                            
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Product Type">Product Type</div>
+                                            </th>
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Account Number">Account Number</div>
+                                            </th>
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Expected Account Activity">Expected Account Activity</div>
+                                            </th>
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Purpose of Account">Purpose of Account</div>
+                                            </th>
+                                            <th scope="col">
+                                                <div class="slds-truncate" title="Source of Funds">Source of Funds</div>
+                                            </th>
+                                        </tr>
+                                    </thead> 
+                                    <tbody>
+                                        <aura:if isTrue="{!not(empty(v.clientProdInfo))}">
+                                            <aura:iteration items="{!v.clientProdInfo}" var="item" > 
+                                                <tr>
+                                                    <td><div class="slds-truncate" title="job">{!item.Product_Type__c}</div></td>
+                                                    <td><div class="slds-truncate" title="job">{!item.Account_Number__c}</div></td>
+                                                    
+                                                    <td>
+                                                        <div class="slds-truncate slds-cell-wrap" title="job">{!item.Application__r.Account__r.Expected_transactional_activity__c}</div>
+                                                    </td>
+                                                    
+                                                    <td><div class="slds-truncate slds-cell-wrap" title="Purpose of Account">{!item.Application__r.Purpose_of_Account__c}</div></td>
+                                                    <td><div class="slds-truncate slds-cell-wrap" title="Source of Funds">{!item.Application__r.Source_of_Funds_Savings__c}</div></td>
+                                                </tr>
+                                            </aura:iteration>
+                                            <aura:set attribute="else">
+                                                No Records to display
+                                            </aura:set>
+                                        </aura:if>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </aura:if>
+                    </div>
+                    
+                    <div  style="padding-bottom:30px;">
+                        <h3 class="slds-section__title slds-theme_shade" style="width:100%;background-color: #f3f2f2" onclick="{!c.expandAttStatus}">
+                            <lightning:buttonIcon iconName="{! if(v.isexpandedattstatus, 'utility:chevrondown', 'utility:chevronright')}" variant="bare" alternativeText="Status" title="Status"/>&nbsp;Attestation Status
+                        </h3>
+                        <aura:if isTrue="{!v.isexpandedattstatus}">
+                            <div style="padding-left:30px">
+                                <lightning:layout multipleRows="true">
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Is this a face-to-face interaction with the client</p>
+                                        <lightning:radioGroup  aura:id='btngp1'  options="{!v.adviceOptions}" type="button"  onchange="{!c.button1}" value="{v.fToFCInt}" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem size="6" padding="around-small" >  
+                                        <p>Is Client information accurate?</p>
+                                        <lightning:radioGroup  aura:id='btngp2'  options="{!v.adviceOptions}" type="button"  onchange="{!c.button2}" value="{v.cltInfoAcc}" />
+                                    </lightning:layoutItem>
+                                    <aura:if isTrue="{! !v.isIndividual}">
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Is Client Parties accurate?</p>
+                                        <lightning:radioGroup  aura:id='btngp3'  options="{!v.adviceOptions}" type="button" onchange="{!c.button3}" value="{v.cltPartAcc}" />
+                                    </lightning:layoutItem>
+                                    </aura:if>
+                                    <lightning:layoutItem size="6" padding="around-small" >
+                                        <p>Is Client Products accurate?</p>
+                                        <lightning:radioGroup  aura:id='btngp4'  options="{!v.adviceOptions}" type="button"  onchange="{!c.button4}" value="{v.cltProdAcc}" />
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </div>
+                        </aura:if>
+                    </div>
+                </div>
+                
+                <footer class="slds-modal__footer ">
+                    <lightning:layout>
+                        <lightning:layoutItem alignmentBump="right">
+                            <lightning:button variant="neutral" 
+                                              label="Decline attestation"
+                                              title="Decline"
+                                              onclick="{! c.DeclineAtt }"/>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!and(and(and(or(v.fToFCInt == 'Yes', v.fToFCInt=='No'), v.cltInfoAcc == 'Yes'),v.cltPartAcc == 'Yes'), v.cltProdAcc == 'Yes') }"> 
+                            <lightning:layoutItem alignmentBump="left">
+                                <lightning:button variant="brand" 
+                                                  label="Proceed"
+                                                  title="Proceed"
+                                                  onclick="{! c.Proceed }"/>
+                            </lightning:layoutItem></aura:if>
+                    </lightning:layout>
+                </footer>
+            </div>
+        </section>
+    </aura:if>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+    
+    <aura:if isTrue="{!v.isAttSuccess}">
+        
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <aura:if isTrue="{!v.showSpinner}">
+                    <lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+                </aura:if>
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeAttDoc }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Attestation Review successful, please sign the attestation document to proceed</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div  style="padding-bottom:30px;">
+                        <div style="padding-left:30px">
+                            <lightning:layout multipleRows="true">
+                                <lightning:layoutItem size="6" padding="around-small" >
+                                    <p>Client Code</p>
+                                    <p><lightning:formattedText value="{!v.clientAcctInfo.CIF__c}" /></p>
+                                </lightning:layoutItem>
+                                
+                                <lightning:layoutItem size="6" padding="around-small" >
+                                    <p>Date Stamp</p>
+                                    <p><lightning:formattedText value="{!v.dateStamp}" /></p>
+                                </lightning:layoutItem>
+                                
+                                <lightning:layoutItem size="6" padding="around-small" >
+                                    <p>Mandated Official</p>
+                                    <p><lightning:formattedText value="{!v.clientAcctInfo.Name}" /></p>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small" >
+                                    <p>Contact Number</p>
+                                    <p><lightning:formattedText value="{!v.clientAcctInfo.Phone}" /></p>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small" >
+                                    <p>Email</p>
+                                    <p><lightning:formattedText value="{!v.clientAcctInfo.Active_Email__c}" /></p>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small" >
+                                    <p>Attestation Statement</p>
+                                    <lightning:input type="checkbox" label="{!'I here by confirm that I '+ v.clientAcctInfo.Relationship_Banker_Name__r.Name + ' have had confirmation from '+v.clientAcctInfo.Name + ' that all the information contained within this document is current and up to date.' }"
+                                                     checked="{!v.ischeckedValue}"  disabled="{!v.isCheckedButton}"
+                                                     onchange="{!c.onchecked }"/>
+                                    
+                                    
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <aura:if isTrue="{!and(v.ischeckedValue,v.fToFCInt == 'Yes')}">
+                            <lightning:button class="generate" label="Generate Attestation Document" disabled= "{!v.isGenerateButton}" onclick="{! c.GenerateAtt}"/>
+                        </aura:if>
+                        
+                        
+                        <aura:if isTrue="{!v.isShowUploadBtn}">
+                            <lightning:button  label="Upload Document" disabled= "{!v.isUploadButton}"  onclick="{! c.uploadDoc}"/>
+                            <aura:if isTrue="{!v.isShowUpload == true}">
+                                <c:DocumentUpload parentId="{!v.recordId}" /> 
+                            </aura:if>
+                        </aura:if>
+                        
+                    </div>
+                    
+                    <!--aura:if isTrue="{!v.isGenAttDoc}"-->
+                    <div style="padding-top:40px;padding-left:80px;padding-right:80px;">
+                        
+                        
+                        <aura:if isTrue="{!v.isShowDocuments == true}"> 
+                            <!--article aura:id="gridContainer" class="slds-card slds-card_boundary"-->
+                            <lightning:card title="View Documents" iconName="standard:document" class=" slds-card_boundary  slds-m-top_small slds-m-left_small ">
+                                <aura:set attribute="actions">
+                                    <!--lightning:button label="Refresh" disabled="{!v.isRefresh}" onclick="{!c.refreshDocuments}" aura:id="refreshBtn" /-->
+                                </aura:set>
+                                <lightning:datatable columns="{! v.columnsAudit }"
+                                                     data="{! v.dataAudit }"
+                                                     keyField="id"
+                                                     onrowaction="{!c.handleRowAction}"
+                                                     hideCheckboxColumn="true"
+                                                     minColumnWidth="100"  /> 
+                                
+                            </lightning:card>
+                            <!--/article-->
+                        </aura:if>
+                        <aura:if isTrue="{!not(empty(v.errorMessageViewDocuments))}">
+                            <div class="recordError">
+                                <br />
+                                <h2 class="slds-section__title" style="color: red">{!v.errorMessageViewDocuments}</h2>
+                                <br />
+                            </div>
+                        </aura:if>
+                    </div>
+                    <!--/aura:if-->
+                </div>
+                
+                <footer class="slds-modal__footer ">
+                    <lightning:layout>
+                        <lightning:layoutItem alignmentBump="right">
+                            <lightning:button variant="neutral" 
+                                              label="Decline attestation"
+                                              title="Decline"
+                                              onclick="{! c.DeclineAtt }"/>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!and(or(v.isUploadButton == true,v.fToFCInt == 'No'),v.ischeckedValue) }"> 
+                            <lightning:layoutItem alignmentBump="left">
+                                <lightning:button variant="brand" 
+                                                  label="Complete Attestation Process"
+                                                  title="Complete Attestation Process"
+                                                  onclick="{!c.CompAttProc }"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+                        
+                        
+                    </lightning:layout>
+                </footer>
+            </div>
+        </section>
+    </aura:if>
+    <!--Email Sharing Starts-->
+    
+    <aura:if isTrue="{!v.isemailShare}">  
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container"> 
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeEmailShare}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Share Document</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    
+                    <div class="slds-text-body_small" style="padding-bottom:20px;">
+                        <lightning:input  class="slds-size--1-of-2" type="email" name="email1" value="{!v.emailid}" label="Email ID" />
+                    </div>
+                    <button class="slds-button slds-button_brand" onclick="{!c.emailShare}">Share</button>
+                </div>
+            </div>
+        </section>
+    </aura:if>
+    <div class="slds-backdrop slds-backdrop_open">
+    </div>
+    <!--Email Sharing Ends-->
+    <aura:if isTrue="{!v.isCompAttDocProc}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container"> 
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeAll}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">You may now proceed to service this client</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div  style="padding-top:30px; padding-bottom:30px;">
+                        <div class="slds-align_absolute-center textalign">
+                            <lightning:icon iconName="action:approval" alternativeText="Approved" title="Approved" />
+                            <aura:if isTrue="{! v.CompliancenxtRefreshDate == v.NANextRefreshDate}">
+                                <p>{'This client anniversary date is yet to be captured by FICA engine' }</p>
+                                <aura:set attribute="else">
+                                    <p>{!'This client anniversary date has been reset to ' +v.CompliancenxtRefreshDate }</p>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer ">
+                    <lightning:layout>
+                        <lightning:layoutItem alignmentBump="left">
+                            <lightning:button variant="neutral" 
+                                              label="Ok"
+                                              title="Ok"
+                                              onclick="{! c.closeAll }"
+                                              />
+                        </lightning:layoutItem>
+                        <!--lightning:layoutItem alignmentBump="left">
+                            <lightning:button variant="brand" 
+                                              label="Proceed"
+                                              title="Proceed"
+                                              />
+                        </lightning:layoutItem-->
+                    </lightning:layout>
+                </footer>
+            </div>
+        </section>
+    </aura:if>
+    
+    <!--Decline Attestation-->
+    
+    <aura:if isTrue="{!v.isDeclineAtt}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container"> 
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeproceedOnboard }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">To proceed, this client must be remediated to meet compliance regulations.</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-align_absolute-center" style="padding-left: 150px;padding-right: 150px;">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem size="12" padding="around-small" >
+                                <p>Please confirm the entity details before proceeding to the onboarding form.</p>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="12" padding="around-small" >
+                                <lightning:select aura:id="elementId"
+                                                  value="{!v.objDetail.Client_Group__c}"
+                                                  label="Client Group">
+                                    <aura:iteration items="{!v.listClientGrpValues}" var="val">
+                                        <option value="{!val}">{!val}</option>
+                                    </aura:iteration>
+                                </lightning:select> </lightning:layoutItem>
+                            <lightning:layoutItem size="12" padding="around-small" >
+                                <lightning:select name="controllerFld"
+                                                  value="{!v.objDetail.Client_Type__c}"
+                                                  label="Client Type"
+                                                  onchange="{!c.onControllerFieldChange}">
+                                    <aura:iteration items="{!v.listControllingValues}" var="val">
+                                        <option value="{!val}">{!val}</option>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                            
+                            <lightning:layoutItem size="12" padding="around-small" >
+                                <lightning:select name="dependentFld"
+                                                  value="{!v.objDetail.Place_of_Residence__c}"
+                                                  label="Place of Residence"
+                                                  disabled="{!v.bDisabledDependentFld}">
+                                    <aura:iteration items="{!v.listDependingValues}" var="val">
+                                        <option value="{!val}">{!val}</option>
+                                    </aura:iteration>
+                                </lightning:select> 
+                            </lightning:layoutItem> 
+                        </lightning:layout>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer ">
+                    <lightning:layout>
+                        <lightning:layoutItem alignmentBump="right">
+                            <lightning:button variant="neutral" 
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{! c.closeproceedOnboard }"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem alignmentBump="left">
+                            <lightning:button variant="brand" 
+                                              label="Proceed to Remediate"
+                                              title="Decline"
+                                              />
+                        </lightning:layoutItem></lightning:layout></footer>
+            </div>
+        </section>
+        
+    </aura:if> 
+    
+</aura:component>

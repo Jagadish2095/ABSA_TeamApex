@@ -1,0 +1,432 @@
+<!--
+* Lightning Component for the Merchant Application Parent (MerchantApplicationParent)
+*
+* @author  Prashant Jain / Jason Quevauvilliers
+* @version v1.0
+* @since   2020-04-07
+*
+-->
+<aura:component access="global"
+                controller="MerchantApplicationParentController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId">
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_Parent}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_MultiBankingDetailsSection}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_MerchantBusinessDetails}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_MerchantOnboardingTradingAddress}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_MerchantProductDetails}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_MerchantDevice}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_MerchantMASC}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_MerchantIndicators}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_merchantOnboardingAcceptedCards}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_MerchantSalesActivity}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_merchantOnboardingWebsiteDetails}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}" />
+
+    <!-- PJAIN: 20200330: Added below line to enable multi-line toast -->
+    <aura:html tag="style">.toastMessage.forceActionsText{white-space : pre-line !important;}</aura:html>
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="applicationId" type="String"/>
+    <aura:attribute name="applicationStatus" type="String"/>
+    <aura:attribute name="qaStatus" type="String"/>
+    <aura:attribute name="opportunityLineItemId" type="String"/>
+    <aura:attribute name="applicationProductMerchantId" type="String"/>
+    <aura:attribute name="toastMessage" type="String" />
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="isFormReadOnly" type="Boolean" default="false"/>
+    <aura:attribute name="isApprovalPending" type="Boolean" default="false"/> <!-- PJAIN: 20200630 -->
+    <aura:attribute name="waitCycleId" type="Integer"/>
+    <aura:attribute name="activeSections" type="List" default="['PCIDSS', 'ApplicationConsent', 'ApplicationTable']" />
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['pciDSSCheckbox1','pciDSSCheckbox2','pciDSSCheckbox3', 'applicationCorrectnessConsent']" />
+    <aura:attribute name="resetFieldsList" type="List" default="['pciDSSCheckbox1', 'pciDSSCheckbox2', 'pciDSSCheckbox3', 'applicationCorrectnessConsent', 'applicationGenerationDateField', 'applicationStatusField', 'qaStatusField']" /> <!-- PJAIN: 20200610 -->
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="errorMessage" type="String"/>
+    <aura:attribute name="applicationRecordTypeId" type="String"/> <!-- PJAIN: 20200531 -->
+    <aura:attribute name="opportunityRecordTypeId" type="String"/> <!-- PJAIN: 20200531 -->
+    <aura:attribute name="opportunityRecord" type="Object"/> <!-- PJAIN: 20200630 -->
+    <aura:attribute name="applicationRecord" type="Object"/> <!-- PJAIN: 20200610 -->
+    <aura:attribute name="opportunityLineItemProductName" type="String"/> <!--Himani: 20205553-->
+
+    <!--Himani: 20205304 Flow Declaration -->
+    <lightning:flow aura:id="flowId" onstatuschange="{!c.handleStatusChange}" class="slds-hide"/>
+
+     <!-- Attribute for Form Status for Parent and all Child components -->
+    <!-- Possible values: unknown, valid & invalid -->
+    <aura:attribute name="cmpFormStatus_Parent" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_MultiBankingDetailsSection" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_MerchantBusinessDetails" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_MerchantOnboardingTradingAddress" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_MerchantProductDetails" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_MerchantDevice" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_MerchantMASC" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_MerchantIndicators" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_merchantOnboardingAcceptedCards" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_MerchantSalesActivity" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_merchantOnboardingWebsiteDetails" type="String" default="unknown" />
+
+    <!-- eSign the doc //Story W-004373 - Tinashe Shoko START-->
+    <aura:attribute name="inProgressOrSignedRequestExists" type="boolean" default="false"/> <!-- Tinashe -->
+    <aura:attribute name="showESignatureDataTable" type="boolean" default="false"/> <!-- Tinashe -->
+    <aura:attribute name="isButtonSignatureDisabled" type="boolean" default="false"/>
+    <aura:attribute name="signatoriesOutput" type="List"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/>
+    <aura:attribute name="columns2" type="List"/>
+    <aura:attribute name="signatoryId" type="String"/>
+    <aura:attribute name="selectedEmail" type="String" default=""/>
+    <aura:attribute name="emailOptions" type="List"/>
+    <aura:attribute name="mobileOptions" type="List"/>
+    <aura:attribute name="selectedMobile" type="String"/>
+    <aura:attribute name="methodOptions" type="List"/>
+    <aura:attribute name="showSignatoryUpdatePanel" type="boolean" default="false"/>
+    <aura:attribute name="selectedMethod" type="String"/>
+    <aura:attribute name="showAlternativeEmailSharing" type="boolean" default="false"/>
+    <aura:attribute name="showAlternativeEmail" type="boolean" default="false"/>
+    <aura:attribute name="alternativeEmailSharing" type="String" default=""/>
+    <aura:attribute name="selectedClientEmail" type="String" default=""/>
+    <aura:attribute name="selectedEmailSignatory" type="String" default=""/>
+    <aura:attribute name="selectedMobileSignatory" type="String" default=""/>
+    <aura:attribute name="updateSignatoryError" type="boolean" default="false"/>
+    <aura:attribute name="showAlternativeMobile" type="boolean" default="false"/>
+    <aura:attribute name="alternativeMobile" type="String" default=""/>
+    <aura:attribute name="alternativeEmail" type="String" default=""/>
+    <aura:attribute name="impressionRequestData" type="List"/>
+    <aura:attribute name="impressionRequestColumns" type="List"/>
+    <aura:attribute name="documentId" type="String"/>
+    <!-- eSign the doc //Story W-004373 - Tinashe Shoko START-->
+
+    <!-- Below map stores the friendly name for each child component -->
+    <!-- The friendly name would be used in error toast message -->
+    <aura:attribute name="componentLabels" type="Map" default="{
+                                                               MultiBankingDetailsSection: 'Banking Details',
+                                                               MerchantBusinessDetails: 'Business Details',
+                                                               MerchantOnboardingTradingAddress: 'Trading Address',
+                                                               MerchantProductDetails: 'Product Details',
+                                                               MerchantDevice: 'Merchant Device',
+                                                               MerchantMASC: 'Mass Account Maintenance and Setup',
+                                                               MerchantIndicators: 'Indicators',
+                                                               merchantOnboardingAcceptedCards: 'Accepted Cards',
+                                                               MerchantSalesActivity: 'Sales Activity',
+                                                                merchantOnboardingWebsiteDetails: 'Website Details'}" />
+
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+
+    <!-- Display Lightning Data Service errors, if any -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br/>
+            <h2 class="slds-section__title slds-text-align_left" style="color:red">{!v.errorMessage}</h2>
+            <br/>
+        </div>
+    </aura:if>
+
+    <!-- PJAIN: 20200630 -->
+    <aura:if isTrue="{!v.isApprovalPending}">
+        <div class="recordError">
+            <br/>
+            <h2 class="slds-section__title slds-text-align_left" style="color:red">Approval(s) pending for this opportunity.</h2>
+            <br/>
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!not(empty(v.applicationId))}">
+        <c:MultiBankingDetailsSection aura:id="MultiBankingDetailsSection" cmpFormStatus="{!v.cmpFormStatus_MultiBankingDetailsSection}" isFormReadOnly="{!or(v.isFormReadOnly, v.isApprovalPending)}" applicationId="{!v.applicationId}" recordId="{!v.recordId}"/>
+        <c:MerchantBusinessDetails aura:id="MerchantBusinessDetails" cmpFormStatus="{!v.cmpFormStatus_MerchantBusinessDetails}" isFormReadOnly="{!or(v.isFormReadOnly, v.isApprovalPending)}" applicationId="{!v.applicationId}" recordId="{!v.recordId}"/>
+        <c:MerchantOnboardingTradingAddress aura:id="MerchantOnboardingTradingAddress" cmpFormStatus="{!v.cmpFormStatus_MerchantOnboardingTradingAddress}" isFormReadOnly="{!or(v.isFormReadOnly, v.isApprovalPending)}" applicationId="{!v.applicationId}" recordId="{!v.recordId}"/>
+        <c:MerchantProductDetails aura:id="MerchantProductDetails" cmpFormStatus="{!v.cmpFormStatus_MerchantProductDetails}" isFormReadOnly="{!or(v.isFormReadOnly, v.isApprovalPending)}" applicationProdMerchId="{!v.applicationProductMerchantId}" recordId="{!v.recordId}"/>
+        <c:merchantOnboardingWebsiteDetails aura:id="merchantOnboardingWebsiteDetails" cmpFormStatus="{!v.cmpFormStatus_merchantOnboardingWebsiteDetails}" isFormReadOnly="{!or(v.isFormReadOnly, v.isApprovalPending)}" applicationProdMerchId="{!v.applicationProductMerchantId}" recordId="{!v.recordId}"/>
+        <c:MerchantDevice aura:id="MerchantDevice" cmpFormStatus="{!v.cmpFormStatus_MerchantDevice}" isFormReadOnly="{!or(v.isFormReadOnly, v.isApprovalPending)}" applicationProdMerchId="{!v.applicationProductMerchantId}" recordId="{!v.recordId}"/>
+        <c:MerchantMASC aura:id="MerchantMASC" cmpFormStatus="{!v.cmpFormStatus_MerchantMASC}" isFormReadOnly="{!or(v.isFormReadOnly, v.isApprovalPending)}" applicationProductMerchantId="{!v.applicationProductMerchantId}" recordId="{!v.recordId}"/>
+        <c:MerchantIndicators aura:id="MerchantIndicators" cmpFormStatus="{!v.cmpFormStatus_MerchantIndicators}" isFormReadOnly="{!or(v.isFormReadOnly, v.isApprovalPending)}" applicationProductMerchantId="{!v.applicationProductMerchantId}" recordId="{!v.recordId}"/>
+        <c:merchantOnboardingAcceptedCards aura:id="merchantOnboardingAcceptedCards" cmpFormStatus="{!v.cmpFormStatus_merchantOnboardingAcceptedCards}" isFormReadOnly="{!or(v.isFormReadOnly, v.isApprovalPending)}" applicationProductMerchantId="{!v.applicationProductMerchantId}" recordId="{!v.recordId}"/>
+        <c:MerchantSalesActivity aura:id="MerchantSalesActivity" cmpFormStatus="{!v.cmpFormStatus_MerchantSalesActivity}" isFormReadOnly="{!or(v.isFormReadOnly, v.isApprovalPending)}" applicationProductMerchantId="{!v.applicationProductMerchantId}" recordId="{!v.recordId}"/>
+
+        <!-- PJAIN: 20200630 -->
+        <force:recordData aura:id="opportunityViewer"
+                          fields="Approval_Status__c, Entity_Type__c"
+                          recordId="{!v.recordId}"
+                          targetFields="{!v.opportunityRecord}"
+                          recordUpdated="{!c.opportunityRecordUpdated}"
+                          mode="VIEW"/>
+
+        <!-- PJAIN: 20200610 -->
+        <force:recordData aura:id="applicationViewer"
+                          fields="Application_Status__c, Application_Generation_Date__c, QA_Status__c"
+                          recordId="{!v.applicationId}"
+                          targetFields="{!v.applicationRecord}"
+                          recordUpdated="{!c.applicationRecordUpdated}"
+                          mode="VIEW"/>
+
+        <lightning:recordEditForm aura:id="merchantPCIDSSForm"
+                                  objectApiName="Application__c"
+                                  recordId="{!v.applicationId}"
+                                  onload="{!c.handleLoad}"
+                                  onsuccess="{!c.handleSuccess}"
+                                  onerror="{!c.handleError}"
+                                  recordTypeId="{!v.applicationRecordTypeId}">
+
+            <lightning:accordion aura:id="accordion" activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+                <lightning:accordionSection name="PCIDSS" label="PCI DSS (Payment Card Industry Data Security Standard)">
+
+                    <lightning:layout multipleRows="true">
+
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <p><lightning:formattedText value="Absa's Data Security Manager has been introduced to help our customers to understand and report your compliance, by guiding you through the Self-Assessment Questionnaire (SAQ), PCI DSS External Vulnerability Scanning and Attestation of Compliance. We'll help you turn the achievement of PCI DSS compliance into a useful marketing tool for your business, by building your security profile, promoting trust with your customers." /></p>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <label for="PCIDSSCheckbox1" style="position:absolute ; float:right ; padding-left:1.5%" class="slds-form-element__label">&nbsp;&nbsp;&nbsp;&nbsp;I informed the client to read the PCI DSS requirements as stipulated on www.pcisecuritystandards.org and I informed the client that they must maintain full PCI DSS compliance at all times.</label>
+                            <lightning:inputField aura:id="pciDSSCheckbox1" fieldName="PCI_DSS_Checkbox_1__c" variant="label-hidden" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" required="true" />
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <label for="PCIDSSCheckbox2" style="position:absolute ; float:right ; padding-left:1.5%" class="slds-form-element__label">&nbsp;&nbsp;&nbsp;&nbsp;I informed the client to use Absa's Data Security Manager portal to achieve PCI DSS compliance.</label>
+                            <lightning:inputField aura:id="pciDSSCheckbox2" fieldName="PCI_DSS_Checkbox_2__c" variant="label-hidden" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" required="true" />
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <label for="PCIDSSCheckbox3" style="position:absolute ; float:right ; padding-left:1.5%" class="slds-form-element__label">&nbsp;&nbsp;&nbsp;&nbsp;I informed the client of the monthly service fee of R40.10 for Data Security Manager.</label>
+                            <lightning:inputField aura:id="pciDSSCheckbox3" fieldName="PCI_DSS_Checkbox_3__c" variant="label-hidden" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" required="true" />
+                        </lightning:layoutItem>
+
+                    </lightning:layout>
+                </lightning:accordionSection>
+
+                <lightning:accordionSection name="ApplicationConsent" label="Application Consent">
+                    <lightning:layout multipleRows="true">
+
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <label for="AboutAppCheckbox1" style="position:absolute ; float:right ; padding-left:1.5%" class="slds-form-element__label">&nbsp;&nbsp;&nbsp;&nbsp;I confirm that all information in this application form is correct and that I am fully responsible for the quality assurance of the merchant’s information.</label>
+                            <lightning:inputField aura:id="applicationCorrectnessConsent" fieldName="Application_Correctness_Consent__c" variant="label-hidden" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" required="true" />
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <lightning:button aura:id="generateMerchantApplicationBtn" label="Generate Merchant Agreement" onclick="{!c.handleGenerateMerchantApplicationBtn}" variant="brand" class="slds-align_absolute-center slds-m-top_xx-large" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" />
+                        </lightning:layoutItem>
+
+                    </lightning:layout>
+                </lightning:accordionSection>
+
+                <lightning:accordionSection aura:id="applicationAccordionSection" name="ApplicationTable" label="Application" class="{!if((v.isFormReadOnly), '', 'slds-hide')}">
+                    <lightning:datatable
+                                         keyField="id"
+                                         data="{! v.data }"
+                                         columns="{! v.columns }"
+                                         hideCheckboxColumn="true"
+                                         onrowaction="{!c.handleRowAction}"/>
+
+                    <lightning:layout multipleRows="true">
+
+                        <!-- esign the doc //Story W-004373 - Tinashe Shoko - START -->
+                        <aura:if isTrue="{!v.showESignatureDataTable}">
+                            <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+                                <lightning:card title="Signatories" iconName="standard:document" class="slds-m-left_small">
+                                    <aura:set attribute="actions">
+                                        <lightning:button label="Refresh Signatories" disabled="{!v.isRefresh}" onclick="{!c.refreshSignatories}" aura:id="refreshBtn"/>
+                                    </aura:set>
+                                    <aura:if isTrue="{!not(empty(v.signatoriesOutput))}" >
+                                        <lightning:datatable keyField="Id"
+                                                             data="{!v.signatoriesOutput}"
+                                                             columns="{!v.columns2}"
+                                                             onrowaction="{! c.handleRowActionSignatory}"
+                                                             draftValues="{!v.draftValues}"
+                                                             onsave="{!c.handleSave}"
+                                                             hideCheckboxColumn="true"
+                                                             sortable="false"
+                                                             minColumnWidth="75"></lightning:datatable>
+                                    </aura:if>
+                                    <aura:if isTrue="{!empty(v.signatoriesOutput)}">
+                                        <p>No signatories found for this document type.</p>
+                                    </aura:if>
+                                    <br/>
+                                    <aura:if isTrue="{!v.isButtonSignatureDisabled}">
+                                        Please ensure that related contacts for the Account/Opportunity have valid Roles, Salutation, email address and/or mobile number.
+                                    </aura:if><br/>
+                                    <button class="slds-button slds-button_brand" onclick="{!c.sendForSignature}" disabled= "{!v.isButtonSignatureDisabled}" >Send for Signature</button>
+                                </lightning:card>
+                            </article>
+                            <BR/>
+                        </aura:if>
+
+                        <aura:if isTrue="{!not(empty(v.impressionRequestData))}">
+                            <lightning:card title="Quote E-Signature Requests" iconName="standard:document" class="slds-m-left_small">
+                                <lightning:datatable
+                                                     columns="{! v.impressionRequestColumns }"
+                                                     data="{! v.impressionRequestData }"
+                                                     keyField="id"
+                                                     hideCheckboxColumn="true"
+                                                     minColumnWidth="90"/>
+                            </lightning:card>
+                        </aura:if>
+
+                        <aura:if isTrue="{!v.showSignatoryUpdatePanel}">
+                            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                                <div class="slds-modal__container">
+                                    <!--###### MODAL BOX CONFIRMATION Start ######
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeConfirmationSignatory}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Close Confirmation</h2>
+                </header>-->
+                                    <!--###### MODAL BOX BODY Start ######-->
+                                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                        <lightning:layout multipleRows="true">
+                                            <lightning:layoutItem size="12">
+                                                <h2 class="slds-section__title">Update Signatory Details</h2>
+                                            </lightning:layoutItem>
+
+                                            <lightning:layoutItem padding="around-small" size="12">
+                                                <lightning:select aura:id="methodSelect" name="SelectMethod" label="Select Method" value="{!v.selectedMethod}" onchange="{!c.onPicklistMethodChange}" required="true">
+                                                    <aura:iteration items="{!v.methodOptions}" var="item">
+                                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                                    </aura:iteration>
+                                                </lightning:select>
+                                            </lightning:layoutItem>
+                                            <br />
+
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:select aura:id="emailSelect" name="SelectEmail" label="Select Email" value="{!v.selectedEmail}" onchange="{!c.onPicklistEmailChangeSignature}" required="true">
+                                                    <aura:iteration items="{!v.emailOptions}" var="item">
+                                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                                    </aura:iteration>
+                                                </lightning:select>
+                                            </lightning:layoutItem>
+
+                                            <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                                                <ui:inputCheckbox aura:id="completedCheckboxEmail" class="slds-float--right" label="Use Alternative Email for E-Signature?" change="{!c.onCompletedCheckEmail}"/>
+                                            </lightning:layoutItem>
+
+                                            <aura:if isTrue="{!v.showAlternativeEmail}">
+                                                <lightning:layoutItem padding="around-small" size="12">
+                                                    <lightning:input aura:id="altEmail" value="{!v.alternativeEmail}" label="Alternative Email" type="email" required="true"/>
+                                                </lightning:layoutItem>
+                                            </aura:if>
+                                            <br />
+
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:select aura:id="mobileSelect" name="SelectMobile" label="Select Mobile" value="{!v.selectedMobile}" onchange="{!c.onPicklistMobileChange}" required="true">
+                                                    <aura:iteration items="{!v.mobileOptions}" var="item">
+                                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                                    </aura:iteration>
+                                                </lightning:select>
+                                            </lightning:layoutItem>
+
+                                            <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                                                <ui:inputCheckbox aura:id="completedCheckboxMobile" class="slds-float--right" label="Use Alternative Mobile for E-Signature?" change="{!c.onCompletedCheckMobile}"/>
+                                            </lightning:layoutItem>
+
+                                            <aura:if isTrue="{!v.showAlternativeMobile}">
+                                                <lightning:layoutItem padding="around-small" size="12">
+                                                    <lightning:input aura:id="altMobile" value="{!v.alternativeMobile}" label="Alternative Mobile" type="phone" required="true"/>
+                                                </lightning:layoutItem>
+                                            </aura:if>
+                                        </lightning:layout>
+                                    </div>
+                                    <!--###### MODAL BOX FOOTER Start ######-->
+                                    <footer class="slds-modal__footer">
+                                        <lightning:button variant="neutral"
+                                                          label="Cancel"
+                                                          title="Cancel"
+                                                          onclick="{!c.closeConfirmationSignatory}"/>
+                                        <lightning:button variant="brand"
+                                                          label="Confirm"
+                                                          title="Confirm"
+                                                          onclick="{!c.confrimAndCloseSignatory}"/>
+                                    </footer>
+                                </div>
+                            </section>
+                            <div class="slds-backdrop slds-backdrop_open"></div>
+                        </aura:if>
+                        <!-- esign the doc //Story W-004373 - Tinashe Shoko END-->
+
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <lightning:button aura:id="submitForQABtn" label="Submit for QA" onclick="{!c.handleSubmitForQABtn}" variant="brand" class="{!if(and(v.applicationStatus=='Accepted', or(v.qaStatus=='Not Started', v.qaStatus=='Rejected')), 'slds-align_absolute-center slds-m-top_xx-large', 'slds-hide')}" disabled="{!v.isApprovalPending}" />
+                        </lightning:layoutItem>
+
+                    </lightning:layout>
+
+                    <lightning:messages aura:id="errorMessage"/>
+
+                </lightning:accordionSection>
+
+            </lightning:accordion>
+            <lightning:inputField aura:id="applicationNumberField" fieldName="Application_Number__c" class="slds-hide" />
+            <lightning:inputField aura:id="applicationGenerationDateField" fieldName="Application_Generation_Date__c" class="slds-hide" />
+            <lightning:inputField aura:id="applicationStatusField" fieldName="Application_Status__c" class="slds-hide" />
+            <lightning:inputField aura:id="qaStatusField" fieldName="QA_Status__c" class="slds-hide" />
+            <lightning:inputField aura:id="qaStatusUpdatedByField" fieldName="QA_Status_Updated_By__c" class="slds-hide" />
+            <lightning:inputField aura:id="qaStatusUpdatedOnField" fieldName="QA_Status_Updated_On__c" class="slds-hide" />
+
+        </lightning:recordEditForm>
+
+        <lightning:recordEditForm aura:id="opportunityForm"
+                                  objectApiName="Opportunity"
+                                  recordId="{!v.recordId}"
+                                  onerror="{!c.handleOppError}"
+                                  recordTypeId="{!v.opportunityRecordTypeId}">
+
+            <lightning:inputField aura:id="oppStageName" fieldName="StageName" class="slds-hide" />
+            <lightning:inputField aura:id="oppLossReasonType" fieldName="Loss_Reason_Type__c" class="slds-hide" />
+
+            <!--Loss Reason Dialog Start-->
+            <div role="dialog" tabindex="-1" aria-labelledby="lossReasonModalHeader" aura:id="lossReasonModal" class="slds-modal slds-modal_large">
+                <div class="slds-modal__container" style="width:50%;">
+                    <div class="slds-modal__header slds-text-heading_small">
+                        Stage Name: Closed Lost
+                    </div>
+                    <div class="slds-modal__content slds-p-around--medium" style="overflow:initial">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem padding="around-small" size="3"/>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label class="slds-form-element__label" for="lossReasonTypeOutputTxt">Loss Reason Type</label>
+                                <div class="slds-form-element__control">
+                                    <input type="text" id="lossReasonTypeOutputTxt" value="Customer Declined Proposal" class="slds-input" disabled="true"/>
+                                </div>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="3"/>
+                            <lightning:layoutItem padding="around-small" size="3"/>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField aura:id="oppLossReason" fieldName="Loss_Reason__c" />
+                                <div class="slds-form-element__help slds-hide" style="color:red" aura:id="oppLossReasonErrorMsg">Please select a Loss Reason</div>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </div>
+                    <div class="slds-modal__footer">
+                        <lightning:button name='Close' label='Close' onclick='{!c.handleLossReasonDialogNo}'/>
+                        <lightning:button variant="brand" name='Save' label='Save' onclick='{!c.handleLossReasonDialogYes}'/>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-backdrop" aura:id="Modalbackdrop"></div>
+
+            <!--Loss Reason Dialog End-->
+        </lightning:recordEditForm>
+
+        <!-- Display Lightning Data Service errors, if any -->
+        <!-- Because the form is too big, this section is duplicated. It is on the top as well as the bottom of the page -->
+        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+            <div class="recordError">
+                <br/>
+                <h2 class="slds-section__title slds-text-align_left" style="color:red">{!v.errorMessage}</h2>
+                <br/>
+            </div>
+        </aura:if>
+
+    </aura:if>
+</aura:component>

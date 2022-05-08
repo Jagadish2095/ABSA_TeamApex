@@ -1,0 +1,135 @@
+<aura:component controller="DBS_Dashboard_Populate_Controller" implements="force:appHostable">
+    <ltng:require scripts="{!$Resource.DBS_Dashboard_Utilities + '/Utilities.js'}" />    
+    
+    <aura:attribute name="data" type="Map" description="Stores data shared between child components with actions" default="{robotData: {'sObjectType': 'Robot_Data_Retrieval__c','Name': '','Recent_Transactions_JSON__c': '','Profile_JSON__c': '','ID_Number__c': '','Debit_Orders_JSON__c': '','Call_History_JSON__c': '','Access_Account_Number__c': '','Robot_Item_Tag__c': '','Robot_Item_Exception_Reason__c': '','Sim_Holds_JSON__c': '','Robot_Item_Status__c': 0},showSpinner: {profileInfo: 'slds-hide',profileMsg: 'Profile loading...',transactions: 'slds-hide',transactionsMsg: 'Transactions loading...',debitOrders: 'slds-hide',debitOrdersMsg: 'Debit orders loading...',iipHolds: 'slds-hide',iipHoldsMsg: 'IIP holds loading...',callHistory: 'slds-hide',callHistoryMsg: 'Call history loading...',simHolds: 'slds-hide',simHoldsMsg: 'Sim holds loading...',notes: 'slds-hide',notesMsg: 'Loading...'},loggedInUser: {username: '',ab_number: '',fullname: '',email: '',firstname: '',lastname: '',dbs_dashboard_do_not_show: ''},profileData: {'cust_name_cls': 'greyout-cls','cust_id_cls': 'greyout-cls','access_account_number_cls': 'greyout-cls','cust_client_code_cls': 'greyout-cls','cust_dob_cls': 'greyout-cls','cell_number_cls': 'greyout-cls','rvn_email_cls': 'greyout-cls','estatement_registration_cls': 'greyout-cls','e_statement_emails_primary_cls': 'greyout-cls','e_statement_emails_secondary_cls': 'greyout-cls','cust_poa_cls': 'greyout-cls','poa_first_names_poa_surname_cls': 'greyout-cls','poa_id_cls': 'greyout-cls','service_status_cls': ' greyout-cls','password_status_cls': ' greyout-cls','pin_status_cls': ' greyout-cls','last_success_cls': ' greyout-cls','combi_card_number_cls': ' greyout-cls','registered_aol_banking_cls': 'greyout-cls slds-p-left_large','registered_notify_me_cls': ' greyout-cls slds-p-left_large','registered_mobile_banking_cls': ' greyout-cls slds-p-left_large','registered_rewards_cls': ' greyout-cls slds-p-left_large','registered_telephone_banking_cls': ' greyout-cls slds-p-left_large','registered_ussd_cls': ' greyout-cls slds-p-left_large','payment_to_benif_limit_cls': 'greyout-cls','inter_acc_fund_transfer_limit_cls': 'greyout-cls','future_dated_pay_limit_cls': 'greyout-cls','stop_order_limit_cls': 'greyout-cls','cash_with_draw_limit_cls': 'greyout-cls','pos_purchase_limit_cls': 'greyout-cls','total_card_limit_cls': 'greyout-cls','view_login_button_disabled': 'true'},debitsData: {},iipsData: {},callsData: {},simsData: {},notesData: [],wrapUpBtnDisabled: true}"/>
+     
+    <aura:attribute name="accAccOrIdNum" type="String" default=""/>
+
+    <aura:attribute name="showWrapUpModal" type="Boolean" default="false"/>
+	
+    <aura:attribute name="options" type="List" default="[{'label': 'ID number', 'value': 'ID number'},{'label': 'Access account', 'value': 'access account'}]"/>
+	<aura:attribute name="value" type="String" default="access account"/>
+	
+    <aura:attribute name="invalidACCText" type="String" default="slds-hide"/>
+	<aura:attribute name="searchCardVisible" type="String" default="slds-hide"/>
+	<aura:attribute name="informationCardVisible" type="String" default="slds-hide"/>
+	<aura:attribute name="resultStatus" type="String" default="" />
+    <aura:attribute name="supportVisible" type="String" default="slds-hide"/>    
+
+    <aura:attribute name="queueItemID" type="String" default="" />
+	<aura:attribute name="profileDataMessage" type="String" default=""/>
+	<aura:attribute name="debitsDataMessage" type="String" default=""/>
+    <aura:attribute name="loadTransText" type="String" default="slds-hide"/>
+	<aura:attribute name="transactionsMessage" type="String" default=""/>
+    <aura:attribute name="transactionsList" type="Object[]" default=""/> 
+    <aura:attribute name="clickedTransactions" type="String[]" default=""/> 
+	<aura:attribute name="iipDataMessage" type="String" default=""/> 
+    <aura:attribute name="IIPHoldAction" type="String" default="" description="release/cancel action" />
+	<aura:attribute name="callsDataMessage" type="String" default=""/>
+	<aura:attribute name="formattedNotes" type="String" default=""/>
+	<aura:attribute name="holdsDataMessage" type="String" default=""/>
+	
+    <aura:attribute name="anchorCursor" type="Boolean" default="false" />
+	
+    <aura:attribute name="waitTime" type="Map" default="{40:4000,39:4000,38:4000,37:4000,36:4000,35:4000,34:4000,33:4000,32:4000,31:4000,30:4000,29:4000,28:4000,27:5000,26:5000,25:5000,24:5000,23:5000,22:5000,21:5000, 20:5000,19:5000, 18:5000,17:5000,16:5000,15:5000,14:5000,13:5000,12:5000,11:5000,10:5000,9:5000,8:5000,7:5000,6:5000,5:5000,4:5000,3:5000,2:5000,1:5000,0:5000}" />    
+    
+    <aura:attribute name="maxRepeats" type="Integer" default="{!$Label.c.DBS_MaxRepeats}" />
+    <aura:attribute name="extendPolling" type="Boolean" default="false" />
+	<aura:attribute name="postToInbound" type="Map" default="{profile:false, debit_orders:false, transactions:false, call_history:false, sim_holds:false, addTransactions:false}"/>
+	
+    <aura:attribute name="transactions_tab_red_star" type="String" default="" description="Red flag star to flag tab for attention" />
+	<aura:attribute name="sim_holds_tab_red_star" type="String" default="" description="Red star to flag tab for attention"/>
+	<aura:attribute name="iip_holds_tab_red_star" type="String" default="" description="Red star to flag tab for attention"/>	
+    
+    <aura:attribute name="modalObj" type="Map" default="{isOpen: false, header: '', body: ''}"/>
+	<aura:attribute name="currentTab" type="String" default="profile" description="Navigation tracker"/>
+	
+    <aura:attribute name="wrapUp" type="String" default="" description="Stores notes on clip board"/>
+	<aura:attribute name="wrapUpModal" type="Boolean"/>
+	
+    <aura:attribute name="additionalNotes" type="String" default=""/>
+	 
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+	<aura:handler name="updateDO" event="c:DBS_Dashboard_DebitOrderReversalEvent" action="{!c.updateReversedDebitOrdersHandler}"/>
+	<aura:handler name="updateHold" event="c:DBS_Dashboard_SimHoldReleaseEvent" action="{!c.updateReleasedSimHoldHandler}"/>
+	<aura:handler name="addNotes" event="c:DBS_Dashboard_NotesEvent" action="{!c.updateNotesHandler}"/>
+    <aura:handler name="updateIIPs" event="c:DBS_Dashboard_IIPHoldReleaseEvent" action="{!c.updateIIPsHandler}"/>
+	
+    <!--
+	Moved this to line 126 - mk
+	<lightning:card class="{!v.supportVisible}">                    
+			<img src="{!$Resource.DBS_SupportImage}"/>         	
+    </lightning:card>-->
+    
+    <!-- Search Box -->
+	<lightning:card>       
+		<div class="{!v.searchCardVisible+' main-container'}" onclick="{!c.anchorCursor}">
+			<div class="inner-container">
+				<div class="search-area" >
+					<div class="slds-form-element slds-p-bottom_x-small" style="font-size: 1.1em;color:rgb(62, 62, 60);">
+                       Please select an option to search:
+					</div>
+					<lightning:radioGroup label="" options="{!v.options}" value="{!v.value}" />
+					<br/>
+					<div class="input-container" onkeyup="{!c.handleKeyUp}">
+						<input class="input-field" type="text" aura:id="accAccOrIdNum" id="accAccOrIdNum" value="{!v.accAccOrIdNum}" readonly="{!v.searchBoxDisabled}" pattern="[0-9]" autofocus="autofocus"/>
+						<i class="fa fa-user icon" onclick="{!c.beforePost}">
+							<!-- beforePost -->
+							<lightning:icon iconName="utility:search" alternativeText="Search" size="x-small"/>
+						</i>
+					</div>
+					<div class="{!v.invalidACCText+ ' slds-text-align_left slds-p-top_x-small slds-text-color_error'}">{!v.resultStatus}</div>
+				</div> 
+			</div>
+		</div>
+        
+    <!-- Profile Info Display -->
+        <div class="{!v.informationCardVisible}">
+		<p class="{!v.invalidACCText+' slds-p-left_small slds-text-color_error'}">{!v.resultStatus}</p>
+		<div class="slds-tabs--default">
+            <ul class="slds-tabs--default__nav" role="tablist">  
+                <li aura:id="profile" class="slds-tabs--default__item slds-active"><a class="slds-tabs--default__link" onclick="{!c.navigationHandler}" id="profile">Profile</a></li>
+                <li aura:id="debits" class="slds-tabs--default__item"><a class="slds-tabs--default__link" onclick="{!c.navigationHandler}" id="debits">Debit orders</a></li>              
+                <li aura:id="transactions" class="slds-tabs--default__item"><a class="slds-tabs--default__link" onclick="{!c.navigationHandler}" id="transactions">Recent transactions<span class="slds-text-color_error slds-text-heading_small slds-text-title_bold">{!v.transactions_tab_red_star}</span></a></li>             
+                <li aura:id="iip" class="slds-tabs--default__item"><a class="slds-tabs--default__link" onclick="{!c.navigationHandler}" id="iip">IIP<span class="slds-text-color_error slds-text-heading_small slds-text-title_bold">{!v.iip_holds_tab_red_star}</span></a></li>             
+                <li aura:id="calls" class="slds-tabs--default__item"><a class="slds-tabs--default__link" onclick="{!c.navigationHandler}" id="calls">Call history</a></li>                                                     
+                <li aura:id="simholds" class="slds-tabs--default__item"><a class="slds-tabs--default__link" onclick="{!c.navigationHandler}" id="simholds">Sim hold<span class="slds-text-color_error slds-text-heading_small slds-text-title_bold">{!v.sim_holds_tab_red_star}</span> </a></li>            
+                <li aura:id="notes" class="slds-tabs--default__item"><a class="slds-tabs--default__link" onclick="{!c.navigationHandler}" id="notes">Notes</a></li>               	                     	                           
+			    <li class="slds-p-right_small medium-display" style="width:100%;text-align:right;">                   
+                    <button class="slds-button wrap_up_btn" disabled="{!v.data.wrapUpBtnDisabled}" onclick="{!c.wrapUpHandler}">Wrap up</button>
+                </li>    
+            </ul>     
+			<div aura:id="profileDiv" class="slds-tabs--default__content slds-show" role="tabpanel" aria-labelledby="profileDiv">
+                <c:DBS_Dashboard_Profile profileObj="{!v.data.profileData}" showSpinner="{!v.data.showSpinner.profileInfo}" />
+			</div>
+			<div aura:id="debitsDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="debitsDiv">	                
+                <c:DBS_Dashboard_DebitOrders data="{!v.data}" accAccOrIdNum="{!v.accAccOrIdNum}"/> 		
+			</div>
+			<div aura:id="transactionsDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="transactionsDiv">
+				<c:DBS_Dashboard_RecentTransaction transactionsList="{!v.transactionsList}" loadTransText="{!v.loadTransText}"  showSpinner="{!v.data.showSpinner.transactions}" clickedTransactions="{!v.clickedTransactions}"/>
+			</div>
+			<div aura:id="iipDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="iipDiv">
+				<c:DBS_Dashboard_IIPHold data="{!v.data}" accAccOrIdNum="{!v.accAccOrIdNum}" IIPHoldAction="{!v.IIPHoldAction}" />
+            </div> 
+			<div aura:id="callsDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="callsDiv">
+				<c:DBS_Dashboard_CallHistory callsObj="{!v.data.callsData}" showSpinner="{!v.data.showSpinner.callHistory}"/>
+		    </div>
+			<div aura:id="simholdsDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="simholdsDiv">
+                <c:DBS_Dashboard_SimHold data="{!v.data}" accAccOrIdNum="{!v.accAccOrIdNum}" /> 
+            </div>
+			<div aura:id="notesDiv" class="slds-tabs--default__content slds-hide" role="tabpanel" aria-labelledby="notesDiv">
+                <c:DBS_Dashboard_Notes data="{!v.data}" extraNotes="{!v.additionalNotes}" anchorCursor="{!v.anchorCursor}"/>
+            </div>
+		</div>
+        </div>        
+        
+	</lightning:card>
+  
+     <lightning:card class="{!v.supportVisible}">                    
+			<img class="dive-support"  src="{!$Resource.DBS_Dashboard_Assets + '/Images/dive_support.png'}"/>         	
+    </lightning:card>
+       
+    <c:DBS_Dashboard_Modal isModalOpen="{!v.modalObj.isOpen}" modalObj="{!v.modalObj}"/> 
+	<c:DBS_Dashboard_WrapUp data="{!v.data}" additionalNotes="{!v.additionalNotes}" robotData="{!v.data.robotData}" showOverlay="{!v.wrapUpModal}" showWrapUpModal="{!v.showWrapUpModal}"  notesData="{!v.formattedNotes}" showSpinner="{!v.data.showSpinner.notes}" accAccOrIdNum="{!v.accAccOrIdNum}" enableWrapUpBtn="{!v.data.wrapUpBtnDisabled}"/>
+   
+</aura:component>

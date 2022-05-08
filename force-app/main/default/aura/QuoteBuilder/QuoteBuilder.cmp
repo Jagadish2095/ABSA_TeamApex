@@ -1,0 +1,450 @@
+<!--
+* Lightning Component for Quote Builder (QuoteBuilder)
+*
+* @author  Prashant Jain / Jason Quevauvilliers
+* @version v1.0
+* @since   2020-04-07
+*
+-->
+<aura:component access="global"
+                controller="QuoteBuilderController"
+                implements="lightning:availableForFlowScreens,flexipage:availableForRecordHome,force:hasRecordId" >
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}" />
+    <aura:handler event="c:franchiseSelected" action="{!c.handleFranchiseSelected}" />
+
+    <!-- Register Application Events -->
+    <aura:registerEvent name="onboardingOpportunityIdsCreated" type="c:onboardingOpportunityIdsCreated"/>
+    
+    <!-- Methods -->
+    <!--aura:method name="getQuoteData" action="{!c.doInit}" access="PUBLIC"/--> 
+
+    <!-- Global Attribute Declaration -->
+    <aura:attribute name="quoteType" type="String" access="global"/>
+    <aura:attribute name="accordionSectionLabel" type="String" access="global"/>
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="defaultActiveSections" type="List" default="['QuoteBuilder', 'Quotes']" />
+    <aura:attribute name="activeSections" type="List" default="['QuoteBuilder', 'Quotes']" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="isFormReadOnly" type="Boolean" default="false"/>
+    <aura:attribute name="isApprovalPending" type="Boolean" default="false"/> <!-- PJAIN: 20200630 -->
+    <aura:attribute name="showConfirmDialog" type="Boolean" default="false"/>
+    <aura:attribute name="isNegotiable_quoteBuilderTerminalRent" type="Boolean" default="true"/>
+    <aura:attribute name="isNegotiable_quoteBuilderInitiationFee" type="Boolean" default="true"/>
+    <aura:attribute name="isNegotiable_quoteBuilderMinServiceFee" type="Boolean" default="true"/>
+    <aura:attribute name="isNegotiable_quoteBuilderCancellationFee" type="Boolean" default="true"/>
+    <aura:attribute name="isNegotiable_debitCardValueInput" type="Boolean" default="true"/>
+    <aura:attribute name="isNegotiable_creditCardValueInput" type="Boolean" default="true"/>
+    <aura:attribute name="isNegotiable_internationalCardValueInput" type="Boolean" default="true"/>
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" />
+    <aura:attribute name="opportunityRecord" type="Opportunity" />
+    <aura:attribute name="showFranchiseGroupSection" type="boolean" default="false"/>
+    <aura:attribute name="opportunityLineItemId" type="String"/>
+    <aura:attribute name="showDetailedSection" type="boolean" default="false"/>
+
+    <aura:attribute name="pricingBean" type="Object" />
+    <aura:attribute name="allComponentProducts" type="List" />
+    <aura:attribute name="metadataNameToValueMap" type="Map" default="{}"/>
+    <aura:attribute name="merchantOnboarding" type="String" default="{!$Label.c.Merchant_Onboarding}" /><!-- JQUEV: 20201113-->
+    <aura:attribute name="SPMOnboarding" type="String" default="{!$Label.c.SPM_Onboarding}" /><!-- HARITHA: 20201117-->
+    <aura:attribute name="saveOnlyUpdatedData" type="Boolean" /> <!-- JQUEV: 20201113-->
+    <aura:attribute name="hasDetailedSection" type="Boolean" default="false"/> <!-- JQUEV: 20201118-->
+    <aura:attribute name="filterCategory" type="String"/> <!-- JQUEV: 20210318-->
+    <!-- eSign the doc //Story W-004373 - Tinashe Shoko START-->
+    <aura:attribute name="inProgressOrSignedRequestExists" type="boolean" default="false"/> <!-- Tinashe -->
+    <aura:attribute name="showESignatureDataTable" type="boolean" default="false"/> <!-- Tinashe -->
+    <aura:attribute name="isButtonSignatureDisabled" type="boolean" default="false"/>
+    <aura:attribute name="signatoriesOutput" type="List"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/>
+    <aura:attribute name="columns2" type="List"/>
+    <aura:attribute name="signatoryId" type="String"/>
+    <aura:attribute name="selectedEmail" type="String" default=""/>
+    <aura:attribute name="emailOptions" type="List"/>
+    <aura:attribute name="mobileOptions" type="List"/>
+    <aura:attribute name="selectedMobile" type="String"/>
+    <aura:attribute name="methodOptions" type="List"/>
+    <aura:attribute name="showSignatoryUpdatePanel" type="boolean" default="false"/>
+    <aura:attribute name="selectedMethod" type="String"/>
+    <aura:attribute name="showAlternativeEmailSharing" type="boolean" default="false"/>
+    <aura:attribute name="showAlternativeEmail" type="boolean" default="false"/>
+    <aura:attribute name="alternativeEmailSharing" type="String" default=""/>
+    <aura:attribute name="selectedClientEmail" type="String" default=""/>
+    <aura:attribute name="selectedEmailSignatory" type="String" default=""/>
+    <aura:attribute name="selectedMobileSignatory" type="String" default=""/>
+    <aura:attribute name="updateSignatoryError" type="boolean" default="false"/>
+    <aura:attribute name="showAlternativeMobile" type="boolean" default="false"/>
+    <aura:attribute name="alternativeMobile" type="String" default=""/>
+    <aura:attribute name="alternativeEmail" type="String" default=""/>
+    <aura:attribute name="impressionRequestData" type="List"/>
+    <aura:attribute name="impressionRequestColumns" type="List"/>
+    <aura:attribute name="documentId" type="String"/>
+    <!-- eSign the doc //Story W-004373 - Tinashe Shoko START-->
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <aura:if isTrue="{!v.quoteType == v.merchantOnboarding}">
+        <lightning:layout multipleRows="true">
+
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:select aura:id="productSelect" label="Select Product to Quote" onchange="{!c.openProductSelectConfirmModal}" required="true" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}">
+                    <option value="Desktop - X4">Desktop - X4</option>
+                    <option value="E-Commerce">E-Commerce</option>
+                    <option value="Mobile - Ingenico Move 3500">Mobile - Ingenico Move 3500</option>
+                    <option value="Mobile - SmartPay">Mobile - SmartPay</option>
+                </lightning:select>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem padding="around-small" size="6">
+                <aura:if isTrue="{!not(empty(v.opportunityRecord.SiteCode__c))}">
+                    <label class="slds-form-element__label">ABSA Site</label><br/>
+                    <ui:outputText value="{!v.opportunityRecord.SiteCode__c}"/>
+                </aura:if>
+            </lightning:layoutItem>
+
+        </lightning:layout>
+
+        <!-- Merchant Class Cmp -->
+        <c:MerchantClass aura:id="MerchantClassCmp" opportunityLineItemId="{!v.opportunityLineItemId}"/>
+
+        <!-- Franchise Group Cmp -->
+        <aura:if isTrue="{!v.showFranchiseGroupSection}">
+            <c:merchantOnboardingFranchiseGroup aura:id="merchantOnboardingFranchiseGroupCmp" recordId="{!v.recordId}"/>
+        </aura:if>
+    </aura:if>
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="QuoteBuilder" label="{!v.accordionSectionLabel}" >
+
+            <!-- Display Lightning Data Service errors, if any -->
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="recordError">
+                    <br/>
+                    <h2 class="slds-section__title" style="color:red">{!v.errorMessage}</h2>
+                    <br/>
+                </div>
+            </aura:if>
+
+            <!-- PJAIN: 20200630 -->
+            <aura:if isTrue="{!v.isApprovalPending}">
+                <div class="recordError">
+                    <br/>
+                    <h2 class="slds-section__title" style="color:red">Approval(s) pending for this opportunity.</h2>
+                    <br/>
+                </div>
+            </aura:if>
+
+            <!-- JQUEV: 20200813 - components created from helper.createUI -->
+            <!--{!v.body}-->
+            <div aura:id="mainBodyDiv"></div>
+
+            <aura:if isTrue="{!v.hasDetailedSection}">
+                <div class="slds-form-element">
+                    <label class="slds-checkbox_toggle slds-grid">
+                    <span class="slds-form-element__label slds-m-bottom_none">Detailed View</span>
+                    <ui:inputCheckbox aura:id="detailedToggleCheckbox" change="{!c.openToggleDetailsConfirmModal}" value="{!v.showDetailedSection}" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}"/>
+                    <span id="toggle-desc" class="slds-checkbox_faux_container" aria-live="assertive">
+                        <span class="slds-checkbox_faux"></span>
+                    </span>
+                    </label>
+                </div>
+            </aura:if>
+
+            <!-- JQUEV: 20200813 - components created from helper.createUI -->
+            <!--{!v.detailedBody}-->
+            <div aura:id="detailedBodyDiv"></div>
+
+            <lightning:layout multipleRows="true">
+                <aura:if isTrue="{!and(not(empty(v.allComponentProducts)), v.quoteType == v.merchantOnboarding)}">
+                    <lightning:layoutItem padding="around-small" size="12">
+                        Component Products
+                        <aura:iteration var="componentProduct" items="{!v.allComponentProducts}" indexVar="indx">
+                            <ui:inputCheckbox aura:id="componentProductCheckBox" text="{!componentProduct.productName}" name="{!indx}" label="{!componentProduct.productName}" value="{!componentProduct.isSelected}" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}"/>
+                        </aura:iteration>
+                    </lightning:layoutItem>
+                </aura:if>
+				<aura:if isTrue="{!v.quoteType != v.SPMOnboarding}">
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:button aura:id="resetPricingBtn" label="Reset Pricing" onclick="{!c.handleResetPricing}" variant="brand" class="slds-align_absolute-center slds-var-m-top_xx-small" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" />
+                </lightning:layoutItem>
+                </aura:if>
+                <!-- Revise Btn: Only show for SPM Onboarding and isFormReadOnly = true -->
+                <lightning:layoutItem padding="around-small" size="6" class="{!if(and((v.isFormReadOnly), v.quoteType == v.SPMOnboarding), '', 'slds-hide')}">
+                    <lightning:button aura:id="reviseQuoteBtn" label="Revise" onclick="{!c.handleReviseQuote}" variant="brand" class="slds-align_absolute-center slds-var-m-top_xx-small" disabled="{!v.isApprovalPending}" />
+                </lightning:layoutItem>
+
+                <!-- Revise Btn: Only Hide for SPM Onboarding and isFormReadOnly = true -->
+                <lightning:layoutItem padding="around-small" size="6" class="{!if(and((v.isFormReadOnly), v.quoteType == v.SPMOnboarding), 'slds-hide', '')}">
+                    <lightning:button aura:id="generateQuoteBtn" label="Generate Quote" onclick="{!c.handleGenerateQuote}" variant="brand" class="slds-align_absolute-center slds-var-m-top_xx-small" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" />
+                </lightning:layoutItem>
+
+            </lightning:layout>
+        </lightning:accordionSection>
+
+        <lightning:accordionSection aura:id="quotesAccordionSection" name="Quotes" label="Quotes" class="{!if(and((v.isFormReadOnly), v.quoteType == v.merchantOnboarding), '', 'slds-hide')}">
+                <lightning:datatable
+                                     keyField="id"
+                                     data="{! v.data }"
+                                     columns="{! v.columns }"
+                                     hideCheckboxColumn="true"
+                                     onrowaction="{!c.handleRowAction}"/>
+            <br/>
+            <!-- eSign the doc //Story W-004373 - Tinashe Shoko - START -->
+            <aura:if isTrue="{!v.showESignatureDataTable}">
+                <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+                    <lightning:card title="Signatories" iconName="standard:document" class="slds-m-left_small">
+                        <aura:set attribute="actions">
+                            <lightning:button label="Refresh Signatories" disabled="{!v.isRefresh}" onclick="{!c.refreshSignatories}" aura:id="refreshBtn"/>
+                        </aura:set>
+                        <aura:if isTrue="{!not(empty(v.signatoriesOutput))}" >
+                            <lightning:datatable keyField="Id"
+                                                 data="{!v.signatoriesOutput}"
+                                                 columns="{!v.columns2}"
+                                                 onrowaction="{! c.handleRowActionSignatory}"
+                                                 draftValues="{!v.draftValues}"
+                                                 onsave="{!c.handleSave}"
+                                                 hideCheckboxColumn="true"
+                                                 sortable="false"
+                                                 minColumnWidth="75"></lightning:datatable>
+                        </aura:if>
+                        <aura:if isTrue="{!empty(v.signatoriesOutput)}">
+                            <p>No signatories found for this document type.</p>
+                        </aura:if>
+                        <br/>
+                        <aura:if isTrue="{!v.isButtonSignatureDisabled}">
+                            Please ensure that related contacts for the Account/Opportunity have valid Roles, Salutation, email address and/or mobile number.
+                        </aura:if><br/>
+                        <button class="slds-button slds-button_brand" onclick="{!c.sendForSignature}" disabled= "{!v.isButtonSignatureDisabled}" >Send for Signature</button>
+                    </lightning:card>
+                </article>
+                <BR/>
+            </aura:if>
+
+            <aura:if isTrue="{!not(empty(v.impressionRequestData))}">
+                <lightning:card title="Quote E-Signature Requests" iconName="standard:document" class="slds-m-left_small">
+                    <lightning:datatable
+                                         columns="{! v.impressionRequestColumns }"
+                                         data="{! v.impressionRequestData }"
+                                         keyField="id"
+                                         hideCheckboxColumn="true"
+                                         minColumnWidth="90"/>
+                </lightning:card>
+            </aura:if>
+
+            <aura:if isTrue="{!v.showSignatoryUpdatePanel}">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <!--###### MODAL BOX CONFIRMATION Start ######
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeConfirmationSignatory}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Close Confirmation</h2>
+                </header>-->
+                        <!--###### MODAL BOX BODY Start ######-->
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <lightning:layout multipleRows="true">
+                                <lightning:layoutItem size="12">
+                                    <h2 class="slds-section__title">Update Signatory Details</h2>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:select aura:id="methodSelect" name="SelectMethod" label="Select Method" value="{!v.selectedMethod}" onchange="{!c.onPicklistMethodChange}" required="true">
+                                        <aura:iteration items="{!v.methodOptions}" var="item">
+                                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </lightning:layoutItem>
+                                <br />
+
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:select aura:id="emailSelect" name="SelectEmail" label="Select Email" value="{!v.selectedEmail}" onchange="{!c.onPicklistEmailChangeSignature}" required="true">
+                                        <aura:iteration items="{!v.emailOptions}" var="item">
+                                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                                    <ui:inputCheckbox aura:id="completedCheckboxEmail" class="slds-float--right" label="Use Alternative Email for E-Signature?" change="{!c.onCompletedCheckEmail}"/>
+                                </lightning:layoutItem>
+
+                                <aura:if isTrue="{!v.showAlternativeEmail}">
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <lightning:input aura:id="altEmail" value="{!v.alternativeEmail}" label="Alternative Email" type="email" required="true"/>
+                                    </lightning:layoutItem>
+                                </aura:if>
+                                <br />
+
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:select aura:id="mobileSelect" name="SelectMobile" label="Select Mobile" value="{!v.selectedMobile}" onchange="{!c.onPicklistMobileChange}" required="true">
+                                        <aura:iteration items="{!v.mobileOptions}" var="item">
+                                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                                    <ui:inputCheckbox aura:id="completedCheckboxMobile" class="slds-float--right" label="Use Alternative Mobile for E-Signature?" change="{!c.onCompletedCheckMobile}"/>
+                                </lightning:layoutItem>
+
+                                <aura:if isTrue="{!v.showAlternativeMobile}">
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <lightning:input aura:id="altMobile" value="{!v.alternativeMobile}" label="Alternative Mobile" type="phone" required="true"/>
+                                    </lightning:layoutItem>
+                                </aura:if>
+                            </lightning:layout>
+                        </div>
+                        <!--###### MODAL BOX FOOTER Start ######-->
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral"
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{!c.closeConfirmationSignatory}"/>
+                            <lightning:button variant="brand"
+                                              label="Confirm"
+                                              title="Confirm"
+                                              onclick="{!c.confrimAndCloseSignatory}"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </aura:if>
+            <!-- eSign the doc //Story W-004373 - Tinashe Shoko END-->
+
+        </lightning:accordionSection>
+    </lightning:accordion>
+    <!--Confirm Dialog Start-->
+    <div class="slds-m-around_xx-large">
+        <aura:if isTrue="{!v.showConfirmDialog}">
+            <!--Modal Box Start-->
+            <div role="dialog" class="slds-modal slds-fade-in-open ">
+                <div class="slds-modal__container">
+                    <!--Modal Box Header Start-->
+                    <header class="slds-modal__header">
+                        <h1 class="slds-text-heading--medium">Confirmation</h1>
+                    </header>
+                    <!--Modal Box Header End-->
+
+                    <!--Modal Box Content Start-->
+                    <div class="slds-modal__content slds-p-around--medium">
+                        <center><b>This is reset the pricing in the form and will overwrite any manually captured details. Are you sure you want to continue?</b></center>
+                    </div>
+                    <!--Modal Box Content End-->
+
+                    <!--Modal Box Button Start-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button name='No' label='No' onclick='{!c.handleConfirmDialogNo}'/>
+                        <lightning:button variant="brand" name='Yes' label='Yes' onclick='{!c.handleConfirmDialogYes}'/>
+                    </footer>
+                    <!--Modal Box Button End-->
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop--open"></div>
+        </aura:if>
+    </div>
+    <!--Confirm Dialog End-->
+
+    <!-- PJAIN: 20200630 -->
+    <force:recordData aura:id="opportunityViewer"
+                        fields="Approval_Status__c, SiteCode__c, AccountId, Merchant_High_Risk_MCC_Passed__c, Quote_Generation_Date__c"
+                        recordId="{!v.recordId}"
+                        targetFields="{!v.opportunityRecord}"
+                        recordUpdated="{!c.opportunityRecordUpdated}"
+                        mode="VIEW"/>
+
+    <!-- PJAIN: 20200530: Added the if condition & recordTypeId -->
+    <aura:if isTrue="{!not(empty(v.pricingBean))}">
+        <lightning:recordEditForm aura:id="opportunityForm"
+                                objectApiName="Opportunity"
+                                recordId="{!v.recordId}"
+                                onsuccess="{!c.handleOppSuccess}"
+                                onerror="{!c.handleOppError}"
+                                recordTypeId="{!v.pricingBean.opportunityRecordTypeId}" >
+
+            <lightning:inputField aura:id="oppLossReasonType" fieldName="Loss_Reason_Type__c" class="slds-hide"/>
+            <lightning:inputField aura:id="oppStageName" fieldName="StageName" class="slds-hide"/>
+            <lightning:inputField aura:id="oppQuoteNumber" fieldName="Quote_Number__c" class="slds-hide" />
+            <lightning:inputField aura:id="oppQuoteGenerationDate" fieldName="Quote_Generation_Date__c" class="slds-hide" />
+            <lightning:inputField aura:id="oppQuoteStatus" fieldName="Quote_Status__c" class="slds-hide" />
+            <lightning:inputField aura:id="oppRiskChecksPassed" fieldName="Merchant_High_Risk_MCC_Passed__c" class="slds-hide" />
+
+            <!--Loss Reason Dialog Start-->
+            <div role="dialog" tabindex="-1" aria-labelledby="lossReasonModalHeader" aura:id="lossReasonModal" class="slds-modal slds-modal_large">
+                <div class="slds-modal__container" style="width:50%;">
+                    <div class="slds-modal__header slds-text-heading_small">
+                        Stage Name: Closed Lost
+                    </div>
+                    <div class="slds-modal__content slds-p-around--medium" style="overflow:initial">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem padding="around-small" size="3"/>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <label class="slds-form-element__label" for="lossReasonTypeOutputTxt">Loss Reason Type</label>
+                                <div class="slds-form-element__control">
+                                  <input type="text" id="lossReasonTypeOutputTxt" value="Customer declined Proposal" class="slds-input" disabled="true"/>
+                                </div>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="3"/>
+                            <lightning:layoutItem padding="around-small" size="3"/>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField aura:id="oppLossReason" fieldName="Loss_Reason__c" />
+                                <div class="slds-form-element__help slds-hide" style="color:red" aura:id="oppLossReasonErrorMsg">Please select a Loss Reason</div>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </div>
+                    <div class="slds-modal__footer">
+                        <lightning:button name='Close' label='Close' onclick='{!c.handleLossReasonDialogNo}'/>
+                        <lightning:button variant="brand" name='Save' label='Save' onclick='{!c.handleLossReasonDialogYes}'/>
+                    </div>
+                </div>
+            </div>
+            <!--Loss Reason Dialog End-->
+        </lightning:recordEditForm>
+    </aura:if>
+    <!-- Product Select Confirmation Modal -->
+    <div role="dialog" tabindex="-1" aria-labelledby="ProductSelectConfirmModalHeader" aura:id="ProductSelectConfirmModal" class="slds-modal slds-modal_large">
+        <div class="slds-modal__container" style="width:50%;">
+            <div class="slds-modal__header slds-text-heading_small">
+                Are you sure you want to change the product?
+            </div>
+            <div class="slds-modal__content slds-p-around--medium" style="overflow:initial">
+                <center>
+                    By changing the Product to Quote, the values adjusted on the Quote Builder will be deleted. <br/>
+                    New values for the newly selected product will then be created.
+                </center>
+            </div>
+            <div class="slds-modal__footer">
+                <lightning:button name='No' label='No' onclick='{!c.closeProductSelectConfirmModal}'/>
+                <lightning:button variant="brand" name='Yes' label='Yes' onclick='{!c.handleProductSelectConfirmModalYes}'/>
+            </div>
+        </div>
+    </div>
+    <!-- Toggle between rollup and detailed view confirmation Modal -->
+    <div role="dialog" tabindex="-1" aria-labelledby="ToggleDetailsConfirmModalHeader" aura:id="ToggleDetailsConfirmModal" class="slds-modal slds-modal_large">
+        <div class="slds-modal__container" style="width:50%;">
+            <div class="slds-modal__header slds-text-heading_small">
+                Are you sure you want to proceed?
+            </div>
+            <div class="slds-modal__content slds-p-around--medium" style="overflow:initial">
+                <center>
+                    By toggling to/from the Merchant Fee Category without generating the Quote, the values adjusted will be deleted.
+                </center>
+            </div>
+            <div class="slds-modal__footer">
+                <lightning:button name='No' label='No' onclick='{!c.closeToggleDetailsConfirmModal}'/>
+                <lightning:button variant="brand" name='Yes' label='Yes' onclick='{!c.handleToggleDetailsConfirmModalYes}'/>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Back Drop -->
+    <div class="slds-backdrop slds-backdrop--hide" aura:id="Modalbackdrop"></div>
+</aura:component>

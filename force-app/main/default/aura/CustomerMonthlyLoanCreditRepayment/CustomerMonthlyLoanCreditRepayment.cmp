@@ -1,0 +1,92 @@
+<!--
+* Lightning Component for capturing customer monthly loan and credit card repayments (CustomerMonthlyLoanCreditRepayment)
+*
+* @author  Aaron Castelyn : Absa
+* @version v1.0
+* @since   2020-09-21
+*
+-->
+
+<aura:component access="global" controller="CustomerIncomeExpenseController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName">
+
+    <aura:attribute name="validate" type="Aura.Action" description="DebtValidate"/>
+    <aura:attribute name="applicationId" type="String" />    
+    <aura:attribute name="readOnly" type="Boolean" default="false" />
+    <aura:attribute name="total" type="Double" default="0.00" />
+
+    <aura:attribute name="expenseRecord" type="Object" default="{ }" />
+    <aura:attribute name="expense" type="String" default="" />    
+
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+
+    <!--Handlers-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    
+    <aura:method name="updateExpenses" action="{!c.updateExpenses}" access="PUBLIC" />
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="TheSpinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.readOnly}">
+        <div class="slds-box slds-theme_default">
+            <lightning:layout>
+                <lightning:layoutItem size="3">
+                    <div class="slds-m-bottom_medium">
+                        <p class="slds-text-body_large"><b>Total</b></p>
+                        <p class="slds-text-body_small">Home loan, insurance, vehicle finance, credit card, maintenance expenses</p>
+                    </div>                    
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <div class="slds-m-bottom_medium">
+                        <p class="slds-text-body_large"><b><lightning:formattedNumber style="currency" currencyCode="ZAR" value="{!v.total}" /></b></p>
+                    </div>                    
+                </lightning:layoutItem>            
+            </lightning:layout>
+        </div>
+    <aura:set attribute="else">        
+        <div class="slds-box slds-theme_default">
+            <lightning:layout>
+                <lightning:layoutItem size="12">
+                    <c:BranchMessage mediaBody='Customer&#8217;s monthly loans and credit repayments' iconName='standard:account' mediaTheme='' mediaBodyClass='slds-text-heading_large slds-var-p-vertical_medium' />
+                    
+                    <lightning:layout>
+                        <lightning:layoutItem size="5">
+                            <div class="slds-m-bottom_medium">
+                                <lightning:input type="number" class="slds-m-right_xx-large" name="monthlyVehicleAssetRepayment" label="Monthly vehicle and asset finance repayment(s)" value="{!v.expenseRecord.assetPayment.Applicant_Value__c}" formatter="currency" step="0.01"/>
+                            </div>                            
+                            <div class="slds-m-bottom_medium">
+                                <lightning:input type="number" class="slds-m-right_xx-large" name="monthlyLoanOverdraftRepayment" label="Monthly loan and overdraft repayment(s)" value="{!v.expenseRecord.loanPayment.Applicant_Value__c}" formatter="currency" step="0.01"/>
+                                <p class="slds-text-body_small">e.g. Personal loans, study loans etc.</p>
+                            </div>                            
+                            <div class="slds-m-bottom_medium">
+                                <lightning:input type="number" class="slds-m-right_xx-large" name="monthlyRetailAccountRepayment" label="Monthly retail account repayment(s)" value="{!v.expenseRecord.retailPayment.Applicant_Value__c}" formatter="currency" step="0.01"/>
+                                <p class="slds-text-body_small">e.g. Edgars, Pnp, Woolworths etc.</p>
+                            </div>                            
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="5">
+                            <div class="slds-m-bottom_medium">
+                                <lightning:input type="number" class="slds-m-right_xx-large" name="monthlyCreditCardRepayment" label="Monthly credit card(s) repayment(s)" value="{!v.expenseRecord.creditPayment.Applicant_Value__c}" formatter="currency" step="0.01"/>
+                            </div>                            
+                            <div class="slds-m-bottom_medium">
+                                <lightning:input type="number" class="slds-m-right_xx-large" name="existingMonthlyHomeLoanRepayment" label="Existing monthly home loan repayment(s)" value="{!v.expenseRecord.homeloanPayment.Applicant_Value__c}" formatter="currency" step="0.01"/>
+                            </div>                            
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutItem>                
+                            <div class="slds-m-bottom_medium">
+                                <lightning:input type="checkbox" class="slds-m-right_xx-large" name="responsibleJointlyDebts" label="I am responsible for debts jointly with other persons and confirm that I have disclosed the amount I am responsible for in that respect." value="{!v.expenseRecord.jointResponsible}" />
+                            </div>                                                            
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </lightning:layoutItem>            
+            </lightning:layout>
+        </div>    
+    </aura:set>
+    </aura:if>
+</aura:component>

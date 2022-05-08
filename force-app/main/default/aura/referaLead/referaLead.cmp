@@ -1,0 +1,359 @@
+<!--ReferaLead Component mainly applicable for Direct delivery AVAF Credit Life and Extended Cover Products -->
+
+<!--@author  Divya Podila -->
+<!--@since   2020-01-25 -->
+
+<aura:component controller="LeadOverrideController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName"  access="global">
+    
+    <!--Attributes and Event handler-->
+    <aura:attribute name="recordId" type="String" />
+     <aura:attribute name="recordTypeSTI" type="String"/>
+    <aura:attribute name="isIndvClient" type="Boolean" default="true"/>
+    <aura:attribute name="selectedLookUpRecord" type="Contact" default="{}"/>
+    <aura:attribute name="siteRecord" type="Site__c" default="{'sobjectType': 'Site__c'}"/>
+    <aura:attribute name="selectedcampaign" type ="String"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="showDetails" type="boolean" default="false"/>
+    <aura:attribute name="showComponent" type="boolean" default="false"/>
+    <aura:attribute name="value" type="String"/>
+    <aura:attribute name="userid" type="String"/>
+    <aura:attribute name="caseOwner" type="String" />
+    <aura:attribute name="objectName" type="String"/>
+    <aura:attribute name="currentUserName" type="String"/>
+    <aura:attribute name="accountIdnumber" type="String"/>
+    <aura:attribute name="accountAVAFNumber" type="String"/>
+    <aura:attribute name="referralLead" type="Lead" default=" { 'sobjectType':'Lead' }"/>
+    <aura:attribute name="referralLeadVASTI" type="Lead" default=" { 'sobjectType':'Lead' }"/>
+    <aura:attribute name="referralCase" type="Case" default=" { 'sobjectType':'Case' }"/>
+    <aura:attribute name="opportunityDetails" type="Opportunity" default=" { 'sobjectType':'Opportunity' }"/>
+    <aura:attribute name="isButtonActive" type="Boolean" default="false" />
+    <aura:attribute name="isLoading" type="Boolean" default="false"/>
+    <aura:attribute name="isOpen" type="Boolean" default="false"/>
+    <aura:attribute name="isCaseOpen" type="Boolean" default="false"/>
+    <aura:attribute name="isFaceToFaceCase" type="Boolean" default="false"/>
+    <aura:attribute name="isVirtualAdvisorCase" type="Boolean" default="false"/>
+    <aura:attribute name="isVirtualAdvisorOpportunity" type="Boolean" default="true"/>
+    <aura:attribute name="selectOwnerId" type="Id"/>
+    <aura:attribute name="selectRecordName1" type="String"/>
+    <!-- Added By Divya-->
+    <!--Commented by Divya on 22-9-2021
+	<aura:attribute name="investOpportunity" type="Boolean" default="true"/>
+    <aura:attribute name="isReferedcompleted" type="Boolean"/>-->
+    <aura:attribute name="opportunityId" type="String"/>
+    <aura:attribute name="opportunityType" type="String"/>
+    <aura:attribute name="defaultRecordTypeId" type="String"/>
+    <aura:attribute name="customvalue" type="List"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="change" value="{!v.selectedLookUpRecord}" action="{!c.handleSelectedLookUpRecord}"/> 
+    <aura:attribute name="stioptions" type="Map"/>
+    <aura:attribute name="selCampaignVal" type="String"/>
+    <aura:attribute name="oppRecordtype" type="String"/>
+    <aura:attribute name="isDirectSales" type="boolean"/>
+    <aura:attribute name="isSTI" type="boolean"/>
+    <aura:attribute name="others" type="boolean"/>
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Hot Transfer - DD - HOT Referral - Advice – STI', 'value': 'Hot'},
+                                                        {'label': 'Cold Transfer - DD - Referral - Advice - STI', 'value': 'Cold'}
+                                                        ]"/>
+    
+    <aura:attribute name="financialProductRecord" type="Financial_Product__c" default="{'sobjectType': 'Financial_Product__c',
+                                                                                       'Name': '',
+                                                                                       'Business_Unit__c': '',
+                                                                                       'Id': ''
+                                                                                       }"/>
+    <aura:attribute name="teamAssignCheck" type="boolean"/>    
+    <aura:attribute name="sObjectName" type="String" />
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <!-- Added By Divya-->
+    <!--  Commented by Divya on 22-9-2021
+	<aura:renderIf isTrue="{!and(v.objectName == 'Opportunity',v.investOpportunity)}">
+        <aura:renderIf isTrue="{!v.isReferedcompleted == false}">
+            <c:referLead_Inv showAttestationModal="true" referralLead="{!v.referralLeadVASTI}" recordId="{!v.recordId}"></c:referLead_Inv>
+       </aura:renderIf>
+        <aura:set attribute="else">-->
+    <aura:renderIf isTrue="{!v.showDetails}">
+        
+        <aura:renderIf isTrue="{!v.objectName == 'Case'}">
+            
+            <div class="slds-grid slds-gutters">
+                
+                <div class="slds-section slds-is-open">
+                    <h3 class="slds-section__title slds-theme_shade">
+                        <span class="slds-truncate slds-p-horizontal_small" title="Please Enter Details Below">Please Enter Details Below</span>
+                    </h3>
+                    
+                    <div aria-hidden="false" class="slds-section__content">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <ui:outputText value="Client Identity Number (ID) *"/> 
+                               <!-- <force:inputField aura:id="refnum1c" value="{!v.referralLead.ID_Number__c}"/>-->
+                                <ui:inputText class="field" value="{!v.referralLead.ID_Number__c}" disabled="true" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <ui:outputText value="Agent who is referring the lead *"/>
+                                <ui:inputText class="field" value="{!v.caseOwner}" disabled="true" />
+                            </lightning:layoutItem>
+                             <aura:if isTrue="{!v.sObjectName == 'Case'}">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <c:LookupComponent objectName="User" fieldName="Name" campaign="VA" Label="Agent that is receiving the lead *" 
+                                                         selectRecordId="{!v.selectOwnerId}" selectRecordName="{!v.selectRecordName1}" 
+                                                         required="false" iconName="action:user"/>
+                                        </lightning:layoutItem>
+                                        <aura:set attribute="else">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <ui:outputText value="Agent that is receiving the lead *"/>
+                                                <force:inputField aura:id="recIdLead" value="{!v.referralLead.OwnerId}" />
+                                                
+                                            </lightning:layoutItem>
+                                        </aura:set>
+                                    </aura:if>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <ui:outputText value="Product Interest *"/>
+                                <force:inputField aura:id="productInterestc" value="{!v.referralLead.Financial_Product__c}"/>
+                            </lightning:layoutItem>
+                             <aura:if isTrue="{!v.sObjectName == 'Case'}">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <ui:outputText value="Assign it to a team?"/>
+                                            <ui:inputCheckbox aura:id="teamCheck" label="" />
+                                        </lightning:layoutItem>
+                                      <!--  <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:recordEditForm objectApiName="Case" recordId="{!v.recordId}">
+                                                <lightning:inputField fieldName="AccountId" aura:id="accountId" onchange="{!c.handleChange}"/>
+                                            </lightning:recordEditForm>
+                                        </lightning:layoutItem>-->
+                             </aura:if>
+                                    
+                                    <lightning:layoutItem padding="around-small" size="{!v.sObjectName == 'Case' ? 6:12}">
+                                        <ui:outputText value="Comments"/>
+                                        <force:inputField aura:id="comments" value="{!v.referralLead.Comments__c}"/>
+                                    </lightning:layoutItem>
+                            <div class="slds-align_absolute-center" style="height:5rem">
+                                <lightning:button variant="brand" label="Create Lead" title="Create Lead" onclick="{! c.createSTILead }" />
+                            </div>
+                        </lightning:layout>
+                    </div>
+                </div>
+                
+                
+            </div>
+        </aura:renderIf>
+        
+        <aura:renderIf isTrue="{!and(v.objectName == 'Opportunity', v.isVirtualAdvisorOpportunity)}">
+            
+            <!--div class="slds-grid slds-gutters"-->
+            
+            <div class="slds-box slds-m-top_xx-large">
+                <lightning:card iconName="action:new_lead" title="Lead Information">
+                    <div class="c-container">
+                        <lightning:recordEditForm aura:id="iCreateLead" objectApiName="Lead" recordId="{!v.leadRecordId}" recordTypeId="{!v.recordTypeSTI}">
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="Name"/> 
+                                    </div>
+                                    
+                                    <lightning:inputField fieldName="Salutation" aura:id="iSalutation" value="{!v.referralLeadVASTI.Salutation}" class="customRequired"/>
+                                    <aura:if isTrue="{!!v.isIndvClient}">
+                                        <lightning:inputField fieldName="Parent_Account__c" aura:id="iParent_Account" value="{!v.referralLeadVASTI.Parent_Account__c}" class="customRequired"/>
+                                        <div class="customRequired">
+                                        <c:ContactLookupParentComponent objectAPIName="Contact" AccountId ="{!v.referralLeadVASTI.Parent_Account__c}" IconName="standard:contact" selectedRecord="{!v.selectedLookUpRecord}" label="Contact Name" />
+                                   		</div>
+                                        </aura:if>
+                                    <lightning:inputField fieldName="FirstName" aura:id="iFirstName" value="{!v.referralLeadVASTI.FirstName}"/>
+                                    <lightning:inputField fieldName="LastName" aura:id="iLastName" value="{!v.referralLeadVASTI.LastName}"/>
+                                    <lightning:inputField fieldName="Nationality__c" aura:id="iNationality" value="{!v.referralLeadVASTI.Nationality__c}"/>
+                                    <lightning:inputField fieldName="Email" aura:id="iEmail" value="{!v.referralLeadVASTI.Email}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    
+                                    <lightning:inputField fieldName="Phone" aura:id="iPhone" value="{!v.referralLeadVASTI.Phone}" class="customRequired"/>
+                                    <lightning:inputField fieldName="MobilePhone" aura:id="iMobilePhone" value="{!v.referralLeadVASTI.MobilePhone}" />
+                                       <lightning:inputField fieldName="ID_Type__c" aura:id="iIdType" value="{!v.referralLeadVASTI.ID_Type__c}"/>
+                                    <label class="slds-form-element__label" for="iIdNumber">ID/Passport Number</label>
+                                    <lightning:inputField fieldName="ID_Number__c" aura:id="iIdNumber" value="{!v.referralLeadVASTI.ID_Number__c}" variant="label-hidden"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Company Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField fieldName="Company" aura:id="iCompany" value="{!v.referralLeadVASTI.Company}"/>    
+                                    <lightning:inputField fieldName="Company_Registration_Number__c" aura:id="iCompanyRegistrationNumber" value="{!v.referralLeadVASTI.Company_Registration_Number__c}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField fieldName="CIF__c" aura:id="iCIF" value="{!v.referralLeadVASTI.CIF__c}"/>    
+                                    
+                                    
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">STI Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField fieldName="Customer_Consent__c" aura:id="iCustomerConsent" value="{!v.referralLeadVASTI.Customer_Consent__c}"/>    
+                                    <lightning:inputField fieldName="Type_of_Asset_to_be_Insured__c" aura:id="iTypeofAssettobeInsured" value="{!v.referralLeadVASTI.Type_of_Asset_to_be_Insured__c}"/>
+                                    <lightning:inputField fieldName="Please_Specify__c" aura:id="iPleaseSpecify" value="{!v.referralLeadVASTI.Please_Specify__c}" disabled="{!!(v.referralLeadVASTI.Type_of_Asset_to_be_Insured__c=='Other')}"/>  
+                                    
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField fieldName="AIC_Relationship_Consultant_Name__c" aura:id="iAICRelationshipConsultantName" value="{!v.referralLeadVASTI.AIC_Relationship_Consultant_Name__c}" class="customRequired"/>   
+                                    <lightning:inputField fieldName="Asset_Account_Number__c" aura:id="iAssetAccountNumber" value="{!v.referralLeadVASTI.Asset_Account_Number__c}"/>
+                                    <lightning:inputField fieldName="Policy_needs_ABSA_Financial_Interest__c" aura:id="iPolicyneedsABSAFinancialInterest" value="{!v.referralLeadVASTI.Policy_needs_ABSA_Financial_Interest__c}"/>   
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">If no invoice available, provide the following information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField fieldName="Full_Description_of_Vehicle__c" aura:id="iFullDescriptionofVehicle" value="{!v.referralLeadVASTI.Full_Description_of_Vehicle__c}"/>    
+                                    <lightning:inputField fieldName="Vehicle_Retail_Value_Inclusive_of_VAT__c" aura:id="iVehicleRetailValueInclusiveofVAT" value="{!v.referralLeadVASTI.Vehicle_Retail_Value_Inclusive_of_VAT__c}"/>
+                                    
+                                    <span >Enter full description and values of extras fitted to the vehicle(inclusive of VAT)</span>
+                                    
+                                    <lightning:inputField fieldName="Vehicle_Extra_Fittings_Information__c" aura:id="iVehicleExtraFittingsInformation" value="{!v.referralLeadVASTI.Vehicle_Extra_Fittings_Information__c}" />  
+                                </lightning:layoutItem>
+                            </lightning:layout>   
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">CAF STI Lead Source Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField fieldName="Lead_Name__c" aura:id="iLeadName" value="{!v.referralLeadVASTI.Lead_Name__c}" class="customRequired"/>    
+                                    <lightning:inputField fieldName="Lead_Phone__c" aura:id="iLeadPhone" value="{!v.referralLeadVASTI.Lead_Phone__c}" class="customRequired"/>
+                                    
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField fieldName="Lead_Email__c" aura:id="iLeadEmail" value="{!v.referralLeadVASTI.Lead_Email__c}" class="customRequired"/>    
+                                    <lightning:inputField fieldName="Referring_Banker_s_Branch__c" aura:id="iReferringBankersBranch" value="{!v.referralLeadVASTI.Referring_Banker_s_Branch__c}" class="customRequired"/> 
+                                    
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Product Interest</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    
+                                    <lightning:inputField fieldName="Financial_Product__c" aura:id="iFinancialProduct"  onchange="{!c.getFinancialProduct}" class="customRequired"/>
+                                    <lightning:inputField fieldName="Lead_Additional_Information__c" aura:id="iExpressedInterestDetail" value="{!v.referralLeadVASTI.Lead_Additional_Information__c}"/>
+                                    <lightning:inputField fieldName="Lead_Source__c" aura:id="iLeadSource" value="{!v.referralLeadVASTI.Lead_Source__c}" class="customRequired"/>  
+                                    <lightning:inputField fieldName="STI_Sub_Source__c" aura:id="iLeadSubSource" value="{!v.referralLeadVASTI.STI_Sub_Source__c}" class="customRequired"/>  
+                                    <lightning:inputField fieldName="Preferred_Communication_Channel__c" aura:id="iPreferredCommunicationChannel" value="{!v.referralLeadVASTI.Preferred_Communication_Channel__c}" class="customRequired"/>
+                                    <lightning:inputField fieldName="Lead_Type__c" aura:id="iLeadType" value="{!v.referralLeadVASTI.Lead_Type__c}" class="customRequired"/>
+                                    <lightning:inputField fieldName="Language_Preference__c" aura:id="iLanguagePreference" value="{!v.referralLeadVASTI.Language_Preference__c}"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Regional Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField fieldName="Preferred_Site_STI__c" aura:id="iPreferredSite"  onchange="{!c.getPreferredSite}" class="customRequired"/>
+                                    
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            
+                            <!--custom buttons-->
+                            <lightning:layout>
+                                <lightning:layoutItem class="right-align" padding="around-small" size="12">
+                                    <lightning:button label="Create Lead" onclick="{!c.createNewLead}" variant="brand" aura:id="ibtncreateLead"/>
+                                    
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                    </div>  
+                </lightning:card>
+            </div>
+            
+            <!--/div-->
+        </aura:renderIf>
+        
+        <aura:renderIf isTrue="{!and(v.objectName == 'Opportunity', not(v.isVirtualAdvisorOpportunity))}">
+            
+            <lightning:radioGroup name="radioGroup"
+                                  label="Refer a Lead"
+                                  options="{! v.options }"
+                                  value="{! v.value }"
+                                  type="radio" onchange="{!c.hide}"/>
+            
+            <aura:renderIf  isTrue="{!v.selectedcampaign == 'Hot Transfer'}">
+                <div class="slds-box slds-m-top_xx-large">
+                    
+                    <h2 class="header">Please fill below details</h2>
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <ui:outputText value="Client Identity Number (ID)"/> 
+                            <force:inputField aura:id="refnum1" value="{!v.referralLead.ID_Number__c}"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <ui:outputText value="Agent who is referring the lead"/>
+                            <force:inputField aura:id="referralIdopp1" value="{!v.referralLead.DD_Agent_Who_Referred_Lead__c}"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <ui:outputText value="Agent that is receiving the lead"/>
+                            <force:inputField aura:id="recId1" value="{!v.referralLead.OwnerId}"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <ui:outputText value="AVAF Account Number"/>
+                            <force:inputField aura:id="recDate1" value="{!v.referralLead.DD_AVAF_Account_Number__c}" />
+                        </lightning:layoutItem>
+                        <div class="slds-align_absolute-center" style="height:5rem">
+                            <lightning:button variant="brand" label="Create Lead" title="Create Lead" onclick="{! c.handleClick1 }" />
+                        </div>
+                    </lightning:layout>
+                    
+                </div>
+            </aura:renderIf>
+            
+            <aura:renderIf isTrue="{!v.selectedcampaign == 'Cold Transfer'}">
+                <div class="slds-box slds-m-top_xx-large">
+                    <div class="row">
+                        <h2 class="header">Please fill below details</h2>
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <ui:outputText value="Client Identity Number (ID)"/> 
+                                <force:inputField aura:id="refnum2" value="{!v.referralLead.ID_Number__c}" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <ui:outputText value="Agent who is referring the lead"/>
+                                <force:inputField aura:id="referralIdopp2" value="{!v.referralLead.DD_Agent_Who_Referred_Lead__c}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <ui:outputText value="Agent that is receiving the lead"/>
+                                <force:inputField aura:id="recId2" value="{!v.referralLead.OwnerId}" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <ui:outputText value="Convenient Time to Call the client"/>
+                                <force:inputField aura:id="recDate2" value="{!v.referralLead.DD_Convenient_Time_To_Call__c}" />
+                            </lightning:layoutItem>
+                            <div class="slds-align_absolute-center" style="height:5rem">
+                                <lightning:button variant="brand" label="Create Lead" title="Create Lead" onclick="{! c.handleClick2 }" />
+                            </div>
+                        </lightning:layout>
+                    </div>
+                    
+                </div>
+            </aura:renderIf>
+        </aura:renderIf>
+        
+        <aura:set attribute="else">
+            <li class="slds-item">
+                <lightning:tile label="Not Applicable for this Product">
+                    <aura:set attribute="media">
+                        <lightning:avatar fallbackIconName="standard:opportunity"/>
+                    </aura:set>
+                </lightning:tile>
+            </li>
+        </aura:set>
+    </aura:renderIf>
+    <!-- Commented by Divya on 22-9-2021
+ </aura:set>
+  </aura:renderIf>-->
+</aura:component>

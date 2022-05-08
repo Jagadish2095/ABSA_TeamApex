@@ -1,0 +1,136 @@
+<!--@author  Kokesto Mpshane-->
+<!--@Created Date   2020-05-05-->
+<aura:component
+    implements="force:appHostable,forceCommunity:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+    access="global"
+    controller="AccountRelatedItemsExt"
+>
+    <!--Attribute Declaration-->
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="clientCases" type="Map" />
+    <aura:attribute name="hasRelatedAccount" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="leadRecord" type="Object" />
+
+    <!-- Spinner for loading -->
+    <center style="z-index: 99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" alternativeText="Loading..." />
+    </center>
+
+    <!--Error Message-->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title slds-align_absolute-center" style="color: red">{!v.errorMessage}</h2>
+        </div>
+    </aura:if>
+
+    <!--Record Data-->
+    <force:recordData
+        aura:id="leadViewer"
+        fields="FinServ__RelatedAccount__c"
+        recordId="{!v.recordId}"
+        targetFields="{!v.leadRecord}"
+        recordUpdated="{!c.leadRecordUpdated}"
+        mode="VIEW"
+    />
+
+    <aura:if isTrue="{!v.hasRelatedAccount}">
+        <table class="slds-table slds-table_cell-buffer" width="100%">
+            <tbody>
+                <aura:if isTrue="{!not(empty(v.clientCases.Open))}">
+                    <tr>
+                        <b>Open Cases</b>
+                    </tr>
+                    <aura:iteration items="{!v.clientCases.Open}" var="item">
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td>Case Number:</td>
+                            <td>
+                                <a data-caseid="{!item.Id}" onclick="{!c.naviteToCaseRecord}">
+                                    <ui:outputText value="{!item.CaseNumber}" />
+                                </a>
+                            </td>
+                        </tr>
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td>Record Type:</td>
+                            <td><ui:outputText value="{!item.RecordType.Name}" /></td>
+                        </tr>
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td>Status:</td>
+                            <td>
+                                <b><ui:outputText value="{!item.Status}" /></b>
+                            </td>
+                        </tr>
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td>Created Date:</td>
+                            <td><lightning:formattedDateTime value="{!item.CreatedDate}" year="2-digit" month="short" day="2-digit" weekday="long" /></td>
+                        </tr>
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td>Subject:</td>
+                            <td><ui:outputText value="{!item.Subject}" /></td>
+                        </tr>
+                        <br />
+                    </aura:iteration>
+                    <aura:set attribute="else">
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td><i>No open cases found</i></td>
+                        </tr>
+                        <br />
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!not(empty(v.clientCases.Closed))}">
+                    <tr>
+                        <b>Closed Cases</b>
+                    </tr>
+                    <aura:iteration items="{!v.clientCases.Closed}" var="item">
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td>Case Number:</td>
+                            <td>
+                                <a data-caseid="{!item.Id}" onclick="{!c.naviteToCaseRecord}">
+                                    <ui:outputText value="{!item.CaseNumber}" />
+                                </a>
+                            </td>
+                        </tr>
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td>Record Type:</td>
+                            <td><ui:outputText value="{!item.RecordType.Name}" /></td>
+                        </tr>
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td>Status:</td>
+                            <td>
+                                <b><ui:outputText value="{!item.Status}" /></b>
+                            </td>
+                        </tr>
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td>Created Date:</td>
+                            <td><lightning:formattedDateTime value="{!item.CreatedDate}" year="2-digit" month="short" day="2-digit" weekday="long" /></td>
+                        </tr>
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td><b>Closed Date:</b></td>
+                            <td>
+                                <b><lightning:formattedDateTime value="{!item.ClosedDate}" year="2-digit" month="short" day="2-digit" weekday="long" /></b>
+                            </td>
+                        </tr>
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td>Subject:</td>
+                            <td><ui:outputText value="{!item.Subject}" /></td>
+                        </tr>
+                        <br />
+                    </aura:iteration>
+                    <aura:set attribute="else">
+                        <tr class="slds-list_horizontal slds-wrap">
+                            <td><i>No closed cases found</i></td>
+                        </tr>
+                    </aura:set>
+                </aura:if>
+            </tbody>
+        </table>
+        <aura:set attribute="else">
+            <tr class="slds-list_horizontal slds-wrap">
+                <td>
+                    <b>Please search and select customers name and surname under the related account field to retrieve the customer's complaints history</b>
+                </td>
+            </tr>
+        </aura:set>
+    </aura:if>
+</aura:component>

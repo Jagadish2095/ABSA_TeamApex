@@ -1,0 +1,149 @@
+<!--
+* Lightning Component for  Covid 19 Product NCA Calculator
+* 
+* @author  Almas Aleem : Absa
+* @version v1.0
+* @since   2020-11-20
+* @UserStory W-007400
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" 
+                controller="CovidNCACalculatorController">
+    
+    <aura:handler event="c:clientDetailsSectionCreditEvent" action="{!c.handleUpdateAccount}" />
+    
+    <!-- Attribute Declration-->
+    <aura:attribute name="opportunityId" type="String" />
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="apcId" type="Id"  />
+    <aura:attribute name="apProd" type="Object"  />
+  
+    <aura:attribute name="credvalue" type="String" default="No"/>
+    <aura:attribute name="isCredValue" type="Boolean" />
+    
+    <aura:attribute name="statevalue" type="String" default="No"/>
+    <aura:attribute name="textStateValue" type="String" />
+    
+    <aura:attribute name="jurvalue" type="String" default="No"/>
+    <aura:attribute name="textjurValue" type="String" />
+    
+    <aura:attribute name="Amenvalue" type="String" />
+    <aura:attribute name="isAmenValue" type="Boolean" />
+     <aura:attribute name="showSpinner" type="Boolean" default="true" />
+    <aura:attribute name="application" type="Application__c" default="{sobjectType:'Application__c'}" />
+    <aura:attribute name="isHide" type="Boolean" default="false" />
+    
+    <aura:attribute name="activeSections" type="List" default="['NCA']" />
+   
+    <aura:attribute name="showNCA" type="Boolean" default="true" />
+    <aura:attribute name="account" type="Object" />
+    <aura:attribute name="selectedPrincipal" type="List"/>
+    <aura:attribute name="selectedMainPrincipal" type="Id" />
+    <aura:attribute name="isClntValidated" type="Boolean" default="false" />
+    <aura:attribute name="isNcaValidated" type="Boolean" default="false" />    
+    <aura:attribute name="appProduct" type="Application_Product__c" default="{ 'sobjectType': 'Application_Product__c' }" />
+    
+    <!--loading spinner start-->
+    <div class="exampleHolder">
+        <lightning:spinner aura:id="mySpinner" class="slds-hide" alternativeText="Loading..." variant="brand"
+            size="large" />
+    </div>
+    <!-- Loading spinner end-->
+    
+    <!--Event Declaration-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <lightning:recordEditForm aura:id="appCreditForm" objectApiName="Application_Product__c" recordId="{!v.apcId}" >
+        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections }">
+            <!-- National Credit Act Section -->
+            <lightning:accordionSection name="NCA" label="National Credit Act (NCA) Info">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            
+                            <lightning:radioGroup name="credradioButtonGroup"
+                                                  label="Credit agreement at arms length"
+                                                  options="{!v.options}"
+                                                  value="{!v.credvalue}"
+                                                  onchange="{!c.onCredRadioChange}"
+                                                  type="button"/>
+                            <lightning:inputField fieldName="Credit_Agreement_at_Arms_Length__c"
+                                                  aura:id="creditAgreement" variant="label-hidden" value="{!v.isCredValue}"  class="slds-hide" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:radioGroup name="stateradioButtonGroup"
+                                                  label="Client State"
+                                                  options="{!v.options}"
+                                                  value="{!v.statevalue}"
+                                                  onchange="{!c.onStateRadioChange}"
+                                                  type="button"/> <lightning:inputField fieldName="Client_State__c" aura:id="clientState" variant="label-hidden" value="{!v.textStateValue}"  class="slds-hide"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <p>Number of Trustees</p>  <lightning:inputField fieldName="Number_or_Trustees__c" aura:id="numberOfTrustees" variant="label-hidden" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span> 
+                            <lightning:radioGroup name="jurradioButtonGroup"
+                                                  label="Client has juristic trustees"
+                                                  options="{!v.options}"
+                                                  value="{!v.jurvalue}"
+                                                  onchange="{!c.onJurRadioChange}"
+                                                  type="button"/><lightning:inputField fieldName="Any_Juristic_Trustees__c" aura:id="anyJuristicTrustee" variant="label-hidden" value="{!v.textjurValue}"  class="slds-hide" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <p>Annual Turnover</p> <lightning:inputField fieldName="Annual_Turnover__c" aura:id="annualTurnover"
+                                                                         variant="label-hidden" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <p>Asset Value</p> <lightning:inputField fieldName="Asset_Value__c" aura:id="assetValue" variant="label-hidden" />
+                        </span>
+                    </div>
+                     <div class="slds-col slds-size_1-of-2">
+                          <span>
+                            <p>Agreement Size</p> <lightning:inputField fieldName="Agreement_Size__c" aura:id="assetValue" variant="label-hidden" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:radioGroup name="AmenradioButtonGroup"
+                                                  label="Secured by Mortgage"
+                                                  options="{!v.options}"
+                                                  value="{!v.Amenvalue}"
+                                                  onchange="{!c.onAmenRadioChange}"
+                                                  type="button"/>
+                             <lightning:inputField fieldName="TL_Secured_by_Mortgage_Bond__c"
+                                                    aura:id="Amend" variant="label-hidden" value="{!v.isAmenValue}"  class="slds-hide" />
+                        </span>
+                    </div>
+                     
+                    
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <aura:if isTrue="{!v.showNCA}" >
+                             <p>Client NCA Status</p><lightning:inputField fieldName="NCA_Result__c"
+                                                    aura:id="nca" variant="label-hidden" readonly="true"   />
+                        </aura:if>
+                      </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                    </div>
+                </div>
+            </lightning:accordionSection>
+            <lightning:button variant="brand" class="slds-align_absolute-center slds-var-m-top_xx-large"
+                          label="Calculate Client NCA status" type="submit" onclick="{!c.calculateNCA}" />
+  
+        </lightning:accordion>
+   </lightning:recordEditForm>
+    
+    
+</aura:component>

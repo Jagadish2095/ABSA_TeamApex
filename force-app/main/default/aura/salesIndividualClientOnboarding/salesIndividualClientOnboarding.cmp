@@ -1,0 +1,1029 @@
+<!--
+* Lightning Component for Sales Individual onboarding
+* @author  Simangaliso Mathenjwa : Absa
+* @version v1.0
+* @since   02 July 2021
+-->
+<aura:component
+	access="global"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+>
+	<!--Attributes-->
+	<!--Account Att-->
+	<aura:attribute name="accountRecord" type="Object" />
+	<aura:attribute name="acc" type="Object" />
+	<aura:attribute name="accountId" type="String" default="0017Y00001MyNFyQAN" />
+	<aura:attribute name="accountFieldsFields" type="List" />
+
+	<!--Opportunity Att-->
+	<aura:attribute name="newOpportunity" type="Object" />
+	<aura:attribute name="simpleNewOpportunity" type="Object" />
+	<aura:attribute name="newOpportunityError" type="String" />
+
+	<!--Residential Address-->
+	<aura:attribute name="resAddressRecord" type="Object" />
+	<aura:attribute name="resAdd" type="Object" />
+
+	<!--Postal Address-->
+	<aura:attribute name="posAddressRecord" type="Object" />
+	<aura:attribute name="posAdd" type="Object" />
+
+	<!--Employer Address-->
+	<aura:attribute name="empAddressRecord" type="Object" />
+	<aura:attribute name="empAdd" type="Object" />
+
+	<aura:attribute name="steps" type="List" />
+	<aura:attribute name="recordError" type="String" />
+	<aura:attribute name="currentStep" type="String" default="personalDetails" />
+	<aura:attribute name="postalOptions" type="List" />
+	<aura:attribute name="postalSame" type="String" default="No" />
+	<aura:attribute name="statementOptions" type="List" default="[{'label':'Self Service', 'value':'Self Service'}, {'label':'Email', 'value':'Email'}]" />
+	<aura:attribute name="incomeTaxOptions" type="List" default="[{'label':'Yes', 'value':'true'}, {'label':'No', 'value':'false'}]" />
+	<aura:attribute name="foreignIncomeTaxOptions" type="List" default="[{'label':'Yes', 'value':'true'}, {'label':'No', 'value':'false'}]" />
+	<aura:attribute
+		name="screensMap"
+		type="Map"
+		default="{'personalDetails': {'formCount': 1, 'nextScreen': 'contactInformation', 'buttons':['personalDetailsButton']}, 
+    'contactInformation': {'formCount': 3, 'nextScreen': 'employmentDetails', 'buttons':['contactInfoButton', 'resAddressButton', 'posAddressButton']}, 
+    'employmentDetails': {'formCount': 3, 'nextScreen': '', 'buttons':['employmentDetailsButton', 'employmentAddressButton', 'taxDetailsButton']}
+    }"
+	/>
+	<aura:attribute name="ValidationResultList" type="List" default="[]" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="nextScreen" type="String" />
+	<aura:attribute name="formTotal" type="Integer" default="0" />
+	<aura:attribute name="employed" type="boolean" default="false" />
+	<aura:attribute name="processType" type="String" />
+	<aura:attribute name="jobDetails" type="Object" />
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+	<aura:attribute name="residentialSuburb" type="String" />
+	<aura:attribute name="listOfRecords" type="List" />
+	<aura:attribute name="fromTabId" type="String" />
+
+	<!--Handlers-->
+	<aura:handler name="init" value="{!this }" action="{! c.doInit }" />
+	<aura:handler name="change" value="{!v.acc.Occupation_Status__pc }" action="{!c.handleOccupationStatusChange }" />
+
+	<!--Account Record-->
+	<force:recordData
+		aura:id="accountRecordData"
+		recordId="{!v.accountId}"
+		layoutType="FULL"
+		targetRecord="{!v.accountRecord}"
+		targetFields="{!v.acc}"
+		fields="{!v.accountFieldsFields}"
+		targetError="{!v.recordError}"
+		mode="EDIT"
+	/>
+
+	<!--Opportunity Record-->
+	<force:recordData
+		aura:id="newOpportunityRecordCreator"
+		targetRecord="{!v.newOpportunity}"
+		targetFields="{!v.simpleNewOpportunity}"
+		fields="AccountId,Name,Process_Type__c,StageName,CloseDate,Id"
+		targetError="{!v.newOpportunityError}"
+		mode="EDIT"
+	/>
+
+	<!--Residential Address Record-->
+	<force:recordData
+		aura:id="residentialAddRecordData"
+		layoutType="FULL"
+		targetRecord="{!v.resAddressRecord}"
+		targetFields="{!v.resAdd}"
+		targetError="{!v.recordError}"
+		mode="EDIT"
+	/>
+
+	<!--Postal Address Record-->
+	<force:recordData
+		aura:id="postalAddRecordData"
+		layoutType="FULL"
+		targetRecord="{!v.posAddressRecord}"
+		targetFields="{!v.posAdd}"
+		targetError="{!v.recordError}"
+		mode="EDIT"
+	/>
+
+	<!--Employer Address Record-->
+	<force:recordData
+		aura:id="employerAddRecordData"
+		layoutType="FULL"
+		targetRecord="{!v.empAddressRecord}"
+		targetFields="{!v.empAdd}"
+		targetError="{!v.recordError}"
+		mode="EDIT"
+	/>
+
+	<lightning:workspaceAPI aura:id="workspace" />
+	<!--Progress Bar-->
+	<lightning:progressIndicator currentStep="{!v.currentStep}" type="path" variant="base">
+		<aura:iteration items="{! v.steps }" var="step">
+			<lightning:progressStep label="{! step.label }" value="{! step.value }" />
+		</aura:iteration>
+	</lightning:progressIndicator>
+
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<aura:if isTrue="{!v.showSpinner}">
+		<center style="z-index: 99">
+			<lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+		</center>
+	</aura:if>
+	<!--Personal Details-->
+	<aura:if isTrue="{!v.currentStep == 'personalDetails'}">
+		<lightning:recordEditForm aura:id="personalDetailsForm" objectApiName="Account" recordId="{!v.accountId}" onsubmit="{!c.onsubmitValidateFields}">
+			<lightning:messages />
+			<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+				<h3 class="slds-section__title slds-theme_shade" style="width: 100%">
+					<span class="slds-truncate slds-p-horizontal_small" title="Section Title"><b>Personal Details</b></span>
+				</h3>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="titleField" fieldName="Client_Type__c" value="{!v.acc.Client_Type__c}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="titleField" fieldName="Place_of_Residence__c" value="{!v.acc.Place_of_Residence__c}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="titleField" fieldName="Titles__pc" value="{!v.acc.PersonTitle}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="titleField" fieldName="Gender__pc" value="{!v.acc.Gender__pc}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="titleField" fieldName="Initials__pc" value="{!v.acc.Initials__pc}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="firstName" fieldName="FirstName" value="{!v.acc.FirstName}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="lastName" fieldName="LastName" value="{!v.acc.LastName}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="PersonBirthdate" fieldName="PersonBirthdate" value="{!v.acc.PersonBirthdate}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="idNumber" fieldName="ID_Type__c" value="{!v.acc.ID_Type__c}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="idNumber" fieldName="ID_Number__pc" value="{!v.acc.ID_Number__pc}" required="{!or(v.acc.ID_Type__c=='SA Identity Document',v.acc.ID_Type__c=='Temporary ID Document')}" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="dateIssued" fieldName="Date_Issued__pc" value="{!v.acc.Date_Issued__pc}" required="false" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<div class="{!if(v.acc.ID_Type__c !='Passport', 'slds-hide')}">
+				<lightning:layoutItem size="6" class="slds-form__item !if(!v.acc.ID_Type__c=='Passport', 'slds-hide')">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="passportNumber" fieldName="Passport_Number__pc" value="{!v.acc.Passport_Number__pc}" required="{!v.acc.ID_Type__c=='Passport'}" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="countPassport" fieldName="CountryPassport__pc" value="{!v.acc.CountryPassport__pc}" required="{!v.acc.ID_Type__c=='Passport'}" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="countryPassportIssued" fieldName="Country_Passport_Issued__pc" value="{!v.acc.Country_Passport_Issued__pc}" required="{!v.acc.ID_Type__c=='Passport'}" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="passportDateOfIssue" fieldName="Passport_Date_of_Issue__pc" value="{!v.acc.Passport_Date_of_Issue__pc}" required="false" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="passportExpiryDate" fieldName="Passport_Expiry_Date__c" value="{!v.acc.Passport_Expiry_Date__c}" required="false" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+			</div>
+			<div class="{!if(v.acc.ID_Type__c !='Registration Number', 'slds-hide')}">
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="registraionNumber" fieldName="Registration_Number__c" value="{!v.acc.Registration_Number__c}" required="{!v.acc.ID_Type__c=='Registration Number'}" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+			</div>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="maritalStatus"
+									fieldName="Marital_Status__pc"
+									value="{!v.acc.Marital_Status__pc}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="maritalContractType"
+									fieldName="Marital_Contract_Type__pc"
+									value="{!v.acc.Marital_Contract_Type__pc}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="countryOfBirth"
+									fieldName="Country_of_Birth__pc"
+									value="{!v.acc.Country_of_Birth__pc}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<span class="slds-form-element__label"><abbr class="slds-required" title="required">*</abbr> Nationality </span>
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="nationality"
+									fieldName="Nationality__pc"
+									value="{!v.acc.Nationality__pc}"
+									required="true"
+									variant="label-hidden"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="homeLanguage" fieldName="Home_Language__pc" value="{!v.acc.Home_Language__pc}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+			</lightning:layout>
+
+			<!--button needed to fire the onsubmit event-->
+			<button type="submit" name="personalDetailsButton" aura:id="personalDetailsButton" id="personalDetailsButton" class="slds-hide" />
+		</lightning:recordEditForm>
+	</aura:if>
+
+	<!--Contact Details-->
+	<aura:if isTrue="{!v.currentStep == 'contactInformation'}">
+		<lightning:recordEditForm aura:id="contactInformationForm" objectApiName="Account" recordId="{!v.accountId}" onsubmit="{!c.onsubmitValidateFields}">
+			<lightning:messages />
+			<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+				<h3 class="slds-section__title slds-theme_shade" style="width: 100%">
+					<span class="slds-truncate slds-p-horizontal_small" title="Section Title"><b>Customer contact information</b></span>
+				</h3>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="personEmail" fieldName="PersonEmail" value="{!v.acc.PersonEmail}" required="false" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="personMobilePhone"
+									fieldName="PersonMobilePhone"
+									value="{!v.acc.PersonMobilePhone}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="personOtherPhone" fieldName="PersonOtherPhone" value="{!v.acc.PersonOtherPhone}" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static"></div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="comminicationLanguage"
+									fieldName="Communication_Language__pc"
+									value="{!v.acc.Communication_Language__pc}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="preferredCommunicationMethod"
+									fieldName="Preferred_Communication_Method__pc"
+									value="{!v.acc.Preferred_Communication_Method__pc}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="billingCountry"
+									fieldName="BillingCountry"
+									value="{!v.acc.BillingCountry}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="shippingCountry"
+									fieldName="ShippingCountry"
+									value="{!v.acc.ShippingCountry}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+			</lightning:layout>
+			<lightning:layoutItem size="6" class="slds-form__item">
+				<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+					<div class="slds-form-element__control">
+						<div class="slds-form-element__static">
+							<lightning:radioGroup
+								aura:id="statementOptionsRadioGroup"
+								name="statementOptionsRadioGroup"
+								label="How would you like to receive your monthly statement?"
+								options="{!v.statementOptions }"
+								value="{!v.acc.Statement_Preference__pc }"
+								type="radio"
+								required="true"
+								style="display: inline-block !important"
+							/>
+						</div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+
+			<!--button needed to fire the onsubmit event-->
+			<button type="submit" name="contactInfoButton" aura:id="contactInfoButton" id="contactInfoButton" class="slds-hide" />
+		</lightning:recordEditForm>
+
+		<!--Residential Address-->
+		<lightning:recordEditForm aura:id="residentialAddressForm" objectApiName="Address__c" onsubmit="{!c.onsubmitValidateFields}">
+			<lightning:messages />
+			<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+				<h3 class="slds-section__title slds-theme_shade" style="width: 100%">
+					<span class="slds-truncate slds-p-horizontal_small" title="Section Title"><b>Customer address information</b></span>
+				</h3>
+				<br />
+				<lightning:layoutItem size="8" class="slds-form__item">
+					<legend class="slds-text-heading--small slds-p-vertical--medium">Residential Address</legend>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="resStreet1"
+									fieldName="Shipping_Street__c"
+									value="{!v.resAdd.Shipping_Street__c}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="resStreet2"
+									fieldName="Shipping_Street_2__c"
+									value="{!v.resAdd.Shipping_Street_2__c}"
+									required="false"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="resSuburb"
+									fieldName="Shipping_Suburb__c"
+									value="{!v.resAdd.Shipping_Suburb__c}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="posSuburb" fieldName="Shipping_City__c" value="{!v.resAdd.Shipping_City__c}" required="true" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="resProvince"
+									fieldName="Shipping_State_Province__c"
+									value="{!v.resAdd.Shipping_State_Province__c}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="resZip"
+									fieldName="Shipping_Zip_Postal_Code__c"
+									value="{!v.resAdd.Shipping_Zip_Postal_Code__c}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static"></div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="horizontal-medium" size="6">
+					<div class="slds-p-around_x-small">
+						<lightning:radioGroup
+							aura:id="PostalRadioGroup"
+							name="PostalSameResidential"
+							label="Postal address same as residential address?"
+							options="{!v.postalOptions }"
+							value="{!v.postalSame }"
+							type="radio"
+							required="true"
+							style="display: inline-block !important"
+						/>
+					</div>
+				</lightning:layoutItem>
+			</lightning:layout>
+
+			<!--button needed to fire the onsubmit event-->
+			<button type="submit" name="resAddressButton" aura:id="resAddressButton" id="resAddressButton" class="slds-hide" />
+		</lightning:recordEditForm>
+
+		<!--Postal Address-->
+		<div class="{!if(v.postalSame == 'Yes', 'slds-hide')}">
+			<lightning:recordEditForm aura:id="residentialAddressForm" objectApiName="Address__c" onsubmit="{!c.onsubmitValidateFields}">
+				<lightning:messages />
+				<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+					<lightning:layoutItem size="8" class="slds-form__item">
+						<legend class="slds-text-heading--small slds-p-vertical--medium">Postal Address</legend>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="posStreet1"
+										fieldName="Shipping_Street__c"
+										value="{!v.posAdd.Shipping_Street__c}"
+										required="{!and(v.postalSame == 'No', true)}"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="posStreet2"
+										fieldName="Shipping_Street_2__c"
+										value="{!v.posAdd.Shipping_Street_2__c}"
+										required="false"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="posSuburb"
+										fieldName="Shipping_Suburb__c"
+										value="{!v.posAdd.Shipping_Suburb__c}"
+										required="{!and(v.postalSame == 'No', true)}"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="posSuburb"
+										fieldName="Shipping_City__c"
+										value="{!v.posAdd.Shipping_City__c}"
+										required="{!and(v.postalSame == 'No', true)}"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="posProvince"
+										fieldName="Shipping_State_Province__c"
+										value="{!v.posAdd.Shipping_State_Province__c}"
+										required="{!and(v.postalSame == 'No', true)}"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="posZip"
+										fieldName="Shipping_Zip_Postal_Code__c"
+										value="{!v.posAdd.Shipping_Zip_Postal_Code__c}"
+										required="{!and(v.postalSame == 'No', true)}"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static"></div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+				</lightning:layout>
+
+				<!--button needed to fire the onsubmit event-->
+				<button type="submit" name="posAddressButton" aura:id="posAddressButton" id="posAddressButton" class="slds-hide" />
+			</lightning:recordEditForm>
+		</div>
+	</aura:if>
+
+	<!--Employment details-->
+	<aura:if isTrue="{!v.currentStep == 'employmentDetails'}">
+		<lightning:recordEditForm aura:id="employmentDetailsForm" objectApiName="Account" recordId="{!v.accountId}" onsubmit="{!c.onsubmitValidateFields}">
+			<lightning:messages />
+			<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+				<h3 class="slds-section__title slds-theme_shade" style="width: 100%">
+					<span class="slds-truncate slds-p-horizontal_small" title="Section Title"><b>Customer employment details</b></span>
+				</h3>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="occupationStatus"
+									fieldName="Income_Source__pc"
+									value="{!v.acc.Source_of_Income__c}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="occupationStatus"
+									fieldName="Occupation_Status__pc"
+									value="{!v.acc.Occupation_Status__pc}"
+									required="true"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField
+									aura:id="occupation"
+									fieldName="Occupation__pc"
+									value="{!v.acc.Occupation__pc}"
+									required="{!v.employed}"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<aura:if isTrue="{!v.employed}">
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField aura:id="occupationLevel" fieldName="Occupation_Level__pc" value="{!v.acc.Occupation_Level__pc}" required="{!v.employed}" />
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="occupationCategory"
+										fieldName="Occupation_Category__pc"
+										value="{!v.acc.Occupation_Category__pc}"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="employerSector"
+										fieldName="Employer_Sector__pc"
+										value="{!v.acc.Employer_Sector__pc}"
+										required="true"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+
+					<!--Employer details-->
+					<h3 class="slds-section__title slds-theme_shade" style="width: 100%">
+						<span class="slds-truncate slds-p-horizontal_small" title="Section Title"><b>Customer employer's details</b></span>
+					</h3>
+
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="employerName"
+										fieldName="Employer_Name__pc"
+										value="{!v.acc.Employer_Name__pc}"
+										required="true"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="employerPhone"
+										fieldName="Employer_Phone__c"
+										value="{!v.acc.Employer_Phone__c}"
+										required="false"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+				</aura:if>
+			</lightning:layout>
+			<!--button needed to fire the onsubmit event-->
+			<button type="submit" name="employmentDetailsButton" aura:id="employmentDetailsButton" id="employmentDetailsButton" class="slds-hide" />
+		</lightning:recordEditForm>
+
+		<!--Employer Address-->
+		<div class="{!if(!v.employed, 'slds-hide')}">
+			<lightning:recordEditForm aura:id="employerAddressForm" objectApiName="Address__c" onsubmit="{!c.onsubmitValidateFields}">
+				<lightning:messages />
+				<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+					<lightning:layoutItem size="8" class="slds-form__item">
+						<legend class="slds-text-heading--small slds-p-vertical--medium">Employer Address</legend>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="empStreet1"
+										fieldName="Shipping_Street__c"
+										value="{!v.empAdd.Shipping_Street__c}"
+										required="{!v.employed}"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField aura:id="empStreet2" fieldName="Shipping_Street_2__c" value="{!v.empAdd.Shipping_Street_2__c}" />
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="empSuburb"
+										fieldName="Shipping_Suburb__c"
+										value="{!v.empAdd.Shipping_Suburb__c}"
+										required="{!v.employed}"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="posSuburb"
+										fieldName="Shipping_City__c"
+										value="{!v.empAdd.Shipping_City__c}"
+										required="true"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="empProvince"
+										fieldName="Shipping_State_Province__c"
+										value="{!v.empAdd.Shipping_State_Province__c}"
+										required="{!v.employed}"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static">
+									<lightning:inputField
+										aura:id="empZip"
+										fieldName="Shipping_Zip_Postal_Code__c"
+										value="{!v.empAdd.Shipping_Zip_Postal_Code__c}"
+										required="{!v.employed}"
+									/>
+								</div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+					<lightning:layoutItem size="6" class="slds-form__item">
+						<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+							<div class="slds-form-element__control">
+								<div class="slds-form-element__static"></div>
+							</div>
+						</div>
+					</lightning:layoutItem>
+				</lightning:layout>
+				<button type="submit" name="employmentAddressButton" aura:id="employmentAddressButton" id="employmentAddressButton" class="slds-hide" />
+			</lightning:recordEditForm>
+		</div>
+
+		<!--Tax Details-->
+		<lightning:recordEditForm aura:id="taxDetailsForm" objectApiName="Account" recordId="{!v.accountId}" onsubmit="{!c.onsubmitValidateFields}">
+			<lightning:messages />
+			<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+				<h3 class="slds-section__title slds-theme_shade" style="width: 100%">
+					<span class="slds-truncate slds-p-horizontal_small" title="Section Title"><b>Tax Details</b></span>
+				</h3>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:radioGroup
+									aura:id="incomeTaxRadioGroup"
+									name="incomeTaxRadioGroup"
+									label="Is the customer registered for income tax?"
+									options="{!v.incomeTaxOptions }"
+									value="{!v.acc.Is_customer_registered_for_income_tax__c}"
+									type="radio"
+									required="true"
+									style="display: inline-block !important"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:radioGroup
+									aura:id="foreignIncomeTaxRadioGroup"
+									name="foreignIncomeTaxRadioGroup"
+									label="Is the customer registered for foreign income tax?"
+									options="{!v.foreignIncomeTaxOptions }"
+									value="{!v.acc.Is_customer_registered_for_foreign_tax__c}"
+									type="radio"
+									style="display: inline-block !important"
+								/>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+
+				<lightning:layoutItem size="6" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:inputField aura:id="incomeTaxNumber" fieldName="Income_Tax_Number__pc" value="{!v.acc.Income_Tax_Number__pc}" />
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+			</lightning:layout>
+			<button type="submit" name="taxDetailsButton" aura:id="taxDetailsButton" id="taxDetailsButton" class="slds-hide" />
+		</lightning:recordEditForm>
+	</aura:if>
+
+	<!--Footer-->
+	<div aura:id="actionButtonBar" class="slds-clearfix slds-p-top_medium">
+		<div class="slds-float_left">
+			<aura:if isTrue="{!v.currentStep !='personalDetails'}">
+				<lightning:button aura:id="previous" label="Previous" variant="neutral" onclick="{!c.onPrevious}" />
+			</aura:if>
+		</div>
+		<div class="slds-float_right">
+			<lightning:button
+				aura:id="NEXT"
+				label="{!if(v.currentStep !='employmentDetails', 'Next','Validate and Save')}"
+				variant="brand"
+				onclick="{!c.onNext}"
+			/>
+		</div>
+	</div>
+</aura:component>

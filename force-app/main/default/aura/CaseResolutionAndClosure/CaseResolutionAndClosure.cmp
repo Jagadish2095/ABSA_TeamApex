@@ -1,0 +1,124 @@
+<aura:component controller="CaseResolutionAndClosureController" implements="lightning:hasPageReference,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" includeFacets="true"/>
+    <aura:handler name="change" value="{!v.serviceTypeId}" action="{!c.getClassification}"/>
+    <aura:handler name="change" value="{!v.productId}" action="{!c.getServiceTypesByProduct}"/>
+    <aura:dependency resource="markup://force:navigateToSObject" type="EVENT"/>
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:attribute name="caseRecordId" type="String" access="public"/>
+    
+    <aura:attribute name="fileStr" type="String" default="No File Selected." />
+    <aura:attribute name="fileIds" type="List" default="[]"/>
+    <aura:attribute name="uploadFormats" type="List" default="['.jpg','.jpeg','.png','.pdf','.msg','.xls','.doc','.Ppt','.xlsx','.docx','.Pptx','.zip','.txt','.wav','.aac','.m4a','.mp3','.wma']"/>
+	<aura:attribute name="uploadHelpText" type="String" default="Please select all files at once when adding multiple files."/>
+    
+    <aura:attribute name="serviceTypeId" type="String" />
+    <aura:attribute name="serviceTypeOptions" type="List[]"/> 
+    <aura:attribute name="productId" type="String" />
+    <aura:attribute name="productOptions" type="List[]"/> 
+    
+    <!--Smanga Start-->
+    <aura:attribute name="showUploadStatementField" type="Boolean"  default="false"/>
+    <aura:attribute name="amountRefunded" type="String"/>
+    <aura:attribute name="proofOfPaymentfileIds" type="List" default="[]"/>
+    <aura:attribute name="proofOfPaymentfileStr" type="String" default="No File Selected." />
+    <aura:attribute name="showTheReminder" type="boolean" default ="true"/>
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    <!--Smanga End-->
+    <aura:attribute name="caseRecord" type="Case" default="{'sobjectType': 'Case',
+                                                           'Id': '',
+                                                           'CaseNumber': '',
+                                                           'Summary_of_Resolution__c': '',
+                                                           'Amount_Refunded__c': '',
+                                                           'Gesture_Of_Goodwill__c': '',
+                                                           'Status': ''
+                                                           }"/>
+    
+    <aura:attribute name="serviceTypeRecord" type="Service_Type__c" default="{'sobjectType': 'Case',
+                                                                             'Type__c': '',
+                                                                             'Subtype__c': '',
+                                                                             'Id': '',
+                                                                             'Name': ''
+                                                                             }"/>
+    
+    
+    <lightning:card iconName="action:new_case" title="Case Information">
+        <center style="z-index:99">
+            <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" alternativeText="Loading..."/>
+        </center>
+        <div class="slds-p-horizontal--small">
+            <lightning:recordEditForm  aura:id="iCreateCase" objectApiName="Case" recordId="{!v.caseRecordId}"> 
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Closure Information</span>
+                </h3>
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:outputField fieldName="CaseNumber" />
+                        <!--<lightning:inputField aura:id="iWhoCausedIt" fieldName="Who_Caused_It__c" class="customRequired"/>-->
+                        <lightning:inputField fieldName="Who_Caused_It_Options__c" aura:id="iWhoCausedIt" class="customRequired"/>
+                        <lightning:inputField aura:id="iResolutionSummary" fieldName="Summary_of_Resolution__c" class="customRequired"/>
+                        <lightning:inputField aura:id="iWhereDidThisHappen" fieldName="Where_Did_This_Happen__c" class="customRequired"/>
+                        <lightning:inputField aura:id="iResponsibleSite" fieldName="Responsible_Site__c" class="customRequired"/>
+                        <!--<lightning:inputField aura:id="iAmountRefunded" fieldName="Amount_Refunded__c"  /> -->
+                        <lightning:input aura:id="iAmountRefunded" label="Amount Refunded" value="{!v.amountRefunded}" oncommit="{!c.handleOncommitAction}"/>
+                        <aura:if isTrue="{!not(empty(v.amountRefunded))}">
+                            <lightning:fileUpload aura:id="uploadStatement" name="fileUploader" label= "Upload Proof of Payment" multiple="true" 
+                                                  accept="{!v.uploadFormats}" disabled="false"   
+                                                  recordId="{!v.caseRecordId}" onuploadfinished="{!c.handleOnuploadfinished}" />
+                            <div class="slds-text-body_small slds-text-color_error" aura:id="fpocfileText2">{!v.proofOfPaymentfileStr}</div>
+                        </aura:if>
+                        
+                        <lightning:inputField aura:id="iTradeLoss" fieldName="Trade_Loss__c" class="customRequired"/>
+                        <br/>
+                        <lightning:inputField aura:id="iOriginatedBy" fieldName="Originated_By__c" class="customRequired"/>
+                        <lightning:inputField aura:id="iEntity" fieldName="Entity__c" class="customRequired"/>
+                        <br/>
+                        <lightning:inputField aura:id="iResolveInFavour" fieldName="Resolved_in_Favour_of__c" class="customRequired"/>
+                        <lightning:inputField aura:id="iGlAccount" fieldName="General_Ledger_GL_Account_to_be_debit__c" />
+                        <br/>
+                        <lightning:inputField aura:id="iGoodwill" fieldName="Gesture_Of_Goodwill__c" label="Gesture Of Goodwill" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Classification</span>
+                </h3>
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <!-- koketso - removed below. 
+                     	   - To search using product and service type
+                        <lightning:inputField fieldName="Service_Type_Search__c" aura:id="lookupSearch" onchange="{!c.getClassification}" class="customRequired"/>
+						-->
+                        <c:strike_picklist value="{!v.productId}" errorMessage="Invalid input" searchable="true" label="Product / Channel Search">
+                            <aura:iteration  items="{!v.productOptions}" var="selectOption" indexVar="index">
+                                <c:strike_option label="{!selectOption.name}" value="{!selectOption.id}" />
+                            </aura:iteration>
+                        </c:strike_picklist>
+                        <c:strike_picklist value="{!v.serviceTypeId}" errorMessage="Invalid input" searchable="true" label="Service Type Search">
+                            <aura:iteration  items="{!v.serviceTypeOptions}" var="selectOption" indexVar="index">
+                                <c:strike_option label="{!selectOption.name}" value="{!selectOption.id}" />
+                            </aura:iteration>
+                        </c:strike_picklist>
+                        <lightning:inputField fieldName="Sub_Type_Search__c" aura:id="iSubTypeSearch" disabled="false"/>
+                        <lightning:inputField fieldName="Type__c" aura:id="iPrimary" disabled="true"/>
+                        <lightning:inputField fieldName="Subtype__c" aura:id="iSecond" disabled="true" />
+                        <lightning:inputField fieldName="Product__c" aura:id="iProduct" disabled="true" />
+                    </lightning:layoutItem>
+                </lightning:layout> 
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Upload Files&nbsp;
+                        <lightning:helptext content="{!v.uploadHelpText}" class="customIcon"/>
+                    </span>
+                </h3>
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:fileUpload aura:id="fileId" name="fileUploader" label= "" multiple="true" 
+                                              accept="{!v.uploadFormats}" disabled="false"   
+                                              recordId="{!v.caseRecordId}" onuploadfinished="{!c.handleFilesChange}" />
+                        <div class="slds-text-body_small slds-text-color_error" aura:id="fpocfileText">{!v.fileStr}</div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <br/>
+                <lightning:button label="Close Case" onclick="{!c.caseResolution}" variant="brand" aura:id="ibtn"/>
+            </lightning:recordEditForm> 
+        </div>
+    </lightning:card>
+</aura:component>

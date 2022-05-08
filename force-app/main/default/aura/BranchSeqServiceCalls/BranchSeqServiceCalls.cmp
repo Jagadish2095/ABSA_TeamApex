@@ -1,0 +1,97 @@
+<!--
+  @description       : CMP to sequence service call components
+  @author            : PaulJohn.duRand@absa.africa
+  @last modified on  : 2021-08-04
+  @last modified by  : PaulJohn.duRand@absa.africa
+-->
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+	access="global"
+>
+	<aura:attribute name="currentCall" type="string" default="" />
+	<aura:attribute name="listOfCalls" type="String[]" />
+	<aura:attribute name="isCasaScreeningIncluded" type="boolean" default="false" />
+	<aura:attribute name="isRiskProfilingIncluded" type="boolean" default="false" />
+	<aura:attribute name="isGenerateDocumentsIncluded" type="boolean" default="false" />
+	<aura:attribute name="isCVSCreateUpdateIncluded" type="boolean" default="false" />
+	<aura:attribute name="callCasaScreening" type="boolean" default="false" />
+	<aura:attribute name="callRiskProfiling" type="boolean" default="false" />
+	<aura:attribute name="callGenerateDocuments" type="boolean" default="false" />
+	<aura:attribute name="callCVS" type="boolean" default="false" />
+	<aura:attribute name="isStepComplete" type="boolean" default="false" />
+	<aura:attribute name="showDialog" type="boolean" default="false" />
+	<aura:attribute name="dialogHeading" type="string" default="Please Note:" />
+	<aura:attribute name="dialogMessage" type="string" default="" />
+	<aura:attribute name="hasProcessStopped" type="boolean" default="false" />
+	<aura:attribute name="isNextDisabled" type="boolean" default="true" />
+	<aura:attribute name="enablePause" type="boolean" default="false" />
+	<aura:attribute name="isPausedDisabled" type="boolean" default="true" />
+	<aura:attribute name="showMessageDialog" type="boolean" default="false" />
+	<aura:handler name="init" value="{!this}" action="{!c.init}" />
+	<aura:handler name="change" value="{! v.isStepComplete }" action="{! c.nextCmp }" />
+	<aura:handler name="change" value="{! v.hasProcessStopped }" action="{! c.handleProcessStop }" />
+	<aura:handler name="change" value="{! v.showDialog }" action="{! c.showMessageDialog }" />
+	<aura:handler name="change" value="{! v.enablePause }" action="{! c.handlePauseEnable }" />
+
+	<aura:if isTrue="{! v.callCasaScreening }">
+		<c:BranchCustomerScreening
+			recordId="{! v.recordId }"
+			isSuccessful="{! v.isStepComplete}"
+			isCalledFromFlow="false"
+			errorDisplay="{! v.showDialog }"
+			errorMessage="{! v.dialogMessage }"
+			hasProcessStopped="{! v.hasProcessStopped }"
+			enablePause="{! v.enablePause }"
+		/>
+	</aura:if>
+
+	<aura:if isTrue="{! v.callRiskProfiling }">
+		<c:BranchCustomerRiskprofiling
+			recordId="{! v.recordId }"
+			isSuccessful="{! v.isStepComplete}"
+			isCalledFromFlow="false"
+			errorDisplay="{! v.showDialog }"
+			errorMessage="{! v.dialogMessage }"
+			hasProcessStopped="{! v.hasProcessStopped }"
+		/>
+	</aura:if>
+
+	<aura:if isTrue="{! v.callGenerateDocuments }">
+		<c:BranchCustomerGenerateDocuments
+			recordId="{! v.recordId }"
+			isSuccessful="{! v.isStepComplete}"
+			isCalledFromFlow="false"
+			errorDisplay="{! v.showDialog }"
+			errorMessage="{! v.dialogMessage }"
+			hasProcessStopped="{! v.hasProcessStopped }"
+		/>
+	</aura:if>
+
+	<aura:if isTrue="{! v.callCVS }">
+		<c:BranchCustomerCreateUpdate
+			recordId="{! v.recordId }"
+			isSuccessful="{! v.isStepComplete}"
+			isCalledFromFlow="false"
+			errorDisplay="{! v.showDialog }"
+			errorMessage="{! v.dialogMessage }"
+			hasProcessStopped="{! v.hasProcessStopped }"
+		/>
+	</aura:if>
+
+	<aura:if isTrue="{! v.showMessageDialog }">
+		<c:BranchDialog showDialog="{! v.showMessageDialog }" heading="{! v.dialogHeading }" message="{! v.dialogMessage }" />
+	</aura:if>
+
+	<lightning:layoutItem padding="horizontal-small" size="12">
+		<div>
+			<c:BranchFlowFooter
+				aura:id="branchFlowFooter"
+				availableActions="{! v.availableActions }"
+				navigateFlowEvent="{! c.handleNavigate }"
+				nextDisabled="{! v.isNextDisabled }"
+				pauseDisabled="{! v.isPausedDisabled }"
+				finishDisabled="{! v.isNextDisabled }"
+			/>
+		</div>
+	</lightning:layoutItem>
+</aura:component>

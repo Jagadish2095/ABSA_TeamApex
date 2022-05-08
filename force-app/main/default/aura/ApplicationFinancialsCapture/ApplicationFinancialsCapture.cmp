@@ -1,0 +1,1277 @@
+<!--
+* Lightning Component for  Application Financial Capture for main Client and Principals
+*
+* @author  Englarmerdge Mongwe: Absa
+* @version v1.0
+* @since   2020-09-15
+* @UserStory W-005851
+-->
+<aura:component access="global"
+    implements="lightning:availableForFlowScreens,force:appHostable,force:hasSObjectName,force:lightningQuickAction,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:actionOverride,lightning:isUrlAddressable"
+    controller="ApplicationFinancialInformation">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="recordAccId" type="Id" />
+    <aura:attribute name="recordAppFinId" type="Id" />
+    <aura:attribute name="ContentDoc" type="List" />
+    <aura:attribute name="DocSize" type="integer" default="0" />
+    <aura:attribute name="sobjecttype" type="String" default="{!v.sObjectName}" />
+    <aura:attribute name="recordClientName" type="String" />
+    <aura:attribute name="recordClientCode" type="String" />
+    <aura:attribute name="recordYear1NetSales" type="Decimal" default="0.00" />
+    <aura:attribute name="recordYear2NetSales" type="Decimal" default="0.00" />
+    <aura:attribute name="recordYear3NetSales" type="Decimal" default="0.00" />
+    <aura:attribute name="recordYear1NetCurAssets" type="Decimal" default="0.00" />
+    <aura:attribute name="recordYear2NetCurAssets" type="Decimal" default="0.00" />
+    <aura:attribute name="recordYear3NetCurAssets" type="Decimal" default="0.00" />
+
+    <aura:attribute name="shareholdersFundsCapitalAccountVal" type="Currency" />
+    <aura:attribute name="salesGrowthVal" type="Decimal" default="0.00" />
+    <aura:attribute name="grossProfitRatioVal" type="Decimal" default="0.00" />
+    <aura:attribute name="liquidSurplusVariationVal" type="Decimal" default="0.00" />
+    <aura:attribute name="netProfitProfitbeforeTaxNetSaleVal" type="Decimal" default="0.00" />
+    <aura:attribute name="currentRatioVal" type="Decimal" default="0.00" />
+    <aura:attribute name="acidTestExclStockVal" type="Decimal" default="0.00" />
+    <aura:attribute name="creditTurnoverDaysVal" type="Decimal" default="0.00" />
+    <aura:attribute name="debtorTurnoverDaysVal" type="Decimal" default="0.00" />
+    <aura:attribute name="stockTurnoverDaysVal" type="Decimal" default="0.00" />
+    <aura:attribute name="interestCoverVal" type="Decimal" default="0.00" />
+    <aura:attribute name="netWorthorEquityVal" type="Decimal" default="0.00" />
+    <aura:attribute name="netGearingVal" type="Decimal" default="0.00" />
+    <aura:attribute name="totalLiabilitiesTotalAssetsVal" type="Decimal" default="0.00" />
+    <aura:attribute name="netCurrentAssetsVal" type="Decimal" default="0.00" />
+    <aura:attribute name="interestBearingDebtEquityVal" type="Decimal" default="0.00" />
+    <aura:attribute name="iBDEBITDAVal" type="Decimal" default="0.00" />
+    <aura:attribute name="longTermDebtEBITDAVal" type="Decimal" default="0.00" />
+    <aura:attribute name="interestCoverRatioVal" type="Decimal" default="0.00" />
+    <aura:attribute name="totalAssetTurnoverVal" type="Decimal" default="0.00" />
+    <aura:attribute name="operatingProfitMarginVal" type="Decimal" default="0.00" />
+
+    <aura:attribute name="invokedFromAccount" type="Boolean" default="false" />
+    <aura:attribute name="showRelatedDocuments" type="Boolean" default="false" />
+    <aura:attribute name="isFinancialRecordEdit" type="Boolean" />
+    <aura:attribute name="isBalancesheetBalanced" type="Boolean" />
+    <aura:attribute name="isFinStatTypeAudited" type="Boolean" default="false" />
+    <aura:attribute name="isFinStatQualIssue" type="Boolean" default="false" />
+    <aura:attribute name="isFinancingNeedsVisible" type="Boolean" default="true" />
+    <aura:attribute name="showSaveBtn" type="Boolean" />
+
+    <lightning:workspaceAPI aura:id="workspace" />
+
+    <aura:attribute name="appFinData" type="Object" />
+    <aura:attribute name="recordUiCache" type="Object" />
+    <aura:attribute name="currencyDefault" type="currency" default="0.0" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+
+    <force:recordData recordId="{!v.recordId}" fields="Id,Name,Account__c" targetFields="{!v.appFinData}" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    <ui:scrollerWrapper>
+        <lightning:recordEditForm aura:id="recordEditForm" objectApiName="Financial_Information__c" onload="{!c.onLoad}"
+            recordId="{!v.recordId}" onsuccess="{!c.handleSuccess}" onSubmit="{!c.saveStatement}" onerror="{!c.handleError}">
+
+            <lightning:messages />
+
+            <lightning:inputField fieldName="Account__c" variant="label-hidden" value="{!v.recordAccId}" hidden="true" />
+            <lightning:inputField fieldName="Client_Name__c" variant="label-hidden" value="{!v.recordClientName}" hidden="true" />
+
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12">
+                    <lightning:card class="slds-card__header slds-truncate" variant="base" iconName="standard:case"
+                        title="{!'Financials \n \n' + v.recordClientName + ' - ' + v.recordYear + ' Financials'}">
+                        <aura:set attribute="actions">
+                            <!-- <lightning:button label="Submit for Approval"/>
+                            <lightning:button label="+ Follow"/>
+                            <lightning:button label="Edit"/>
+                            <lightning:button label="Change Owner"/>-->
+                        </aura:set>
+                         <aura:set attribute="footer">
+                            <tr>
+                                <td class="slds-p-around_medium">Financials #
+                                    <span>
+                                        <lightning:outputField fieldName="Name" variant="label-hidden" />
+                                    </span>
+                                </td>
+                                <td class="slds-p-around_medium">Financial Type
+                                    <span>
+                                        <lightning:outputField fieldName="Financial_Statement_Type__c" variant="label-hidden" />
+                                    </span>
+                                </td>
+                                <td class="slds-p-around_medium">Account Name
+                                    <span>
+                                        <div class="slds-truncate">
+                                            <a onclick="{!c.navigateAccount}" data-value="{!v.recordAccId}"
+                                                title="{!v.recordClientName}" Id="{!v.recordAccId}">
+                                                {!v.recordClientName}
+                                            </a>
+                                        </div>
+                                    </span>
+                                </td>
+                                <td class="slds-p-around_medium">Year
+                                    <span>
+                                        <lightning:outputField fieldName="Statement_Date_Year_end__c" variant="label-hidden" />
+                                    </span>
+                                </td>
+                                <td class="slds-p-around_medium">Version
+                                    <span>
+                                        <lightning:outputField fieldName="Version" variant="label-hidden" />
+                                    </span>
+                                </td>
+                                <td class="slds-p-around_medium">Date Added
+                                    <span>
+                                        <lightning:outputField fieldName="Created_Date__c" variant="label-hidden" />
+                                    </span>
+                                </td>
+                                <td class="slds-p-around_medium">Owner
+                                    <span>
+                                        <lightning:outputField fieldName="OwnerId" variant="label-hidden" />
+                                    </span>
+                                </td>
+                                <td class="slds-p-around_medium">Status
+                                    <span>
+                                        <lightning:outputField fieldName="Status__c" variant="label-hidden"/>
+                                    </span>
+                                </td>
+                                <td class="slds-p-around_medium">Last Updated
+                                    <span>
+                                        <lightning:outputField fieldName="Last_Updated__c" variant="label-hidden" />
+                                    </span>
+                                </td>
+                            </tr>
+                        </aura:set>
+                    </lightning:card>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="8">
+                    <lightning:card>
+                        <table class="slds-table slds-table_cell-buffer slds-var-m-top_small tableStyle">
+                            <thead>
+                                <tr class="slds-var-m-top_small slds-line-height_reset">
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate" title="FinancialStatementType">Financial Statement Type</div>
+                                    </td>
+                                    <td class="tdWidth">
+                                        <lightning:inputField fieldName="Financial_Statement_Type__c"
+                                            variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" onchange="{!c.onFinDetailChange}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate" title="YearSelection">Year Selection</div>
+                                    </td>
+                                    <td class="tdWidth">
+                                        <lightning:inputField aura:Id="YearSelection" fieldName="Year_Selection__c"
+                                            variant="label-hidden" required="true" class="customRequired" onchange="{!c.onFinDetailChange}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate" title="Status">Financial Statement Status</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Status__c" variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" disabled="true" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate" title="StatementDate">Statement Date (Year-end)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Statement_Date_Year_end__c"
+                                            variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" />
+                                    </td>
+                                </tr>
+                                <aura:if isTrue="{!v.isFinStatTypeAudited}">
+                                    <tr>
+                                        <td class="tdWidth">
+                                            <div class="slds-truncate" title="AuditorsCertificateDate">Auditor's Certificate
+                                                Date</div>
+                                        </td>
+                                        <td>
+                                            <lightning:inputField fieldName="Auditor_s_Certificate_Date__c"
+                                                variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="tdWidth">
+                                            <div class="slds-truncate" title="DateFinancialsSignedClient">Date Financials
+                                                Signed (Client)</div>
+                                        </td>
+                                        <td>
+                                            <lightning:inputField fieldName="Date_Financials_Signed_Client__c"
+                                                variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" />
+                                        </td>
+                                    </tr>
+                                </aura:if>
+                                <tr>
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate" title="FinancialStatementQualifiedIssue">Financial
+                                            Statement Qualified Issue</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Financial_Statement_Qualified_Issue__c"
+                                            variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" onchange="{!c.onFinDetailChange}" />
+                                    </td>
+                                </tr>
+                                <aura:if isTrue="{!v.isFinStatQualIssue}">
+                                    <tr>
+                                        <td class="tdWidth">
+                                            <div class="slds-truncate" title="QualificationComment">Qualification Comment
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <lightning:inputField fieldName="Qualification_Comments__c"
+                                                variant="label-hidden" />
+                                        </td>
+                                    </tr>
+                                </aura:if>
+                                <tr>
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate" title="NoOfDays">No Of Days</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="NoOfDays" fieldName="No_of_Days__c"
+                                            variant="label-hidden" required="true" class="customRequired" />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="slds-table slds-table_cell-buffer slds-var-m-top_small tableStyle">
+                            <thead>
+                                <tr class="slds-var-m-top_small slds-line-height_reset">
+                                    <th scope="col" colspan="2">
+                                        <div class="slds-truncate headerColumnL" title="BalanceSheet">Balance Sheet</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="NonCurrentAssets">
+                                            <b>Non-Current Assets</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:id="NonCurrentAssets"
+                                                fieldName="Non_Current_Assets__c" variant="label-hidden" class="total"/>
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="FinancialStatementType">Property, Plant &amp; Equipment</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Property_Plant_Equipment__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumNonCurrentAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="TotalFixedInvestmentsCashandMarket">Total
+                                            Fixed Investments (Cash and Marketable Securities)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Total_Fixed_Investments_Cash_and_Market__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumNonCurrentAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="IntangibleAssets">Intangible Assets (Goodwill,
+                                            patents, etc.)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Intangible_Assets__c" variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" 
+                                             onchange="{!c.sumNonCurrentAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="LoanstoPrincipalsAssociates">Loans To
+                                            Principals Associates</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Loans_to_Principals_Associates__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumNonCurrentAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="OtherAssets">Other Assets</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Other_Assets__c" variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            onchange="{!c.sumNonCurrentAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="OtherAssetsComments">Other Assets Comments
+                                            (specify.....e.g. Deferred expenses, breeding stock)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Other_Assets_Comments__c"
+                                            variant="label-hidden" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="TotalCurrentAssets">
+                                            <b>Total Current Assets</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="TotalCurrentAssets"
+                                                fieldName="Total_Current_Assets__c" variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="CashMarketableSecurities">Cash &amp;
+                                            Marketable Securities</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Cash_Marketable_Securities__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumTotalCurrentAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="Stock">Stock</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Stock__c" variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            onchange="{!c.sumTotalCurrentAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="TradeDebtors">Trade Debtors</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Trade_Debtors__c" variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            onchange="{!c.sumTotalCurrentAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="OtherCurrentAssets">Other Current Assets</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Other_Current_Assets__c" variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            onchange="{!c.sumTotalCurrentAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="OtherCurrentAssetsComments">Other Current
+                                            Assets Comments (specify.....e.g. Deferred expenses, breeding stock)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Other_Current_Assets_Comments__c"
+                                            variant="label-hidden" onchange="{!c.sumTotalCurrentAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="TotalAssets">
+                                            <b>Total Assets</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="TotalAssets" fieldName="Total_Assets__c"
+                                                variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="slds-table slds-table_cell-buffer slds-var-m-top_small tableStyle">
+                            <thead>
+                                <!--tr class="slds-var-m-top_small slds-line-height_reset">
+                                    <th scope="col" colspan="2">
+                                        <div class="slds-truncate headerColumnL" title="TotalLiabilities">Total Liabilities</div>
+                                    </th>
+                                </tr-->
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="ShareholdersFundsCapitalAccount">Shareholders
+                                            Funds / Capital Account (includes Intangibles but excluding Revaluation of
+                                            Assets)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Shareholders_Funds_Capital_Account__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumRevaluationOfAssets}" />
+                                        <!--div class="outPutField" ><ui:outputCurrency value="{!v.shareholdersFundsCapitalAccountVal}" /></div-->
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="RevaluationOfAssets">Revaluation Of Assets
+                                            (Postive or negative)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Revaluation_Of_Assets__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumRevaluationOfAssets}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="NetShareholdersFunds">
+                                            Net Shareholders Funds (including Revaluation of Assets and excluding Intangibles)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="NetShareholdersFunds"
+                                            fieldName="Net_Shareholders_Funds__c" variant="label-hidden" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="LoansfromPrincipalsCeded">Loans from
+                                            Principals Ceded (Director Loans included in shareholders funds)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Loans_from_Principals_Ceded__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumRevaluationOfAssets}"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="LoansfromPrincipalsNon-Ceded">Loans from
+                                            Principals Non-Ceded (Director Loans)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Loans_from_Principals_Non_Ceded__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumTotalLoansfromInsideParties}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate slds-cell-wrap" title="LoansfromAssociates">Loans from Associates
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Loans_from_Associates__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumTotalLoansfromInsideParties}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="TotalLoansfromInsideParties">
+                                            <b>Total Loans from Inside Parties</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="TotalLoansfromInsideParties" fieldName="Total_Loans_from_Inside_Parties__c" variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="LandBank">Land Bank</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Land_Bank__c" variant="label-hidden" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            onchange="{!c.sumLongTermDebt}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="Other">Other</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Other__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                                              variant="label-hidden" onchange="{!c.sumLongTermDebt}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="LongTermDebt">
+                                            <b>Long Term Debt</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="LongTermDebt" fieldName="Long_Term_Debt__c"
+                                                variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="TotalCurrentLiabilities">
+                                            <b>Total Current Liabilities</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="TotalCurrentLiabilities"
+                                                fieldName="Total_Current_Liabilities__c" variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="BankAndShortTermLoans">Bank And Short Term
+                                            Loans</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Bank_And_Short_Term_Loans__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumTotalCurrentLiabilities}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="TradeCreditors">Trade Creditors</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Trade_Creditors__c" required="true" aura:id="inputNewFin" class="customRequired" variant="label-hidden"
+                                            onchange="{!c.sumTotalCurrentLiabilities}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="TaxesPAYEVATCompanyTax">Taxes (PAYE, VAT,
+                                            Company Tax)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Taxes_PAYE_VAT_Company_Tax__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumTotalCurrentLiabilities}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="Co-OperativeProductionLoans">Co-Operative Production Loans</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Co_Operative_Production_Loans__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumTotalCurrentLiabilities}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="OtherCurrentLiabilities">Other Current
+                                            Liabilities</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Other_Current_Liabilities__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumTotalCurrentLiabilities}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <b>
+                                            <div class="slds-truncate" title="TotalLiabilities">Total
+                                                Liabilities</div>
+                                        </b>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="TotalLiabilities"
+                                                fieldName="Total_Liabilities__c" variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="BalanceSheetBalanced">Balance Sheet Balanced</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="BalanceSheetBalanced" fieldName="Balance_Sheet_Balanced__c" variant="label-hidden" />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="slds-table slds-table_cell-buffer slds-var-m-top_small tableStyle">
+                            <thead>
+                                <tr class="slds-var-m-top_small slds-line-height_reset">
+                                    <th scope="col" colspan="2">
+                                        <div class="slds-truncate headerColumnL" title="IncomeStatement">Income Statement</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="NetSales">Net Sales</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Net_Sales__c" required="true" aura:id="inputNewFin" class="customRequired" variant="label-hidden"
+                                            onchange="{!c.sumGrossProfit}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="CostofGoodsSold">Cost Of Goods Sold</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Cost_of_Goods_Sold__c" required="true" aura:id="inputNewFin" class="customRequired" variant="label-hidden"
+                                            onchange="{!c.sumGrossProfit}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="GrossProfit"><b>Gross Profit</b></div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="GrossProfit" fieldName="Gross_Profit__c" variant="label-hidden" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="OperatingExpenses">
+                                            <b>Operating Expenses</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:id="OperatingExpensesTotal" fieldName="Operating_Expenses_Total__c" variant="label-hidden" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="Depreciation">Depreciation</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Depreciation__c" required="true" aura:id="inputNewFin" class="customRequired" variant="label-hidden"
+                                            onchange="{!c.sumOperatingExpenses}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="Amortisation">Amortisation</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Amortisation__c" required="true" aura:id="inputNewFin" class="customRequired" variant="label-hidden"
+                                            onchange="{!c.sumOperatingExpenses}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="CapitalOrdinaryCreditPayments">Capital
+                                            Ordinary Credit Payments</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Capital_Ordinary_Credit_Payments__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumOperatingExpenses}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="CapitalPaymentsOnAssetFinance">Capital
+                                            Payments On Asset Finance</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Capital_Payments_On_Asset_Finance__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumOperatingExpenses}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="Purchase/CapitalPaymentsOnFixedProperty">
+                                            Purchase/Capital Payments On Fixed Property</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Purchase_Capital_Payments_On_Fixed_Prop__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumOperatingExpenses}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="Salaries">Salaries</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Salaries__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumOperatingExpenses}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="OtherExpenses">Other Expenses</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Other_Expenses__c" required="true" aura:id="inputNewFin" class="customRequired" variant="label-hidden"
+                                            onchange="{!c.sumOperatingExpenses}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="VAT">VAT</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="VAT__c" required="true" aura:id="inputNewFin" class="customRequired" variant="label-hidden"
+                                            onchange="{!c.sumOperatingExpenses}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="Income From Operations">
+                                            <b>Income From Operations</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="IncomeFromOperations"
+                                                fieldName="Income_From_Operations__c" variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="ExtraordinaryIncome">Extraordinary Income
+                                            (e.g. Sale of Assets)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Extraordinary_Income_e_g_Sale_of_Asset__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumProfitBeforeInterestTax}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="OtherIncome">Other Income</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Other_Income__c" required="true" aura:id="inputNewFin" class="customRequired" variant="label-hidden"
+                                            onchange="{!c.sumProfitBeforeInterestTax}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate"
+                                            title="ProfitBeforeInterestAndTaxEBIT">
+                                            <b>Profit Before Interest And Tax(EBIT)</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="ProfitBeforeInterestAndTaxEBIT"
+                                                fieldName="Profit_Before_Interest_And_Tax_EBIT__c"
+                                                variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="GrossInterestExpenses">
+                                            <b>Gross Interest Expenses</b>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="GrossInterestExpenses"
+                                                fieldName="Gross_Interest_Expenses__c" variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="InterestAssetFinance">Interest Asset Finance
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Interest_Asset_Finance__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumGrossInterestExpenses}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="InterestLoansAndOtherFinance">Interest Loans
+                                            And Other Finance</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Interest_Loans_and_Other_Finance__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumGrossInterestExpenses}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <b>
+                                            <div class="slds-truncate" title="ProfitBeforeTax">Profit
+                                                Before Tax</div>
+                                        </b>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="ProfitBeforeTax"
+                                                fieldName="Profit_Before_Tax__c" variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="IncomeTax">Income Tax</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Income_Tax__c" required="true" aura:id="inputNewFin" class="customRequired" variant="label-hidden"
+                                            onchange="{!c.sumNetProfit}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <b>
+                                            <div class="slds-truncate" title="NetProfit">Net Profit
+                                            </div>
+                                        </b>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="NetProfit" fieldName="Net_Profit__c"
+                                                variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="Dividends">Dividends</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Dividends__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" onchange="{!c.sumRetainedEarnings}" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <b>
+                                            <div class="slds-truncate" title="RetainedEarningsDeficit">
+                                                Retained Earnings (Deficit) - End of Year c/f to BS</div>
+                                        </b>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="RetainedEarningsDeficit"
+                                                fieldName="Retained_Earnings_Deficit__c" variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="DrawingsPartnershipsSolePropOnly">Drawings
+                                            (Partnerships &amp; Sole Proprietors only)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Drawings_Partnerships_Sole_Prop_Only__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <div class="slds-truncate" title="MembersShareholdersEmoluments">
+                                            Member's/Shareholders Emoluments</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField fieldName="Member_s_Shareholders_Emoluments__c" required="true" aura:id="inputNewFin" class="customRequired" 
+                                            variant="label-hidden" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="td2Width">
+                                        <b>
+                                            <div class="slds-truncate slds-cell-wrap" title="EarningsBeforeInterestTaxDepreciationAndAmortisation(EBITDA)">
+                                                Earnings before interest,tax,depreciation and amortisation(EBITDA)</div>
+                                        </b>
+                                    </td>
+                                    <td>
+                                        <b>
+                                            <lightning:inputField aura:Id="EarningsBeforeInterestTaxDepreciationAndAmortisation"
+                                                fieldName="Earnings_Before_Interest_Tax_Dep_Amort__c" variant="label-hidden" />
+                                        </b>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <aura:if isTrue="{!v.isFinancingNeedsVisible}">
+                            <table class="slds-table slds-table_cell-buffer slds-var-m-top_small tableStyle">
+                                <thead>
+                                    <tr class="slds-var-m-top_small slds-line-height_reset">
+                                        <th scope="col" colspan="2">
+                                            <div class="slds-truncate headerColumnL" title="FinancingNeeds">Financing Needs(Cashflow
+                                                Based)</div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="td2Width">
+                                            <div class="slds-truncate" title="MonthWithHighestShortFall">Month With Highest
+                                                Shortfall</div>
+                                        </td>
+                                        <td>
+                                            <lightning:inputField aura:Id="MonthWithHighestShortFall" required="true" aura:id="inputNewFin" class="customRequired" 
+                                                fieldName="Month_with_highest_shortfall__c" variant="label-hidden" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td2Width">
+                                            <div class="slds-truncate" title="Highest Shortfall Amount">Highest Shortfall
+                                                Amount</div>
+                                        </td>
+                                        <td>
+                                            <lightning:inputField aura:Id="HighestShortfallAmount" required="true" aura:id="inputNewFin" class="customRequired" 
+                                                fieldName="Highest_Shortfall_Amount__c" variant="label-hidden" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td2Width">
+                                            <div class="slds-truncate" title="MonthWithHighestDebitBalance">Month With
+                                                Highest Debit Balance</div>
+                                        </td>
+                                        <td>
+                                            <lightning:inputField aura:Id="MonthWithHighestDebitBalance" required="true" aura:id="inputNewFin" class="customRequired" 
+                                                fieldName="Month_With_Highest_Debit_Balance__c" variant="label-hidden" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td2Width">
+                                            <div class="slds-truncate" title="HighestDebitBalanceAmount">Highest Debit
+                                                Balance Amount</div>
+                                        </td>
+                                        <td>
+                                            <lightning:inputField aura:Id="HighestDebitBalanceAmount" required="true" aura:id="inputNewFin" class="customRequired" 
+                                                fieldName="Highest_Debit_Balance_Amount__c" variant="label-hidden" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </aura:if>
+                        <table class="slds-table slds-table_cell-buffer slds-var-m-top_small tableStyle">
+                            <thead>
+                                <tr class="slds-var-m-top_small slds-line-height_reset">
+                                    <th scope="col" colspan="2">
+                                        <div class="slds-truncate headerColumnL" title="ProfitabilityRatios">Profitability Ratios
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate" title="SalesGrowth">Sales Growth %</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="SalesGrowth" fieldName="Sales_Growth__c"
+                                            variant="label-hidden"  hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.salesGrowthVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="GrossProfit">Gross Profit %</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="GrossProfitRatio"
+                                            fieldName="Gross_Profit_Ratio__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.grossProfitRatioVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="NetProfitRaio">Net Profit % (Profit before
+                                            Tax/Net Sales %)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="NetProfitRaio"
+                                            fieldName="Net_Profit_Profit_before_Tax_Net_Sale__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.netProfitProfitbeforeTaxNetSaleVal}" /></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="slds-table slds-table_cell-buffer slds-var-m-top_small tableStyle">
+                            <thead>
+                                <tr class="slds-var-m-top_small slds-line-height_reset">
+                                    <th scope="col" colspan="2">
+                                        <div class="slds-truncate headerColumnL" title="OperatingRatios">Operating Ratios</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate" title="CurrentRatio">Current Ratio</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="CurrentRatio" fieldName="Current_Ratio__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.currentRatioVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="AcidTestExclStock">Acid Test (Excl Stock)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="AcidTestExclStock" fieldName="Acid_Test_Excl_Stock__c" variant="label-hidden" hidden="true" />
+                                            <div class="outPutField" ><ui:outputNumber value="{!v.acidTestExclStockVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="CreditTurnoverDays">Credit Turnover (Days)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="CreditTurnoverDays" fieldName="Credit_Turnover_Days__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.creditTurnoverDaysVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="DebtorTurnoverDays">Debtor Turnover (Days)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="DebtorTurnoverDays" fieldName="Debtor_Turnover_Days__c" variant="label-hidden" hidden="true"/>
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.debtorTurnoverDaysVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="StockTurnoverDays">Stock Turnover (Days)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="StockTurnoverDays" fieldName="Stock_Turnover_Days__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.stockTurnoverDaysVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="InterestCover">Interest Cover</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="InterestCover" fieldName="Interest_Cover__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.interestCoverVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="NetWorthOrEquity">Net Worth (or Equity)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="NetWorthOrEquity" fieldName="Net_Worth_or_Equity__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.netWorthorEquityVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="NetGearing">Net Gearing (total debt to equity
+                                            ratio)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="NetGearing" fieldName="Net_Gearing__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.netGearingVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="TotalLiabilitiesExclNetworth">Total
+                                            Liabilities(Excl Net worth)/Total Assets (debt ratio)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="TotalLiabilitiesExclNetworth" fieldName="Total_Liabilities_Total_Assets__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.totalLiabilitiesTotalAssetsVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="NetCurrentAssets">Net Current Assets</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="NetCurrentAssets" fieldName="Net_Current_Assets__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.netCurrentAssetsVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="LiquidSurplusVariation">Liquid Surplus
+                                            Variation</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="LiquidSurplusVariation"
+                                            fieldName="Liquid_Surplus_Variation__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.liquidSurplusVariationVal}" /></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="slds-table slds-table_cell-buffer slds-var-m-top_small tableStyle">
+                            <thead>
+                                <tr class="slds-var-m-top_small slds-line-height_reset">
+                                    <th scope="col" colspan="2">
+                                        <div class="slds-truncate headerColumnL" title="DebtCapacityKeyRatiosRequired">Debt Capacity
+                                            Key Ratios Required</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate" title="InterestBearingDebtEquity">1. Interest Bearing
+                                            Debt / Equity</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="InterestBearingDebtEquity" fieldName="Interest_Bearing_Debt_Equity__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.interestBearingDebtEquityVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="IBDEBITDA">2. IBD / EBITDA</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="IBDEBITDA" fieldName="IBD_EBITDA__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.iBDEBITDAVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="LongTermDebtEBITDA">3. Long Term Debt/EBITDA
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="LongTermDebtEBITDA" fieldName="Long_Term_Debt_EBITDA__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.longTermDebtEBITDAVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="InterestCoverRatioEBITIntPaid">4. Interest
+                                            Cover Ratio ("ICR") (EBIT / Int Paid)</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="InterestCoverRatioEBITIntPaid" fieldName="Interest_Cover_Ratio__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.interestCoverRatioVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="TotalAssetTurnover">5. Total Asset Turnover
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="TotalAssetTurnover" fieldName="Total_Asset_Turnover__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.totalAssetTurnoverVal}" /></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="slds-truncate" title="OperatingProfitMargin">6. Operating Profit
+                                            Margin</div>
+                                    </td>
+                                    <td>
+                                        <lightning:inputField aura:Id="OperatingProfitMargin" fieldName="Operating_Profit_Margin__c" variant="label-hidden" hidden="true" />
+                                        <div class="outPutField" ><ui:outputNumber value="{!v.operatingProfitMarginVal}" /></div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <div class="slds-list_inline slds-m-bottom_large slds-m-top_x-large"
+                                            title="AttestCorrectInformation">
+                                            <lightning:inputField checked="false" aura:id="consentCheck"
+                                                fieldName="Attest_Correct_Information__c" variant="label-hidden"
+                                                onchange="{!c.checkConsent}" />
+                                            <div class="slds-truncate slds-text-heading_small"
+                                                title="AttestCorrectInformation">I attest that the information captured
+                                                is accurate.</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <aura:if isTrue="{!v.showSaveBtn}">
+                                            <lightning:button
+                                                class="slds-float_right slds-m-bottom_large slds-m-top_x-large"
+                                                variant="brand" type="submit" name="update" label="Save Statement"
+                                                onclick="{!c.saveStatement}" />
+                                        </aura:if>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <div class="slds-list_inline slds-m-bottom_xx-large"></div>
+                                    <div class="slds-list_inline slds-m-bottom_xx-large"></div>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </lightning:card>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="4">
+                    <lightning:card class="slds-var-m-left_small" iconName="standard:document" title="Documents">
+                        <aura:set attribute="actions">
+                            <lightning:buttonIcon iconName="utility:down" variant="border-filled"
+                                alternativeText="Show More" />
+                        </aura:set>
+                        <p class="slds-p-horizontal_small">
+                            <lightning:layout multipleRows="true">
+                                <lightning:layoutItem class="slds-p-bottom_small slds-p-top_small" size="1">
+                                </lightning:layoutItem>
+                                <lightning:layoutItem class="slds-p-bottom_small" size="10">
+                                    <div class="slds-truncate" style="color: #640032;"
+                                        title="Total Number of Documents">Total Number of Documents : {!v.DocSize}</div>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem class="slds-p-bottom_small" size="1">
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem class="slds-p-bottom_small" size="4">
+                                </lightning:layoutItem>
+                                <lightning:layoutItem class="slds-p-bottom_small" size="4">
+                                    <lightning:button class="slds-m-bottom_large slds-m-top_x-large" variant="brand"
+                                        name="View All Documents" label="View All Documents" onclick="{!c.openModal}" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem class="slds-p-bottom_small" size="4">
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </p>
+                    </lightning:card>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:recordEditForm>
+    </ui:scrollerWrapper>
+    <aura:if isTrue="{!v.showRelatedDocuments}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModal }" alternativeText="close"
+                        variant="bare-inverse" class="slds-modal__close" />
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Documents
+                    </h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-grid slds-cell-wrap slds-gutters_medium">
+                        <aura:iteration items="{!v.ContentDoc}" var="row" indexVar="index">
+                            <lightning:layoutItem class="slds-p-bottom_small" size="12" padding="around-medium">
+                                <lightning:fileCard fileId="{!row}" />
+                            </lightning:layoutItem>
+                        </aura:iteration>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <div class="slds-text-align_right  slds-col slds-size_4-of-12 slds-button_stretch slds-hide"
+                        aura:id="acceptButton">
+                        <!-- <lightning:button variant="brand" label="Accept" title="Accept"
+                                onclick="{! c.submitCapture}" />-->
+                    </div>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

@@ -1,0 +1,351 @@
+<!--
+* Lightning Component for Onboarding CASA Screening
+*
+* @author  Anka Ganta : Absa 
+* @version v1.0
+* @since   2019-11-22
+*
+-->
+<aura:component
+	access="global"
+	controller="OnboardingCASAScreeningController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+>
+	<!--Handlers-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+	<!--Attributes-->
+	<aura:attribute name="documentTypes" type="List" default="" />
+	<aura:attribute name="showSpinner" type="Boolean" default="true" />
+	<aura:attribute name="cifopt" type="Boolean" />
+	<aura:attribute name="showSubmitForCasa" type="Boolean" default="true" />
+	<aura:attribute name="recordId" type="Id" />
+	<aura:attribute name="account" type="Account" default="{sobjectType:'Account'}" />
+	<aura:attribute name="opportunityRecord" type="Opportunity" default="{sobjectType:'Opportunity'}" />
+	<aura:attribute name="participantAccountList" type="List" />
+	<aura:attribute name="businessParticipantAccountList" type="List" />
+	<aura:attribute name="tradingAsNameList" type="List" />
+	<aura:attribute name="activeCasaSections" type="List" default="['casaScreening','casaScreeningResults']" />
+	<aura:attribute name="activeRiskSections" type="List" default="['RiskRating','RiskRatingResults']" />
+	<aura:attribute name="user" type="string" default="" />
+	<aura:attribute name="parentAccountWrapper" type="string" default="" />
+	<aura:attribute name="operatorCode" type="string" default="" />
+	<aura:attribute name="abNumber" type="string" default="" />
+	<aura:attribute name="columns" type="List" />
+	<aura:attribute name="data" type="List" default="" />
+	<aura:attribute name="siteCode" type="String" />
+	<aura:attribute name="selectedSiteRecord" type="sObject" />
+	<aura:attribute name="searchKeyWord" type="string" />
+	<aura:attribute name="accRecordId" type="String" />
+	<aura:attribute name="currentUserId" type="String" />
+	<aura:attribute name="cifKey" type="String" default="" />
+	<aura:attribute name="record" type="Object" />
+	<aura:attribute name="accountRecord" type="Object" />
+	<aura:attribute name="recordError" type="String" />
+	<aura:attribute name="accountName" type="String" />
+	<aura:attribute name="product" type="String" />
+	<aura:attribute name="respObject" type="object" />
+	<aura:attribute name="docList" type="List" default="" />
+
+	<aura:attribute name="showCasaScreen" type="boolean" default="true" />
+	<aura:attribute name="showRiskButton" type="boolean" default="false" />
+	<aura:attribute name="showGenerateCIFButton" type="boolean" default="false" />
+	<aura:attribute name="showRiskResults" type="boolean" default="false" />
+	<aura:attribute name="showFinishedScreen" type="boolean" default="false" />
+	<aura:attribute name="hideSubmitButton" type="boolean" default="false" />
+	<aura:attribute name="accountRecordType" type="String" />
+	<aura:attribute name="oppRecordType" type="String" />
+	<aura:attribute name="casaScreeningStatus" type="String" />
+
+	<!--New attributes added for W-004683 -->
+	<aura:attribute name="Mandatorydocuments" type="Mandatory_Doc__mdt" />
+	<aura:attribute name="documentsUploaded" type="Object" />
+	<aura:attribute name="entitytype" type="List" />
+	<aura:attribute name="entitytypestring" type="String" />
+
+	<aura:attribute name="relatedPartyManDocs" type="String" />
+
+	<aura:attribute name="PrimaryClientMandDocs" type="List" />
+	<!-- W-005661-->
+	<!-- W-005715 : Anka Ganta : 2020-08-18 -->
+	<aura:attribute name="relPartyInvalidStatusFlag" type="boolean" default="false" />
+	<!--loading spinner start-->
+	<div class="exampleHolder">
+		<lightning:spinner aura:id="mySpinner" class="slds-hide" alternativeText="Loading..." variant="brand" size="large" />
+	</div>
+	<!-- Loading spinner end-->
+
+	<!-- Design Attributes -->
+	<aura:attribute name="flowAccountRecId" type="String" access="global" />
+	<aura:attribute name="ProcessName" type="String" default="" />
+
+	<aura:attribute name="opportunityRecord2" type="Object" />
+	<aura:attribute name="recordLoadError" type="String" />
+	<force:recordData
+		aura:id="recordLoader"
+		recordId="{!v.recordId}"
+		fields="Case__c,QA_Complex_Approval_Status__c,Complex_Application__c,CheckMandatoryDocuments__c"
+		targetFields="{!v.opportunityRecord2}"
+		targetError="{!v.recordLoadError}"
+	/>
+
+	<lightning:accordion activeSectionName="casaScreening" allowMultipleSectionsOpen="true">
+		<lightning:accordionSection name="casaScreening" label="Casa Screening">
+			<aura:if isTrue="{!v.opportunityRecord.IsClosed == false}">
+				<lightning:input
+					type="checkbox"
+					name="submit"
+					label="I confirm the above information is correct to Submit CASA Screening"
+					onchange="{! c.showButton }"
+				/>
+			</aura:if>
+			<lightning:button
+				variant="brand"
+				class="slds-align_absolute-center slds-m-top_xx-large slds-hide"
+				label="Submit for CASA Screening"
+				title="Submit for CASA Screening"
+				onclick="{! c.validateClientInfo }"
+				aura:id="submitButton"
+			/>
+
+			<aura:if isTrue="{!v.showFinishedScreen}">
+				<lightning:accordion activeSectionName="casaScreeningResults" allowMultipleSectionsOpen="true">
+					<lightning:accordionSection name="casaScreeningResults" label="Casa Screening Result">
+						<lightning:layout multipleRows="true">
+							<aura:if isTrue="{!v.opportunityRecord.CASA_Status__c != 'Incomplete'}">
+								<lightning:layoutItem size="12">
+									<p style="font-size: 16px">
+										<lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> CASA Screening done Successfully.
+									</p>
+								</lightning:layoutItem>
+								<aura:if
+									isTrue="{!v.accountRecordType == 'Individual Prospect' || v.accountRecordType == 'Business Client' || v.accountRecordType == 'Business Prospect'}"
+								>
+									<!--Main Joint Account-->
+									<lightning:layoutItem size="12">
+										<h2 class="slds-section__title">Primary Account Details:</h2>
+									</lightning:layoutItem>
+									<lightning:layoutItem size="6" class="slds-p-top_large">
+										<b>Name: </b><ui:outputText value="{!v.account.Name}" />
+									</lightning:layoutItem>
+
+									<lightning:layoutItem size="6" class="slds-p-top_large">
+										<b>Accout Type: </b><ui:outputText value="{!v.account.RecordType.Name}" />
+									</lightning:layoutItem>
+									<lightning:layoutItem size="6" class="slds-m-top_small">
+										<aura:if isTrue="{!v.accountRecordType == 'Individual Prospect'}">
+											<b>Reg/ID Number: </b><ui:outputText value="{!v.account.ID_Number__pc}" />
+											<aura:set attribute="else">
+												<aura:if isTrue="{!v.accountRecordType == 'Business Prospect'}">
+													<aura:if isTrue="{!v.account.Client_Type__c == 'Trusts'}">
+														<b>Trust Number: </b><ui:outputText value="{!v.account.Trust_Number__c}" />
+														<aura:set attribute="else">
+															<b>Reg/ID Number: </b><ui:outputText value="{!v.account.Registration_Number__c}" />
+														</aura:set>
+													</aura:if>
+													<aura:set attribute="else">
+														<b>Reg/ID Number: </b><ui:outputText value="{!v.account.Registration_Number__c}" />
+													</aura:set>
+												</aura:if>
+											</aura:set>
+										</aura:if>
+									</lightning:layoutItem>
+									<lightning:layoutItem size="6" class="slds-p-top_large">
+										<b>CASA Reference Number: </b><ui:outputText value="{!v.opportunityRecord.CASA_Reference_Number__c}" />
+									</lightning:layoutItem>
+									<lightning:layoutItem size="6" class="slds-p-top_large">
+										<b>CASA Screening Date: </b><ui:outputText value="{!v.opportunityRecord.CASA_Screening_Date__c}" />
+									</lightning:layoutItem>
+									<lightning:layoutItem size="6" class="slds-m-top_small">
+										<b>CASA Screening Status: </b><ui:outputText value="{!v.opportunityRecord.CASA_Screening_Status_Value__c}" />
+									</lightning:layoutItem>
+									<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+										<b>PEP Status: </b><ui:outputText value="{!v.opportunityRecord.PEP_Status__c}" />
+									</lightning:layoutItem>
+
+									<!--Related Party Accounts-->
+									<aura:if isTrue="{!not(empty(v.participantAccountList))}">
+										<lightning:layoutItem size="12" class="slds-p-top_large">
+											<h2 class="slds-section__title">Related Party Account Details:</h2>
+										</lightning:layoutItem>
+									</aura:if>
+
+									<aura:iteration items="{!v.participantAccountList}" var="part">
+										<lightning:layoutItem size="12" class="slds-m-top_small slds-m-bottom_small slds-border_top"> </lightning:layoutItem>
+										<lightning:layoutItem size="12" class="slds-p-top_small">
+											<b>Participant Name: </b> <ui:outputText value="{!part.FirstName + ' ' + part.LastName}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_large">
+											<b>Account Type: </b><ui:outputText value="{!part.RecordType.Name}" />
+										</lightning:layoutItem>
+
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<b>ID Number: </b><ui:outputText value="{!part.ID_Number__pc}" />
+										</lightning:layoutItem>
+										<!--W-008924-->
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<b>Country of Citizenship: </b><ui:outputText value="{!part.Country_of_Citizenship__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small left-align">
+											<b>CASA Reference Number: </b><ui:outputText value="{!part.CASA_Reference_Number__pc}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small right-align">
+											<b>CASA Screening Date: </b><ui:outputText value="{!part.CASA_Screening_Date__pc}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+											<b>CASA Screening Status: </b><ui:outputText value="{!part.CASA_Screening_Status__pc}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+											<b>PEP Status: </b><ui:outputText value="{!part.PEP_Status__pc}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+											<b>CASA Analyst Comments: </b><ui:outputText value="{!part.CASA_Analyst_Comments__pc}" />
+										</lightning:layoutItem>
+
+										<aura:If isTrue="{!part.CASA_Screening_Status_2__c != null}">
+											<lightning:layoutItem size="12" class="slds-m-top_small slds-m-bottom_small slds-border_top">
+											</lightning:layoutItem>
+											<lightning:layoutItem size="12" class="slds-p-top_small">
+												<h2>Participant Name: <ui:outputText value="{!part.FirstName + ' ' + part.LastName}" /></h2>
+											</lightning:layoutItem>
+											<lightning:layoutItem size="6" class="slds-p-top_large">
+												<b>Account Type: </b><ui:outputText value="{!part.RecordType.Name}" />
+											</lightning:layoutItem>
+											<lightning:layoutItem size="6" class="slds-m-top_small">
+												<b>ID Number: </b><ui:outputText value="{!part.ID_Number__pc}" />
+											</lightning:layoutItem>
+											<!--W-008924-->
+											<lightning:layoutItem size="6" class="slds-m-top_small">
+												<b>Country of Citizenship: </b><ui:outputText value="{!part.Country_of_Citizenship__c}" />
+											</lightning:layoutItem>
+											<lightning:layoutItem size="6" class="slds-p-top_small left-align">
+												<b>CASA Reference Number: </b><ui:outputText value="{!part.CASA_Reference_Number2__c}" />
+											</lightning:layoutItem>
+											<lightning:layoutItem size="6" class="slds-p-top_small right-align">
+												<b>CASA Screening Date: </b><ui:outputText value="{!part.CASA_Screening_Date2__c}" />
+											</lightning:layoutItem>
+											<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+												<b>CASA Screening Status: </b><ui:outputText value="{!part.CASA_Screening_Status_2__c}" />
+											</lightning:layoutItem>
+										</aura:If>
+									</aura:iteration>
+
+									<!--Related Party Business Accounts-->
+									<aura:if isTrue="{!not(empty(v.businessParticipantAccountList))}">
+										<lightning:layoutItem size="12" class="slds-p-top_large">
+											<h2 class="slds-section__title">Related Party Business Account Details:</h2>
+										</lightning:layoutItem>
+									</aura:if>
+
+									<aura:iteration items="{!v.businessParticipantAccountList}" var="part">
+										<lightning:layoutItem size="12" class="slds-m-top_small slds-m-bottom_small slds-border_top"> </lightning:layoutItem>
+										<lightning:layoutItem size="12" class="slds-p-top_small">
+											<b>Participant Name:</b> <ui:outputText value="{!part.Name}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_large">
+											<b>Account Type: </b><ui:outputText value="{!part.RecordType.Name}" />
+										</lightning:layoutItem>
+
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<b>Registration Number: </b><ui:outputText value="{!part.Registration_Number__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<b>Country of Citizenship: </b><ui:outputText value="{!part.Country_of_Incorporation__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small left-align">
+											<b>CASA Reference Number: </b><ui:outputText value="{!part.CASA_Reference_Number__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small right-align">
+											<b>CASA Screening Date: </b><ui:outputText value="{!part.CASA_Screening_Date__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+											<b>CASA Screening Status: </b><ui:outputText value="{!part.CASA_Screening_Status__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+											<b>PEP Status: </b><ui:outputText value="{!part.PEP_Status__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+											<b>CASA Analyst Comments: </b><ui:outputText value="{!part.CASA_Analyst_Comments__c}" />
+										</lightning:layoutItem>
+									</aura:iteration>
+
+									<aura:iteration items="{!v.tradingAsNameList}" var="eachTradingName">
+										<lightning:layoutItem size="12" class="slds-m-top_small slds-m-bottom_small slds-border_top"> </lightning:layoutItem>
+										<lightning:layoutItem size="12" class="slds-p-top_small">
+											<b>Trading as Name: </b> <ui:outputText value="{!eachTradingName.Name}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<aura:if isTrue="{!v.account.Client_Type__c == 'Trusts'}">
+												<b>Trust Number: </b><ui:outputText value="{!eachTradingName.Registration_Incorporation_Number__c}" />
+												<aura:set attribute="else">
+													<b>Registration/Incorporation Number: </b
+													><ui:outputText value="{!eachTradingName.Registration_Incorporation_Number__c}" />
+												</aura:set>
+											</aura:if>
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small left-align">
+											<b>CASA Reference Number: </b><ui:outputText value="{!eachTradingName.CASA_Reference_Number__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small right-align">
+											<b>CASA Screening Date: </b><ui:outputText value="{!eachTradingName.CASA_Screening_Date__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+											<b>CASA Screening Status: </b><ui:outputText value="{!eachTradingName.CASA_Screening_Status__c}" />
+										</lightning:layoutItem>
+									</aura:iteration>
+
+									<aura:set attribute="else">
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<b>Name: </b
+											><ui:outputText value="{!v.account.Salutation + ' ' + v.account.FirstName + ' ' + v.account.LastName}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<b>Accout Type: </b><ui:outputText value="{!v.account.RecordType.Name}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<b>Reg/ID Number: </b><ui:outputText value="{!v.account.ID_Number__pc}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<b>CASA Reference Number: </b><ui:outputText value="{!v.opportunityRecord.CASA_Reference_Number__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<b>CASA Screening Date: </b><ui:outputText value="{!v.opportunityRecord.CASA_Screening_Date__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-m-top_small">
+											<b>CASA Screening Status: </b><ui:outputText value="{!v.opportunityRecord.CASA_Screening_Status_Value__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+											<b>PEP Status: </b><ui:outputText value="{!v.opportunityRecord.PEP_Status__c}" />
+										</lightning:layoutItem>
+										<lightning:layoutItem size="6" class="slds-p-top_small slds-m-bottom_small left-align">
+											<b>CASA Analyst Comments: </b><ui:outputText value="{!v.account.CASA_Analyst_Comments__pc}" />
+										</lightning:layoutItem>
+									</aura:set>
+								</aura:if>
+
+								<aura:if isTrue="{!v.opportunityRecord.IsClosed == false}">
+									<lightning:layoutItem size="12" class="slds-p-top_large">
+										<lightning:button
+											class="slds-align_absolute-center"
+											variant="brand"
+											label="Refresh Status"
+											onclick="{!c.refreshStatus}"
+										/>
+									</lightning:layoutItem>
+								</aura:if>
+
+								<aura:set attribute="else">
+									<lightning:layoutItem size="12" class="red-color">
+										<b>Casa re-screening required. Primary Client and/or Related Party details changed</b>
+									</lightning:layoutItem>
+								</aura:set>
+							</aura:if>
+						</lightning:layout>
+					</lightning:accordionSection>
+				</lightning:accordion>
+			</aura:if>
+		</lightning:accordionSection>
+	</lightning:accordion>
+</aura:component>

@@ -1,0 +1,612 @@
+<aura:component
+  implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+  access="global"
+  controller="CaseFlowController"
+>
+  <aura:attribute name="currentStep" type="Integer" default="1" />
+  <aura:attribute name="selectedStep" type="String" default="Step1" />
+  <aura:attribute name="options" type="List" default="[]" />
+  <aura:attribute name="reasonOptions" type="List" default="[]" />
+  <aura:attribute name="timeFrameOptions" type="List" default="[]" />
+  <aura:attribute name="workItemOptions" type="List" default="[]" />
+  <aura:attribute name="caseObj" type="map" default="{}" />
+  <aura:attribute name="caseDocuments" type="List" default="[]" />
+  <aura:attribute name="isDisableNext" type="boolean" default="true" />
+  <aura:attribute name="isDisablePrevious" type="boolean" default="true" />
+  <aura:attribute name="fileNames" type="list" default="[]" />
+  <aura:attribute name="fileName" type="String" default="Need File,Incomplete" />
+  <aura:attribute name="nextButtonLabel" type="String" default="Next" />
+  <aura:attribute name="isAllDocumentsSelected" type="boolean" default="false" />
+  <aura:attribute name="isNewDecision" type="boolean" default="true" />
+  <aura:attribute name="isApproveSelected" type="boolean" default="false" />
+  <aura:attribute name="isRejectSelected" type="boolean" default="false" />
+  <aura:attribute name="showBodySpinner" type="Boolean" default="false" />
+  <aura:attribute name="termsAccepted" type="Boolean" default="false" />
+  <aura:attribute name="isClosedFinalised" type="boolean" default="false" />
+
+  <aura:attribute name="caseRecord" type="Case" />
+  <aura:attribute name="recordError" type="String" />
+
+  <force:recordData
+    aura:id="caseRecordCmp"
+    recordId="{!v.recordId}"
+    fields="Status"
+    targetFields="{!v.caseRecord}"
+    targetError="{!v.recordError}"
+    mode="EDIT"
+  />
+
+  <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+  <!-- Loader -->
+  <aura:if isTrue="{!v.showBodySpinner}">
+    <div class="slds-spinner_container">
+      <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+    </div>
+  </aura:if>
+
+  <!-- Child Level Section -->
+  <aura:if isTrue="{!not(v.caseObj.isParent)}">
+    <div class="slds-theme_default">
+      <div class="slds-p-around_medium">
+        <div class="slds-m-left_large">
+          <lightning:tabset selectedTabId="{!v.selectedStep}">
+            <lightning:tab label="Case Context" id="Step1">
+              <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="requestDetails">
+                <lightning:accordionSection name="requestDetails" label="Request Details">
+                  <div class="slds-grid slds-gutters slds-wrap">
+                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                      <label>Spreading Priority</label>
+                      <lightning:radioGroup
+                        name="spreadingPriority"
+                        aura:id="field"
+                        onchange="{!c.onChange}"
+                        variant="label-hidden"
+                        options="{! v.options }"
+                        value="{! v.caseObj.spreadingPriority }"
+                        type="button"
+                        disabled="true"
+                      />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                      <label>Consolidated Spread</label>
+                      <lightning:radioGroup
+                        name="consolidatedSpread"
+                        aura:id="field"
+                        onchange="{!c.onChange}"
+                        variant="label-hidden"
+                        options="{! v.options }"
+                        value="{! v.caseObj.consolidatedSpread }"
+                        type="button"
+                        disabled="true"
+                      />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                      <label>Financials</label>
+                      <lightning:radioGroup
+                        name="financials"
+                        aura:id="field"
+                        onchange="{!c.onChange}"
+                        variant="label-hidden"
+                        options="{! v.options }"
+                        value="{! v.caseObj.financials }"
+                        type="button"
+                        disabled="true"
+                      />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                      <label>Management Accounts</label>
+                      <lightning:radioGroup
+                        name="managementAccounts"
+                        aura:id="field"
+                        onchange="{!c.onChange}"
+                        variant="label-hidden"
+                        options="{! v.options }"
+                        value="{! v.caseObj.managementAccounts }"
+                        type="button"
+                        disabled="true"
+                      />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                      <label>Group Loans</label>
+                      <lightning:radioGroup
+                        name="groupLoans"
+                        aura:id="field"
+                        onchange="{!c.onChange}"
+                        variant="label-hidden"
+                        options="{! v.options }"
+                        value="{! v.caseObj.groupLoans }"
+                        type="button"
+                        disabled="true"
+                      />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                      <label>Projections</label>
+                      <lightning:radioGroup
+                        name="projections"
+                        aura:id="field"
+                        onchange="{!c.onChange}"
+                        variant="label-hidden"
+                        options="{! v.options }"
+                        value="{! v.caseObj.projections }"
+                        type="button"
+                        disabled="true"
+                      />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                      <label>Time Frame</label>
+                      <lightning:combobox
+                        name="timeFrame"
+                        aura:id="field"
+                        onchange="{!c.onChange}"
+                        variant="label-hidden"
+                        value="{!v.caseObj.timeFrame}"
+                        placeholder="Select Progress"
+                        options="{! v.timeFrameOptions }"
+                        disabled="true"
+                      />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                      <label>SIC Code</label>
+                      <lightning:input
+                        name="sicCode"
+                        aura:id="sicCode"
+                        variant="label-hidden"
+                        value="{!v.caseObj.sicCode}"
+                        disabled="true"
+                      />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                      <label><strong>Back Office Instructions</strong></label>
+                      <p>{!v.caseObj.instructions}</p>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                      <label><strong>Additional Comments</strong></label>
+                      <p>{!v.caseObj.comments}</p>
+                    </div>
+                  </div>
+                </lightning:accordionSection>
+              </lightning:accordion>
+            </lightning:tab>
+            <lightning:tab label="Documents" id="Step2">
+              <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="documentMenu">
+                <lightning:accordionSection name="documentMenu" label="Document Menu">
+                  <div class="slds-grid slds-gutters slds-wrap">
+                    <div class="slds-col slds-size_1-of-1 slds-p-around_small">
+                      <table>
+                        <thead style="padding: 5px; background: #ececec">
+                          <tr>
+                            <th colspan="40%">Document Name</th>
+                            <th colspan="15%">Source</th>
+                            <th colspan="15%">Created Date</th>
+                            <th colspan="15%">Updated Date</th>
+                            <th colspan="15%"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <aura:iteration items="{!v.caseDocuments}" var="doc" indexVar="itemIndex">
+                            <tr style="height: 50px">
+                              <td style="padding: 5px; font-weight: bold">
+                                <lightning:formattedText value="{!doc.documentName}" />
+                              </td>
+                              <td>Uploaded</td>
+                              <td>
+                                <lightning:formattedDateTime
+                                  value="{!doc.lastUpdatedDate}"
+                                  day="2-digit"
+                                  month="long"
+                                  year="numeric"
+                                />
+                              </td>
+                              <td>
+                                <lightning:formattedDateTime
+                                  value="{!doc.lastUpdatedDate}"
+                                  day="2-digit"
+                                  month="long"
+                                  year="numeric"
+                                />
+                              </td>
+                              <td style="text-align: center">
+                                <lightning:button
+                                  name="{!itemIndex}"
+                                  variant="brand"
+                                  label="View Document"
+                                  title="View Document"
+                                  onclick="{! c.viewDoc }"
+                                />
+                              </td>
+                            </tr>
+                          </aura:iteration>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </lightning:accordionSection>
+              </lightning:accordion>
+            </lightning:tab>
+            <lightning:tab label="QA" id="Step3">
+              <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="qaDecision">
+                <lightning:accordionSection name="qaDecision" label="QA Decision">
+                  <div class="slds-grid slds-wrap">
+                    <div class="slds-col slds-size_1-of-2">
+                      <aura:if isTrue="{!v.isNewDecision}">
+                        <div class="slds-grid slds-wrap">
+                          <div class="slds-col slds-size_2-of-12">
+                            <div class="slds-box slds-box_xx-small">
+                              <img src="{!$Resource.Approve}" style="width: 100%" onclick="{!c.approvedSelected}" />
+                            </div>
+                          </div>
+                          <div class="slds-col slds-size_2-of-12">
+                            <div class="slds-box slds-box_xx-small">
+                              <img src="{!$Resource.Reject}" style="width: 100%" onclick="{!c.rejectSelected}" />
+                            </div>
+                          </div>
+                        </div>
+                      </aura:if>
+                      <aura:if isTrue="{!v.isApproveSelected}">
+                        <div class="slds-grid slds-wrap">
+                          <div class="slds-col slds-size_2-of-12">
+                            <img src="{!$Resource.Approved}" style="width: 100%" onclick="{!c.approvedSelected}" />
+                          </div>
+                          <div class="slds-col slds-size_2-of-12">
+                            <div class="slds-box slds-box_xx-small">
+                              <img src="{!$Resource.Reject}" style="width: 100%" onclick="{!c.rejectSelected}" />
+                            </div>
+                          </div>
+                        </div>
+                      </aura:if>
+                      <aura:if isTrue="{!v.isRejectSelected}">
+                        <div class="slds-grid slds-wrap">
+                          <div class="slds-col slds-size_2-of-12">
+                            <div class="slds-box slds-box_xx-small">
+                              <img src="{!$Resource.Approve}" style="width: 100%" onclick="{!c.approvedSelected}" />
+                            </div>
+                          </div>
+                          <div class="slds-col slds-size_2-of-12">
+                            <img src="{!$Resource.Rejected}" style="width: 100%" onclick="{!c.rejectSelected}" />
+                          </div>
+                        </div>
+                      </aura:if>
+                    </div>
+                    <aura:if isTrue="{!not(v.isClosedFinalised)}">
+                        <div class="slds-col">
+                      <aura:if isTrue="{!v.isRejectSelected}">
+                        <div class="slds-col slds-size_1-of-2">
+                          <label>Comments</label>
+                          <lightning:textarea
+                            value="{!v.caseObj.acceptanceReason}"
+                            placeholder="Fill In Rejection Comments Here..."
+                          />
+                          <label>Reason</label>
+                          <lightning:combobox
+                            name="reasonOptions"
+                            aura:id="field"
+                            variant="label-hidden"
+                            value="{!v.caseObj.reason}"
+                            placeholder="Select Classification"
+                            options="{!v.reasonOptions}"
+                            required="true"
+                          />
+                          <br />
+                          <div style="display: inline-flex; align-items: center">
+                            <lightning:input
+                              type="checkbox"
+                              aura:id="boxPack"
+                              checked="{!v.termsAccepted}"
+                              onchange="{!c.termsCheck}"
+                            /><span>I understand the impact of this decision.</span>
+                          </div>
+                        </div>
+                      </aura:if>
+                      <aura:if isTrue="{!v.isApproveSelected}">
+                        <div class="slds-col slds-size_1-of-2">
+                          <span>Comments</span>
+                          <lightning:textarea
+                            value="{!v.caseObj.acceptanceReason}"
+                            placeholder="Fill In Approval Comments Here..."
+                          />
+                          <div style="display: inline-flex; align-items: center">
+                            <lightning:input
+                              type="checkbox"
+                              aura:id="boxPack"
+                              checked="{!v.termsAccepted}"
+                              onchange="{!c.termsCheck}"
+                            /><span>I understand the impact of this decision.</span>
+                          </div>
+                        </div>
+                      </aura:if>
+                    </div>
+                    </aura:if>
+                  </div>
+                </lightning:accordionSection>
+              </lightning:accordion>
+            </lightning:tab>
+            <!-- <lightning:tab label="Activity" id="Step4">
+              <p>Approval Process has been completed for this case.</p>
+            </lightning:tab> -->
+          </lightning:tabset>
+          <div class="slds-m-vertical_medium slds-clearfix">
+            <aura:if isTrue="{!v.caseRecord.Status != 'Closed'}">
+              <lightning:button
+                label="Back"
+                class="slds-m-left_x-small slds-float_left"
+                onclick="{!c.handlePreviosInDetailPage}"
+                disabled="{!v.isDisablePrevious}"
+              ></lightning:button>
+              <lightning:button
+                label="{!v.nextButtonLabel}"
+                class="slds-m-left_x-small slds-float_right"
+                onclick="{!c.handleNextInDetailPage}"
+                disabled="{!v.isDisableNext}"
+                variant="brand"
+              ></lightning:button>
+              <aura:if isTrue="{!v.termsAccepted}">
+                <aura:if isTrue="{!or(v.isApproveSelected,v.isRejectSelected)}">
+                  <lightning:button
+                    label="Submit Decision"
+                    class="slds-m-left_x-small slds-float_right"
+                    onclick="{!c.finaliseChild}"
+                    variant="brand"
+                  ></lightning:button>
+                </aura:if>
+              </aura:if>
+            </aura:if>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Parent Level Section -->
+    <aura:set attribute="else">
+      <div class="slds-theme_default">
+        <div class="slds-p-around_medium">
+          <div class="slds-m-left_large">
+            <lightning:tabset selectedTabId="{!v.selectedStep}" onselect="{!c.tabSelected}">
+              <lightning:tab label="Details" id="Step1">
+                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="financialSpreading">
+                  <lightning:accordionSection name="financialSpreading" label="Financial Spreading">
+                    <div class="slds-grid slds-gutters slds-wrap">
+                      <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                        <label>Spreading Priority</label>
+                        <lightning:radioGroup
+                          name="spreadingPriority"
+                          aura:id="field"
+                          onchange="{!c.onChange}"
+                          variant="label-hidden"
+                          options="{! v.options }"
+                          value="{! v.caseObj.spreadingPriority }"
+                          type="button"
+                        />
+                      </div>
+                      <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                        <label>Consolidated Spread</label>
+                        <lightning:radioGroup
+                          name="consolidatedSpread"
+                          aura:id="field"
+                          onchange="{!c.onChange}"
+                          variant="label-hidden"
+                          options="{!v.options}"
+                          value="{!v.caseObj.consolidatedSpread}"
+                          type="button"
+                        />
+                      </div>
+                      <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                        <label>Financials</label>
+                        <lightning:radioGroup
+                          name="financials"
+                          aura:id="field"
+                          onchange="{!c.onChange}"
+                          variant="label-hidden"
+                          options="{! v.options }"
+                          value="{! v.caseObj.financials }"
+                          type="button"
+                        />
+                      </div>
+                      <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                        <label>Management Accounts</label>
+                        <lightning:radioGroup
+                          name="managementAccounts"
+                          aura:id="field"
+                          onchange="{!c.onChange}"
+                          variant="label-hidden"
+                          options="{! v.options }"
+                          value="{! v.caseObj.managementAccounts }"
+                          type="button"
+                        />
+                      </div>
+                      <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                        <label>Group Loans</label>
+                        <lightning:radioGroup
+                          name="groupLoans"
+                          aura:id="field"
+                          onchange="{!c.onChange}"
+                          variant="label-hidden"
+                          options="{! v.options }"
+                          value="{! v.caseObj.groupLoans }"
+                          type="button"
+                        />
+                      </div>
+                      <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                        <label>Projections</label>
+                        <lightning:radioGroup
+                          name="projections"
+                          aura:id="field"
+                          onchange="{!c.onChange}"
+                          variant="label-hidden"
+                          options="{! v.options }"
+                          value="{! v.caseObj.projections }"
+                          type="button"
+                        />
+                      </div>
+                      <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                        <label>Time Frame</label>
+                        <lightning:combobox
+                          name="timeFrame"
+                          aura:id="field"
+                          onchange="{!c.onChange}"
+                          variant="label-hidden"
+                          value="{!v.caseObj.timeFrame}"
+                          placeholder="Select Progress"
+                          options="{! v.timeFrameOptions }"
+                        />
+                      </div>
+                      <aura:if isTrue="{!v.caseObj.timeFrame == '4 hours'}">
+                        <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                          <label>Comment</label>
+                          <lightning:input
+                            name="comment"
+                            aura:id="field"
+                            variant="label-hidden"
+                            value="{!v.caseObj.comments}"
+                            required="{!v.caseObj.timeFrame == '4 hours'}"
+                          />
+                        </div>
+                        <aura:set attribute="else">
+                          <div class="slds-col slds-size_1-of-2 slds-p-around_small"></div>
+                        </aura:set>
+                      </aura:if>
+                      <div class="slds-col slds-size_1-of-2 slds-p-around_small">
+                        <label>SIC Code</label>
+                        <lightning:input
+                          name="sicCode"
+                          aura:id="sicCode"
+                          variant="label-hidden"
+                          value="{!v.caseObj.sicCode}"
+                          required="true"
+                        />
+                      </div>
+                    </div>
+                  </lightning:accordionSection>
+                </lightning:accordion>
+              </lightning:tab>
+              <lightning:tab label="Documents" id="Step2">
+                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="documents">
+                  <lightning:accordionSection name="documents" label="Documents">
+                    <div class="slds-grid slds-gutters">
+                      <div class="slds-col slds-size_1-of-2 slds-box">
+                        <aura:if
+                          isTrue="{!and(v.caseRecord.Status != 'Closed', v.caseRecord.Status != 'Submit Request')}"
+                        >
+                          <lightning:fileUpload
+                            label="Additional Documents"
+                            name="fileUploader"
+                            multiple="true"
+                            recordId="{!v.recordId}"
+                            onuploadfinished="{!c.handleUploadFinished}"
+                          />
+                          <aura:if isTrue="{!v.fileNames.length > 0}">
+                            <aura:iteration items="{!v.fileNames}" var="fname">
+                              <strong>{!fname}</strong><br />
+                            </aura:iteration>
+                            <aura:set attribute="else">
+                              <strong>No files selected</strong>
+                            </aura:set>
+                          </aura:if>
+                          <aura:set attribute="else">
+                            <h1>Related Documents</h1>
+                            <table>
+                              <thead style="padding: 5px; background: #ececec">
+                                <tr>
+                                  <th colspan="40%">Document Name</th>
+                                  <th colspan="15%">Source</th>
+                                  <th colspan="15%">Created Date</th>
+                                  <th colspan="15%">Updated Date</th>
+                                  <th colspan="15%"></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <aura:iteration items="{!v.caseDocuments}" var="doc" indexVar="itemIndex">
+                                  <tr style="height: 50px">
+                                    <td style="padding: 5px; font-weight: bold">
+                                      <lightning:formattedText value="{!doc.documentName}" />
+                                    </td>
+                                    <td>Uploaded</td>
+                                    <td>
+                                      <lightning:formattedDateTime
+                                        value="{!doc.lastUpdatedDate}"
+                                        day="2-digit"
+                                        month="long"
+                                        year="numeric"
+                                      />
+                                    </td>
+                                    <td>
+                                      <lightning:formattedDateTime
+                                        value="{!doc.lastUpdatedDate}"
+                                        day="2-digit"
+                                        month="long"
+                                        year="numeric"
+                                      />
+                                    </td>
+                                    <td style="text-align: center">
+                                      <lightning:button
+                                        name="{!itemIndex}"
+                                        variant="brand"
+                                        label="View Document"
+                                        title="View Document"
+                                        onclick="{! c.viewDoc }"
+                                      />
+                                    </td>
+                                  </tr>
+                                </aura:iteration>
+                              </tbody>
+                            </table>
+                          </aura:set>
+                        </aura:if>
+                      </div>
+                    </div>
+                  </lightning:accordionSection>
+                </lightning:accordion>
+              </lightning:tab>
+              <lightning:tab label="Request Review" id="Step3">
+                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="requestReview">
+                  <lightning:accordionSection name="requestReview" label="Request Review">
+                    <div class="slds-grid slds-gutters">
+                      <div class="slds-col">
+                        <ui:inputTextArea
+                          aura:id="comments"
+                          label="Consice and clear instruction to back office"
+                          value="{!v.caseObj.instructions}"
+                          rows="5"
+                          maxlength="255"
+                        />
+                        <div class="slds-form-element__help" id="error-message-id-49">Max 255 Characters</div>
+                      </div>
+                      <div class="slds-col">
+                        <label>Work Item Classification</label>
+                        <lightning:combobox
+                          name="workItemClassification"
+                          aura:id="field"
+                          onchange="{!c.onChange}"
+                          variant="label-hidden"
+                          value="{!v.caseObj.workItemClassification}"
+                          placeholder="Select Classification"
+                          options="{!v.workItemOptions}"
+                        />
+                      </div>
+                    </div>
+                  </lightning:accordionSection>
+                </lightning:accordion>
+              </lightning:tab>
+            </lightning:tabset>
+            <aura:if isTrue="{!and(v.caseRecord.Status != 'Closed', v.caseRecord.Status != 'Submit Request')}">
+              <div class="slds-m-vertical_medium slds-clearfix">
+                <lightning:button
+                  label="Back"
+                  class="slds-m-left_x-small slds-float_left"
+                  onclick="{!c.handlePrevious}"
+                  disabled="{!v.isDisablePrevious}"
+                ></lightning:button>
+                <lightning:button
+                  label="{!v.nextButtonLabel}"
+                  class="slds-m-left_x-small slds-float_right"
+                  onclick="{!c.handleNext}"
+                  disabled="{!v.isDisableNext}"
+                  variant="brand"
+                ></lightning:button>
+              </div>
+            </aura:if>
+          </div>
+        </div>
+      </div>
+    </aura:set>
+  </aura:if>
+</aura:component>

@@ -1,0 +1,169 @@
+<!--Component for handling the Applicants Exposures-->
+<!--@author  Himani Joshi-->
+<!--@since   2020-09-07-->
+<aura:component controller="ApplicationExposuresController"
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global" >
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="oppId" type="Id" />
+    <aura:attribute name="opportunityRecord" type="object" default=""/>
+    <aura:attribute name="ApplicantExposuresData" type="List" />
+    <aura:attribute name="clientCodesandNames" type="List"/>
+    <aura:attribute name="lastRefresh" type="DateTime" />
+    <aura:attribute name="clientName" type="String"/>
+    <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion" activeSectionName="ApplicantExposures">
+        <lightning:accordionSection name="ApplicantExposures" label="Applicant Exposures">
+            <p>Applicant Exposures - Last Refresh: <ui:outputDateTime value="{!v.lastRefresh}" /></p>
+            <lightning:layoutItem size="12" padding="around-small">
+                <table class="slds-table slds-table_cell-buffer">
+                    <thead>
+                        <tr class="slds-var-m-top_small slds-line-height_reset">
+                            <th scope="col">
+                                <div class="slds-truncate" title="ClientName">Client Name</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="ClientCode">Client Code</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="Product">Product</div>
+                            </th>
+                            <th scope="col" class="headerColumnR">
+                                <div class="slds-truncate" title="Liability">Liability</div>
+                            </th>
+                            <th scope="col" class="headerColumnR">
+                                <div class="slds-truncate" title="Limit">Limit</div>
+                            </th>
+                            <th scope="col" class="headerColumnR">
+                                <div class="slds-truncate" title="Exposure">Exposure</div>
+                            </th>
+                            <th scope="col" class="headerColumnR">
+                                <div class="slds-truncate" title="Arrears">Arrears</div>
+                            </th>
+                            <th scope="col" class="headerColumnR">
+                                <div class="slds-truncate" title="Excess">Excess</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.clientCodesandNames}" var="cli">
+                            <tr class="slds-hint-parent">
+                                <th data-label="">
+                                        <div class="slds-truncate" title=" ">
+                                            {!cli.Client_Name__c}
+                                        </div>
+                                </th>
+                                <td data-label="">
+                                    <div class="slds-truncate" title=" ">{!cli.Client_CIF_Code__c}</div>
+                                </td>
+                                <td data-label="">
+                                    <aura:iteration items="{!v.ApplicantExposuresData}" var="r">
+                                        <aura:if isTrue="{!r.Client_Code__c == cli.Client_CIF_Code__c}">
+                                            <!--<aura:if isTrue="{!r.Product__c == 'CLIENT TOT'}">-->
+                                            <aura:if isTrue="{!r.Exposure_Data_Type__c == 'Client Profile Product Total'}">
+                                                <!--div style='background-color: #dddddd;'-->
+                                                    <b>{!r.Product__c}</b>
+                                                <!--/div-->
+                                            </aura:if>
+                                            <!--<aura:if isTrue="{!not(r.Product__c == 'CLIENT TOT')}">-->
+                                            <aura:if isTrue="{!r.Exposure_Data_Type__c == 'Product'}">
+                                                <div>
+                                                    {!r.Product__c}
+                                                </div>
+                                            </aura:if>
+                                        </aura:if>
+                                    </aura:iteration>
+                                </td>
+                                <td data-label="" class="inputColumnR">
+                                    <aura:iteration items="{!v.ApplicantExposuresData}" var="r">
+                                        <aura:if isTrue="{!r.Client_Code__c == cli.Client_CIF_Code__c}">
+                                            <aura:if  isTrue="{!or((r.Exposure_Data_Type__c=='Product'),(r.Exposure_Data_Type__c=='Client Profile Product Total'))}" >
+                                                <div>
+                                                    <aura:if isTrue="{!r.Exposure_Data_Type__c == 'Client Profile Product Total'}">
+                                                        <b><ui:outputCurrency value="{!r.Liability__c}" /></b>
+                                                        <aura:set attribute="else">
+                                                            <ui:outputCurrency value="{!r.Liability__c}" />
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </div>
+                                            </aura:if>
+                                        </aura:if>
+                                    </aura:iteration>
+                                </td>
+                                <td data-label="" class="inputColumnR">
+                                    <div>
+                                        <aura:iteration items="{!v.ApplicantExposuresData}" var="r">
+                                            <aura:if isTrue="{!r.Client_Code__c == cli.Client_CIF_Code__c}">
+                                                <aura:if  isTrue="{!or((r.Exposure_Data_Type__c=='Product'),(r.Exposure_Data_Type__c=='Client Profile Product Total'))}" >
+                                                    <div >
+                                                        <aura:if isTrue="{!r.Exposure_Data_Type__c == 'Client Profile Product Total'}">
+                                                            <b><ui:outputCurrency value="{!r.Limit__c}" /></b>
+                                                            <aura:set attribute="else">
+                                                                <ui:outputCurrency value="{!r.Limit__c}" />
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </div>
+                                                </aura:if>
+                                            </aura:if>
+                                        </aura:iteration>
+                                    </div>
+                                </td>
+                                <td data-label="" class="inputColumnR">
+                                    <aura:iteration items="{!v.ApplicantExposuresData}" var="r">
+                                        <aura:if isTrue="{!r.Client_Code__c == cli.Client_CIF_Code__c}">
+                                            <aura:if  isTrue="{!or((r.Exposure_Data_Type__c=='Product'),(r.Exposure_Data_Type__c=='Client Profile Product Total'))}" >
+                                                <div >
+                                                    <aura:if isTrue="{!r.Exposure_Data_Type__c == 'Client Profile Product Total'}">
+                                                        <b><ui:outputCurrency value="{!r.Exposure__c}" /></b>
+                                                        <aura:set attribute="else">
+                                                            <ui:outputCurrency value="{!r.Exposure__c}" />
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </div>
+                                            </aura:if>
+                                        </aura:if>
+                                    </aura:iteration>
+                                </td>
+                                <td data-label="" class="inputColumnR">
+                                    <aura:iteration items="{!v.ApplicantExposuresData}" var="r">
+                                        <aura:if isTrue="{!r.Client_Code__c == cli.Client_CIF_Code__c}">
+                                             <aura:if  isTrue="{!or((r.Exposure_Data_Type__c=='Product'),(r.Exposure_Data_Type__c=='Client Profile Product Total'))}" >
+                                                <div>
+                                                    <aura:if isTrue="{!r.Exposure_Data_Type__c == 'Client Profile Product Total'}">
+                                                        <b><ui:outputCurrency value="{!r.Arrears__c}" /></b>
+                                                        <aura:set attribute="else">
+                                                            <ui:outputCurrency value="{!r.Arrears__c}" />
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </div>
+                                            </aura:if>
+                                        </aura:if>
+                                    </aura:iteration>
+                                </td>
+                                <td data-label="" class="inputColumnR">
+                                    <aura:iteration items="{!v.ApplicantExposuresData}" var="r">
+                                        <aura:if isTrue="{!r.Client_Code__c == cli.Client_CIF_Code__c}">
+                                             <aura:if  isTrue="{!or((r.Exposure_Data_Type__c=='Product'),(r.Exposure_Data_Type__c=='Client Profile Product Total'))}" >
+                                            <div>
+                                                <aura:if isTrue="{!r.Exposure_Data_Type__c == 'Client Profile Product Total'}">
+                                                    <b><ui:outputCurrency value="{!r.Excess__c}" /></b>
+                                                    <aura:set attribute="else">
+                                                        <ui:outputCurrency value="{!r.Excess__c}" />
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                            </aura:if>
+                                        </aura:if>
+                                    </aura:iteration>
+                                </td>
+                           </tr>
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </lightning:layoutItem>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

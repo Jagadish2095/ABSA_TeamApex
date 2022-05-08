@@ -1,0 +1,86 @@
+<aura:component description="FIC_Case_OrderDocuments"
+                implements="flexipage:availableForAllPageTypes,force:appHostable,force:lightningQuickAction,force:hasRecordId"
+                controller="FIC_Case_OrderDocumentsController">
+
+    <aura:attribute name="options" type="List" default="[
+                                                           {'label': 'Yes', 'value': 'true'},
+                                                           {'label': 'No', 'value': 'false'}
+                                                       ]"/>
+    <aura:attribute name="dTypes" type="List" default="[
+                                                        'Unknown','Account application','Proof of Address','Proof of identification',
+                                                        'Signing instructions','Proof of Income','Credit card quotation',
+                                                        'Green barcoded ID'
+                                                       ]"/>
+    <aura:attribute name="inOrder" type="String" default="false"/>
+    <aura:attribute name="labelForButton" type="String"/>
+    <aura:attribute name="reasons" type="String[]"/>
+    <aura:attribute name="reasonValue" type="String"/>
+    <aura:attribute name="ReasonIsMandatory" type="Boolean"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="isDocumentPassed" type="Boolean"/>
+    <aura:attribute name="case" type="Case"/>
+    <aura:attribute name="caseType" type="String"/>
+    <aura:attribute name="showSpinner" type="Boolean"/>
+    <aura:attribute name="caseDocuments" type="Object[]"/>
+    <aura:attribute name="document" type="Object"/>
+    <aura:attribute name="documentId" type="String"/>
+    <aura:attribute name="docName" type="String"/>
+    <aura:attribute name="typeValue" type="String"/>
+    <aura:attribute name="isUnassignQueue" type="Boolean" default="false"/>
+    <aura:attribute name="editMode" type="Boolean" default="true"/>
+    <aura:attribute name="isAllDocs" type="Boolean" default="false"/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}"/>
+
+    <aura:registerEvent name="RefreshPassKYC" type="c:RefreshPassKYC"/>
+     
+     <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+
+    <div class="RadioButtons slds-m-top_medium">
+        <aura:if isTrue="{!v.isUnassignQueue}">
+            <div class="slds-grid slds-m-bottom_large">
+                <div class="slds-col slds-m-top_xx-small slds-p-left_medium" style="width: 50%">
+                    <label class="slds-form-element__label" style="display:flex">Document Name</label>
+                    <ui:outputText  aura:id="text-input-id-1" class="field" value="{!v.docName}"/>
+                </div>
+                <div class="slds-col slds-m-top_xx-small slds-p-right_small" style="width: 50%">
+                    <lightning:select aura:id="select1" class="custom-select-width" name="select" onchange="{!c.onDocumentTypeChange}"  label="Document Type" value="{!v.typeValue}">
+                        <aura:iteration items="{!v.dTypes}" var="dType">
+                            <option value="{!dType}" >{!dType}</option>
+                        </aura:iteration>
+                    </lightning:select>
+                </div>
+            </div>
+            <div class="slds-grid">
+                <div class="slds-col slds-m-top_xx-small slds-p-left_medium" style="width: 50%">
+                    <lightning:radioGroup aura:id="radios"
+                         label="Is the document in order?"
+                         options="{! v.options }"
+                         value="{! v.inOrder }"
+                         type="radio"
+                         required="true"
+                         class="customRadioCls"
+                         onchange="{! c.handleChange }"
+                         />
+                </div>
+                <div class="slds-col slds-m-top_xx-small slds-p-right_small" style="width: 50%">
+                    <lightning:select aura:id="select2" name="select" label="Fic Document Fail Reason" value="{!v.reasonValue}" onchange="{!c.onDocumentFailChange}"
+                                      disabled="{!v.ReasonIsMandatory}" required="true">
+                        <aura:iteration items="{!v.reasons}" var="reason">
+                                <option value="{!reason}" selected="{!reason == v.reasonValue}">{!reason}</option>
+                        </aura:iteration>
+                    </lightning:select>
+                </div>
+            </div>
+        </aura:if>
+        <div class="slds-docked-form-footer slds-m-top_x-large stickyFooter" style="position: relative">
+            <lightning:button class="slds-m-right_large" name='Cancel' label='Cancel' variant="neutral" onclick='{!c.backToDocumentsList}'/>
+            <aura:if isTrue="{!v.isUnassignQueue}">
+                <lightning:button name='Next' label='Submit' variant="brand" onclick='{!c.handleSubmit}'/>
+            </aura:if>
+        </div>
+    </div>
+</aura:component>

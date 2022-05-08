@@ -1,0 +1,168 @@
+<!--
+* Lightning Component for Onboarding Merchant - Banking Details Section (MultiBankingDetailsSection)
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2020-04-03
+* @description: This is the parent component for the merchant banking details section. Embeds the MerchantBankingDetails cmp for Business and Personal Details.
+*				Shows a Motivation for Banking Details Modal if Motivation for Application/Banking Details btn is clicked.
+*
+-->
+<aura:component controller="MerchantBankingDetailsController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global">
+
+    <!-- Event listener -->
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}"/>
+    <aura:handler name="change" value="{!v.waitCycleId}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_MerchantPersonalBankingDetailsCmp}" action="{!c.handleCmpFormStatusChange}"/>
+    <aura:handler name="change" value="{!v.cmpFormStatus_MerchantBusinessBankingDetailsCmp}" action="{!c.handleCmpFormStatusChange}"/>
+    <!-- Init Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!-- Parent Cmp Attribute Declaration -->
+    <aura:attribute name="cmpFormStatus" type="String" />
+    <aura:attribute name="cmpFormStatus_MerchantPersonalBankingDetailsCmp" type="String" default="unknown" />
+    <aura:attribute name="cmpFormStatus_MerchantBusinessBankingDetailsCmp" type="String" default="unknown" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="activeSections" type="List" default="['BankingDetails']" />
+    <aura:attribute name="paymentPlanBusiness" type="Payment_Plan__c" default="{'sobjectType': 'Payment_Plan__c'}"/>
+    <aura:attribute name="paymentPlanPersonal" type="Payment_Plan__c" default="{'sobjectType': 'Payment_Plan__c'}"/>
+    <aura:attribute name="applicationId" type="String" default=""/>
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['appAboutBusiness', 'appAboutBusinessOwner', 'appReasonRecommendation', 'appRiskIdentified', 'appRiskMitigation']" />
+    <aura:attribute name="componentLabels" type="List" default="['MerchantPersonalBankingDetailsCmp','MerchantBusinessBankingDetailsCmp']" />
+    <aura:attribute name="waitCycleId" type="Integer"/>
+    <aura:attribute name="errorMessage" type="String" default=""/>
+
+    <!-- Method Declaration -->
+    <aura:method name="saveFormMethod" action="{!c.executeSaveFormMethod}" />
+
+    <!-- Start of Sales Activity section -->
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="BankingDetails" label="Banking Details" >
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="recordError">
+                    <br/>
+                    <h2 class="slds-section__title slds-align_absolute-left" style="color:red">{!v.errorMessage}</h2>
+                    <br/>
+                </div>
+            </aura:if>
+            <lightning:layout multipleRows="true">
+
+                <!-- Please Complete one section label -->
+                <lightning:layoutItem size="12">
+                    <aura:if isTrue="{!not(empty(v.applicationId))}">
+                        <h2 class="slds-section__title slds-align_absolute-left" style="color:red">Please complete the Client's Business Bank Details as they are mandatory. The Client's Personal Bank Details are not mandatory.</h2>
+                        <aura:set attribute="else">
+                            <h2 class="slds-section__title slds-align_absolute-left" style="color:red">Please complete the section on the previous tab to generate a quote</h2>
+                        </aura:set>
+                    </aura:if>
+                </lightning:layoutItem>
+
+                <!-- Business Bank -->
+                <lightning:layoutItem size="6">
+                    <h2 class="slds-section__title">Client’s Business Bank</h2>
+                </lightning:layoutItem>
+
+                <!-- Personal Bank -->
+                <lightning:layoutItem size="6">
+                    <h2 class="slds-section__title">Client’s Personal Bank&nbsp;&nbsp;<lightning:helptext content="The Client's Personal Bank Details are only required if the Client's Business Bank Account is not older than 6 months." /></h2>
+                </lightning:layoutItem>
+
+                <!-- Business Bank -->
+                <lightning:layoutItem size="6">
+                    <c:MerchantBankingDetails aura:id="MerchantBusinessBankingDetailsCmp" entityId="{!v.recordId}" bankAccDetailsType="Business Bank" paymentPlan="{!v.paymentPlanBusiness}" applicationId="{!v.applicationId}" cmpFormStatus="{!v.cmpFormStatus_MerchantBusinessBankingDetailsCmp}" isFormReadOnly="{!v.isFormReadOnly}"/>
+                </lightning:layoutItem>
+
+                <!-- Personal Bank -->
+                <lightning:layoutItem size="6">
+                    <c:MerchantBankingDetails aura:id="MerchantPersonalBankingDetailsCmp" entityId="{!v.recordId}" bankAccDetailsType="Personal Bank" paymentPlan="{!v.paymentPlanPersonal}" applicationId="{!v.applicationId}" cmpFormStatus="{!v.cmpFormStatus_MerchantPersonalBankingDetailsCmp}" isFormReadOnly="{!v.isFormReadOnly}"/>
+                </lightning:layoutItem>
+
+                <!-- Motivation btn to open modal -->
+                <lightning:layoutItem size="12">
+                    <div style="padding-left:1%">
+                        <lightning:button disabled="{!or(empty(v.applicationId),v.isFormReadOnly)}"
+                                          variant="brand"
+                                          class="slds-align_absolute-left slds-m-top_x-large"
+                                          label="Motivation for Application/Banking Details"
+                                          title="Motivation for Banking Details relating to this Application"
+                                          onclick="{!c.openModal}" aura:id="motivationBtn"/>
+                    </div>
+                </lightning:layoutItem>
+
+            </lightning:layout>
+
+            <!-- Start of the Motivation for Application/Banking Details Modal -->
+            <div role="dialog" tabindex="-1" aria-labelledby="motivationBankingDetailsHeader" aura:id="motivationBankingDetailsModal" class="slds-modal slds-modal_large">
+                <div class="slds-modal__container" style="width: 65%;">
+                    <div class="slds-modal__header">
+                        <h2 class="slds-section__title slds-align_absolute-center">Motivation for Application/Banking Details</h2>
+                    </div>
+
+                    <lightning:spinner aura:id="spinner" variant="brand" />
+
+                    <div class="slds-modal__content">
+                        <!-- LDS start -->
+                        <lightning:recordEditForm aura:id="motivationBankingDetailsForm"
+                                                  objectApiName="Application__c"
+                                                  recordId="{!v.applicationId}"
+                                                  onload="{!c.handleOnLoad}"
+                                                  onsubmit="{!c.handleSubmit}"
+                                                  onsuccess="{!c.handleSuccess}"
+                                                  onerror="{!c.handleError}" >
+
+                            <lightning:layout multipleRows="true">
+                                <!-- Application fields -->
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="appAboutBusiness" fieldName="About_the_Business__c" required="true" disabled="{!v.isFormReadOnly}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="appAboutBusinessOwner" fieldName="About_the_Business_Owner__c" required="true" disabled="{!v.isFormReadOnly}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="appReasonRecommendation" fieldName="Reason_for_Recommendation__c" required="true" disabled="{!v.isFormReadOnly}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="appRiskIdentified" fieldName="Risk_Identified_About_Customer_Business__c" required="true" disabled="{!v.isFormReadOnly}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="appRiskMitigation" fieldName="Risk_Mitigation_Solutions_Identified__c" required="true" disabled="{!v.isFormReadOnly}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:button variant="brand"
+                                                      class="slds-float_right slds-m-top_xx-large"
+                                                      label="Close"
+                                                      onclick="{!c.closeModal}" aura:id="closeBtn"/>
+
+                                    <lightning:button variant="brand"
+                                                      class="slds-float_right slds-m-right_xx-small slds-m-top_xx-large"
+                                                      label="Save"
+                                                      type="submit" aura:id="saveBtn"
+                                                      disabled="{!or(empty(v.applicationId),v.isFormReadOnly)}"/>
+                                </lightning:layoutItem>
+
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                        <!-- LDS end -->
+                    </div>
+                </div>
+            </div>
+            <!-- End of the Motivation for Banking Details Modal -->
+            <div class="slds-backdrop slds-backdrop--hide" aura:id="Modalbackdrop">
+            </div>
+
+            <!--Document upload section-->
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="6">
+                    <c:merchantOnboardingWebsiteURL recordId="{!v.recordId}" fileType="Motivation Letter"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <c:merchantOnboardingWebsiteURL recordId="{!v.recordId}" fileType="6 Month Bank Statement &amp; Bank Report"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

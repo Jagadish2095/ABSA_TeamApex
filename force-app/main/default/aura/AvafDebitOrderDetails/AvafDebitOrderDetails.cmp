@@ -1,0 +1,139 @@
+<!--Lightning cmp for Avaf Get Debit Order Details (AvafDebitOrderDetails)
+    Author: Danie Booysen
+    Date : 2020/11/19
+-->
+<aura:component controller="AvafDebitOrderDetailsController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+    access="global">
+    <!--Handler Declaration-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <!--Global Attribute Declaration-->
+    <aura:attribute name="caseIdFromFlow" type="String" access="global" />
+    <aura:attribute name="selectedAvafAccFromFlow" type="String" access="global" />
+    <aura:attribute name="partnerNumber" type="String" access="global" />
+    <aura:attribute name="avafGetBankDetailsResponse" type="String" access="global" />
+    <aura:attribute name="avafGetDebitOrderResponse" type="String" access="global" />
+    <aura:attribute name="isSendEmail" type="Boolean" access="global" />
+    <aura:attribute name="isCloseCase" type="Boolean" access="global" />
+    <!--Attribute Declaration-->
+    <aura:attribute name="isSpinner" type="Boolean" default="false" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" default="false" />
+    <aura:attribute name="isModalReadOnly" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="modalErrorMessage" type="String" />
+    <aura:attribute name="selectedBankDetailIdValue" type="String" />
+    <aura:attribute name="data" type="Object[]" />
+    <aura:attribute name="selectedDebitOrderRow" type="Object" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="bankDetailIdList" type="List" />
+
+
+    <!-- changes made for Ford/Avaf Indicator by Mradul  W-014878 for Debit Order Maintenance-->
+    <c:FordAvafIndicator aura:id="fordAvaf" accountNumber="{!v.selectedAvafAccFromFlow}" caseId="{!v.caseIdFromFlow}" />
+
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+            <br />
+        </div>
+    </aura:if>
+
+    <!-- Case Record Edit From -->
+    <lightning:recordEditForm aura:id="caseCloseEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}"
+        onsuccess="{!c.handleSuccess}" onload="{!c.handleLoad}" onerror="{!c.handleError}">
+        <lightning:inputField aura:id="subjectField" fieldName="Subject" class="slds-hide" />
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+    </lightning:recordEditForm>
+
+    <h2 style="font-weight: bold; font-size: large">AVAF Account Debit Order Details</h2>
+    <br />
+
+    <h2 class="slds-section__title">Partner Number: {!v.partnerNumber}</h2>
+
+    <!-- DataTable of Debit Order Details -->
+    <lightning:datatable aura:id="debitOrderDetailsDatatable" keyField="id" data="{! v.data }" columns="{! v.columns }"
+        maxRowSelection="1" onrowselection="{!c.handleRowSelection}" />
+
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="around-small" size="12">
+            <div class="slds-float_right">
+                <lightning:button label="View Banking Details" onclick="{!c.navigateNext}" variant="brand-outline"
+                    disabled="{!v.isFormReadOnly}" />
+                <lightning:button label="Close Case" onclick="{!c.handleCloseCase}" variant="brand"
+                    disabled="{!v.isFormReadOnly}" />
+            </div>
+        </lightning:layoutItem>
+    </lightning:layout>
+
+    <!-- Modal - Change Debit Order Details -->
+    <div role="dialog" tabindex="-1" aria-labelledby="modalHeader" aura:id="changeDebitOrderDetailsModal"
+        class="slds-modal slds-modal_large">
+        <div class="slds-modal__container" style="width: 50%">
+            <div class="slds-modal__header slds-text-heading_small">Change Debit Order Details</div>
+            <div class="slds-modal__content slds-p-around--medium" style="overflow: initial">
+                <!-- Error Message -->
+                <aura:if isTrue="{!not(empty(v.modalErrorMessage))}">
+                    <div class="recordError">
+                        <br />
+                        <h2 class="slds-section__title" style="color: red">{!v.modalErrorMessage}</h2>
+                        <br />
+                    </div>
+                </aura:if>
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input aura:id="DebitOrderType" label="Debit Order Type" readonly="true"
+                            value="{!v.selectedDebitOrderRow.ZDEBIT_ORDER}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input aura:id="DayOfCollection" label="Day of Collection" readonly="true"
+                            value="{!v.selectedDebitOrderRow.ZCOLDAY}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input aura:id="Status" label="Status" readonly="true"
+                            value="{!v.selectedDebitOrderRow.ZSTATUS}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3"></lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input aura:id="CollectionStartDate" label="Collection Start Date"
+                            readonly="{!v.isModalReadOnly}" value="{!v.selectedDebitOrderRow.ZCOLSTARTDATE}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input aura:id="CollectionEndDate" label="Collection End Date"
+                            readonly="{!v.isModalReadOnly}" value="{!v.selectedDebitOrderRow.ZCOLENDDATE}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input aura:id="AmountToCollect" label="Amount to Collect"
+                            readonly="{!v.isModalReadOnly}" value="{!v.selectedDebitOrderRow.ZCOLAMOUNT}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:select name="BankDetailId" label="Bank ID - Bank Account Number"
+                            aura:id="bankDetailIdField" value="{!v.selectedBankDetailIdValue}" required="true">
+                            <aura:iteration items="{!v.bankDetailIdList}" var="option">
+                                <option text="{!option.label}" value="{!option.value}" selected="{!option.selected}" />
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </div>
+            <div class="slds-modal__footer">
+                <div class="slds-float_right">
+                    <lightning:button aura:id="closeModalBtn" name="Cancel" label="Cancel" onclick="{!c.closeModal}" />
+                    <lightning:button aura:id="changeDebitOrderBtn" variant="brand" name="Save" label="Save"
+                        onclick="{!c.handleDebitOrderChange}" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Back Drop -->
+    <div class="slds-backdrop slds-backdrop--hide" aura:id="Modalbackdrop"></div>
+    <!-- Modal Definitions End -->
+</aura:component>

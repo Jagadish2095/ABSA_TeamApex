@@ -1,0 +1,41 @@
+<!--
+  @description
+  @author  Tara Kuliievych
+  @since 2021-08-21
+-->
+
+<aura:component implements="lightning:availableForFlowScreens" controller="Enquiry_PDFReportController" extends="c:UtilityComponent">
+    <aura:attribute name="enquiryData" type="String"/>
+    <aura:attribute name="pdfData" type="String"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="pdfDataReceivedStatus" type="Boolean" default="false"/>
+    <aura:attribute name="pdfDataReceivedErrorStatus" type="Boolean" default="false"/>
+    <aura:attribute name="reportName" type="String" default="report.pdf"/>
+
+    <lightning:workspaceAPI aura:id="workspace"/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <lightning:card class="border-none card-padding-left-none report-card">
+
+        <div class="pdfViewer-container">
+          <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner variant="brand" size="large"/>
+          </aura:if>
+
+          <aura:if isTrue="{!v.pdfDataReceivedStatus}">
+            <c:pdfViewer pdfData="{!v.pdfData}" />
+          </aura:if>
+        </div>
+        <br/>
+      <div class="slds-m-horizontal_large slds-m-top_medium slds-p-top_medium slds-p-bottom_xx-small slds-p-horizontal_small slds-border_top">
+        <lightning:button class="slds-float_left" variant="brand" label="Restart Enquiry" onclick="{!c.restartEnquiry}"
+            disabled="{!not(or(v.pdfDataReceivedStatus, v.pdfDataReceivedErrorStatus))}"/>
+        <aura:if isTrue="{!v.pdfDataReceivedStatus}">
+          <a class="slds-button slds-button_brand slds-p-left_large slds-float_left" download="{!v.reportName}" href="{!'data:application/octet-stream;base64,' + v.pdfData}">Download PDF</a>
+        </aura:if>
+        <lightning:button class="slds-float_right" variant="brand" label="Done" onclick="{!c.closeCaseAndTab}"
+            disabled="{!not(or(v.pdfDataReceivedStatus, v.pdfDataReceivedErrorStatus))}"/>
+      </div>
+    </lightning:card>
+
+</aura:component>

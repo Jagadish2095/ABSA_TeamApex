@@ -1,0 +1,179 @@
+<!--@author Jagadish Thummala-->
+<!--@Created Date 16/03/2022 -->
+<!--@Work Id: W-018011 -->
+<aura:component controller="MBGetPaymentDetailsCntrl"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction">
+    <!---Attributes-->
+    <aura:attribute name="isModalOpen" type="Boolean" default="false" />
+    <aura:attribute name="value" type="string" default="" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="hideValidate" type="Boolean" default="true" />
+    <aura:attribute name="timeandDate" type="String" access="global" />
+    <aura:attribute name="creditOrDebitAccount" type="double" access="global" />
+    <aura:attribute name="transactionAmount" type="double" access="global" />
+    <aura:attribute name="paymentType" type="String" access="global" />
+    <aura:attribute name="paymentNumber" type="String" access="global" />
+    <aura:attribute name="paymentStatus" type="String" access="global" />
+    <aura:attribute name="paymentReferenceNumber" type="String" access="global" />
+    <aura:attribute name="paymentChannel" type="String" access="global" />
+    <aura:attribute name="user" type="String" access="global" />
+    <aura:attribute name="authorizer" type="String" access="global" />
+
+
+    <!---Handlers-->
+    <aura:handler name="change" value="{!v.value}" action="{!c.handleChange}" />
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <center style="z-index: 99">
+            <lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+        </center>
+    </aura:if>
+    <!--Display Errors-->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+            <br />
+        </div>
+    </aura:if>
+    <br />
+    <div style="padding-left: 25px;">
+        <h1>Search using a EFT Business Reference or IIP/Cashsend Reference:</h1>
+        <lightning:layoutItem size="5">
+            <div class="slds-form-element">
+                <span class="slds-form-element__label"> Reference Number </span>
+                <div class="slds-form-element__control">
+                    <lightning:input aura:id="UniqueCode" placeholder="Enter a reference number" variant="label-hidden"
+                        value="{!v.value}" />
+                </div>
+            </div>
+        </lightning:layoutItem>
+        <br />
+        <lightning:layoutItem>
+            <lightning:button label="validate" variant="brand" onclick="{! c.validate }" disabled="{!v.hideValidate}" />
+        </lightning:layoutItem>
+        <br />
+        <aura:if isTrue="{!v.isModalOpen}">
+            <div class="slds-m-around_small">
+                <strong>Sucessfully Validated </strong><br />
+                <lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+                    <lightning:layoutItem size="6" class="slds-form__item">
+                        <div
+                            class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                            <span class="slds-form-element__label"> Time and Date </span>
+                            <div class="slds-form-element__control">
+                                <div class="slds-form-element__static">
+                                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.timeandDate}" />
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-form__item">
+                        <div
+                            class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                            <span class="slds-form-element__label"> Credit/Debit Account</span>
+                            <div class="slds-form-element__control">
+                                <div class="slds-form-element__static">
+                                    <ui:outputText aura:id="text-input-id-1" class="field"
+                                        value="{!v.creditOrDebitAccount}" />
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-form__item">
+                        <div
+                            class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                            <span class="slds-form-element__label">Transaction Amount </span>
+                            <div class="slds-form-element__control">
+                                <div class="slds-form-element__static">
+                                    <ui:outputText aura:id="text-input-id-1" class="field"
+                                        value="{!v.transactionAmount}" />
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-form__item">
+                        <div
+                            class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                            <span class="slds-form-element__label"> Payment Type </span>
+                            <div class="slds-form-element__control">
+                                <div class="slds-form-element__static">
+                                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.paymentType}" />
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-form__item">
+                        <div
+                            class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                            <span class="slds-form-element__label">Payment Number </span>
+                            <div class="slds-form-element__control">
+                                <div class="slds-form-element__static">
+                                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.paymentNumber}" />
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-form__item">
+                        <div
+                            class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                            <span class="slds-form-element__label">Payment Status</span>
+                            <div class="slds-form-element__control">
+                                <div class="slds-form-element__static">
+                                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.paymentStatus}" />
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-form__item">
+                        <div
+                            class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                            <span class="slds-form-element__label"> Payment Reference Number </span>
+                            <div class="slds-form-element__control">
+                                <div class="slds-form-element__static">
+                                    <ui:outputText aura:id="text-input-id-1" class="field"
+                                        value="{!v.paymentReferenceNumber}" />
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-form__item">
+                        <div
+                            class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                            <span class="slds-form-element__label"> Payment Channel </span>
+                            <div class="slds-form-element__control">
+                                <div class="slds-form-element__static">
+                                    <ui:outputText aura:id="text-input-id-1" class="field"
+                                        value="{!v.paymentChannel}" />
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-form__item">
+                        <div
+                            class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                            <span class="slds-form-element__label">User</span>
+                            <div class="slds-form-element__control">
+                                <div class="slds-form-element__static">
+                                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.user}" />
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-form__item">
+                        <div
+                            class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                            <span class="slds-form-element__label">Authorizer</span>
+                            <div class="slds-form-element__control">
+                                <div class="slds-form-element__static">
+                                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.authorizer}" />
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </div>
+        </aura:if>
+    </div>
+</aura:component>

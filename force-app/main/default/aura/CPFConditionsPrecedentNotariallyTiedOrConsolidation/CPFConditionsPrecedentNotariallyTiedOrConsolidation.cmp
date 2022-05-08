@@ -1,0 +1,451 @@
+<!--
+  @description       : 
+  @author            : 
+  @last modified on  : 2021-07-01
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-06-14      Initial Version
+-->
+<aura:component controller="CPFConditionsTabSectionscntrlr" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="newleases" type="Application_Contract_Clause__c[]" />
+    <aura:attribute name="appPrdctCpfRec" type="Object" />
+    <aura:attribute name="ObligorincorpoutsideofSAvalues" type="String" default="No"/>
+    <aura:attribute name="Environmentalpermitsvalues" type="String" default="No"/>
+    <aura:attribute name="Financialassistancevalues" type="String" default="No"/>
+    <aura:attribute name="Electricalcompliancecertificatevalues" type="String" default="No"/>
+    <aura:attribute name="Newlyformedcompanyvalues" type="String" default="No" />
+    <aura:attribute name="Preletvalues" type="String" default="No"/>
+    <aura:attribute name="Preletreviewvalues" type="String" default="No" />
+    <aura:attribute name="Restraintagainstfreevalues" type="String" default="No"/> 
+    <aura:attribute name="NotariallyTiedConsolidationValues" type="String" default ="Not Applicable"/> 
+    <aura:attribute name="performanceguaramtees" type="String" default ="Yes"/> 
+    <aura:attribute name="sectioncerti" type="String" default ="Yes"/> 
+    <aura:attribute name="bankcontractorsorinsurancecomp" type="String" default ="Yes"/> 
+    <aura:attribute name="confirmationfrmarchitect" type="String" default ="Yes"/> 
+    <aura:attribute name="structuralintegritycerti" type="String" default ="Yes"/> 
+    <aura:attribute name="confirmationmechelec" type="String" default ="Yes"/> 
+    <aura:attribute name="firedesign" type="String" default ="Yes"/> 
+    <aura:attribute name="sufficientbudget" type="String" default ="Yes"/> 
+    <aura:attribute name="professionalcerti" type="String" default ="No"/> 
+
+    <aura:attribute name="prodName" type="string" /> 
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    
+    <!--Any Further Conditions and Other Conditions Attributes-->
+    <!--<aura:attribute name="FurtherCondvalues" type="String" />-->
+    <aura:attribute name="newFurtherCond" type="list" />
+    <aura:attribute name="newSpecialCond" type="list" />
+    <aura:attribute name="isSpecial" type="Boolean" default="false"/>
+    <aura:attribute name="isLease" type="Boolean" default="false"/>
+    
+    <!--c:CPFCovenents-->
+    <!--<aura:handler name="CPFConditions" event="c:CPFConditions" action="{!c.handleRemoveFurtherCond}"/>
+    <aura:handler name="CPFConditions" event="c:CPFConditions" action="{!c.handleRemoveSpecialCond}"/>-->
+    
+    <!-- Register Application Events -->
+    <!--<aura:registerEvent name="CPFConditions" type="c:CPFConditions"/>-->
+    
+    
+    <!--c:CPFLimitedandUnlimitedGauranteesevent-->
+    <aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleleaseApplicationEvent}"/>
+    <aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleFurtherApplicationEvent}"/>
+    <aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleSpecialApplicationEvent}"/>
+    
+    <lightning:recordEditForm aura:id="iAppProdcpfRecord" objectApiName="Application_Product_CPF__c" recordId="{!v.appPrdctCpfRec.Id}"  >               
+        <lightning:accordion activeSectionName=" Conditions Precedent" allowMultipleSectionsOpen="false"> 
+            <lightning:accordionSection name="Conditions Precedent" label="Conditions Precedent" >
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">*</span>
+                                <span class="slds-m-right_small">Obligor incorporated outside of SA</span>
+                                <lightning:helptext icon-name="utility:like" content="If an Obligor is incorporated outside of South Africa, receipt by the Bank of a legal opinion by the legal advisers to the Obligors (acceptable to the Bank) confirming the capacity and authority of each Obligor to enter into the Finance Documents to which it is a party and that each Finance Document is legal, valid and binding in the jurisdiction of its governing law." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Obligor_incorporated_outside_of_SA__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            
+                                                            value="{!v.ObligorincorpoutsideofSAvalues}"
+                                                            /> 
+                        </span></div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">*</span>
+                                <span class="slds-m-right_small">Environmental officer</span>
+                                <lightning:helptext icon-name="utility:like" content="Proof that an Environmental Control Officer has been appointed." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Environmental_permits__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.Environmentalpermitsvalues}"
+                                                            /> 
+                        </span></div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Financial assistance</span>
+                                <lightning:helptext icon-name="utility:like" content="Receipt by the Bank of a copy of a special resolution duly passed by the holders of the issued shares of any Obligor, authorising it, for all purposes required under Sections 45 and 46 of the Companies Act, 2008 (Act No. 71 of 2008) to provide “financial assistance” that may arise as a result of its entry into the Finance Document to which it is a party." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Financial_assistance__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.Financialassistancevalues}" /> 
+                        </span></div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Electrical compliance certificate</span>
+                                <lightning:helptext icon-name="utility:like" content="Electrical compliance certificate in terms of the regulations of the Occupational Health and Safety Act No. 85 of 1993." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Electrical_compliance_certificate__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.Electricalcompliancecertificatevalues}" /> 
+                        </span></div>
+                     <aura:if  isTrue="{!v.prodName == 'CPF Development Loan'}"  > 
+                      <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small"> Performance guarantees</span>
+                                <lightning:helptext icon-name="utility:like" content="Receipt of performance guarantees by the Principal Agent." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Performance_Guarantees__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.performanceguaramtees}" /> 
+                        </span></div>
+                        <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Section 82 Certificate</span>
+                                <lightning:helptext icon-name="utility:like" content="A Section 82 certificate issued by the relevant local authority in terms of the Town-Planning and Townships Ordinance No 15 of 1986." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Is_Section_82_Certificate__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.sectioncerti}" /> 
+                        </span></div>
+                        <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Bank contractors or insurance companies performance guarantee</span>
+                                <lightning:helptext icon-name="utility:like" content="A copy of a bank contractor’s or insurance company’s performance guarantee for at least 10% of the contract price for the construction of the Development. In the absence of the aforementioned performance guarantee, the Bank will withhold a sum equal to 10% of the value of work completed on each payment certificate up to a maximum amount of 5% of the relevant contract sum." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Is_Bank_Contractor_Insurance_Company__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.bankcontractorsorinsurancecomp}" /> 
+                        </span></div>
+                        <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Confirmation from architect </span>
+                                <lightning:helptext icon-name="utility:like" content="Confirmation in writing from the architect appointed in respect of the Development or other member of the Professional Team that, before pouring concrete for the foundations, the foundations are correctly positioned, do not encroach on any other Property or over the building line and are adequate." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Is_Confirmation_From_Architect__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.confirmationfrmarchitect}" /> 
+                        </span></div>
+                        <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Structural integrity certificate</span>
+                                <lightning:helptext icon-name="utility:like" content="A certificate from a structural engineer confirming the structural integrity of the building." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Is_Structural_Integrity_Certificate__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.structuralintegritycerti}" /> 
+                        </span></div>
+                        <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Confirmation of mechanical / electrical design</span>
+                                <lightning:helptext icon-name="utility:like" content="A report from a mechanical and electrical engineer confirming that the proposed mechanical/electrical design will be sufficient for the intended use of the Property." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Is_Confirmation_Mech_Elec_Design__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.confirmationmechelec}" /> 
+                        </span></div>
+                        <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Fire design</span>
+                                <lightning:helptext icon-name="utility:like" content="A report from a fire engineer confirming that the proposed rational fire design will be sufficient for the intended use of the Property." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Is_Fire_Design__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.firedesign}" /> 
+                        </span></div>
+                        <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Sufficient budget</span>
+                                <lightning:helptext icon-name="utility:like" content="Confirmation from the project quantity surveyor or other professional acceptable to the Bank confirming that the budget submitted to the Bank will be sufficient to complete the necessary upgrades." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Is_Sufficient_Budget__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.sufficientbudget}" /> 
+                        </span></div>
+                        <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Professional certificate</span>
+                                <lightning:helptext icon-name="utility:like" content="A professional’s certificate, certifying that the value of the payments already made for work done in respect of the Development (as per the Development Cost Schedule in Schedule 8 of the Commercial Terms) amount to R[AMOUNT]." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Is_Professional_Certificate__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.professionalcerti}" /> 
+                        </span></div>
+                       <aura:if isTrue="{!v.professionalcerti =='Yes'}">
+                        <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Value of payment made</span>
+                                <lightning:helptext icon-name="utility:like" content="A professional’s certificate, certifying that the value of the payments already made for work done in respect of the Development (as per the Development Cost Schedule in Schedule 8 of the Commercial Terms) amount to R[AMOUNT]." />
+                            </label>
+                            <lightning:inputField fieldName="Payment_Made_Amount__c" aura:id="valueofpaymade" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    </aura:if>
+                    </aura:if>
+
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Newly formed company</span>
+                                <lightning:helptext icon-name="utility:like" content="If the Borrower or a Guarantor is a newly formed company, written confirmation is required from the appointed auditor that each such newly formed entity has not traded and has no liabilities." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Newly_formed_company__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.Newlyformedcompanyvalues}" /> 
+                        </span></div>
+                    <div class="slds-col slds-size_1-of-1">
+                        <span >
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Borrowers contribution toward acquisition of property</span>
+                                <lightning:helptext icon-name="utility:like" content="Confirmation that the Borrower has paid R[AMOUNT] toward the acquisition of the Property." />
+                            </label>
+                            <lightning:inputField fieldName="Borrowers_contribution_toward_acquisiti__c" aura:id="Borrowersconid" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Purchase price</span>
+                                <lightning:helptext icon-name="utility:like" content="A copy of the sale agreement in relation to the Property, which purchase price is R[AMOUNT] if the Facility is being used to acquire such Property and any other documents the Bank may request in relation to such sale." />
+                            </label>
+                            <lightning:inputField fieldName="Purchase_price__c" aura:id="purchasepriceId" variant="label-hidden"/>
+                            
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Pre-let</span>
+                                <lightning:helptext icon-name="utility:like" content="Pre-Let means a duly executed, valid and enforceable lease agreement entered into with a bona fide arm’s length lessee, which lease agreement must be unconditional in accordance with its terms." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Pre_let__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.Preletvalues}" /> 
+                        </span></div>
+                    <aura:if isTrue="{!v.Preletvalues =='Yes'}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span ><label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Pre let review</span>
+                                <lightning:helptext icon-name="utility:like" content="The provision of lease agreements or binding heads of agreement, including the necessary supporting documents, which documents must be to the  Bank’s satisfaction, which shall include inter alia (but is not limited to) the leases or binding heads of agreement as detailed in Schedule 4 (Lease Schedule)." />
+                                </label>
+                                
+                                <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                picklistfieldName="Pre_let_review__c" 
+                                                                objectName="Application_Product_CPF__c"
+                                                                value="{!v.Preletreviewvalues}" />                             
+                            </span></div>       
+                        
+                        
+                        <aura:if isTrue="{!v.Preletreviewvalues =='Yes'}">
+                            <aura:iteration items="{!v.newleases}" var="nLeaseItem" indexVar="index">
+                                <c:CPFConditionPrecedentAddLease isLease="{!v.isLease}" aura:id="newleaseId" leaseItem="{!nLeaseItem}" rowindex="{!index}" newleases="{!v.newleases}" OppRecId="{!v.recordId}"/>
+                            </aura:iteration> 
+                            <div class="slds-col slds-size_1-of-2">
+                                <span class="slds-m-top_medium; slds-align_absolute-center">
+                                </span>
+                            </div>            
+                            <div class="slds-col slds-size_1-of-2">
+                                <span class="slds-m-top_medium; slds-align_absolute-center">
+                                    <lightning:button label="Add a Lease" onclick="{!c.addNewLease}" variant="brand" aura:id="ibtn" />
+                                </span>
+                            </div>
+                        </aura:if>	
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Restraint against free alienation notarial agreement in favour of the bank</span>
+                                <lightning:helptext icon-name="utility:like" content="Restraint against free alienation notarial agreement in favour of the Bank to be registered against title deed of the unencumbered property known as [INSERT PROPERTY DESCRIPTION]." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Restraint_against_free_alienation_notari__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.Restraintagainstfreevalues}" />                            
+                        </span></div>  
+                    
+                    <aura:if isTrue="{!v.Restraintagainstfreevalues =='Yes'}">
+                        <div class="slds-col slds-size_1-of-1">
+                            <span >
+                                <lightning:inputField fieldName="Property_description__c"  aura:id="propertyDescriptionId"/>
+                            </span>
+                        </div>
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-1">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleSubmit}" variant="brand" aura:id="ibtn1" />
+                        </span>
+                    </div>
+                    
+                </div>
+                
+                
+            </lightning:accordionSection>
+        </lightning:accordion>
+        <lightning:accordion activeSectionName="Notarially Tied / Consolidation" allowMultipleSectionsOpen="false"> 
+            <lightning:accordionSection name="Notarially Tied / Consolidation" label="Notarially Tied / Consolidated" >
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Notarially Tied Consolidated</span>
+                                <lightning:helptext icon-name="utility:like" content=" Notarially tied: [INSERT PROPERTY DESCRIPTION] and [INSERT PROPERTY DESCRIPTION] to be [notarially tied].Consolidated: [INSERT PROPERTY DESCRIPTION] and [INSERT PROPERTY DESCRIPTION] to be [consolidated]. " />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Notarially_Tied_Consolidation__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.NotariallyTiedConsolidationValues}" /> 
+                        </span></div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                        </span>
+                    </div>
+                    <aura:if isTrue="{!or(v.NotariallyTiedConsolidationValues =='Notarially Tied',v.NotariallyTiedConsolidationValues =='Consolidated')}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Property_1__c" aura:id="Property1id" required="true"/>   
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <lightning:inputField fieldName="Property_2__c" aura:id="Property2id" required="true" />   
+                            </span>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!or(or(v.NotariallyTiedConsolidationValues =='Notarially Tied',v.NotariallyTiedConsolidationValues =='Consolidated'),v.NotariallyTiedConsolidationValues =='Not Applicable')}">
+                        <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                <lightning:button label="Save &amp; Validate" onclick="{!c.handleNotariallySubmit}" variant="brand" aura:id="ibtn1" />
+                            </span>
+                        </div>
+                        
+                    </aura:if>         
+                </div>
+                
+            </lightning:accordionSection>
+        </lightning:accordion>
+        
+        <!--Any Further Conditions Section-->
+        
+        <lightning:accordion activeSectionName ="Any Further Conditions" allowMultipleSectionsOpen="false">
+            <lightning:accordionSection name="Any Further Conditions" label="Any Further Conditions" >
+                
+                <aura:iteration items="{!v.newFurtherCond}" var="nLeaseItem" indexVar="index">
+                    <c:CPFConditionPrecedentAddLease aura:id="newFurtherCondId" furtherItem="{!nLeaseItem}" rowindex="{!index}" newleases="{!v.newleases}" OppRecId="{!v.recordId}"/>
+                </aura:iteration> 
+                <div class="slds-col slds-size_1-of-2">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                    </span>
+                </div>            
+                <div class="slds-col slds-size_1-of-2">
+                    <span class="slds-m-top_medium">
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                            <lightning:button label="Add further condition precedent" onclick="{!c.addFurtherCond}" variant="brand" aura:id="ibtn1" disabled="true"/>
+                        </aura:if>
+                        <aura:if  isTrue="{!or(v.prodName == 'CPF Above R5 Million',v.prodName == 'CPF Development Loan')}"  > 
+                            <lightning:button label="Add further condition precedent" onclick="{!c.addFurtherCond}" variant="brand" aura:id="ibtn1" />
+                        </aura:if>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-1">
+                    <span >
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-1">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleFurtherSubmit}" variant="brand" aura:id="ibtn1" disabled="true"/>
+                        </aura:if>
+                        <aura:if  isTrue="{!or(v.prodName == 'CPF Above R5 Million',v.prodName == 'CPF Development Loan')}"  > 
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleFurtherSubmit}" variant="brand" aura:id="ibtn1" />
+                        </aura:if>
+                    </span>
+                </div>
+                
+            </lightning:accordionSection>
+        </lightning:accordion>
+        
+        <!--Special Conditions Section -->
+        
+        <lightning:accordion activeSectionName ="Special Conditions " allowMultipleSectionsOpen="false">
+            <lightning:accordionSection name="Special Conditions " label="Special Conditions " >
+                
+                <aura:iteration items="{!v.newSpecialCond}" var="nLeaseItem" indexVar="index">
+                    <c:CPFConditionPrecedentAddLease aura:id="newSpecialCondId" specialItem="{!nLeaseItem}" rowindex="{!index}" newleases="{!v.newleases}" OppRecId="{!v.recordId}"/>
+                </aura:iteration> 
+                <div class="slds-col slds-size_1-of-2">
+                    <span class="slds-m-top_medium">
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                            <lightning:button label="Add special conditions" onclick="{!c.addSpecialCond}" variant="brand" aura:id="ibtn2"  disabled="true" />
+                        </aura:if>
+                        <aura:if  isTrue="{!or(v.prodName == 'CPF Above R5 Million',v.prodName == 'CPF Development Loan')}"  > 
+                            <lightning:button label="Add special conditions" onclick="{!c.addSpecialCond}" variant="brand" aura:id="ibtn2"  />
+                        </aura:if>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-1">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleSpecialSubmit}" variant="brand" aura:id="ibtn2" disabled="true"/>
+                        </aura:if> 
+                        <aura:if  isTrue="{!or(v.prodName == 'CPF Above R5 Million',v.prodName == 'CPF Development Loan')}"  > 
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleSpecialSubmit}" variant="brand" aura:id="ibtn2" />
+                        </aura:if>                    
+                    </span>
+                </div>
+            </lightning:accordionSection>
+        </lightning:accordion>
+        
+    </lightning:recordEditForm>
+</aura:component>

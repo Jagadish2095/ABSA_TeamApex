@@ -1,0 +1,251 @@
+<!--Lightning cmp for Digital Lifestyle Case Manager (DLCaseManager)
+    Author: Jason Q
+    Date : 2021/02/03
+-->
+<aura:component
+	controller="DLCaseManagerController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+	access="global"
+>
+	<!--Handler Declaration-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<!--Global Attribute Declaration-->
+	<aura:attribute name="caseIdFromFlow" type="string" access="global" />
+	<aura:attribute name="isEscalatedFromFlow" type="Boolean" access="global" />
+	<aura:attribute name="escalationEmailAddressFromFlow" type="string" access="global" />
+
+	<!--Attribute Declaration-->
+	<aura:attribute name="accountId" type="string" /><!-- Used to get Account Name -->
+	<aura:attribute name="clientName" type="string" /><!-- Full Name to display (Suffix FirstName LastName) -->
+	<aura:attribute
+		name="solvedRadioOptions"
+		type="List"
+		default="[{'label': 'I was able to solve the client\'s query', 'value': 'Solved'},{'label': 'I was not able to solve the client\'s query, the Case needs to be escalated', 'value': 'Unsolved'}]"
+	/>
+	<aura:attribute name="solvedRadioValue" type="String" />
+	<aura:attribute
+		name="validRadioOptions"
+		type="List"
+		default="[{'label': 'Query is valid', 'value': 'Valid'},{'label': 'Query is not valid', 'value': 'Invalid'}]"
+	/>
+	<aura:attribute name="validRadioValue" type="String" />
+	<aura:attribute name="whyDidTheClientCall_Options" type="List" /><!-- Options Displayed in 'Why Did The Client Call?' -->
+	<aura:attribute name="whyDidTheClientCall_SelectedValue" type="String" />
+	<aura:attribute name="reasonForClosingOrEscalatingCase_Options" type="List" /><!-- Options Displayed in 'Reason for Closing or Escalating the Case' -->
+	<aura:attribute name="reasonForClosingOrEscalatingCase_SelectedValue" type="String" />
+	<aura:attribute name="displayReferringDBSScript" type="Boolean" default="false" /><!-- Display DBS Script if radio option is selected -->
+	<aura:attribute name="validityReason_Options" type="List" /><!-- Options Displayed in 'Is Case Valid' -->
+	<aura:attribute name="validityReason_SelectedValue" type="String" />
+	<aura:attribute name="existingCommentsList" type="List" /><!-- List of Comments related to this Case -->
+	<aura:attribute name="inboundComments" type="String" /><!-- Input Text Area to allow Inbound Consultant to Input Comments -->
+	<aura:attribute name="outboundComments" type="String" /><!-- Input Text Area to allow Outbound Consultant to Input Comments -->
+	<aura:attribute name="data" type="Object[]" /><!-- List of Voucher__c -->
+	<aura:attribute name="columns" type="List" />
+	<aura:attribute name="isFormReadOnly" type="Boolean" default="false" />
+	<aura:attribute name="isCaseSolved" type="Boolean" default="false" /><!-- Used to determine is Case must be Closed or Escalated -->
+	<aura:attribute name="isDataLoaded" type="Boolean" default="false" /><!-- Prevent onload(Case) from calling the APEX getData more then once -->
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="dependentPicklistJSON" type="String" />
+
+	<!-- Spinner -->
+	<aura:if isTrue="{!v.isSpinner}">
+		<lightning:spinner variant="brand" alternativeText="Busy" />
+	</aura:if>
+
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<aura:if isTrue="{!not(empty(v.caseIdFromFlow))}">
+		<!-- Case Record Edit From -->
+		<lightning:recordEditForm
+			aura:id="caseEditForm"
+			objectApiName="Case"
+			recordId="{!v.caseIdFromFlow}"
+			onload="{!c.handleCaseLoad}"
+			onsuccess="{!c.handleCaseSuccess}"
+			onerror="{!c.handleCaseError}"
+		>
+			<lightning:layout multipleRows="true">
+				<!-- Hidden Field(s) -->
+				<lightning:inputField aura:id="typeField" fieldName="Subtype__c" class="slds-hide" />
+				<lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+				<lightning:inputField aura:id="validityField" fieldName="Case_Query_Outcome__c" class="slds-hide" />
+				<lightning:inputField aura:id="validityReasonField" fieldName="Case_Query_Outcome_Reason__c" class="slds-hide" />
+				<lightning:inputField aura:id="commentsField" fieldName="Comments" class="slds-hide" />
+				<lightning:inputField aura:id="accountIdField" fieldName="AccountId" class="slds-hide" />
+				<!-- Conditionally Hidden Field(s) -->
+				<div aura:id="headingDiv" style="width: 100%; height: 100%" class="slds-hide">
+					<lightning:layoutItem padding="around-x-small" size="12">
+						<h2 class="slds-section__title">Query Details</h2>
+					</lightning:layoutItem>
+				</div>
+				<div aura:id="whyClientCalledDiv" style="width: 50%; height: 100%" class="slds-hide">
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:inputField aura:id="whyClientCalledField" fieldName="Why_Did_The_Client_Call__c" disabled="true" />
+					</lightning:layoutItem>
+				</div>
+				<div aura:id="reasonForCloseOrEscalateDiv" style="width: 50%; height: 100%" class="slds-hide">
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:inputField aura:id="reasonForCloseOrEscalateField" fieldName="Reason_for_Closing_or_Escalating_Case__c" disabled="true" />
+					</lightning:layoutItem>
+				</div>
+				<div aura:id="commentsDiv" style="width: 50%; height: 100%" class="slds-hide">
+					<aura:iteration items="{!v.existingCommentsList}" var="item">
+						<lightning:layoutItem padding="around-small" size="12">
+							<lightning:textarea aura:id="commentsTextarea" value="{!item.CommentBody}" label="Comments" disabled="true" />
+						</lightning:layoutItem>
+					</aura:iteration>
+				</div>
+
+				<!-- isEscalatedFromFlow determines if it's the inbound or outbound consultant view -->
+				<aura:if isTrue="{!v.isEscalatedFromFlow}">
+					<!-- Outbound Consultant View -->
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:radioGroup
+							name="caseValidRadioGroup"
+							options="{!v.validRadioOptions}"
+							value="{!v.validRadioValue}"
+							onchange="{!c.handleValidRadioBtnChange}"
+							type="radio"
+							disabled="{!v.isFormReadOnly}"
+						/>
+					</lightning:layoutItem>
+
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:select
+							label="Select reason"
+							aura:id="validityReasonSelect"
+							value="{!v.validityReason_SelectedValue}"
+							required="true"
+							disabled="{!v.isFormReadOnly}"
+						>
+							<aura:iteration items="{!v.validityReason_Options}" var="option">
+								<option text="{!option.label}" value="{!option.id}" selected="{!option.selected}" />
+							</aura:iteration>
+						</lightning:select>
+					</lightning:layoutItem>
+
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:textarea
+							aura:id="outboundCommentsTextarea"
+							value="{!v.outboundComments}"
+							label="Comments"
+							maxlength="255"
+							required="true"
+							disabled="{!v.isFormReadOnly}"
+						/>
+					</lightning:layoutItem>
+
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:button
+							aura:id="closeCaseBtn"
+							label="Close Case"
+							onclick="{!c.closeCase}"
+							variant="brand"
+							class="slds-float_right slds-hide"
+							disabled="{!v.isFormReadOnly}"
+						/>
+					</lightning:layoutItem>
+
+					<aura:set attribute="else">
+						<!-- Inbound Consultant View -->
+						<lightning:layoutItem padding="around-x-small" size="12">
+							<h2 class="slds-section__title">Close or Escalate Case</h2>
+						</lightning:layoutItem>
+
+						<lightning:layoutItem padding="around-small" size="12">
+							<lightning:radioGroup
+								name="caseResolvedRadioGroup"
+								options="{!v.solvedRadioOptions}"
+								value="{!v.solvedRadioValue}"
+								onchange="{!c.handleSolvedRadioBtnChange}"
+								type="radio"
+								disabled="{!v.isFormReadOnly}"
+							/>
+						</lightning:layoutItem>
+
+						<lightning:recordEditForm aura:id="accountEditForm" recordId="{!v.accountId}" objectApiName="Account" onload="{!c.handleAccountLoad}">
+							<lightning:inputField aura:id="accountNameField" fieldName="Name" class="slds-hide" />
+							<lightning:inputField aura:id="accountFirstNameField" fieldName="FirstName" class="slds-hide" />
+							<lightning:inputField aura:id="accountLastNameField" fieldName="LastName" class="slds-hide" />
+							<aura:if isTrue="{!v.displayReferringDBSScript}">
+								<lightning:layoutItem padding="around-small" size="12">
+									<lightning:icon iconName="utility:warning" alternativeText="Referring to DBS" title="Referring to DBS" />
+									<p>
+										{!v.clientName} I have to refer you to our DBS department for this query, they will assist you further. <br /> Call
+										<b>083 000 0000</b> or email <b>DBS@absa.co.za</b>
+									</p>
+								</lightning:layoutItem>
+							</aura:if>
+						</lightning:recordEditForm>
+
+						<lightning:layoutItem padding="around-small" size="12">
+							<lightning:select
+								label="Why did the client call?"
+								aura:id="whyDidTheClientCallSelect"
+								value="{!v.whyDidTheClientCall_SelectedValue}"
+								required="true"
+								disabled="{!v.isFormReadOnly}"
+							>
+								<aura:iteration items="{!v.whyDidTheClientCall_Options}" var="option">
+									<option text="{!option.label}" value="{!option.id}" selected="{!option.selected}" />
+								</aura:iteration>
+							</lightning:select>
+						</lightning:layoutItem>
+
+						<lightning:layoutItem padding="around-small" size="12">
+							<lightning:select
+								label="Reason for Closing or Escalating the Case"
+								aura:id="whyDidTheClientCallSelect"
+								value="{!v.reasonForClosingOrEscalatingCase_SelectedValue}"
+								required="true"
+								disabled="{!v.isFormReadOnly}"
+							>
+								<aura:iteration items="{!v.reasonForClosingOrEscalatingCase_Options}" var="option">
+									<option text="{!option.label}" value="{!option.id}" selected="{!option.selected}" />
+								</aura:iteration>
+							</lightning:select>
+						</lightning:layoutItem>
+
+						<lightning:layoutItem padding="around-small" size="12">
+							<lightning:textarea
+								aura:id="inboundCommentsTextarea"
+								value="{!v.inboundComments}"
+								label="Briefly describe the customer's query"
+								maxlength="255"
+								required="true"
+								disabled="{!v.isFormReadOnly}"
+							/>
+						</lightning:layoutItem>
+
+						<lightning:layoutItem padding="around-small" size="12">
+							<lightning:button
+								aura:id="caseActionBtn"
+								label=""
+								onclick="{!c.caseAction}"
+								variant="brand"
+								class="slds-float_right slds-hide"
+								disabled="{!v.isFormReadOnly}"
+							/>
+						</lightning:layoutItem>
+					</aura:set>
+				</aura:if>
+			</lightning:layout>
+
+			<lightning:layout multipleRows="true">
+				<lightning:layoutItem padding="around-small" size="12">
+					<h2 class="slds-section__title">Attached Voucher(s)</h2>
+					<lightning:datatable keyField="id" data="{!v.data}" hideCheckboxColumn="true" columns="{!v.columns}" />
+				</lightning:layoutItem>
+			</lightning:layout>
+		</lightning:recordEditForm>
+	</aura:if>
+</aura:component>

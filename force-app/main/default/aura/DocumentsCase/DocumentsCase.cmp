@@ -1,0 +1,74 @@
+<!--
+* Lightning Component for DocumentsCase
+*
+* @author  Himani Joshi
+* @version v1.0
+* @since   2020-12-09
+*
+-->
+<aura:component
+	implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+	controller="DocumentsCaseController"
+	access="global"
+>
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:attribute name="recordId" type="Id" />
+	<aura:attribute name="documentsList" type="List" />
+	<aura:attribute name="docListColumns" type="List" default="" />
+	<aura:attribute name="currentUser" type="User" />
+	<aura:attribute name="deleteDocument" type="String" />
+	<aura:attribute name="showODFacilityLetter" type="boolean" default="false" />
+	<!--Declare Spinner-->
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+	<force:recordData aura:id="recordLoader" recordId="{!$SObjectType.CurrentUser.Id}" fields="Id, Name, Profile.Name" targetFields="{!v.currentUser}" />
+
+	<aura:if isTrue="{!v.showSpinner}">
+		<div class="slds-spinner_container">
+			<lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+		</div>
+	</aura:if>
+
+	<div class="slds-card_boundary">
+		<div class="x-accordion-heading">
+			<lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="documentsMenu">
+				<article aura:id="gridContainer" class="slds-card slds-card_boundary">
+					<aura:if isTrue="{!v.showODFacilityLetter}">
+						<lightning:accordionSection name="Upload Documents" label="Upload Documents">
+							<lightning:layout multipleRows="true">
+								<lightning:layoutItem size="12"> </lightning:layoutItem>
+
+								<c:DocumentUploaderBlock
+									recordId="{!v.recordId}"
+									objectApiName="Case"
+									fieldName="Covid_Facility_URL__c"
+									fileType="ABSA 6157 EX - OD Facility Letter"
+								/>
+							</lightning:layout>
+						</lightning:accordionSection>
+					</aura:if>
+
+					<lightning:accordionSection name="documentsMenu" label="Documents Menu" aura:id="documentsMenu">
+						<div>
+							<lightning:button
+								aura:id="refreshDocList"
+								type="submit"
+								label="Refresh"
+								variant="brand"
+								class="slds-align_absolute-center slds-var-m-top_xx-small"
+								onclick="{! c.refreshDocumentsList }"
+							/>
+						</div>
+						<br />
+						<lightning:datatable
+							data="{! v.documentsList }"
+							columns="{! v.docListColumns }"
+							keyField="Id"
+							hideCheckboxColumn="true"
+							onrowaction="{!c.handleRowAction}"
+						/>
+					</lightning:accordionSection>
+				</article>
+			</lightning:accordion>
+		</div>
+	</div>
+</aura:component>

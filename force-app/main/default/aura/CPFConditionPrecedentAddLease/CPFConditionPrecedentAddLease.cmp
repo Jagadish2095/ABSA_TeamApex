@@ -1,0 +1,176 @@
+<!--
+  @description       : Lightning component for Conditions section
+  @author            : Rajesh/Anka
+  @last modified on  : 2021-07-09
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-07-09      Initial Version
+-->
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+        <aura:attribute name="showSpinner" type="Boolean" default="false" />
+        <aura:attribute name="newleases" type="Application_Contract_Clause__c[]" />
+        <aura:attribute name="isActiveRemoveAccount" type="Boolean" default="false" />
+        <aura:attribute name="leaseItem" type="Application_Contract_Clause__c" />
+        <aura:attribute name="OppRecId" type="Id" />
+        <aura:attribute name="rowindex" type="String" />
+        <aura:attribute name="Type" type="String" />
+
+        <!--Further Condition-->
+        <aura:attribute name="furtherItem" type="Application_Contract_Clause__c" />
+        <aura:attribute name="isActiveRemoveFurtherAccount" type="Boolean" default="false" />
+        <!--Special Condition-->
+        <aura:attribute name="specialItem" type="Application_Contract_Clause__c" />
+        <aura:attribute name="isSpecial" type="Boolean" default="false"/>
+        <aura:attribute name="isActiveRemoveSpecialAccount" type="Boolean" default="false" />
+        <aura:attribute name="isLease" type="Boolean" default="false"/>
+
+
+            <!--Condition After Conversion-->
+            <aura:attribute name="conversionItem" type="Application_Contract_Clause__c" />
+            <aura:attribute name="isActiveConversionAccount" type="Boolean" default="false" />
+            <!-- Register Application Events -->
+        <aura:registerEvent name="CPFLimitedandUnlimitedGauranteesevent" type="c:CPFLimitedandUnlimitedGauranteesevent"/>
+        <aura:registerEvent name="CPFApplicationFinancialAccCreation" type="c:CPFApplicationFinancialAccCreation"/>
+        <aura:if isTrue="{!v.leaseItem != Null}">
+            <lightning:recordEditForm aura:id="iAppContractClauseRecord" objectApiName="Application_Contract_Clause__c"  >
+
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <p>Lease number</p>
+                            <ui:outputText aura:id="uniqueID" value="{!v.rowindex + 1}"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Lease</span>
+                                <lightning:helptext icon-name="utility:like" content="Capture all Pre-Let Conditions [FREE FLOW]." />
+                            </label>
+                            <lightning:inputField fieldName="Description__c" aura:id="inputLease" value="{!v.leaseItem.Description__c}" required="true" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove Lease" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+                            <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                                <lightning:button class="slds-float_right" label="Remove Lease" variant="brand" onclick="{!c.removeAccount}" />
+                            </aura:if>
+                        </span>
+                    </div>
+
+                </div>
+            </lightning:recordEditForm>
+        </aura:if>
+
+
+                  <!--Special Conditions-->
+                <aura:if isTrue="{!v.specialItem != Null}">
+
+                    <lightning:recordEditForm aura:id="{!v.specialItem.Id}" objectApiName="Application_Contract_Clause__c"  >
+
+                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <p>Special conditions number</p>
+                                    <ui:outputText aura:id="uniqueID1" value="{!v.rowindex + 1}"/>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <label class="slds-form-element__label">
+                                        <span class="slds-m-right_small">Special conditions</span>
+                            <lightning:helptext icon-name="utility:like" content="Capture any special conditions that will be applicable on the loan and will be on Schedule 6" />
+
+                                    </label>
+                                    <lightning:inputField fieldName="Description__c" aura:id="inputSpecialCond" value="{!v.specialItem.Description__c}" required="true" variant="label-hidden"/>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span >
+                                    <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove these special conditions details.(This action is not reversible)" aura:id="chkRemoveThisSpecialAccount" change="{!c.onCheckedRemoveSpecialAccount}" />
+                                    <br/>
+                                    <aura:if isTrue="{!v.isActiveRemoveSpecialAccount}">
+                                        <lightning:button class="slds-float_right" label="Remove Account" variant="brand" onclick="{!c.removeSpecialAccount}" />
+                                        <br/>
+                                    </aura:if>
+                                </span>
+                            </div>
+
+                        </div>
+                    </lightning:recordEditForm>
+        </aura:if>
+
+                        <!--Further Conditions form-->
+                        <aura:if isTrue="{!v.furtherItem != Null}">
+                        <lightning:recordEditForm aura:id="{!v.furtherItem.Id}" objectApiName="Application_Contract_Clause__c"  >
+
+                            <div class="slds-grid slds-wrap slds-gutters_medium">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <p>Any further conditions number</p>
+                                        <ui:outputText aura:id="uniqueID2" value="{!v.rowindex + 1}"/>
+                                    </span>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">Any further conditions precedent</span>
+                                         <lightning:helptext icon-name="utility:like" content="Capture any additional further conditions applicable to the loan" />
+
+                                        </label>
+                                        <lightning:inputField fieldName="Description__c" aura:id="inputFurtherCond" value="{!v.furtherItem.Description__c}" required="true" variant="label-hidden"/>
+                                    </span>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove these further conditions details.(This action is not reversible)" aura:id="chkRemoveThisFurtherAccount" change="{!c.onCheckedRemoveFurtherAccount}" />
+                                        <br/>
+                                        <aura:if isTrue="{!v.isActiveRemoveFurtherAccount}">
+                                            <lightning:button class="slds-float_right" label="Remove Details" aura:id="{!v.furtherItem.Description__c}" variant="brand" onclick="{!c.removeFurtherAccount}" />
+                                            <br/>
+                                        </aura:if>
+                                    </span>
+                                </div>
+
+                            </div>
+
+                        </lightning:recordEditForm>
+        </aura:if>
+         <!--Added by DW - 21/05/2021 Any other conditions after conversion added for W-011220 for CPF Development Loan-->
+         <aura:if isTrue="{!v.Type == 'Conversion'}">
+            <lightning:recordEditForm aura:id="{!v.conversionItem.Id}" objectApiName="Application_Contract_Clause__c"  >
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <p>Any other conditions after conversion number</p>
+                            <ui:outputText aura:id="uniqueID3" value="{!v.rowindex + 1}"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Any other conditions after conversion</span>
+                             <lightning:helptext icon-name="utility:like" content="Capture any additional further conditions applicable to the loan" />
+
+                            </label>
+                            <lightning:inputField fieldName="Description__c" aura:id="decsconversion" value="{!v.conversionItem.Description__c}" required="true" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove these conditions after conversion details.(This action is not reversible)" aura:id="chkRemoveThisConversionAccount" change="{!c.onCheckedRemoveConversionAccount}" />
+                            <br/>
+                            <aura:if isTrue="{!v.isActiveConversionAccount}">
+                                <lightning:button class="slds-float_right" label="Remove these conditions after conversion details" aura:id="{!v.conversionItem.Description__c}" variant="brand" onclick="{!c.removeConversionAccount}" />
+                                <br/>
+                            </aura:if>
+                        </span>
+                    </div>
+                </div>
+            </lightning:recordEditForm>
+</aura:if>
+
+    </aura:component>

@@ -1,0 +1,168 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @last modified on  : 2021-09-13
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+  Modifications Log 
+  Ver   Date         Author                               Modification
+  1.0   2021-08-05   ChangeMeIn@UserSettingsUnder.SFDoc   Initial Version
+-->
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,force:hasSObjectName"
+	access="global"
+	controller="RelatedPartyAuthorityController"
+>
+	<aura:attribute name="CanNavigate" type="Boolean" default="false" />
+	<aura:attribute name="IsAddingRelatedParty" type="boolean" access="global" default="true" />
+	<!--ClientFinder_ROA decision-->
+	<aura:attribute name="relatedpartydata" type="Object" />
+	<aura:attribute name="thirdpartycolumns" type="list" />
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="accountRecId" type="String" access="global" />
+	<aura:attribute name="casareferencenumber" type="String" access="global" />
+	<aura:attribute name="controllerSelected" type="Boolean" />
+	<aura:attribute name="numberOfRelatedPatries" type="integer" />
+	<aura:attribute name="numberOfSelectedSignatories" type="integer" />
+	<aura:attribute name="isRemoveRelatedParty" type="Boolean" default="false" />
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:attribute name="idToChange" type="String" access="global" />
+	<aura:attribute name="opportunityId" type="String" />
+	<aura:attribute name="initialAnswerId" type="String" default="" />
+	<aura:attribute name="signatoryCount" type="String" default="" />
+	<aura:attribute name="signatoryInstruction" type="String" default="" />
+	<aura:attribute name="commentsNeeded" type="Boolean" default="false" />
+	<!-- Spinner -->
+	<aura:if isTrue="{!v.isSpinner}">
+		<lightning:spinner variant="brand" alternativeText="Busy" />
+	</aura:if>
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<h3 class="slds-section__title">
+		<button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action customSectionButton">
+			<span class="slds-truncate" title="Participants"><b>Signing Instructions.</b></span>
+		</button>
+	</h3>
+
+	<lightning:layoutItem padding="around-small" size="6">
+		<div id="{! globalId + '_SigningInstruction' }" class="slds-var-p-around_x-small">
+			<label for="SignatoryInstruction"><b>Add Signing instructions below</b></label>
+		</div>
+	</lightning:layoutItem>
+
+	<lightning:layoutItem padding="around-small" size="6">
+		<div id="{! globalId + '_SignatoryCount' }" class="slds-var-p-around_x-small">
+			<label for="SignatoryCount"><b>How many signatures will be required when operating on the account</b></label>
+			<lightning:input
+				aura:id="SignatoryCount"
+				name="SignatoryCount"
+				value="{! v.signatoryCount }"
+				variant="label-hidden"
+				required="true"
+				disabled="false"
+			/>
+		</div>
+	</lightning:layoutItem>
+	<aura:if isTrue="{!v.commentsNeeded}">
+		<lightning:layoutItem padding="around-small" size="6">
+			<div id="{! globalId + 'SignatoryInstruction' }" class="slds-var-p-around_x-small">
+				<label for="SignatoryInstruction"><b>Comments</b></label>
+				<lightning:input
+					aura:id="SignatoryInstruction"
+					name="SignatoryInstruction"
+					value="{! v.signatoryInstruction }"
+					variant="label-hidden"
+					required="true"
+					disabled="false"
+				/>
+			</div>
+		</lightning:layoutItem>
+	</aura:if>
+
+	<h3 class="slds-section__title">
+		<button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action customSectionButton">
+			<span class="slds-truncate" title="Participants"><b>Related parties.</b></span>
+		</button>
+	</h3>
+
+	<table aura:id="thirdPartyTable01" class="slds-table slds-table--bordered slds-table--cell-buffer" role="grid">
+		<thead>
+			<tr>
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate" title="Related parties">Signatory</div>
+				</th>
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate" title="ID Number">Id Number</div>
+				</th>
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate" title="ID Number">CIF code</div>
+				</th>
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate" title="ID Number">CASA Number</div>
+				</th>
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate" title="Mark as controller(chairperson)">Controller(chairperson)</div>
+				</th>
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate" title="Mandated officials">Mandatory Signatory</div>
+				</th>
+				<th class="slds-cell-shrink" scope="col">
+					<div class="slds-truncate"></div>
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			<aura:iteration items="{!v.relatedpartydata}" var="row">
+				<tr aura:id="{!row.accountId}" id="{!row.accountId}" class="slds-hint-parent">
+					<td data-label="Signatory">
+						<div class="slds-truncate" title="{!row.contactName}">{!row.contactName}</div>
+					</td>
+
+					<td data-label="ID Number">
+						<div class="slds-truncate" title="{!row.contactIdNumber}">{!row.contactIdNumber}</div>
+					</td>
+					<td data-label="CIF code">
+						<div class="slds-truncate" title="{!row.accountCIF}">{!row.accountCIF}</div>
+					</td>
+					<td data-label="Casa Number">
+						<div class="slds-truncate" title="{!row.accountCASA}">{!row.accountCASA}</div>
+					</td>
+					<td data-label="">
+						<lightning:input
+							text="{!row.accountId}"
+							type="radio"
+							checked="{!row.contactController}"
+							id="{!row.Id}"
+							name="options"
+							value="{!row.accountId}"
+							disabled="true"
+						/>
+					</td>
+
+					<td data-label="" scope="row">
+						<ui:inputCheckbox
+							aura:id="rowSelectionCheckboxId"
+							name="checkOptions"
+							value="{! row.accountMandatorySignatory }"
+							text="{!row.accountId}"
+							change="{!c.onSelectMandatorySignatoryChange}"
+						/>
+					</td>
+				</tr>
+			</aura:iteration>
+		</tbody>
+	</table>
+
+	<!-- <aura:if isTrue="{!(v.CanNavigate)}"> -->
+	<div class="slds-var-p-around_x-small">
+		<c:BranchFlowFooter aura:id="branchFlowFooter" availableActions="{! v.availableActions }" navigateFlowEvent="{!c.handleNavigate}" />
+	</div>
+	<!-- </aura:if> -->
+</aura:component>

@@ -1,0 +1,599 @@
+<!--
+  @description       : 
+  @author            : 
+  @last modified on  : 2021-07-29
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-06-14      Initial Version
+-->
+<aura:component controller ='CPFCovenantsController' implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="appProdId" type="Id" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="financialConvenantApplicable" type="String" default="Yes" />
+    <aura:attribute name="transactionalConvenantApplicable" type="String" default="Yes" />
+    <aura:attribute name="otherentity" type="String" default="No" />
+    <aura:attribute name="carporateConvenantApplicable" type="String" default="No" />
+    <aura:attribute name="newotherTransactionalConvenants" type="Object[]" />
+    <aura:attribute name="otherTransactionalConvenants" type="Object[]" />
+    <aura:attribute name="otherTransactionalConvenantsCount" type="Integer" />
+    <aura:attribute name="loanToValueCovenant" type="String" default="Not applicable" />
+    <aura:attribute name="loanToValueCovenantCount" type="Integer" />
+    <aura:attribute name="debtServiceCovenantCount" type="Integer" />
+    <aura:attribute name="loanToValueCvt" type="Object[]" />
+    <aura:attribute name="debtserviceCvt" type="Object[]" />
+    <aura:attribute name="Otherentitycvt" type="Object[]" />
+    <aura:attribute name="OtherentityCount" type="Integer" />
+    <aura:attribute name="rowindex" type="Integer" default = "0"/>
+    <aura:attribute name="serialNumber" type="String" default = "0"/>
+    <aura:attribute name="unlimrowindex" type="String" />
+    <aura:attribute name="appPrdctCpfRec" type="Object" />
+    <aura:attribute name="debtservicecvrration" type="String" default="Not applicable" />
+    <aura:attribute name="AppProductCPFId" type="Application_Product_CPF__c" default="{sobjectType:'Application_Product_CPF__c'}"/>
+    <aura:attribute name="newOtherTrans" type="Application_Contract_Clause__c[]" />
+    <aura:attribute name="newOtherCoperate" type="Application_Contract_Clause__c[]" />
+    <aura:attribute name="newLoanValue" type="Application_Contract_Clause__c[]" />
+    <aura:attribute name="newDebitCoverList" type="Application_Contract_Clause__c[]" />
+    <aura:attribute name="newOtherEntityList" type="Application_Contract_Clause__c[]" />
+    
+    <aura:attribute name="Indebtedness" type="String"  />
+    <aura:attribute name="propertyValueNTE" type="String" />
+    <aura:attribute name="period" type="String" />
+    <aura:attribute name="vacancyCoverRatio" type="String" />
+    <aura:attribute name="debtServiceCoverRatio" type="String" />
+    
+    <aura:attribute name="applicableToTheBorrower" type="String" default="the Borrower" />
+    <aura:attribute name="applicable_to_the_Parent" type="String" default="Not applicable"  />
+    <aura:attribute name="applicable_to_the_Guarantor" type="String" default="Not applicable" />
+    <aura:attribute name="applicable_to_the_Security_Pro" type="String" default="Not applicable" />
+    <aura:attribute name="consecutivePeriod" type="String" />
+    <aura:attribute name="financialCovRef" type="String" default="No"/>
+    <aura:attribute name="financialYear" type="String" />
+    <aura:attribute name="measurementPeriod" type="String" default=""/>
+    <aura:attribute name="prodName" type="string" />  
+    <aura:attribute name="loantocostpicklist" type="String" default="No"/>
+    <aura:attribute name="loantocost" type="String" default=""/>
+   <aura:attribute name="interestervicecvrration" type="String" default="Not applicable" />
+    <aura:attribute name="newInterestCoverList" type="Application_Contract_Clause__c[]" />
+    <aura:attribute name="interestServiceCoverRatio" type="String" />
+    <!--c:CPFCovenents-->
+    <aura:handler name="CPFdebitevent" event="c:CPFdebitevent" action="{!c.handledebitevent}"/>
+     <aura:handler name="CPFdebitevent" event="c:CPFdebitevent" action="{!c.handleinterestevent}"/>
+    <aura:handler name="CPFloantovalue" event="c:CPFloantovalue" action="{!c.handleloanevent}"/>
+    <aura:handler name="CPFCovenents" event="c:CPFCovenents" action="{!c.handleApplicationEvent}"/>
+    <aura:handler name="CPFotherentityevent" event="c:CPFotherentityevent" action="{!c.handleOtherEntityEvent}"/>
+    <!-- Register Application Events -->
+    <aura:registerEvent name="CPFloantovalue" type="c:CPFloantovalue"/>
+    <aura:registerEvent name="CPFCovenents" type="c:CPFCovenents"/>
+    <aura:registerEvent name="CPFdebitevent" type="c:CPFdebitevent"/>
+    <aura:registerEvent name="CPFotherentityevent" type="c:CPFotherentityevent"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading..." />
+        </div>
+    </aura:if>
+    <lightning:accordion activeSectionName ="Covenants" allowMultipleSectionsOpen="false"> 
+        <lightning:accordionSection name="Covenants" label="Covenants" >
+            <div class="slds-col slds-size_1-of-2">
+                <span > 
+                    <label class="slds-form-element__label">
+                        <span class="required">* </span>
+                        <span class="slds-m-right_small">Financial covenants applicable</span>
+                        <lightning:helptext icon-name="utility:like" content="Select Yes if Financial Covenants will apply to this loan."/>
+                    </label>
+                    
+                    <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                    picklistfieldName="Financial_covenants_applicable__c" 
+                                                    objectName="Application_Product_CPF__c"
+                                                    value="{!v.financialConvenantApplicable}"
+                                                    titleyes="Select 'Yes' if Financial Covenants will apply to this loan."/>
+                    <aura:if isTrue="{!v.financialConvenantApplicable == 'No'}">
+                        <br/>
+                        <br/>
+                        <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                <lightning:button label="Save &amp; Validate" onclick="{!c.handleFcg}" variant="brand" aura:id="ibtn1" />
+                            </span>
+                        </div>           
+                    </aura:if>                    
+                    <aura:if isTrue="{!v.financialConvenantApplicable == 'Yes'}">
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Corporate covenants applicable</span>
+                            <lightning:helptext icon-name="utility:like" content="Select Yes if Corporate Covenants are applicable on this loan. "/>
+                        </label>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Corporate_covenants_applicable__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.carporateConvenantApplicable}"
+                                                            disabled="true"
+                                                            titleyes="Select 'Yes' if Corporate Covenants are applicable on this loan."/>
+                            
+                            
+                        </aura:if>
+                        <aura:if  isTrue="{!or(v.prodName == 'CPF Above R5 Million' ,v.prodName =='CPF Development Loan')}"  > 
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Corporate_covenants_applicable__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.carporateConvenantApplicable}"
+                                                            titleyes="Select 'Yes' if Corporate Covenants are applicable on this loan."/>
+                            
+                            
+                        </aura:if>
+                    </aura:if>
+                    <br/>
+                    <aura:if isTrue="{!v.financialConvenantApplicable == 'Yes'}">
+                        <aura:if isTrue="{!v.carporateConvenantApplicable == 'Yes'}">
+                            <lightning:recordEditForm aura:id="appprodcpf" objectApiName="Application_Product_CPF__c"  recordId="{!v.appProdId}">
+                                <lightning:accordion activeSectionName="Corporate Interest Cover Ratio" allowMultipleSectionsOpen="false"> 
+                                    <lightning:accordionSection name="Corporate Interest Cover Ratio" label="Corporate Interest Cover Ratio" >
+                                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                                            <div class="slds-col slds-size_1-of-1">
+                                                <span >
+                                                    <lightning:inputField aura:id="corporateintrest"  fieldName="Corporate_Interest_Cover_Ratio__c" required="true"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                                
+                                <lightning:accordion activeSectionName=" Gearing Ratio" allowMultipleSectionsOpen="false"> 
+                                    <lightning:accordionSection name=" Gearing Ratio" label=" Gearing Ratio" >
+                                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <span >
+                                                    <lightning:inputField aura:id="gearingratio"  fieldName="Gearing_Ratio__c" required="true"/>
+                                                </span>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <span >
+                                                    <lightning:inputField aura:id="assestType"  fieldName="Asset_Type__c" required="true"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                                
+                                <lightning:accordion activeSectionName="Leverage Ratio" allowMultipleSectionsOpen="false"> 
+                                    <lightning:accordionSection name="Leverage Ratio" label="Leverage Ratio" >
+                                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                                            <div class="slds-col slds-size_1-of-1">
+                                                <span >
+                                                    <lightning:inputField aura:id="leverageratio"  fieldName="Leverage_Ratio__c" required="true"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                                
+                                <lightning:accordion activeSectionName=" Cash Flow Cover Ratio" allowMultipleSectionsOpen="false"> 
+                                    <lightning:accordionSection name=" Cash Flow Cover Ratio" label=" Cash Flow Cover Ratio" >
+                                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                                            <div class="slds-col slds-size_1-of-1">
+                                                <span >
+                                                    <lightning:inputField aura:id="cashflowcover"  fieldName="Cash_Flow_Cover_Ratio__c" required="true"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                                
+                                <lightning:accordion activeSectionName="Dividend Cover Ratio" allowMultipleSectionsOpen="false"> 
+                                    <lightning:accordionSection name="Dividend Cover Ratio" label="Dividend Cover Ratio" >
+                                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                                            <div class="slds-col slds-size_1-of-1">
+                                                <span >
+                                                    <lightning:inputField aura:id="dividendcover"  fieldName="Dividend_Cover_Ratio__c" required="true"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                                
+                                <lightning:accordion activeSectionName="Minimum NTA Ratio" allowMultipleSectionsOpen="false"> 
+                                    <lightning:accordionSection name="Minimum NTA Ratio" label="Minimum NTA Ratio" >
+                                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <span >
+                                                    <lightning:inputField aura:id="miniNTAType"  fieldName="Minimum_NTA_Type__c" required="true"/>
+                                                </span>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <span >
+                                                    <lightning:inputField aura:id="miniNTARatio"  fieldName="Minimum_NTA_Ratio__c" required="true"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                                <div class="slds-col slds-size_1-of-1">
+                                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                                        <lightning:button class="slds-m-top_small" type="submit" label="Save &amp; Validate" variant="brand" onclick="{!c.UpdateAppProdRec}" />
+                                    </span>
+                                </div>
+                            </lightning:recordEditForm>
+                            
+                            <lightning:recordEditForm aura:id="appprodcpf" objectApiName="Application_Product_CPF__c"  recordId="{!v.appProdId}">
+                                <lightning:accordion activeSectionName="Other Corporate Covenants" allowMultipleSectionsOpen="false"> 
+                                    <lightning:accordionSection name="Other Corporate Covenants" label="Other Corporate Covenants" >
+                                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                                            <aura:iteration items="{!v.newOtherCoperate}" var="nOtherTransItem" indexVar="index">
+                                                <c:CPFCovenantsOtherTransChild aura:id="newLimitedGaurId" accItem="{!nOtherTransItem}" rowindex="{!index}" newOtherTrans="{!v.newOtherCoperate}" isLimited="{!v.isLimited}" OpprecordId="{!v.recordId}" type="Other Corporate Covenants"/>
+                                            </aura:iteration>
+                                            <lightning:button label="Add other corporate covenants" onclick="{!c.AddCoperateConv}" variant="brand" aura:id="ibtn" title ="Capture any other Corporate Covenants."/>
+                                            <br/>
+                                            <br/>
+                                            <div class="slds-col slds-size_1-of-1">
+                                                <span class="slds-m-top_medium; slds-align_absolute-center">
+                                                    <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherCoperateSubmit}" variant="brand" aura:id="ibtn1" />
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                            </lightning:recordEditForm>
+                        </aura:if>
+                    </aura:if>
+                    
+                    <aura:if isTrue="{!v.financialConvenantApplicable == 'Yes'}">
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Transactional covenants applicable</span>
+                            <lightning:helptext icon-name="utility:like" content=" Select Yes if Transactional Covenants are applicable on this loan."/>
+                        </label>
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                        picklistfieldName="Transactional_covenants_applicable__c" 
+                                                        objectName="Application_Product_CPF__c"
+                                                        value="{!v.transactionalConvenantApplicable}"
+                                                        titleyes="Select 'Yes' if Transactional Covenants are applicable on this loan."/> 
+                    </aura:if>    
+                </span>
+            </div>
+        </lightning:accordionSection>
+    </lightning:accordion>
+    
+    <lightning:recordEditForm recordId="" objectApiName="Application_Product_CPF__c" >
+        
+        <aura:if isTrue="{!v.financialConvenantApplicable == 'Yes'}">
+            <aura:if isTrue="{!v.transactionalConvenantApplicable == 'Yes'}">
+                <lightning:accordion activeSectionName ="Loan To Value Covenant" allowMultipleSectionsOpen="false"> 
+                    <lightning:accordionSection name="Loan To Value Covenant" label="Loan To Value Covenant" >
+                        <div class="slds-grid">
+                            <div class="slds-col">
+                                <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                picklistfieldName="Loan_To_Value_Covenant__c" 
+                                                                objectName="Application_Product_CPF__c"
+                                                                picklistLabelName="Loan To Value Covenant"
+                                                                value="{!v.loanToValueCovenant}"
+                                                                required="true"
+                                                                titleyes="[The Loan]/ [The Loan and any other indebtedness by the Borrower to the Bank, including financial liabilities arising from any treasury transactions and any other contingent liabilities] shall not at any time exceed: [NUMBER] % of the Property Value for the [NUMBER] Measurement Period [NUMBER] % of the Property Value for the [NUMBER] Measurement Period and thereafter (Loan to Value Covenant)."
+                                                                titleno="[For each Measurement Period]/[At any time] Option [the Loan]/[the Loan and any other indebtedness by the Borrower to the Bank, including financial liabilities arising from any treasury transactions and any other contingent liabilities] shall not exceed [NUMBER] % of the Property Value for such measurement period] (Loan to Value Covenant)."/>
+                            </div>
+                            <div class="slds-col">
+                                <aura:if isTrue="{!or(v.loanToValueCovenant == 'Ratcheting',v.loanToValueCovenant == 'No Ratcheting')}">
+                                    <label class="slds-form-element__label">
+                                        <span class="required">* </span>
+                                        <span class="slds-m-right_small">Indebtedness</span>
+                                        <lightning:helptext icon-name="utility:like" content=" [The Loan]/ [The Loan and any other indebtedness by the Borrower to the Bank, including financial liabilities arising from any treasury transactions and any other contingent liabilities] shall not at any time exceed: [NUMBER] % of the Property Value for the [NUMBER] Measurement Period [NUMBER] % of the Property Value for the [NUMBER] Measurement Period and thereafter (Loan to Value Covenant)."/>
+                                    </label>
+                                    <lightning:inputField aura:id="indebtednessFld" value="{!v.Indebtedness}" fieldName="Indebtedness__c" required="true" variant="label-hidden"/>
+                                </aura:if>
+                            </div>
+                        </div>
+                        <div class="slds-grid">
+                            <div class="slds-col">
+                                <aura:if isTrue="{!v.loanToValueCovenant == 'Ratcheting'}">
+                                    <aura:iteration items="{!v.newLoanValue}" var="nloanvalueItem" indexVar="index">
+                                        <c:CPFCovenantloantovalue aura:id="newLimitedGaurId" accItemloan="{!nloanvalueItem}" rowindex="{!index}" newloanvalue="{!v.newLoanValue}" isLimited="{!v.isLimited}" OpprecordId="{!v.recordId}"/>
+                                    </aura:iteration>
+                                    <br/>
+                                    <lightning:button variant="brand" label="Add a loan to value covenant" title="Add loan value covenants" onclick="{! c.addLoanValue }"/>
+                                </aura:if>
+                                <aura:if isTrue="{!v.loanToValueCovenant == 'No Ratcheting'}">
+                                    <label class="slds-form-element__label">
+                                        <span class="required">* </span>
+                                        <span class="slds-m-right_small">Property value to not be exceeded</span>
+                                        <lightning:helptext icon-name="utility:like" content="[For each Measurement Period]/[At any time] Option [the Loan]/[the Loan and any other indebtedness by the Borrower to the Bank, including financial liabilities arising from any treasury transactions and any other contingent liabilities] shall not exceed [NUMBER] % of the Property Value for such measurement period] (Loan to Value Covenant)."/>
+                                    </label>
+                                    <lightning:inputField fieldName="Property_value_to_not_be_exceeded__c" value="{!v.propertyValueNTE}" required="true" variant="label-hidden" />
+                                </aura:if>
+                            </div>
+                            <div class="slds-col">
+                                <aura:if isTrue="{!v.loanToValueCovenant == 'No Ratcheting'}">
+                                    <label class="slds-form-element__label">
+                                        <span class="required">* </span>
+                                        <span class="slds-m-right_small">Period</span>
+                                        <lightning:helptext icon-name="utility:like" content="[For each Measurement Period]/[At any time] Option [the Loan]/[the Loan and any other indebtedness by the Borrower to the Bank, including financial liabilities arising from any treasury transactions and any other contingent liabilities] shall not exceed [NUMBER] % of the Property Value for such measurement period] (Loan to Value Covenant)."/>
+                                    </label>
+                                    <lightning:inputField fieldName="Period__c" value="{!v.period}"  required="true" variant="label-hidden"/>
+                                </aura:if> 
+                            </div>
+                        </div>
+                        <br/>
+                        <br/>
+                        <div class="slds-col">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                <lightning:button label="Save &amp; Validate" onclick="{!c.handleLoanValueSubmit}" variant="brand" aura:id="ibtn1" />
+                            </span>
+                        </div>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                <lightning:accordion activeSectionName ="Vacancy cover ratio" allowMultipleSectionsOpen="false">
+                    <lightning:accordionSection name="Vacancy cover ratio" label="Vacancy cover ratio" >
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:inputField fieldName="Vacancy_cover_ratio__c" value="{!v.vacancyCoverRatio}"  aura:id ="nvacancyCoverRatio"/>
+                        </div>
+                        <br/>
+                        <br/>
+                        <div class="slds-col">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                <lightning:button label="Save &amp; Validate" onclick="{!c.handlevacancySubmit}" variant="brand" aura:id="ibtn1" />
+                            </span>
+                        </div>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                <lightning:accordion activeSectionName ="Debt Service Cover Ratio" allowMultipleSectionsOpen="false">
+                    <lightning:accordionSection name="Debt Service Cover Ratio" label="Debt Service Cover Ratio" >
+                        <div class="slds-grid">
+                            <div class="slds-col">
+                                <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                picklistfieldName="Debt_service_cover_ratio__c" 
+                                                                objectName="Application_Product_CPF__c"
+                                                                picklistLabelName="Debt service cover ratio"
+                                                                value="{!v.debtservicecvrration}"
+                                                                required="true"
+                                                                titleyes="The ratio of Net Rental Income to the Debt Servicing obligation must exceed:[NUMBER] times for the [NUMBER] Measurement Period[NUMBER] times for the [NUMBER] Measurement Period and thereafter (Debt Service Cover Ratio)."
+                                                                titleno="The ratio of Net Rental Income to the Debt Servicing obligation must exceed:[NUMBER] times for the [NUMBER] Measurement Period[NUMBER] times for the [NUMBER] Measurement Period and thereafter (Debt Service Cover Ratio)."/>
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-col slds-size_1-of-2">
+                            <aura:if isTrue="{!v.debtservicecvrration == 'Ratcheting'}">
+                                <aura:iteration items="{!v.newDebitCoverList}" var="ndebitItem" indexVar="index">
+                                    <c:CPFDebitservice aura:id="newLimitedGaurId" accItemdebit="{!ndebitItem}" rowindex="{!index}" newdebit="{!v.newDebitCoverList}" isLimited="{!v.isLimited}" OpprecordId="{!v.recordId}"/>
+                                </aura:iteration>
+                                <lightning:button variant="brand" label="Add a Debt service cover ratio" title="Add a debit cover ratio" onclick="{! c.addDebitServiceRatio }"/>      
+                            </aura:if>
+                        </div>
+                        <br/>
+                        <div class="slds-col slds-size_1-of-2">
+                            <aura:if isTrue="{!v.debtservicecvrration == 'No Ratcheting'}">
+                                <lightning:inputField aura:id="Debt_service_cover_ratio2" fieldName="Debt_service_cover_ratio2__c" value="{!v.debtServiceCoverRatio}" required="true" />
+                            </aura:if>
+                        </div>
+                        <br/>
+                        <br/>
+                        <div class="slds-col">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                <lightning:button label="Save &amp; Validate" onclick="{!c.handleDebitCoverSubmit}" variant="brand" aura:id="ibtn1" />
+                            </span>
+                        </div>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                <lightning:accordion activeSectionName ="Interest Service Cover Ratio" allowMultipleSectionsOpen="false">
+                    <lightning:accordionSection name="Interest Service Cover Ratio" label="Interest Service Cover Ratio" >
+                        <div class="slds-grid">
+                            <div class="slds-col">
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Interest service cover ratio</span>
+                                    <lightning:helptext icon-name="utility:like" content="The ratio of Net Rental Income to the Interest Servicing obligation for each Measurement Period must exceed [NUMBER] times (Interest Cover Ratio)."/>
+                                </label>
+
+                                <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                picklistfieldName="Interest_Cover_Ratio__c" 
+                                                                objectName="Application_Product_CPF__c"
+                                                                value="{!v.interestervicecvrration}"
+                                                                required="true"
+                                                                titleyes="The ratio of Net Rental Income to the Interest Servicing obligation must exceed:[NUMBER] times for the [NUMBER] Measurement Period[NUMBER] times for the [NUMBER] Measurement Period and thereafter (Interest Service Cover Ratio)."
+                                                                titleno="The ratio of Net Rental Income to the Interest Servicing obligation must exceed:[NUMBER] times for the [NUMBER] Measurement Period[NUMBER] times for the [NUMBER] Measurement Period and thereafter (Interest Service Cover Ratio)."/>
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="slds-col slds-size_1-of-2">
+                            <aura:if isTrue="{!v.interestervicecvrration == 'Ratcheting'}">
+                                <aura:iteration items="{!v.newInterestCoverList}" var="ninterestItem" indexVar="index">
+                                    <c:CPFDebitservice aura:id="newInterestcoverId" accIteminterest="{!ninterestItem}" rowindex="{!index}" newinterestcover="{!v.newInterestCoverList}" OpprecordId="{!v.recordId}"/>
+                                </aura:iteration>
+                                <lightning:button variant="brand" label="Add a Interest service cover ratio" title="Add a Interest cover ratio" onclick="{! c.addInterestServiceRatio }"/>      
+                            </aura:if>
+                        </div>
+                        <br/>
+                        <div class="slds-col slds-size_1-of-2">
+                            <aura:if isTrue="{!v.interestervicecvrration == 'No Ratcheting'}">
+                                <lightning:inputField aura:id="interestcoverratio2" fieldName="Interest_Service_Cover_Ratio__c" value="{!v.interestServiceCoverRatio}" required="true" />
+                            </aura:if>
+                        </div>
+                        <br/>
+                        <br/>
+                        <div class="slds-col">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                <lightning:button label="Save &amp; Validate" onclick="{!c.handleinterestCoverSubmit}" variant="brand" aura:id="ibtn1" />
+                            </span>
+                        </div>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                <aura:if  isTrue="{!v.prodName =='CPF Development Loan'}"  > 
+                    <lightning:accordion activeSectionName ="Loan to Cost" allowMultipleSectionsOpen="false">
+                        <lightning:accordionSection name="Loan to Cost" label="Loan to Cost" >
+                            <lightning:recordEditForm aura:id="appprodcpf" objectApiName="Application_Product_CPF__c"  recordId="{!v.appProdId}">
+                                <div class="slds-grid slds-wrap slds-gutters_medium">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <label class="slds-form-element__label">
+                                            <span class="slds-m-right_small">Loan to Cost</span>
+                                            <lightning:helptext icon-name="utility:like" content="Option: At any time, the Facility Amount divided by the Projected Final Development Costs (including the land), expressed as a percentage, must not exceed [NUMBER]% (Loan to Cost Ratio)."/>
+                                        </label>
+                                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                        picklistfieldName="Loan_To_Cost_Picklist__c" 
+                                                                        objectName="Application_Product_CPF__c"
+                                                                        picklistLabelName=""
+                                                                        value="{!v.loantocostpicklist}"
+                                                                        titleyes=""
+                                                                        titleno=""/>
+                                    </div>
+                                    <aura:if  isTrue="{!v.loantocostpicklist =='Yes'}"  > 
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <!-- <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Financial covenants by reference to unaudited management accounts of the Financial Covenants Group</span>
+                                <lightning:helptext icon-name="utility:like" content="The financial covenants shall be tested Option: [by reference to the unaudited management accounts of the Financial Covenants Group and] by reference to the audited financial statements of the Financial Covenants Group on each Measurement Period, each as delivered in accordance with the clause 17 (Information) of the Standard Terms."/>
+                            </label>-->
+                            <lightning:inputField fieldName="Loan_To_Cost__c"  aura:id ="loantocost"  value="{!v.loantocost}"/>
+                        </div>
+                                    </aura:if>
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleloantocost}" variant="brand" aura:id="ibtn1" />
+                                        </span>
+                                    </div>
+                                </div>
+                                </lightning:recordEditForm>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </aura:if>
+                    <lightning:accordion activeSectionName ="Other Transactional Covenants" allowMultipleSectionsOpen="false">
+                        <lightning:accordionSection name="Other Transactional Covenants" label="Other Transactional Covenants" >
+                            
+                            <aura:iteration items="{!v.newOtherTrans}" var="nOtherTransItem" indexVar="index">
+                                <c:CPFCovenantsOtherTransChild aura:id="newLimitedGaurId" accItem="{!nOtherTransItem}" rowindex="{!index}" newOtherTrans="{!v.newOtherTrans}" isLimited="{!v.isLimited}" OpprecordId="{!v.recordId}"/>
+                            </aura:iteration>
+                            <lightning:button variant="brand" label="Add other transactional covenants" title="Capture any other covenant not catered for" onclick="{! c.AddTranConv }"/>      
+                            <br/>
+                            <br/>
+                            <div class="slds-col">
+                                <span class="slds-m-top_medium; slds-align_absolute-center">
+                                    <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherTransSubmit}" variant="brand" aura:id="ibtn1" />
+                                </span>
+                            </div>
+                        </lightning:accordionSection>
+                    </lightning:accordion>
+                </aura:if>
+            </aura:if>
+            <aura:if isTrue="{!v.financialConvenantApplicable == 'Yes'}">
+                <lightning:accordion activeSectionName ="Covenants applicable to" allowMultipleSectionsOpen="false">
+                    <lightning:accordionSection name="Covenants applicable to" label="Covenants applicable to" >
+                        <div class="slds-grid">
+                            <div class="slds-col">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <span >
+                                        <!-- <label class="slds-form-element__label">
+                                        <span class="required">* </span>
+                                        <span class="slds-m-right_small">Covenants applicable to the Borrower</span>
+                                        <lightning:helptext icon-name="utility:like" content=" the Borrower and its Subsidiaries[The following financial covenants apply to Option 1A: [the Borrower] [and its Subsidiaries]"/>
+                                    </label> -->
+                                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                        picklistfieldName="Covenants_applicable_to_the_Borrower__c" 
+                                                                        objectName="Application_Product_CPF__c"
+                                                                        picklistLabelName="Covenants applicable to the Borrower"
+                                                                        value="{!v.applicableToTheBorrower}"
+                                                                        titleyes="[The following financial covenants apply to Option 1A: [the Borrower]"
+                                                                        titleno="[The following financial covenants apply to Option 1A: [the Borrower] [and its Subsidiaries]"/>
+                                        
+                                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                        picklistfieldName="Covenants_applicable_to_the_Parent__c" 
+                                                                        objectName="Application_Product_CPF__c"
+                                                                        picklistLabelName="Covenants applicable to the Parent"
+                                                                        value="{!v.applicable_to_the_Parent}"
+                                                                        required="true"
+                                                                        titleyes="[The following financial covenants apply to Option 1B: [the Parent]"
+                                                                        titleno="[The following financial covenants apply to Option 1B: [the Parent] [and its Subsidiaries] Tooltip for: the Borrower: [The following financial covenants apply to Option 1A: [the Borrower]"/>
+                                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                        picklistfieldName="Covenants_applicable_to_the_Guarantor_s__c" 
+                                                                        objectName="Application_Product_CPF__c"
+                                                                        picklistLabelName="Covenants applicable to the Guarantor(s)"
+                                                                        value="{!v.applicable_to_the_Guarantor}"
+                                                                        required="true"
+                                                                        titleyes="[The following financial covenants apply to Option 1C: [the Guarantor(s)]"
+                                                                        titleno="[The following financial covenants apply to Option 1C: [the Guarantor(s)] [and its Subsidiaries]"/>
+                                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                        picklistfieldName="Covenants_applicable_to_the_Security_Pro__c" 
+                                                                        objectName="Application_Product_CPF__c"
+                                                                        picklistLabelName="Covenants applicable to the Security Provider(s)"
+                                                                        value="{!v.applicable_to_the_Security_Pro}"
+                                                                        required="true"
+                                                                        titleyes=" [The following financial covenants apply to [the Security Provider(s)]"
+                                                                        titleno="[The following financial covenants apply to [the Security Provider(s)] [and their Subsidiaries]"/>
+                                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                        picklistfieldName="Other_Entity__c" 
+                                                                        objectName="Application_Product_CPF__c"
+                                                                        picklistLabelName="Other Entity"
+                                                                        value="{!v.otherentity}"
+                                                                        required="true"
+                                                                        titleyes="[The following financial covenants apply to Option 1D: [and] [INSERT DETAILS OF EACH OTHER ENTITY TO WHICH COVENANTS MAY APPLY] [and its Subsidiaries]"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <aura:if isTrue="{!v.otherentity == 'Yes'}">
+                            <aura:iteration items="{!v.newOtherEntityList}" var="nOtherentity" indexVar="index">
+                                <c:CPFotherentity aura:id="newLimitedGaurId" accotherentity="{!nOtherentity}" rowindex="{!index}" newOtherEntityList="{!v.newOtherEntityList}" isLimited="{!v.isLimited}" OpprecordId="{!v.recordId}"/>
+                            </aura:iteration>
+                            <br/>
+                            <br/>
+                            <lightning:button variant="brand" label="Add an Other Entity" title="Add an Other Entity" onclick="{! c.AddOtherentity }"/>      
+                        </aura:if>
+                        <br/>
+                        <br/>
+                        <div class="slds-col">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherEntitySubmit}" variant="brand" aura:id="ibtn1" />
+                            </span>
+                        </div>
+                        <lightning:accordion activeSectionName ="Measurement Periods" allowMultipleSectionsOpen="false"> 
+                            <lightning:accordionSection name="Measurement Period" label="Measurement Periods" >
+                                <lightning:layout multipleRows="true" >
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <span >
+                                            <label class="slds-form-element__label">
+                                                <span class="required">* </span>
+                                                <span class="slds-m-right_small">Measurement Period</span>
+                                                <!--  <lightning:helptext icon-name="utility:like" content=" the Borrower and its Subsidiaries[The following financial covenants apply to Option 1A: [the Borrower] [and its Subsidiaries]"/> -->
+                                            </label>
+                                            <lightning:inputField fieldName="Measurement_period__c" aura:id="mperiod" value="{!v.measurementPeriod}" required="true" variant="label-hidden"/>
+                                        </span>
+                                    </div>
+                                    <aura:if isTrue="{!and(v.measurementPeriod != 'each period of twelve months commencing on the anniversary of the first drawdown of the facility',v.measurementPeriod != '')}">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <lightning:inputField fieldName="Financial_year_of__c" aura:id="fyear" value="{!v.financialYear}" required="true"/>
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(and(and(v.measurementPeriod != 'each period of twelve months commencing on the anniversary of the first drawdown of the facility',v.measurementPeriod != ''),v.measurementPeriod != 'each period of six months ending on the last day of each financial half year'),v.measurementPeriod != 'each period of twelve months ending on the last day of a financial quarter')}">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <span >
+                                                <lightning:inputField fieldName="Consecutive_period_of_months__c" aura:id="cperiod" value="{!v.consecutivePeriod}" required="true" />
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                </lightning:layout>
+                                <lightning:accordion activeSectionName ="Testing" allowMultipleSectionsOpen="false"> 
+                                    <lightning:accordionSection name="Testing" label="Testing" > 
+                                        <label class="slds-form-element__label">
+                                            <span class="required">* </span>
+                                            <span class="slds-m-right_small">Financial covenants by reference to unaudited management accounts of the Financial Covenants Group</span>
+                                            <lightning:helptext icon-name="utility:like" content="The financial covenants shall be tested Option: [by reference to the unaudited management accounts of the Financial Covenants Group and] by reference to the audited financial statements of the Financial Covenants Group on each Measurement Period, each as delivered in accordance with the clause 17 (Information) of the Standard Terms."/>
+                                        </label>
+                                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                        picklistfieldName="Financial_covenants_by_reference__c" 
+                                                                        objectName="Application_Product_CPF__c"
+                                                                        value="{!v.financialCovRef}" 
+                                                                        />
+                                        <br/>
+                                        <br/>
+                                        <div class="slds-col">
+                                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                                <lightning:button label="Save &amp; Validate" onclick="{!c.handleFcg}" variant="brand" aura:id="ibtn1" />
+                                            </span>
+                                        </div>
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+            </aura:if>
+        </lightning:recordEditForm>
+    </aura:component>

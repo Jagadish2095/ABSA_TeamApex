@@ -1,0 +1,87 @@
+<!--merchantOnboardingAuthSignatory-->
+<aura:component controller="merchantOnboardingAuthSignatoryCtrl"
+                implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global" >
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{! this }" action="{! c.initialize }"/>
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}" />
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="opportunityProductId" type="String" default=""/>
+    <aura:attribute type="OpportunityLineItem[]" name="opportunityProductList"/>
+    <aura:attribute name="activeSections" type="List" default="['contactPerson']" />
+    <aura:attribute name="isButtonActive" type="Boolean" default="true" />
+    <aura:attribute name="options" type="List" default=""/> <!-- options for the radio group -->
+    <aura:attribute name="optionsNotEmpty" type="boolean" default="true"/> <!-- emptyOptions for the radio group -->
+    <aura:attribute name="emailMap" type="Map" default="{}"/> <!-- contacts details Map -->
+    <aura:attribute name="mobileMap" type="Map" default="{}"/> <!-- contacts details Map -->
+    <aura:attribute name="salutationMap" type="Map" default="{}"/> <!-- contacts details Map -->
+    <aura:attribute name="columns" type="List" default=""/> <!-- selected contact -->
+    <aura:attribute name="selectedRows" type="List" default="" />
+    <aura:attribute name="isApprovalPending" type="Boolean" default="false"/> <!-- PJAIN: 20200630 -->
+    <aura:attribute name="opportunityRecord" type="Object"/> <!-- PJAIN: 20200630 -->
+
+    <!-- PJAIN: 20200630 -->
+    <aura:if isTrue="{!v.isApprovalPending}">
+        <div class="recordError">
+            <br/>
+            <h2 class="slds-section__title slds-align_absolute-left" style="color:red">Approval(s) pending for this opportunity.</h2>
+            <br/>
+        </div>
+    </aura:if>
+
+    <!-- PJAIN: 20200630 -->
+    <force:recordData aura:id="opportunityViewer"
+                      fields="Approval_Status__c"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.opportunityRecord}"
+                      recordUpdated="{!c.opportunityRecordUpdated}"
+                      mode="VIEW"/>
+
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="contactPerson" label="Contact Person">
+            <div>Only Contact Persons with a valid email address and cellphone number, and with at least the following roles will be displayed in this section: Individual with Authority to Act, Managing Director, Shareholder/Controller.</div>
+            <aura:if isTrue="{!not(empty(v.opportunityProductId))}">
+                <aura:if isTrue="{!v.optionsNotEmpty }">
+                    <lightning:recordEditForm aura:id="contactPersonForm"
+                                              objectApiName="OpportunityLineItem"
+                                              recordId="{!v.opportunityProductId}"
+                                              onload="{!c.onload}"
+                                              onsuccess="{!c.handleSuccess}"
+                                              onerror="{!c.handleError}">
+                        <lightning:datatable data="{! v.options }"
+                                             columns="{! v.columns }"
+                                             keyField="Id"
+                                             hideCheckboxColumn="false"
+                                             maxRowSelection="1"
+                                             onrowselection="{!c.UpdateSelectedRows}"
+                                             selectedRows="{! v.selectedRows }"/>
+
+                        <div class="slds-size_1-of-3">
+                            <lightning:inputField  aura:id="contactPerson" fieldName="Contact_Person__c" label="Contact Person" class="slds-hide" />
+                        </div>
+                        <aura:If isTrue="{!v.isButtonActive}">
+                            <div  class="recordError">
+                                <h3 class="slds-section__title slds-align_absolute-left" style="color:red">Please note that the selected contact person does not have valid Salutation, email and/or mobile number details.</h3>
+                            </div>
+                        </aura:If>
+                        <div class="slds-size_1-of-1">
+                            <lightning:button aura:id="saveBtn" type="submit" label="Save" variant="brand" disabled="{!or(v.isButtonActive, v.isApprovalPending)}" class="slds-align_absolute-center slds-m-top_xx-small" />
+                        </div>
+                    </lightning:recordEditForm>
+                    <aura:set attribute="else">
+                        <div  class="recordError">
+                            <h3 class="slds-section__title slds-align_absolute-left" style="color:red">The Contact Person is identified in the Resolution Letter, and has to have one of the following roles: Individual with Authority to Act, Managing Director, Shareholder/Controller; He/she should have a valid email address and cellphone captured.</h3>
+                        </div>
+                    </aura:set>
+                </aura:if>
+                <aura:set attribute="else">
+                    <div  class="recordError">
+                        <h2 class="slds-section__title slds-align_absolute-left" style="color:red">Please select a Merchant Product on the previous tab.</h2>
+                    </div>
+                </aura:set>
+            </aura:if>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

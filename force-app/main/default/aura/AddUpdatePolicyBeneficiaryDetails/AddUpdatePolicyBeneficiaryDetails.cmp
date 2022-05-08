@@ -1,0 +1,240 @@
+<!--This is component for ABSA Life AddUpdatePolicyBeneficiaryDetails-->
+<!--@author  Chandra-->
+<!--@since   2020-10-20-->
+<!--@Work Id: W-006280,006901,007783,007778-->
+
+<aura:component controller="PolicyBeneficiaryMaintenanceCntr">
+	<!--Attribute Declaration-->
+	<aura:attribute name="relationshipOptions" type="List" />
+	<aura:attribute name="relationshipCode" type="String" />
+	<aura:attribute name="idTypeOptions" type="List" />
+	<aura:attribute name="idType" type="String" />
+	<aura:attribute name="firstName" type="String" />
+	<aura:attribute name="surName" type="String" />
+	<aura:attribute name="idNumber" type="String" />
+	<aura:attribute name="emailAddress" type="String" />
+	<aura:attribute name="contactTelephoneNumber" type="String" />
+	<aura:attribute name="percentSplit" type="Double" />
+	<aura:attribute name="actionType" type="String" />
+	<aura:attribute name="lifeClientCode" type="String" default="defaultLifeClientCode" />
+	<aura:attribute name="showNonIndividualWarning" type="Boolean" default="false" />
+	<aura:attribute name="isRequiredValidationNotPassed" type="Boolean" default="false" />
+	<aura:attribute name="dateOfBirth" type="Date" />
+	<aura:attribute name="titleOptions" type="List" />
+	<aura:attribute name="titleCode" type="String" />
+	<aura:attribute name="addressLine1" type="String" />
+	<aura:attribute name="addressLine2" type="String" />
+	<aura:attribute name="city" type="String" />
+	<aura:attribute name="postalCode" type="Integer" />
+	<aura:attribute name="suburb" type="String" />
+	<aura:attribute name="selectedProductType" type="String" default="" />
+	<aura:attribute name="contactTypeIDOptions" type="List" />
+	<aura:attribute name="contactTypeID" type="String" />
+	<aura:attribute name="clientGID" type="String" default="defaultClientGID" />
+
+	<!--overlayLibrary for Dynamic Modal-->
+	<lightning:overlayLibrary aura:id="overlayLib" />
+
+	<!--Component Event Register-->
+	<aura:registerEvent name="AddUpdatePolicyBeneficiaryEvent" type="c:AddUpdatePolicyBeneficiaryEvent" />
+
+	<!--Handler Declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:handler event="c:setClientInfo" action="{!c.handleApplicationEvent}" />
+
+	<!--Body Start-->
+	<aura:if isTrue="{!v.actionType == 'Add'}">
+		<div class="slds-m-top_small">
+			<c:ClientFinder
+				isCompactView="true"
+				showCreateIndividualProspect="false"
+				showCreateRelatedParty="false"
+				showCreateBusinessProspect="false"
+				showCreateBusinessProspectOnboarding="false"
+				showProductSelection="false"
+				showContactSelection="false"
+				showCaseHistory="false"
+				showLeadHistory="false"
+				showParticipantSelection="false"
+			/>
+		</div>
+		<div class="slds-box slds-box_xx-small slds-theme_shade slds-m-top_small">
+			<div>
+				<div class="slds-text-heading_small slds-text-align_center">New Beneficiary</div>
+			</div>
+		</div>
+	</aura:if>
+
+	<aura:if isTrue="{!v.showNonIndividualWarning}">
+		<div class="slds-m-top_small slds-text-color_error">Beneficiary details only populate for Individual.</div>
+	</aura:if>
+
+	<aura:if isTrue="{!v.isRequiredValidationNotPassed}">
+		<div class="slds-m-top_small slds-text-color_error">Required to fill all mandatory fields.</div>
+	</aura:if>
+
+	<div class="slds-grid slds-wrap">
+		<div class="slds-col slds-size_6-of-12">
+			<span>
+				<lightning:select name="relationship" label="Relationship Type" aura:id="relationship" value="{!v.relationshipCode}" required="true">
+					<aura:iteration items="{!v.relationshipOptions}" var="option">
+						<option text="{!option.label}" value="{!option.value}" selected="{!option.selected}" />
+					</aura:iteration>
+				</lightning:select>
+			</span>
+		</div>
+		<div class="slds-col slds-size_1-of-12"></div>
+		<div class="slds-col slds-size_5-of-12">
+			<span>
+				<lightning:select name="titleCode" label="Title" aura:id="title" value="{!v.titleCode}" required="true">
+					<aura:iteration items="{!v.titleOptions}" var="option">
+						<option text="{!option.label}" value="{!option.value}" selected="{!option.selected}" />
+					</aura:iteration>
+				</lightning:select>
+			</span>
+		</div>
+
+		<div class="slds-col slds-size_6-of-12">
+			<span>
+				<lightning:input name="name" label="Name" value="{!v.firstName}" required="true" />
+			</span>
+		</div>
+		<div class="slds-col slds-size_1-of-12"></div>
+		<div class="slds-col slds-size_5-of-12">
+			<span>
+				<lightning:input name="surName" label="Surname" value="{!v.surName}" required="true" />
+			</span>
+		</div>
+
+		<div class="slds-col slds-size_6-of-12">
+			<span>
+				<lightning:select name="idType" label="Id Type" aura:id="idType" value="{!v.idType}" required="true">
+					<aura:iteration items="{!v.idTypeOptions}" var="option">
+						<option text="{!option.label}" value="{!option.value}" selected="{!option.selected}" />
+					</aura:iteration>
+				</lightning:select>
+			</span>
+		</div>
+		<div class="slds-col slds-size_1-of-12"></div>
+		<div class="slds-col slds-size_5-of-12">
+			<span>
+				<aura:if isTrue="{!v.actionType == 'Add'}">
+					<lightning:input name="idNumber" value="{!v.idNumber}" label="ID/Passport Number" required="true" />
+					<aura:set attribute="else">
+						<lightning:input
+							aura:id="idNumberEdit"
+							name="idNumber"
+							readonly="true"
+							value="{!v.idNumber}"
+							label="ID/Passport Number"
+							required="true"
+						/>
+					</aura:set>
+				</aura:if>
+			</span>
+		</div>
+
+		<div class="slds-col slds-size_6-of-12">
+			<span>
+				<lightning:input type="email" name="emailAddress" value="{!v.emailAddress}" label="Email Address" />
+			</span>
+		</div>
+		<div class="slds-col slds-size_1-of-12"></div>
+		<div class="slds-col slds-size_5-of-12">
+			<span>
+				<lightning:input type="tel" label="Contact Number" name="contactNumber" value="{!v.contactTelephoneNumber}" required="true" />
+			</span>
+		</div>
+
+		<div class="slds-col slds-size_6-of-12">
+			<span>
+				<!--Changes against W-013608 by chandra-->
+				<aura:if isTrue="{!v.selectedProductType != 'LX'}">
+					<lightning:input name="suburb" value="{!v.suburb}" label="Suburb" required="true" />
+					<aura:set attribute="else">
+						<lightning:input name="suburb" value="{!v.suburb}" label="Suburb" />
+					</aura:set>
+				</aura:if>
+			</span>
+		</div>
+		<div class="slds-col slds-size_1-of-12"></div>
+		<div class="slds-col slds-size_5-of-12">
+			<span>
+				<lightning:input type="date" label="Date Of Birth" name="dateOfBirth" value="{!v.dateOfBirth}" required="true" />
+			</span>
+		</div>
+
+		<div class="slds-col slds-size_6-of-12">
+			<span>
+				<!--Changes against W-013608 by chandra-->
+				<aura:if isTrue="{!v.selectedProductType != 'LX'}">
+					<lightning:input label="Address Line1" name="addressLineOne" value="{!v.addressLine1}" required="true" />
+					<aura:set attribute="else">
+						<lightning:input label="Address Line1" name="addressLineOne" value="{!v.addressLine1}" />
+					</aura:set>
+				</aura:if>
+			</span>
+		</div>
+		<div class="slds-col slds-size_1-of-12"></div>
+		<div class="slds-col slds-size_5-of-12">
+			<span>
+				<lightning:input name="addressLineTwo" value="{!v.addressLine2}" label="Address Line2" />
+			</span>
+		</div>
+
+		<div class="slds-col slds-size_6-of-12">
+			<span>
+				<!--Changes against W-013608 by chandra-->
+				<aura:if isTrue="{!v.selectedProductType != 'LX'}">
+					<lightning:input label="City" name="city" value="{!v.city}" required="true" />
+					<aura:set attribute="else">
+						<lightning:input label="City" name="city" value="{!v.city}" />
+					</aura:set>
+				</aura:if>
+			</span>
+		</div>
+		<div class="slds-col slds-size_1-of-12"></div>
+		<div class="slds-col slds-size_5-of-12">
+			<span>
+				<!--Changes against W-013608 by chandra-->
+				<aura:if isTrue="{!v.selectedProductType != 'LX'}">
+					<lightning:input type="number" name="postalCode" value="{!v.postalCode}" label="Postal Code" required="true" />
+					<aura:set attribute="else">
+						<lightning:input type="number" name="postalCode" value="{!v.postalCode}" label="Postal Code" />
+					</aura:set>
+				</aura:if>
+			</span>
+		</div>
+
+		<!--Added by chandra dated 15/02/2021-->
+		<aura:if isTrue="{!v.selectedProductType == 'LX'}">
+			<div class="slds-col slds-size_6-of-12">
+				<span>
+					<lightning:select name="contactTypeID" label="Contact Type" aura:id="contactTypeID" value="{!v.contactTypeID}" required="true">
+						<aura:iteration items="{!v.contactTypeIDOptions}" var="option">
+							<option text="{!option.label}" value="{!option.value}" selected="{!option.selected}" />
+						</aura:iteration>
+					</lightning:select>
+				</span>
+			</div>
+			<div class="slds-col slds-size_1-of-12"></div>
+			<div class="slds-col slds-size_5-of-12"></div>
+		</aura:if>
+
+		<!---->
+	</div>
+
+	<div class="slds-m-top_xx-large">
+		<footer class="slds-modal__footer">
+			<aura:if isTrue="{!v.actionType == 'Add'}">
+				<lightning:button variant="brand" label="Add" title="add" onclick="{! c.handleAdd }" />
+				<aura:set attribute="else">
+					<lightning:button variant="brand" label="Update" title="update" onclick="{! c.handleUpdate }" />
+				</aura:set>
+			</aura:if>
+			<lightning:button label="Cancel" title="cancel" onclick="{! c.handleCancel }" />
+		</footer>
+	</div>
+
+	<!--Body End-->
+</aura:component>

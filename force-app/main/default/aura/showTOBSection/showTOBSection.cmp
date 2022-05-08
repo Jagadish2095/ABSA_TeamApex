@@ -1,0 +1,358 @@
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" 
+	  controller="ProductTermsOfBusinessController">
+    
+    <!--Attribute Decleration -->
+    <aura:attribute name="recordId" type="Id" />  <!--Opportunity Id-->
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="showApprove" type="Boolean" default="false" />
+    <aura:attribute name="showDecline" type="Boolean" default="false" />
+    <aura:attribute name="selectedValues" type="String" />
+    <aura:attribute name="isDecisionMade" type="Boolean" default="true" />
+    
+    <aura:attribute name="prodrec" type="Object[]" />
+    <aura:attribute name="iterationIndex" type="String" />
+    <aura:attribute name="userRecord" type="User" />
+    <aura:attribute name="fieldWrapList" type="Object[]" />
+    <aura:attribute name="showfieldWrapList" type="Object[]" />
+    
+    <aura:attribute name="simpleRecord" type="Object"/>
+    <aura:attribute name="productName" type="String"/>
+    
+    <aura:attribute name="appTOB" type="Object" />
+    <aura:attribute name="recordUiCache" type="Object" />
+    <aura:attribute name="adjustedRequestedError" type="Boolean" default="false" />
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:handler event="force:refreshView" action="{!c.doInit}" /> 
+    
+    
+    
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    
+     <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    <!-- UI For TOB -->
+    
+     <!-- Terms Of Business--> 
+                <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+                                                            font-style: normal !important;
+                                                            font-size: 17px !important;
+                                                            text-align: left !important;
+                                                           
+                                                            margin:4px !important;">
+                    
+                    <div class="slds-col">Terms Of Business</div>
+                </div>
+                <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+                                                            font-style: normal !important;
+                                                            font-size: 17px !important;
+                                                            text-align: left !important;
+                                                            background-color: rgb(240,235,235) !important;
+                                                            margin:4px !important;">
+                    <div class="slds-col" style="width:400px !important;">Description</div>
+                    <aura:if isTrue="{!v.productName !='Term Loan'}">
+                        <div class="slds-col" style="width:300px !important;">Existing </div> 
+                    </aura:if>
+                    <div class="slds-col" style="width:300px !important;">Requested </div>
+                    <div class="slds-col" style="width:300px !important;">Offered </div> 
+                    <div class="slds-col" style="width:300px !important;">Final </div> 
+                    <div class="slds-col" style="width:300px !important;">Adjusted </div>
+                </div>         
+                <!-- tob edition-->
+                
+                <aura:iteration items="{!v.prodrec.termstobList}" var="tobrec" >
+                    
+                    <lightning:recordEditForm aura:id="tobEdit"  recordId="{!tobrec.Id}" objectApiName="Terms_Of_Business__c" onload="{!c.onLoad}">
+                         <lightning:inputField aura:id="productRecordId" fieldName="Application_Product__c"  variant="label-hidden" readonly="true"  hidden="true"/>
+                  
+                        <div class="slds-grid slds-gutters marginclass">
+                            
+                            
+                            <aura:iteration items="{!v.fieldWrapList}" var="fieldWrap" >
+                                
+                                
+                                <aura:if isTrue="{! tobrec.Tob_Description__c == fieldWrap.DescText}"> 
+                                    <aura:if isTrue="{!tobrec.Tob_Description__c =='Current Balance'}">  
+                                    <div class="slds-col" style="width:400px !important">
+                                            <lightning:inputField  fieldName="Tob_Description__c" variant="label-hidden" readonly="true"/>
+                                        </div>
+                                        <aura:iteration items="{!fieldWrap.editableFields}" var="Editablefield" >
+                                            
+                                            <div class="slds-col " style="margin-right:5px !important;width:400px !important;"> 
+                                                
+                                                  <lightning:inputField  fieldName="{!Editablefield.fieldName}"  variant="label-hidden" readonly="{!Editablefield.isReadOnly}"   />
+                                                </div> 
+                                            
+                                        </aura:iteration>
+                                    </aura:if>
+                                     <aura:if isTrue="{!tobrec.Tob_Description__c =='Overdraft Limit'}">  
+                                    <div class="slds-col" style="width:400px !important">
+                                            <lightning:inputField  fieldName="Tob_Description__c" variant="label-hidden" readonly="true"/>
+                                        </div>
+                                        <aura:iteration items="{!fieldWrap.editableFields}" var="Editablefield" >
+                                            
+                                            <div class="slds-col " style="margin-right:5px !important;width:400px !important;"> 
+                                                <aura:if isTrue="{!Editablefield.fieldName=='Adjusted_Number__c'}">
+                                                <lightning:inputField  fieldName="{!Editablefield.fieldName}"  max="{!tobrec.Requested_Number__c}" variant="label-hidden" readonly="{!Editablefield.isReadOnly}" onchange="{!c.checkValidation}"/>    
+                                                    
+                                                <aura:set attribute="else">
+                                                 <lightning:inputField  fieldName="{!Editablefield.fieldName}"  variant="label-hidden" readonly="{!Editablefield.isReadOnly}"/>  
+                                                </aura:set>
+                                                </aura:if>
+                                                  
+                                                </div> 
+                                            
+                                        </aura:iteration>
+                                    </aura:if>
+                                    <aura:if isTrue="{!tobrec.Tob_Description__c =='Overdraft Limit Type'}">
+                                        <div class="slds-col" style="width:400px !important">
+                                            <lightning:inputField  fieldName="Tob_Description__c" variant="label-hidden" readonly="true"/>
+                                        </div> 
+                                        <aura:iteration items="{!fieldWrap.editableFields}" var="Editablefield" >
+                                            <div class="slds-col "  style="margin-right:5px !important;width:400px !important;"> 
+                                                <aura:if isTrue = "{! Editablefield.fieldName == 'Adjusted_by_Sanctioner_Picklist__c'}">
+                                                <lightning:inputField  fieldName="{!Editablefield.fieldName}"  aura:id="limitValue" variant="label-hidden" readonly="{!Editablefield.isReadOnly}" onchange="{!c.setLimitTypeChanged}"  />
+                                            	 <aura:set attribute="else">
+                                                  <lightning:inputField  fieldName="{!Editablefield.fieldName}"  variant="label-hidden" readonly="{!Editablefield.isReadOnly}"   />
+            
+                                                </aura:set>
+                                                </aura:if>
+                                                </div>                                                                   
+                                        </aura:iteration>
+                                        
+                                    </aura:if>
+                                </aura:if>
+                                
+                                
+                            </aura:iteration>
+                        </div>
+                        
+                    </lightning:recordEditForm>
+                </aura:iteration>
+                <!-- show limit type -->
+                 <!-- <aura:if isTrue="{! v.iterationIndex == index}">  -->
+                     
+                <aura:iteration items="{!v.showfieldWrapList}" var="showfieldWrap" >
+                    
+                    <aura:if isTrue="{! v.selectedValues == showfieldWrap.LimitType}">
+                        <aura:iteration items="{!showfieldWrap.DescTextList}" var="descVal" >
+                            
+                            <aura:iteration items="{!v.prodrec.termstobList}" var="tobrec">
+                                <aura:if isTrue="{! tobrec.Tob_Description__c == descVal}">
+                                    <lightning:recordEditForm aura:id="tobEdit"  recordId="{!tobrec.Id}" objectApiName="Terms_Of_Business__c">
+                                        <div class="slds-grid slds-gutters marginclass">
+                                            
+                                            <div class="slds-col" style="width:400px !important">
+                                                <lightning:inputField  fieldName="Tob_Description__c" variant="label-hidden" readonly="true"/>
+                                            </div>
+                                            
+                                            
+                                            <aura:iteration items="{!v.fieldWrapList}" var="fieldWrap" indexVar="index">
+                                                
+                                                <aura:if isTrue="{! tobrec.Tob_Description__c == fieldWrap.DescText}">
+                                                    <aura:iteration items="{!fieldWrap.editableFields}" var="Editablefield" >
+                                                        
+                                                        
+                                                        <div class="slds-col "  style="margin-right:5px !important;width:400px !important;">
+                                                            <aura:if isTrue="{!Editablefield.fieldName == 'Adjusted_Number__c'}">
+                                                            <lightning:inputField fieldName="{!Editablefield.fieldName}" aura:id="adjustedValue" variant="label-hidden" readonly="{!Editablefield.isReadOnly}" />
+                                                       
+                                                         <aura:set attribute="else">
+                                                          <lightning:inputField fieldName="{!Editablefield.fieldName}" aura:id="existValue" variant="label-hidden" readonly="{!Editablefield.isReadOnly}" />
+        
+                                                         </aura:set>  
+                                                        </aura:if>
+                                                             </div>
+                                                    </aura:iteration>   
+                                                </aura:if>       
+                                            </aura:iteration>
+                                        </div>    
+                                    </lightning:recordEditForm>
+                                    
+                                </aura:if>            
+                            </aura:iteration>
+                            
+                        </aura:iteration>
+                        
+                        
+                       
+                    </aura:if>
+                    
+                    
+                </aura:iteration> 
+                <!-- </aura:if> -->
+                <!-- show limit field changes section end here -->
+                <!-- show remain fields -->
+                
+                
+                <!-- show remain fields Section End -->
+                
+                
+                <!-- pricing section-->
+              <!--  <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+                                                            font-style: normal !important;
+                                                            font-size: 17px !important;
+                                                            text-align: left !important;
+                                                            background-color: rgb(240,235,235) !important;
+                                                            margin:4px !important;">
+                    
+                    <div class="slds-col">Pricing And Fees</div>
+                    
+                </div> -->
+                <aura:iteration items="{!v.prodrec.pricingtobList}" var="tobrec">
+                    
+                    <lightning:recordEditForm aura:id="pricetobEdit"  recordId="{!tobrec.Id}" objectApiName="Terms_Of_Business__c">
+                        <div class="slds-grid slds-gutters marginclass">
+                            <div class="slds-col" style="width:400px !important">
+                                <lightning:inputField  fieldName="Tob_Description__c" variant="label-hidden" readonly="true"/>
+                            </div>
+                            <aura:iteration items="{!v.fieldWrapList}" var="fieldWrap" >
+                                
+                                <aura:if isTrue="{! tobrec.Tob_Description__c == fieldWrap.DescText}">
+                                    
+                                    <aura:iteration items="{!fieldWrap.editableFields}" var="Editablefield" >
+                                        
+                                        <!--<aura:iteration items="{!fieldWrap.FieldNames}" var="fieldname" > -->
+                                        <div class="slds-col "  style="margin-right:5px !important;width:400px !important;"> 
+                                            <lightning:inputField fieldName="{!Editablefield.fieldName}" aura:id="existValue" variant="label-hidden" readonly="true" />
+                                        </div>
+                                    </aura:iteration>
+                                    <!--</aura:iteration>    -->
+                                </aura:if>
+                            </aura:iteration>  
+                            
+                        </div>
+                    </lightning:recordEditForm>
+                </aura:iteration>
+                
+             <!--   <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+                                                            font-style: normal !important;
+                                                            font-size: 17px !important;
+                                                            text-align: left !important;
+                                                            background-color: rgb(240,235,235) !important;
+                                                            margin:4px !important;">
+                    
+                    <div class="slds-col">Additional Info</div>
+                    
+                </div> -->
+                <aura:iteration items="{!v.prodrec.additionaltobList}" var="tobrec">
+                    
+                    <lightning:recordEditForm aura:id="addtobEdit"  recordId="{!tobrec.Id}" objectApiName="Terms_Of_Business__c">
+                        <div class="slds-grid slds-gutters marginclass">
+                            <div class="slds-col" style="width:400px !important">
+                                <lightning:inputField  fieldName="Tob_Description__c" variant="label-hidden" readonly="true"/>
+                            </div>
+                            <aura:iteration items="{!v.fieldWrapList}" var="fieldWrap" >
+                                
+                                <aura:if isTrue="{! tobrec.Tob_Description__c == fieldWrap.DescText}">
+                                    
+                                    <aura:iteration items="{!fieldWrap.editableFields}" var="Editablefield" >
+                                        
+                                        <!--<aura:iteration items="{!fieldWrap.FieldNames}" var="fieldname" > -->
+                                        <div class="slds-col "  style="margin-right:5px !important;width:400px !important;"> 
+                                            <lightning:inputField fieldName="{!Editablefield.fieldName}" aura:id="existValue" variant="label-hidden" readonly="true" />
+                                        </div>
+                                    </aura:iteration>
+                                    <!--</aura:iteration>    -->
+                                </aura:if>
+                            </aura:iteration>  
+                            
+                        </div>
+                    </lightning:recordEditForm>
+                </aura:iteration>
+    <lightning:accordion>
+     <lightning:accordionSection name="finaldecision" label="Final Decision">
+                
+                
+                <!-- Approve Product Button-->
+                <lightning:button  type="submit" name="ShowApprove" label="Approved" aura:id="Approvebutton" onclick="{!c.showDecision}" >
+                    <lightning:icon iconName="action:approval" alternativeText="Approved" title="Approved"  size="large" class="backColor"/>
+                </lightning:button> 
+                <!-- Decline Product Button--> 
+                <lightning:button  type="submit" name="ShowDecline" label="Decline" aura:id="decisionbutton" onclick="{!c.showDecision}">
+                    <lightning:icon iconName="action:close" alternativeText="Decline Application" title="Decline"  size="large"  />
+                </lightning:button>
+                
+                <!-- Approve Product -->
+                <aura:if isTrue="{!v.showApprove}">
+                    <lightning:recordEditForm aura:id="productEdit"  recordId="{!v.prodrec.appProdId}" objectApiName="Application_Product__c" onsuccess="{!c.handleSuccess}" >
+                        <lightning:inputField fieldName="Sanctioning_Status__c" variant="label-hidden" value="Accepted" hidden="true" />
+                       
+                        <lightning:inputField fieldName="Product_Status__c" variant="label-hidden" value="Accepted" hidden="true" />
+                        <lightning:inputField fieldName="Final_Decision__c" variant="label-hidden" value="Accepted" hidden="true" />
+                     	<lightning:inputField fieldName="Is_Sanctioning_Decision__c" variant="label-hidden" value="{!v.isDecisionMade}" hidden="true" />
+                  
+                        
+                        <lightning:layout multipleRows="true" > 
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <p>Reason</p> <lightning:inputfield aura:id="approveReason" fieldName="Accept_Decision_List__c" variant="label-hidden" /> 
+                                
+                            </lightning:layoutItem>   
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <p>Comment</p> 
+                                <lightning:inputfield aura:id="approveComment" fieldName="Approve_Comment__c" variant="label-hidden" /> 
+                                
+                            </lightning:layoutItem>   
+                            <lightning:layoutItem size="6"  class="slds-p-top_large">
+                                
+                                <lightning:inputfield aura:id="DecisionConfirmation" fieldName="Decision_Confirmation__c"  required="true"  variant="label-hidden"/> 
+                                <p>I understand that this decision cannot be changed once submitted.</p>
+                            </lightning:layoutItem>
+                            
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <lightning:button variant="brand" type="submit" name="save" label="Submit Decision" aura:id="decisionbutton"  />
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        
+                    </lightning:recordEditForm>
+                </aura:if>
+                
+                <!-- Decline Product -->
+                <aura:if isTrue="{!v.showDecline}">
+                    <lightning:recordEditForm aura:id="productEdit"  recordId="{!v.prodrec.appProdId}" objectApiName="Application_Product__c" 
+                                         onsuccess="{!c.handleSuccess}"     
+                                             >  
+                        <lightning:inputField fieldName="Sanctioning_Status__c" variant="label-hidden" value="Declined" hidden="true" />
+                        
+                        <lightning:inputField fieldName="Product_Status__c" variant="label-hidden" value="Declined" hidden="true" />
+                        <lightning:inputField fieldName="Final_Decision__c" variant="label-hidden" value="Declined" hidden="true" />
+                      	<lightning:inputField fieldName="Is_Sanctioning_Decision__c" variant="label-hidden" value="{!v.isDecisionMade}" hidden="true" />
+                  
+                        <lightning:layout multipleRows="true" > 
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <lightning:inputfield aura:id="DeclineCategory" fieldName="Decline_Category__c" /> 
+                            </lightning:layoutItem>   
+                            <lightning:layoutItem size="6"  class="slds-p-top_large">
+                                <lightning:inputfield aura:id="DeclineReason" fieldName="Decline_Reason__c" /> 
+                            </lightning:layoutItem>
+                            
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <lightning:inputfield aura:id="approveComment" fieldName="Approve_Comment__c" variant="label-hidden" /> 
+                                <p>Comment</p>
+                            </lightning:layoutItem> 
+                            <lightning:layoutItem size="6"  class="slds-p-top_large">
+                                
+                                <lightning:inputfield aura:id="DecisionConfirmation" fieldName="Decision_Confirmation__c"  required="true"  variant="label-hidden"/> 
+                                <p>I understand that this decision cannot be changed once submitted.</p>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-p-top_large">
+                                <lightning:button variant="brand" type="submit" name="save" label="Submit Decision" aura:id="decisionbutton"  />
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        
+                        
+                    </lightning:recordEditForm>
+                </aura:if>   
+            </lightning:accordionSection>
+        </lightning:accordion>
+     <!--<div class="slds-grid slds-gutters ">
+        <lightning:button class="slds-var-m-top_small slds-float_right" variant="brand" type="submit" name="update" label="Save All"  onclick="{!c.saveAll}"/>
+</div> -->
+</aura:component>

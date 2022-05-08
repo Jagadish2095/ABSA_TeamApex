@@ -1,0 +1,203 @@
+<!--
+* Lightning Component for OnboardingClientBusAdd
+*
+* @author  Anka Ganta : Absa
+* @version v1.0
+* @since   2020-01-31
+*s
+-->
+<aura:component access="global" controller="OnboardingClientBusAddController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" >
+    <!--Attributes-->
+    <aura:attribute name="accRecId" type="String" />
+    <aura:attribute name="addressRecId" type="String" />
+    <aura:attribute name="accountClientType" type="String" />
+    <aura:attribute name="addressRecord" type="Address__c" default="{'sobjectType': 'Address__c'}"/>
+    <aura:attribute name="addList" type="Object" />
+    <aura:attribute name="showNewAddressModal" type="Boolean" />
+
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="errors" type="Object" default="[]"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/>
+
+    <!-- PJAIN: 20200530: Added the below optional attributes -->
+    <!-- These can be passed in from the parent component -->
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+    <aura:attribute name="maxRowSelection" type="Integer" default="0"/>
+    <aura:attribute name="preSelectedRows" type="List" default="[]"/>
+    <aura:attribute name="selectedRows" type="List" default="[]"/>
+    <aura:attribute name="isFromEditRelatedParty" type="Boolean" default="false"/>
+    <aura:attribute name="isFromNonIndividualRelatedParty" type="Boolean" default="false"/>	
+    <aura:attribute name="showEditAddressModal" type="Boolean" default="false"/>
+    <aura:attribute name="addressEditRecId" type="String" />
+    
+    <!--ManojDanthala - W-006581 -09/29/2020 -->
+    <aura:attribute name="addressTypeList" type="List" />
+    <aura:attribute name="value" type="List" default=""/>
+    
+    <aura:attribute name="allTypeList" type="List" />
+    <!--8818-->
+    <aura:attribute name="processType" type="String" default=""/> <!-- TdB: Defines the Process Type (New to Bank/Lite Onboarding) -->
+    
+    
+    <aura:handler event="force:showToast" action="{!c.refreshAddresses}"/>
+    
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+
+    <!--<aura:handler action="{!c.doAction}" name="init" value="{!this}" />-->
+    <aura:method name="getAccountId" action="{!c.doAction}"
+                 description="Sample method with parameters">
+        <aura:attribute name="accId" type="String" />
+    </aura:method>
+
+    <aura:method name="getAccountClientType" action="{!c.setClientType}"
+                 description="Set Address Client Type based on Account Client Type"> 
+        <aura:attribute name="clientTypeVal" type="String" /> 
+    </aura:method>
+    <aura:method name="getProcessType" action="{!c.setProcessType}"
+                 description="Set Address Client Type based on Process Type"> 
+        <aura:attribute name="processTypeVal" type="String" /> 
+    </aura:method>
+    
+    <!--BUSINESS ADDRESS INFORMATION START   -->
+    <!-- the container element determine the height of the datatable -->
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="" size="12" smallDeviceSize="12" mediumDeviceSize="12">
+            <lightning:button class="slds-float_right"
+                              variant="neutral"
+                              label="New Address"
+                              title="New Address"
+                              onclick="{! c.openNewAddressModal }"
+                              disabled="{!or(v.isFormReadOnly, empty(v.accRecId))}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="" size="12" smallDeviceSize="12" mediumDeviceSize="12">
+            <div style="height: 300px">
+                <lightning:datatable aura:id="dtTable"
+                                     columns="{! v.columns }"
+                                     data="{! v.addList }"
+                                     keyField="Id"
+                                     errors="{! v.errors }"
+                                     draftValues="{! v.draftValues }"
+                                     onsave="{! c.handleSave }"
+                                     maxRowSelection="{! v.maxRowSelection }"
+                                     hideCheckboxColumn="{!if(or(v.maxRowSelection == 0, v.isFormReadOnly), true, false)}"
+                                     onrowselection="{! c.handleRowSelectionChange }"
+                                     selectedRows="{! v.preSelectedRows }"
+                                     onrowaction="{! c.handleRowAction }" 
+                                     />
+            </div>
+        </lightning:layoutItem>
+    </lightning:layout>
+    <!--BUSINESS ADDRESS INFORMATION END-->
+
+    <aura:if isTrue="{!v.showNewAddressModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeNewAddressModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Address</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <lightning:recordEditForm aura:id="newAddressForm"
+                                                  objectApiName="Address__c"
+                                                  recordId="{!v.addressRecId}"
+                                                  onload="{!c.handleOnLoad}">
+                            <lightning:layout multipleRows="true" >
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField fieldName="Client_Entity_Type__c" value="{!v.addressRecord.Client_Entity_Type__c}" required="true" aura:id="clientTypeNew" onchange="{!c.handleClientTypeChange}"/>
+                                    <lightning:inputField fieldName="Address_Type__c" value="{!v.addressRecord.Address_Type__c}" required="true"  onchange="{!c.handleAddTypeChange}"/>
+                                    <aura:if isTrue="{!v.processType != 'Lite Onboarding'}">
+                                    <lightning:checkboxGroup name="Address Type"
+                                                             aura:id="addressType"
+                                                             label="Copy Address To"
+                                                             options="{! v.addressTypeList }"
+                                                             value="{! v.value }"
+                                                             required="true"/> <!--ManojDanthala - W-006581 -09/29/2020 -->
+                                    </aura:if>
+                                    <lightning:inputField fieldName="Shipping_Street__c" value="{!v.addressRecord.Shipping_Street__c}" required="true" />
+                                    <lightning:inputField fieldName="Shipping_Street_2__c" value="{!v.addressRecord.Shipping_Street_2__c}" required="true" />
+                                    <lightning:inputField fieldName="Shipping_Suburb__c" value="{!v.addressRecord.Shipping_Suburb__c}" required="true" />
+                                    <lightning:inputField fieldName="Shipping_City__c" value="{!v.addressRecord.Shipping_City__c}" required="true" />
+                                    <!--<lightning:inputField fieldName="Shipping_State_Province__c" value="{!v.addressRecord.Shipping_State_Province__c}" required="true" />-->
+                                    <lightning:inputField fieldName="Shipping_Country__c" value="{!v.addressRecord.Shipping_Country__c}" required="true" />
+                                    <lightning:inputField fieldName="Shipping_Zip_Postal_Code__c" value="{!v.addressRecord.Shipping_Zip_Postal_Code__c}" required="true" />
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button class="slds-float_left"
+                                      variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeNewAddressModal }"/>
+                    <lightning:button variant="brand"
+                                      label="Save"
+                                      title="Save"
+                                      onclick="{! c.createAddressRecord}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+
+
+    </aura:if>
+    <aura:if isTrue="{!v.showEditAddressModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeEditAddressModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Address</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <lightning:recordEditForm aura:id="editAddressForm"
+                                                  objectApiName="Address__c"
+                                                  recordId="{!v.addressEditRecId}"
+                                                  onload="{!c.handleOnLoad}"
+                                                  onsuccess="{!c.handleOnSuccess}">
+                            <lightning:layout multipleRows="true" >
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField fieldName="Client_Entity_Type__c" aura:id="clientType"  required="true" />
+                                    <lightning:inputField fieldName="Address_Type__c" aura:id="addType" required="true" />
+                                    <lightning:inputField fieldName="Shipping_Street__c" aura:id="shippingStreet" required="true" />
+                                    <lightning:inputField fieldName="Shipping_Street_2__c" aura:id="shippingstreet2" required="true" />
+                                    <lightning:inputField fieldName="Shipping_Suburb__c" aura:id="shippingSuburb" required="true" />
+                                    <lightning:inputField fieldName="Shipping_City__c" aura:id="shippingCity" required="true" />
+                                    <!--<lightning:inputField fieldName="Shipping_State_Province__c" aura:id="shippingState" required="true" />-->
+                                    <lightning:inputField fieldName="Shipping_Country__c" aura:id="shippingCountry" required="true" />
+                                    <lightning:inputField fieldName="Shipping_Zip_Postal_Code__c" aura:id="postalCode" required="true" />
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button class="slds-float_left"
+                                      variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeEditAddressModal }"/>
+                    <lightning:button variant="brand"
+                                      label="Save"
+                                      title="Save"
+                                      onclick="{! c.editAddressRecord}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+
+
+    </aura:if>
+</aura:component>

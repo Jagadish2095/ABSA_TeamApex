@@ -1,0 +1,221 @@
+<!--
+* Lightning Component for Branch Credit Card Referrals
+*
+* @author  Clifford Willers : ABSA (IQ Business)
+* @version v1.0
+* @since   2021-03-25
+*
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+                access="global"
+                controller="BranchCreditCardReferralController">
+    <aura:attribute name="scoringResult" type="String" />
+    <aura:attribute name="applicationInfoResponse" type="String" />
+    <aura:attribute name="isReferred" type="Boolean" default="false" />
+    <aura:attribute name="referredWithCheque" type="Boolean" default="true" />
+    <aura:attribute name="ccApplicationNumber" type="String" default="123456" />
+    <aura:attribute name="creditStatus" type="String" default="" />
+    <aura:attribute name="creditStatusId" type="String" default="" />
+    <aura:attribute name="creditStatusGroup" type="String" default="" />
+    <aura:attribute name="declineLetterDescription" type="String" default="" />
+
+    <aura:attribute name="referralOptions" type="List" />
+    <aura:attribute name="referralSelection" type="string" />
+    <aura:attribute name="referralComments" type="String" default="" />
+    <aura:attribute name="showComments" type="Boolean" default="false" />
+    <aura:attribute name="showKofax" type="Boolean" default="false" />
+    <aura:attribute name="kofaxResponse" type="string" default="" />
+
+    <aura:attribute name="activeScoringResultSections" type="List" default="['ScoringResult']" />
+    <aura:attribute name="scoringResultLabel" type="String" default="Credit Card application declined" />
+    <aura:attribute name="fromScoring" type="Boolean" default="true" />
+
+    <aura:attribute name="activeApplicationResultSections" type="List" default="['ApplicationResult']" />
+    <aura:attribute name="applicationResultLabel" type="String" default="Credit Card application result" />
+
+    <aura:attribute name="updating" type="Boolean" default="true" />
+    <aura:attribute name="actionClicked" type="string" default="" />
+
+    <aura:handler name="change" value="{! v.kofaxResponse }" action="{! c.handleKofaxResponse }" />
+
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <div class="slds-is-relative" >
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="horizontal-small" size="6">
+                <aura:if isTrue="{!v.fromScoring}">
+                    <div class="slds-box slds-theme_default slds-m-top_medium">
+                        <lightning:accordion aura:id="accordionScoringResult"
+                                            allowMultipleSectionsOpen="true"
+                                            activeSectionName="{! v.activeScoringResultSections }" >
+                            <lightning:accordionSection name="ScoringResult"  label="{! v.scoringResultLabel }">
+                                <aura:set attribute="body">
+                                        <div class="slds-border_top slds-var-p-around_x-small">
+                                            <c:BranchMessage iconName='utility:clear'
+                                                            iconVariant='error'
+                                                            iconSize='small'
+                                                            mediaBody='Unfortunately the customer does not qualify for a credit card at this time.'/>
+                                            <div class="slds-var-p-around_small">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem size="2">
+                                                        <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                            <label>Credit Status:</label>
+                                                        </div>
+                                                        <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                            <label>Credit Status Group:</label>
+                                                        </div>
+                                                        <aura:if isTrue="{! v.declineLetterDescription != '' }">
+                                                            <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                                <label>Decline reason:</label>
+                                                            </div>
+                                                        </aura:if>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem size="4">
+                                                        <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                            <label>{! v.creditStatus + ' (' + v.creditStatusId + ')'}</label>
+                                                        </div>
+                                                        <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                            <label>{! v.creditStatusGroup }</label>
+                                                        </div>
+                                                        <aura:if isTrue="{! v.declineLetterDescription != '' }">
+                                                            <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                                <label>{! v.declineLetterDescription }</label>
+                                                            </div>
+                                                        </aura:if>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                            <lightning:layout >
+                                                <lightning:layoutItem size="6">
+                                                    <legend class="slds-text-heading--small slds-p-top--x-large">
+                                                        <b>How would you like to proceed?</b>
+                                                    </legend>
+                                                </lightning:layoutItem>
+                                            </lightning:layout>
+                                            <div class="slds-var-p-around_small">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem >
+                                                        <div id="{! globalId + '_ReferralOptions' }" class="slds-m-bottom_medium">
+                                                            <lightning:radioGroup aura:id="ReferralOptions"
+                                                                                name="radioGroupReferralOptions"
+                                                                                label="The customer is able to refer their Credit Card application, continue opening a stand-alone cheque account or discard the application"
+                                                                                options="{! v.referralOptions }"
+                                                                                value="{! v.referralSelection }"
+                                                                                type="radio"
+                                                                                onchange="{! c.referralOptionChange }"
+                                                                                />
+                                                        </div>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                            <aura:if isTrue="{!v.showComments}">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem size="12">
+                                                        <div id="{! globalId + '_ReferralComments' }" class="slds-m-bottom_medium">
+                                                            <lightning:textarea name="ReferralComments"
+                                                                                value="{! v.referralComments }"
+                                                                                placeholder="comments..."
+                                                                                label="Comments (maximum length of 150 characters)"
+                                                                                maxlength="150"
+                                                                                messageWhenTooLong="A maximum of 150 characters are allowed."/>
+                                                        </div>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </aura:if>
+                                        </div>
+                                </aura:set>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </div>
+                    <aura:set attribute="else">
+                        <div class="slds-box slds-theme_default slds-m-top_medium">
+                            <lightning:accordion aura:id="accordionApplicationResult"
+                                                allowMultipleSectionsOpen="true"
+                                                activeSectionName="{! v.activeApplicationResultSections }" >
+                                <lightning:accordionSection name="ApplicationResult"  label="{! v.applicationResultLabel }">
+                                    <aura:set attribute="body">
+                                            <div class="slds-border_top slds-var-p-around_x-small">
+                                                <div class="slds-var-p-around_small">
+                                                    <lightning:layout >
+                                                        <lightning:layoutItem size="2">
+                                                            <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                                <label>Credit Status:</label>
+                                                            </div>
+                                                            <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                                <label>Credit Status Group:</label>
+                                                            </div>
+                                                            <aura:if isTrue="{! v.declineLetterDescription != '' }">
+                                                                <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                                    <label>Decline reason:</label>
+                                                                </div>
+                                                            </aura:if>
+                                                        </lightning:layoutItem>
+                                                        <lightning:layoutItem size="4">
+                                                            <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                                <label>{! v.creditStatus + ' (' + v.creditStatusId + ')'}</label>
+                                                            </div>
+                                                            <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                                <label>{! v.creditStatusGroup }</label>
+                                                            </div>
+                                                            <aura:if isTrue="{! v.declineLetterDescription != '' }">
+                                                                <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                                    <label>{! v.declineLetterDescription }</label>
+                                                                </div>
+                                                            </aura:if>
+                                                        </lightning:layoutItem>
+                                                    </lightning:layout>
+                                                </div>
+                                            </div>
+                                    </aura:set>
+                                </lightning:accordionSection>
+                            </lightning:accordion>
+                        </div>
+                    </aura:set>
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <div>
+                    <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                        availableActions="{! v.availableActions }"
+                                        navigateFlowEvent="{! c.handleNavigate }"
+                                        finishLabel='Finish'/>
+                </div>
+            </lightning:layoutItem>
+            <aura:if isTrue="{! v.updating }">
+                <div class="slds-spinner_container" >
+                    <div role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand" >
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a" />
+                        <div class="slds-spinner__dot-b" />
+                    </div>
+                </div>
+            </aura:if>
+        </lightning:layout>
+        <aura:if isTrue="{!v.showKofax}">
+            <section role="dialog"
+                     tabindex="-1"
+                     aria-labelledby="modal-heading-01"
+                     aria-modal="true"
+                     aria-describedby="modal-content-id-1"
+                     class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <h2 id="modal-heading-01" class="customSectionButton"></h2>
+                    </header>
+                    <div class="content slds-theme_default" style="height: 500px" >
+                        <c:ASPKofaxDocumentIntegrationComponent recordId='{! v.recordId}'
+                                                                comments='{! v.referralComments}'
+                                                                KofaxResponse='{! v.kofaxResponse}'
+                                                                ccApplicationNumber='{! v.ccApplicationNumber}' />
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeKofax }"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </div>
+</aura:component>

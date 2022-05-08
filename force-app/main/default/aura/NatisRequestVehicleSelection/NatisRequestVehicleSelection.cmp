@@ -1,0 +1,96 @@
+<aura:component controller="NatisRequestVehicleSelection"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global">
+
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:attribute name="mapValues" type="Map" />
+    <aura:attribute name="recordId" type="String" access="global"/><!--Acc record Id-->
+    <aura:attribute name="caseId" type="String" access="global" />
+    <aura:attribute name="caseRecordTypeId" type="String" access="global"/>
+    <aura:attribute name="clientEmail" type="String" access="global"/>
+    <aura:attribute name="mundateEmail" type="String" access="global"/>
+    <aura:attribute name="mandateMobile" type="String" access="global"/>
+    <aura:attribute name="serviceGroupTypeId" type="String" access="global"/>
+    <aura:attribute name="setEmailFieldDisabledValue" type="boolean" default="true"/>
+    <aura:attribute name="serviceGroupTypeRecord" type="Object"/>
+    <aura:attribute name="caseRecord" type="Object"/>
+
+    <force:recordData aura:id="serviceGroupTypeLoader" recordId="{!v.serviceGroupTypeId}" fields="Id,Additional_Attributes__c" targetFields="{!v.serviceGroupTypeRecord}" recordUpdated="{!c.serviceGroupTypeUpdate}"/>
+    <force:recordData aura:id="caseRecordLoader" recordId="{!v.caseId}" fields="sd_Service_Group_Type_Id__c" targetFields="{!v.caseRecord}" recordUpdated="{!c.caseRecordUpdate}"/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+     <lightning:card iconName="log_event" >
+
+            <div class="c-container">
+
+                <center style="z-index:99">
+                    <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+                </center>
+
+                    <h3 class="slds-section__title">
+                        <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Vechicle Selection</span>
+                    </h3>
+                    <table class="slds-table slds-table--bordered slds-table--cell-buffer">
+                        <thead>
+                            <tr class="slds-text-title--caps">
+                                <th scope="col">
+                                    <div class="slds-truncate">SELECT</div>
+                                </th>
+                                 <th scope="col">
+                                    <div class="slds-truncate">VECHICLE REGISTRATION</div>
+                                </th>
+                                 <th scope="col">
+                                    <div class="slds-truncate">VIN NUMBER</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate">ACCOUNT REFERENCE NUMBER</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate">AMOUNT OUTSTANDING</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.mapValues}"  var="mapKey" indexVar="key">
+                                <tr>
+                                    <td scope="row">
+                                        <lightning:input type="checkbox"
+                                                            label=""
+                                                            value="{!mapKey.key}"
+                                                            aura:id="natisdocs"/>
+                                    </td>
+                                    <aura:iteration items="{!mapKey.value}" var="mapValue">
+                                        <td scope="row">
+                                            <div class="slds-truncate" >{!mapValue}</div>
+                                        </td>
+                                    </aura:iteration>
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+            </div>
+
+        </lightning:card>
+        <div class="slds">
+            <lightning:card title="">
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Send Natis Documents">Send Natis Documents</span>
+                </h3>
+                <lightning:recordEditForm aura:id="recordViewForm"
+                                             recordId="{!v.caseId}"
+                                             recordTypeId="{!v.caseRecordTypeId}"
+                                             objectApiName="Case">
+                    <lightning:inputField fieldName="Email__c"
+                                        aura:id="emailAddress"
+                                        value="{!v.clientEmail}"
+                                        disabled="{!v.setEmailFieldDisabledValue}" />
+                </lightning:recordEditForm>
+                <lightning:button class="slds-align_absolute-center"
+                                    variant="brand"
+                                    label="Close Case"
+                                    title="Close Case"
+                                    onclick="{!c.closeCase}"/>
+                </lightning:card>
+        </div>
+</aura:component>

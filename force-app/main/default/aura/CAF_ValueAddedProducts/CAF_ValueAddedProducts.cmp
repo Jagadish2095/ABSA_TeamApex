@@ -1,0 +1,172 @@
+<aura:component
+                implements="flexipage:availableForAllPageTypes,force:appHostable,force:lightningQuickAction,force:hasRecordId"
+                controller="cafApplicationController"
+                access="global"
+                >
+    <!-- BEGAN ATTRIBUTE -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:method name="callChildVaps" action="{!c.callChildMethodVaps}">
+        <aura:attribute name="appId" type="String" />
+    </aura:method>
+    <aura:attribute name="openNewVapBlockValue" type="String" default="No" />
+    <aura:attribute name="removeVAPDetailsValue" type="String" default="agree" />
+    <aura:attribute name="insuranceCompanyName" type="String" />
+    <aura:attribute name="vapId" type="String" default="" />
+    <aura:attribute name="oppId" type="String" default="{!v.oppId}" />
+    <aura:attribute name="recId" type="String" default="{!v.recId}" />
+    <aura:attribute name="vaplength" type="String" />
+    <aura:attribute name="dataList" type="Object" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="vapsProductMap" type="Map" />
+    <aura:attribute name="isEditable" type="boolean" default="false" />
+    <aura:attribute name="vapsProductOptions" type="List" />
+    <aura:attribute name="vapsProductOptionsAll" type="List" />
+    <aura:attribute name="showConfirmDialog" type="boolean" default="false" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    
+    <aura:attribute name="fieldsData" type="Object" default="{! v.fieldsData }" />
+    <aura:attribute name="productNameCode" type="String" />
+    <aura:attribute name="productNameAndCode" type="String" />
+    <aura:attribute name="vendorCode" type="String" />
+    <aura:attribute name="insuranceCompany" type="String" />
+    <aura:attribute name="numberOfweeksCoverSelected" type="String" default="0" />
+    <aura:attribute name="randValuePerWeek" type="String" default="0" />
+    <aura:attribute name="VAPpremium" type="String" />
+    
+    <aura:attribute name="showInsuranceCompany" type="boolean" default="true" />
+    <aura:attribute name="selectedAccount" type="String" />
+    <aura:attribute name="selectedProduct" type="String" />
+    <aura:attribute name="accProductRelId" type="String" default=""/>
+    <aura:attribute name="isSumInsuredGT15L" type="Boolean" default="false" />	
+    <aura:attribute name="showYesNoDialog" type="boolean" default="false" />
+    <!-- END ATTRIBUTE -->
+    
+    <aura:attribute name="opportunityRecord2" type="Object" />
+    <aura:attribute name="recordLoadError" type="String" />
+    <force:recordData
+                      aura:id="recordLoader"
+                      recordId="{!v.oppId}"
+                      fields="CAF_Sanctioning_Status__c"
+                      targetFields="{!v.opportunityRecord2}"
+                      targetError="{!v.recordLoadError}"
+                      />
+    
+    <lightning:accordionSection name="CAF_ValueAddedProducts" label="{!'Value Added Products ('+v.vaplength+')'}">
+        <!-- BASIC GRID EXAMPLE -->
+        <div class="slds-grid slds-wrap p-lr-20">
+            <div class="slds-col slds-size_8-of-12">
+                <lightning:button label="Add New VAP" variant="brand" aura:id="btnaddNewVap" onclick="{!c.showYesNoDialog}" disabled="{!v.isEditable}"/>	
+                <!--Model Start-->	
+                <div class="slds-m-around_xx-large">	
+                    <aura:if isTrue="{!v.showYesNoDialog}">	
+                        <!--Modal Box Start-->	
+                        <div role="dialog" class="slds-modal slds-fade-in-open ">	
+                            <div class="slds-modal__container">	
+                                <!--Modal Box Header Start-->	
+                                <header class="slds-modal__header">	
+                                    <h1 class="slds-text-heading--medium">Confirmation</h1>	
+                                </header>	
+                                <!--Modal Box Header End-->	
+                                <!--Modal Box Content Start-->	
+                                <div class="slds-modal__content slds-p-around--medium">	
+                                    <center><b>If you need to Add Warranty Product Please select Yes. </b></center>	
+                                </div>	
+                                <!--Modal Box Content End-->	
+                                <!--Modal Box Button Start-->	
+                                <footer class="slds-modal__footer">	
+                                    <lightning:button name='No' label='No' onclick='{!c.openBlock4AddNewVap}'/>	
+                                    <lightning:button variant="brand" name='Yes' label='Yes' onclick='{!c.openBlock4AddNewVap}'/>	
+                                </footer>	
+                                <!--Modal Box Button End-->	
+                            </div>	
+                        </div>	
+                        <div class="slds-backdrop slds-backdrop--open"></div>	
+                    </aura:if>	
+                </div>	
+                <!--Model End-->	
+                
+                <aura:if isTrue="{!v.openNewVapBlockValue == 'Yes'}">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:select
+                                              name="productNameCode"
+                                              label="Product name • Product code"
+                                              onchange="{!c.handleProductChange}"
+                                              aura:id="productNameCodePicklist"
+                                              value="{!v.productNameCode}"
+                                              >
+                                <option value="">Select an option</option>
+                                <aura:iteration items="{!v.vapsProductOptions}" var="item">
+                                    <option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.productNameCode}" />
+                                </aura:iteration>
+                            </lightning:select>
+                            <lightning:input
+                                             class="slds-hide"
+                                             type="text"
+                                             name="productNameAndCode"
+                                             label="Product name • code"
+                                             value="{!v.productNameAndCode}"
+                                             />
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:input type="text" name="vendorCode" label="Vendor code" value="{!v.vendorCode}" />
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <aura:if isTrue="{!v.showInsuranceCompany}">
+                                <lightning:input type="text" name="insuranceCompany" label="Insurance company" value="{!v.insuranceCompany}" />
+                                <aura:set attribute="else">
+                                    <lightning:recordEditForm aura:id="accProdRelationForm" recordId="{!v.accProductRelId}" objectApiName="AccountProductRelationship__c" onsuccess="{!c.handleAccountProductRelationshipSuccess}">
+                                        <label for="vendorAccount">Vendor</label>
+                                        <lightning:inputField aura:id="vendorAccount" fieldName="Account__c" variant="label-hidden" value="{!v.selectedAccount}" onchange="{!c.handleAccChange}"/>
+                                        <lightning:inputField class="slds-hide" fieldName="Product__c" value="{!v.selectedProduct}" />
+                                    </lightning:recordEditForm>
+                                </aura:set>
+                            </aura:if> 
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:input
+                                             type="number"
+                                             name="numberOfweeksCoverSelected"
+                                             value="{!v.numberOfweeksCoverSelected}"
+                                             label="Number of weeks cover selected (Loss of use only)"
+                                             />
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:input type="text" name="randValuePerWeek" value="{!v.randValuePerWeek}" label="Rand value per week (Loss of use only)" />
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:input name="VAPpremium" label="VAP Premium" value="{!v.VAPpremium}" type="Decimal" />
+                        </div>
+                        <!--
+                        <div class="slds-col slds-size_1-of-1"> 
+                            <ui:inputCheckbox name="removeVAPDetails" aura:id="removeVAPDetails"
+                             label="Remove these VAP details. (This action is not reversible)"
+                             value="{! v.removeVAPDetailsValue }"/>
+                        </div>
+      -->
+                        <div class="slds-col slds-size_1-of-1">
+                            <lightning:button label="Cancel" aura:id="btnCancel" onclick="{!c.btnCancel}" />
+                            <lightning:button label="Save" variant="brand" aura:id="btnSave" onclick="{!c.btnSave}" />
+                        </div>
+                    </div>
+                </aura:if>
+                
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-1 p-t-15">
+                        <lightning:datatable
+                                             keyField="id"
+                                             data="{! v.dataList }"
+                                             columns="{! v.columns }"
+                                             hideCheckboxColumn="true"
+                                             onrowaction="{!c.handleRowAction}"
+                                             />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <c:confirmDelete showConfirmDialog="{!v.showConfirmDialog}" recordId="{!v.recordId}" onclick="{!c.doInit}" />
+        <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner alternativeText="Loading" size="medium" />
+        </aura:if>
+    </lightning:accordionSection>
+</aura:component>

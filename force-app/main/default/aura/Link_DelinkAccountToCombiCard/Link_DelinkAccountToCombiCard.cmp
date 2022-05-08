@@ -1,0 +1,155 @@
+<!-- Lightning cmp for Stop/Reverse Debit Order
+         Author: Srikanth  
+         Date : 05/04/2020  -->
+
+<aura:component controller="Link_DelinkAccountCBCardController" implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <!-- filter variables -->
+    <aura:attribute name="clientAccountId" type="String" access="global"  />
+    <aura:attribute name="ViewDebitList" type="object" access="global"/>
+    <aura:attribute name="response" type="object" access="global"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="selectedRows" type="List" access="global"/>
+    <aura:attribute name="actions" type="String" access="global"/>
+    <aura:attribute name="actionItem" type="String"  default=""/>
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="prodTypesList" type="List" />
+    <aura:attribute name="accNumList" type="List" />
+    <aura:attribute name="cbcardRecord" type="List" /> 
+    <aura:attribute name="selectedCBCard" type="String" />  
+    <aura:attribute name="fullName" type="String" />  
+    <aura:attribute name="isModalShow" type="boolean" default="false"/> 
+    <aura:attribute name="linkSectionEnabled" type="Boolean" default="false"/>  
+    <aura:attribute name="invalidProduct" type="Boolean"/> 
+    
+     
+    <aura:attribute name="selectedAccountNumber" type="String" />  
+    
+    
+    <div class="slds">
+        <lightning:card title="">
+            <h3 class="slds-section__title">
+                <span class="slds-truncate slds-button slds-section__title-action" title="View Debit Order" >Link/Delink Combi Card</span>
+            </h3> 
+            <lightning:layout multipleRows="true">
+                
+                <lightning:layoutItem padding="around-small" size="12">
+                     <lightning:input type="text"  class="select-auto-width" aura:id="myProductselection" 
+                                      	disabled="true" label="Select the Product Type" value="{!v.selectedProductValue}"></lightning:input>
+                    
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="12">
+                     <lightning:input type="text"  value="{!v.selectedAccountNumber}" class="select-auto-width" aura:id="myAccountselection" 
+                                     disabled="true" label="Select the Account"></lightning:input>
+                    
+                </lightning:layoutItem>
+                
+                 <aura:if isTrue="{! !v.invalidProduct}" >
+                <lightning:layoutItem padding="around-small" size="12">
+                    <lightning:button aura:id="submitButton" variant="brand" label="Submit" title="Submit" onclick="{!c.onAccountSubmit}"/>
+                </lightning:layoutItem>
+                </aura:if>
+            </lightning:layout>
+            
+            <aura:if isTrue="{!v.linkSectionEnabled}" >
+                <lightning:layout multipleRows="true">
+                    
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <lightning:input type="String" aura:id='clientName' name="input1" label="Client Name" disabled="true" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <lightning:select value="{!v.selectedCBCard}" class="select-auto-width" aura:id="cardNumber" 
+                                         	label="Card Number" >
+                            <option value="">--None--</option>
+                            <aura:iteration items="{!v.cbcardRecord}" var="card" indexVar="key">
+                                <option value="{!card.oaccntnbr}">{!card.oaccntnbr}</option>
+                            </aura:iteration>
+                        </lightning:select>
+                        
+                      <!--  <lightning:input type="String" aura:id='cardNumber' name="input1" label="Card Number" disabled="true"/> -->
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <lightning:select name="select1" label="Action Item"   aura:id="actionItem" required="true" value="{!v.actionItem}" onchange="{!c.updateTableList}">
+                            <option value="">choose one...</option>
+                            <option value="Link">Link</option>
+                            <option value="DeLink">De-Link</option>
+                            <!-- <option value="3">three</option>-->
+                        </lightning:select> </lightning:layoutItem>
+                </lightning:layout>
+            </aura:if>
+        </lightning:card>
+    </div> 
+    <Br></Br>
+    <Br></Br>
+    <aura:if isTrue="{!v.actionItem != ''}" >
+        <div  class=" slds-box slds-box_x-small  slds-m-around_x-small " > 
+            <lightning:card title="{!if(v.actionItem=='Link', 'Link Account', 'De-Link Account')}">
+                <td  role="gridcell">
+                    <lightning:datatable
+                                         keyField="id"
+                                         maxRowSelection="{!if(v.actionItem=='Link', 1, 10)}"
+                                         data="{!v.ViewDebitList }"
+                                         columns="{!v.columns }"
+                                         hideCheckboxColumn="false"
+                                         minColumnWidth="100px"  
+                                         onrowselection="{!c.getSelectedName}"
+                                         resizeStep="5px" class="count"/>
+                    <!--  sortedBy="{!v.sortedBy}"
+                                     sortedDirection="{!v.sortedDirection}"
+                                     onsort="{!c.updateColumnSorting}"
+                                     onrowaction="{! c.handleRowAction }"-->
+                    
+                </td>
+            </lightning:card>
+            <aura:if isTrue="{!v.selectedRows.length > 0}">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button aura:id="submitButton" variant="brand" label="{!v.actionItem}" title="{!v.actionItem}" onclick="{!c.showModal}"/>
+                </lightning:layoutItem>
+            </aura:if>
+        </div> 
+    </aura:if>
+    
+    <!-- Pass the value of the selected option back to the flow -->
+    <aura:attribute name="value" type="String" />
+    <aura:attribute name="action" type="String" /> 
+    
+    <!-- Buttons for the agent to click, according to the customer’s response 
+   <div class="slds-float_left">
+        <lightning:button label="Pause" aura:id="pauseId" 
+                              variant="neutral" onclick="{!c.handleChange}"/>
+        </div>
+    <div class="slds-float_right">
+            <lightning:button label="Next" aura:id="nextId" 
+                              variant="brand" onclick="{!c.handleChange}"/>
+           
+          </div>
+        <div class="slds-float_right">
+        <lightning:button label="Previous" aura:id="previousId" 
+                              variant="neutral" onclick="{!c.handleChange}"/>
+        </div> -->
+    <aura:if isTrue="{!v.isModalShow}">
+        <section role="dialog" tabindex="-1" aria-label="Meaningful description of the modal content" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header slds-modal__header_empty ">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"  onclick="{!c.closeModal}">
+                        X
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <h1 class="slds-align_absolute-center">Are you Sure</h1>  
+                </div>
+                <footer class="slds-modal__footer">
+                    <div class="slds-align_absolute-center">
+                        <lightning:button class="slds-button slds-button_brand"  label="Yes" aura:id="previousId" variant="neutral" onclick="{!c.linkDelinkUpdate}"/>
+                        <lightning:button class="slds-button slds-button_neutral" label="No" aura:id="previousId" variant="neutral" onclick="{!c.closeModal}"/>
+                    </div>                    
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+</aura:component>

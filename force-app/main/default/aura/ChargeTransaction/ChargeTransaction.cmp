@@ -1,0 +1,65 @@
+<!--
+* Lightning Component to enable the user to choose to charge or not to charge the client for a transaction performed
+* @author  Danie Booysen
+* @version v1.0
+* @since   2021-05-05
+*
+-->
+
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+	access="global"
+>
+	<!--Attribute Declaration-->
+	<aura:attribute name="caseIdFromParentCmp" type="String" />
+	<aura:attribute name="chargeLogSource" type="String" default="Salesforce" />
+	<aura:attribute name="accountId" type="String" />
+	<aura:attribute name="UCIDValue" type="String" />
+	<aura:attribute name="CIFValue" type="String" />
+
+	<!-- Aura methods-->
+	<aura:method name="createChargeLog" action="{!c.saveChargeLog}">
+		<aura:attribute name="transactionCode" type="String" />
+	</aura:method>
+
+	<!--Case Record Edit Form-->
+	<lightning:recordEditForm aura:id="caseEditForm" objectApiName="Case" recordId="{!v.caseIdFromParentCmp}" onload="{!c.handleCaseLoad}">
+		<lightning:inputField aura:id="UCIDCaseField" fieldName="UCID__c" class="slds-hide" />
+		<lightning:inputField aura:id="accountIdField" fieldName="AccountId" class="slds-hide" />
+	</lightning:recordEditForm>
+
+	<!--Account Record Edit Form-->
+	<aura:if isTrue="{!not(empty(v.accountId))}">
+		<lightning:recordEditForm aura:id="accountEditForm" objectApiName="Account" recordId="{!v.accountId}" onload="{!c.handleAccountLoad}">
+			<lightning:inputField aura:id="accountCIFField" fieldName="CIF__c" class="slds-hide" />
+		</lightning:recordEditForm>
+	</aura:if>
+
+	<!--Charge Log Record Edit Form to insert a record-->
+	<lightning:recordEditForm
+		aura:id="chargeLogCreateForm"
+		objectApiName="Charge_Log__c"
+		onsuccess="{!c.handleChargeLogSuccess}"
+		onerror="{!c.handleChargeLogError}"
+	>
+		<lightning:messages /><!--Displays error messages related to recordEditForm for Charge_Log__c object-->
+		<lightning:inputField aura:id="accountField" fieldName="Account__c" class="slds-hide" value="{!v.accountId}" />
+		<lightning:inputField aura:id="accountCIFCodeField" fieldName="Account_CIF_Code__c" class="slds-hide" value="{!v.CIFValue}" />
+		<lightning:inputField aura:id="caseField" fieldName="Case__c" class="slds-hide" value="{!v.caseIdFromParentCmp}" />
+		<lightning:inputField aura:id="sourceField" fieldName="Source__c" class="slds-hide" value="{!v.chargeLogSource}" />
+		<lightning:inputField aura:id="transactionCodeField" fieldName="Transaction_Code__c" class="slds-hide" />
+		<lightning:inputField aura:id="transactionDateField" fieldName="Transaction_Date__c" class="slds-hide" />
+		<lightning:inputField aura:id="UCIDField" fieldName="UCID__c" class="slds-hide" value="{!v.UCIDValue}" />
+	</lightning:recordEditForm>
+
+	<!--UI toggle option to select to charge or not charge the transaction-->
+	<lightning:input
+		aura:id="chargeToggle"
+		type="toggle"
+		label="Charge Transaction"
+		name="Charge Toggle"
+		checked="true"
+		messageToggleActive="Charge"
+		messageToggleInactive="Do Not Charge"
+	/>
+</aura:component>

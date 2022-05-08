@@ -1,0 +1,69 @@
+<!--
+  @description       : Lightning Component to send Adhoc sms's from Case
+  @author            : Ignecious Mushanguri
+  @group             : Cloudsmiths
+  @last modified on  : 11-21-2020
+  Modifications Log 
+  Ver   Date         Author                               Modification
+  1.0   11-17-2020   Ignecious Mushanguri  Initial Version
+-->
+<aura:component controller="SendSMSController" implements="force:lightningQuickActionWithoutHeader,force:hasRecordId">
+
+    <!-- ATTRIBUTES -->
+   
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="linkedAccount" type="Boolean" />
+    <aura:attribute name="mobileNumber" type="String" />
+    <aura:attribute name="quickTextOptions" type="List" />
+    <aura:attribute name="selectedSmsTemplateName" type ="String"/>
+    <!--<aura:attribute name ="showError" type ="Boolean"/>
+    <aura:attribute name = "errorMessage" type = "String"/>-->
+
+    <!-- HANDLERS -->
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+    <aura:handler event="force:refreshView" action="{!c.init}"/> 
+    
+    <center style="z-index:99"> 
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    <!--Component-->
+    <aura:renderIf isTrue="{!v.linkedAccount}">
+        
+        <lightning:layout>
+            <lightning:layoutItem size="3" padding="around-small">
+                <div>
+                    <lightning:input type="String" label="Phone Number" name="Phone" required="true"
+                        value="{!v.mobileNumber}" />
+                </div>
+            </lightning:layoutItem>
+        </lightning:layout>
+        
+        <lightning:layout>
+            <lightning:layoutItem size="3" padding="around-small">
+                <lightning:select name="smsTemplate" label="SMS Template" aura:id="selectSmsTemplate" required="true" value ="{!v.selectedSmsTemplateName}">
+                    <option value="--Select sms template--" text="--Select sms template--"></option>
+                    <aura:iteration items="{!v.quickTextOptions}" var="smsTemplate" indexVar="index">
+                        <option text="{!smsTemplate.Name}" value="{!smsTemplate.Name}" />
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>          
+        </lightning:layout>
+
+        <lightning:layout verticalAlign = "centre">
+            <lightning:layoutItem size="3" padding="around-small">
+                <div>
+                    <lightning:button label="Send SMS" title="Send SMS" class ="slds-button" variant ="Brand" onclick ="{!c.dosendSMS}"/>
+                </div>
+            </lightning:layoutItem>
+        </lightning:layout>
+       
+        <aura:set attribute="else">
+            <lightning:layout>
+                <ui:message title="No Account Linked to Case" severity="error">
+                    Link Client to Case on Client Finder to proceed.
+                </ui:message>
+            </lightning:layout>
+        </aura:set>
+    </aura:renderIf>
+</aura:component>

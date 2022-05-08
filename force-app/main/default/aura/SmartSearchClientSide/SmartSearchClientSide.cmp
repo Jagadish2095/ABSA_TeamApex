@@ -1,0 +1,84 @@
+<!--
+* Lightning Component  for implementing Smart Search on the Client Side
+*
+* @author  Simangaliso Mathenjwa : Absa
+* @version v1.0
+* @since   01 March 2021
+*
+-->
+
+<aura:component
+	implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName"
+	access="global"
+>
+	<!--Attributes-->
+	<aura:attribute name="searchKeyword" type="String" default="" />
+	<aura:attribute name="placeHolder" type="String" default="Search Beneficiary..." />
+	<aura:attribute name="UnfilteredData" type="List" description="This will Store returned list of records from server" />
+	<aura:attribute name="dataToDisplay" type="List" />
+	<aura:attribute name="selectedRecord" type="sObject" default="{}" description="Will store the selected record" />
+	<aura:handler name="change" value="{!v.searchKeyword}" action="{!c.doFilter}" />
+	<aura:attribute name="recordIdString" type="String" />
+	<aura:attribute name="hideTable" type="Boolean" />
+
+	<!--Handlers-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:handler name="selectedBeneficiaryEvt" event="c:SelectedBeneficiaryEvent" action="{!c.handleEvent}" />
+	<aura:method name="passUnfilteredData" action="{!c.doInit}" />
+
+	<!--Search Input field and Search button-->
+	<lightning:layout verticalAlign="start" horizontalAlign="start">
+		<lightning:layoutItem padding="horizontal-small" flexibility="auto" size="6">
+			<div class="slds-input-has-icon slds-input-has-icon--right">
+				<div aura:id="lookup_field" class="slds-show">
+					<aura:if isTrue="{!v.showLoadingSpinner}">
+						<lightning:spinner alternative-text="Loading" size="small" variant="brand" alternativeText="Processing" />
+					</aura:if>
+					<lightning:icon class="slds-input__icon slds-show" iconName="utility:search" size="x-small" alternativeText="search" />
+					<span class="slds-icon_container slds-combobox__input-entity-icon" title="record">
+						<span class="slds-assistive-text"></span>
+					</span>
+					<ui:inputText
+						updateOn="keyup"
+						class="slds-lookup__search-input slds-input leftPaddingClass"
+						value="{!v.searchKeyword}"
+						placeholder="{!v.placeHolder}"
+					/>
+				</div>
+			</div>
+		</lightning:layoutItem>
+		<lightning:layoutItem size="4" flexibility="auto" padding="horizontal-small"
+			><lightning:button label="Clear Search" onclick="{!c.clearSearch}"
+		/></lightning:layoutItem> </lightning:layout
+	><br />
+    <!--Results Table-->
+    <div class="external-events slds-table--header-fixed_container" style="height: 400px">
+        <div class="slds-scrollable" style="height: 100%">
+            <table class="slds-table slds-table--bordered">
+                <thead>
+                    <tr>
+                        <th>Pay Code</th>
+                        <th>Beneficiary Name</th>
+                        <th>Own Reference</th>
+                        <th>Recipient Account</th>
+                        <th>Recipient Reference</th>
+                        <th>Recipient Acc Type</th>
+                        <th>Bank</th>
+                    </tr>
+                </thead>
+                <aura:if isTrue="{!!empty(v.dataToDisplay)}">
+                    <tbody>
+                        <aura:iteration items="{!v.dataToDisplay}" var="row" indexVar="rowIndex">
+                            <c:SmartSearchClientSideResult object_record="{!row}" />
+                        </aura:iteration>
+                    </tbody>
+                    <aura:set attribute="else">
+                        <tbody>
+                            <ui:message severity="info"> No beneficiaries found </ui:message>
+                        </tbody>
+                    </aura:set>
+                </aura:if>
+            </table>
+        </div>
+    </div>
+</aura:component>

@@ -1,0 +1,67 @@
+<!--
+* Lightning Component for  Covid 19 product or Credit maintenance Contract
+* 
+* @author  Almas Aleem : Absa
+* @version v1.0
+* @since   2020-11-23
+* @UserStory W-007815
+-->
+
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" >
+	 <!-- Attributes Declaration-->
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="hideSubmitButton" type="Boolean" default="true"/>
+    <aura:attribute name="hideContractDetails" type="Boolean" default="false"/>
+    <aura:attribute name="disabledButton" type="Boolean" default="false"/>
+    
+    <aura:attribute name="activeSections" type="List" default="['Product fulfilment']" />
+    
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    
+    <!-- Read Opportunity Record Type -->
+     
+    
+    <aura:attribute name="OppRecord" type="Object"/>
+     <force:recordData aura:id="recordLoader"
+                      fields="Id,AccountId,RecordTypeName__c,Is_Submitted_FulFilment__c,Submit_To_Quality_Validator__c,Is_Submitted_QValidation__c"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.OppRecord}"
+                     
+                      />
+    
+    <!-- UI Section -->
+    <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections }">
+        <!-- Contract sections -->
+        <lightning:accordionSection name="Product fulfilment" label="Contract Details">
+           <!-- UI for file upload-->
+            <c:DocumentUploaderBlock recordId = "{!v.recordId}"
+			objectApiName = "Opportunity"
+			fieldName = "Covid_Contract_URL__c"
+			fileType = "Absa 7040 EX - COVID-19 Contract"
+               />
+   
+          <aura:if isTrue="{!v.hideContractDetails}">
+            <lightning:recordEditForm aura:id="EditOpp" objectApiName="Opportunity" recordId="{!v.recordId}" >
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <p>I attest that the information captured is accurate.</p> 
+                        <lightning:inputField fieldName="Submit_To_Quality_Validator__c" aura:id="fulfillDecision"  variant="label-hidden"
+                                              onchange="{!c.showButton}" disabled="{!v.OppRecord.Submit_To_Quality_Validator__c}"/>
+                    </span>
+                </div>
+                <aura:if isTrue="{!not(v.hideSubmitButton) || (v.OppRecord.Is_Submitted_FulFilment__c)}">
+                    <lightning:button variant="brand" class="slds-align_absolute-center slds-var-m-top_xx-large"
+                                      label="Submit For Quality Validation" type="submit" onclick="{!c.submitforQuality}" disabled="{!v.OppRecord.Submit_To_Quality_Validator__c}" />
+                    
+                </aura:if>
+            </lightning:recordEditForm>
+            </aura:if>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

@@ -1,0 +1,204 @@
+<!--Lightning cmp for Close Case and/or Send Email (CloseCaseScreen)
+    This component can Send an Email and Close the Case. It can do either or of these actions depending on the Boolean values passed in
+    Author: Jason Q & Danie Booysen
+    Date : 2020/11/05
+-->
+<aura:component
+	controller="CloseCase"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+	access="global"
+>
+	<!--Handler Declaration-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<!--Global Attributes Declaration-->
+	<aura:attribute name="caseIdFromFlow" type="String" access="global" /><!-- Required Field From Flow -->
+	<aura:attribute name="emailAddressFromFlow" type="String" access="global" /><!-- Optional. Can be manually inputted -->
+	<aura:attribute name="emailTemplateFromFlow" type="String" access="global" /><!-- Required. If you intend to send an Email (sendEmailFromFlow = true)-->
+	<aura:attribute name="closeCaseFromFlow" type="Boolean" access="global" /><!-- Required. Can be either True or False depending on the Action you want to perform -->
+	<aura:attribute name="sendEmailFromFlow" type="Boolean" access="global" /><!-- Required. Can be either True or False depending on the Action you want to perform -->
+	<aura:attribute name="headerTextFromFlow" type="String" access="global" /><!-- Optional. Header Text to be displayed -->
+	<aura:attribute name="paragraphTextFromFlow" type="String" access="global" /><!-- Optional. Paragraph Text to be displayed -->
+	<aura:attribute name="fromEmailAddressFromFlow" type="String" access="global" /><!-- Optional. Can be manually inputted -->
+
+	<!-- Attributes Declaration-->
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="isFormReadOnly" type="Boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="toastMessage" type="String" default="Case successfully updated. " />
+	<aura:attribute name="showPaymentStatusSuccessFromFlow" type="Boolean" access="global" default="false" />
+	<aura:attribute name="makeAnotherPaymentToFlow" type="Boolean" access="global" default="false" />
+	<aura:attribute name="activeTabFromFlow" type="String" access="global" />
+	<aura:attribute name="addBenFieldsToFromFlow" type="String" access="global" />
+
+	<!--TB Payments Job Fields Simangaliso Mathenjwa-->
+	<aura:attribute name="selectedProductValue" type="String" access="global" />
+	<aura:attribute name="selectedAccountNumber" type="String" />
+	<aura:attribute name="recipientRefName" type="string" default="" />
+	<aura:attribute name="targetAccountNo" type="string" default="" />
+	<aura:attribute name="targetBankName" type="string" default="" />
+	<aura:attribute name="selectedBranchCode" type="string" default="" />
+	<aura:attribute name="selectedTargetAccType" type="string" default="Cheque" />
+	<aura:attribute name="recipientReference" type="string" default="" />
+	<aura:attribute name="paymentRefName" type="string" default="" />
+	<aura:attribute name="accessAcc" type="String" />
+	<aura:attribute name="customNextButtonLabel" type="String" default="Next" access="global" />
+	<aura:attribute name="showCustomNextButton" type="boolean" default="false" access="global" />
+	<aura:attribute name="showAddBeneficiary" type="boolean" default="false" access="global" />
+	<aura:attribute name="respFromCIGetAccLink" type="String" />
+
+	<!-- Spinner -->
+	<aura:if isTrue="{!v.isSpinner}">
+		<lightning:spinner variant="brand" alternativeText="Busy" />
+	</aura:if>
+
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+	<!--Payment Success Message Simangaliso Mathenjwa 19 March 2021-->
+	<aura:if isTrue="{!v.showPaymentStatusSuccessFromFlow}">
+		<lightning:layout multipleRows="true">
+			<lightning:layoutItem padding="around-small" size="6">
+				<div class="slds-notify slds-notify_toast slds-theme--success slds-size_12-of-12">
+					<span class="slds-assistive-text"> </span>
+					<div class="slds-notify__content">
+						<h5 class="slds-text-heading_small slds-align_absolute-right">Successful Transaction</h5>
+						<br />
+						<p class="slds-align_absolute-center">Payment Status : Successful</p>
+					</div>
+				</div>
+			</lightning:layoutItem>
+		</lightning:layout>
+	</aura:if>
+	<aura:if isTrue="{!not(empty(v.caseIdFromFlow))}">
+		<!-- record Edit Form -->
+		<lightning:recordEditForm
+			aura:id="caseEditForm"
+			objectApiName="Case"
+			recordId="{!v.caseIdFromFlow}"
+			onload="{!c.handleLoad}"
+			onsubmit="{!c.handleSubmit}"
+			onsuccess="{!c.handleSuccess}"
+			onerror="{!c.handleError}"
+		>
+			<!-- Hidden Field(s) -->
+			<lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+		</lightning:recordEditForm>
+		<!--TB Make Another payment/Add beneficiary button -SM 19 March 2021-->
+
+		<lightning:layout multipleRows="true">
+			<lightning:layoutItem padding="around-small" size="12" class="{!if(empty(v.headerTextFromFlow), 'slds-hide', '')}">
+				<h2 style="font-weight: bold; font-size: large">{!v.headerTextFromFlow}</h2>
+			</lightning:layoutItem>
+
+			<lightning:layoutItem padding="around-small" size="12" class="{!if(empty(v.paragraphTextFromFlow), 'slds-hide', '')}">
+				<p>{!v.paragraphTextFromFlow}</p>
+			</lightning:layoutItem>
+
+			<lightning:layoutItem padding="around-small" size="6" class="{!if(v.sendEmailFromFlow, '', 'slds-hide')}">
+				<lightning:input
+					type="email"
+					aura:id="emailAddressField"
+					label="Email Address"
+					value="{!v.emailAddressFromFlow}"
+					disabled="{!v.isFormReadOnly}"
+				/>
+			</lightning:layoutItem>
+
+			<lightning:layoutItem padding="around-small" size="12">
+				<aura:if isTrue="{!v.showCustomNextButton}">
+					<lightning:button
+						aura:id="NEXT"
+						class="slds-m-top_small"
+						label="{!v.customNextButtonLabel}"
+						variant="neutral"
+						onclick="{!c.onButtonPressed}"
+					/>
+				</aura:if>
+			</lightning:layoutItem>
+
+			<lightning:layoutItem padding="around-small" size="12">
+				<aura:if isTrue="{!v.activeTabFromFlow =='onceOffPayment'}">
+					<lightning:button
+						aura:id="addBeneficiary"
+						class="slds-m-top_small"
+						label="Add Beneficiary"
+						variant="success"
+						onclick="{!c.openAddBeneficiaryModal}"
+					/>
+				</aura:if>
+			</lightning:layoutItem>
+
+			<lightning:layoutItem padding="around-small" size="12">
+				<lightning:button
+					aura:id="actionBtn"
+					variant="brand"
+					name="Send Email"
+					label="Send Email"
+					onclick="{!c.handleAction}"
+					disabled="{!v.isFormReadOnly}"
+				/>
+			</lightning:layoutItem>
+		</lightning:layout>
+	</aura:if>
+
+	<!--Add beneficiary popup-->
+	<aura:if isTrue="{!v.showAddBeneficiary}">
+		<!-- MODAL BOX Start-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open slds-modal--medium">
+				<div class="slds-modal__container">
+					<!--  MODAL BOX HEADER Start -->
+					<header class="slds-modal__header">
+						<lightning:buttonIcon
+							iconName="utility:close"
+							onclick="{! c.closeAddBeneficiarayModal}"
+							alternativeText="close"
+							variant="bare-inverse"
+							class="slds-modal__close"
+						/>
+						<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate font-weight-bold" style="color: black">
+							<b>Add Beneficiary</b>
+						</h2>
+					</header>
+
+					<!-- MODAL BOX BODY Part Start-->
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" style="height: 500px">
+						<c:PaymentsAddBeneficiary
+							selectedProductTypeFromFlow="{!v.selectedProductValue}"
+							selectedAccountNumberToFlow="{!v.selectedAccountNumber}"
+							beneficiaryName="{!v.recipientRefName}"
+							accountNumber="{!v.targetAccountNo}"
+							selectedBankName="{!v.targetBankName}"
+							branchCode="{!v.selectedBranchCode}"
+							selectedTargetAccType="{!v.selectedTargetAccType}"
+							beneficiaryReference="{!v.recipientReference}"
+							ownReference="{!v.paymentRefName}"
+							respFromCIGetAccLink="{!v.respFromCIGetAccLink}"
+							showForm="false"
+						/>
+					</div>
+
+					<!-- MODAL BOX FOOTER Part Start -->
+					<footer class="slds-modal__footer">
+						<lightning:button variant="neutral" label="Close" title="Close" onclick="{!c.closeAddBeneficiarayModal}" />
+					</footer>
+				</div>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!-- MODAL BOX Part END Here -->
+	</aura:if>
+</aura:component>

@@ -1,0 +1,119 @@
+<aura:component Controller="BrokerNoteProcessController" implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes,force:hasRecordId" access="global" >
+	<aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="recordId" type="String"/>   
+    <aura:attribute name="disclosureScript" type="Object"/>
+    <aura:attribute name="consentScript" type="Object"/>
+    <aura:attribute name="caseObj" type="Case" default="{'sobjectType':'Case'}" />
+    <aura:attribute name="isDisclosureConfirmed" type="boolean" />
+    <aura:attribute name="consentChoice" type="String" />
+    <aura:attribute name="activeSections" type="List" default="['disclosure','consent']"  />
+    <aura:attribute name="caseFields" type="Object"/>
+    <aura:attribute name="caseRecord" type="Object"/>
+    <aura:attribute name="value" type="String" />
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Yes', 'value': 'Yes'},
+   														{'label': 'No', 'value': 'No'}
+    													]"/>
+   
+   
+    
+    <force:recordData aura:id="recordLoader"
+    				  recordId="{!v.recordId}"
+   					  fields="OwnerId"
+    				  targetFields="{!v.caseFields}"
+    				  targetRecord="{!v.caseRecord}"
+                      recordUpdated="{!c.recordUpdated}"
+                    />
+   <aura:registerEvent name="DisclosureConfirmationEvent" type="c:DisclosureConfirmationEvent"/>
+   
+   <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:attribute name="isLoading" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.isLoading}">
+        <lightning:spinner alternativeText="Loading"/>
+    </aura:if>
+        
+   <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{!v.activeSections}" >
+     <lightning:card class="Pad">
+        <lightning:accordionSection name="disclosure" label="Disclosure" >
+      
+               <lightning:layout multiplerows="true">
+               <lightning:layoutitem size="1"> 
+                   <lightning:input type="checkbox" name="disclosure" checked="{!v.caseObj.isDisclosureConfirmed__c}"  required="true" onchange="{!c.handleCheckboxChange}"/><br/>
+          </lightning:layoutitem>
+         <lightning:layoutitem size="11"> 
+               <lightning:formattedRichText class="Normal"  value="{!v.disclosureScript.Script__c}">
+               </lightning:formattedRichText>
+         </lightning:layoutitem>
+            </lightning:layout> 
+        </lightning:accordionSection>
+     </lightning:card>
+     
+     <lightning:card class="Pad">
+       <lightning:accordionSection name="consent" label="{!v.consentScript.Section__c}" >
+          <lightning:layout multiplerows="true">
+               <lightning:layoutitem size="12">
+                   <lightning:formattedRichText class="Normal" value="{!v.consentScript.Script__c}">
+                   </lightning:formattedRichText>
+               </lightning:layoutitem>
+           </lightning:layout>
+           <lightning:layout>
+              <lightning:layoutitem size="12">
+                  
+                   <lightning:radioGroup name="ConsentChoices" 
+                                              options="{!v.options}"
+                                              value="{!v.consentChoice}"
+                                              type="radio"
+                                              class="customRadioCls"
+                                              onchange="{!c.handleConsentChange}"
+                                              />
+                 
+               </lightning:layoutitem>
+          </lightning:layout>
+        </lightning:accordionSection>
+     </lightning:card>
+   </lightning:accordion>
+
+    <div class="slds-m-around_xxx-large">
+        
+        <!--Use aura:if tag to display/hide popup based on isModalOpen value-->  
+        <aura:if isTrue="{!v.isModalOpen}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                  
+                                    
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div>
+                           
+                           <lightning:formattedRichText class="Normal"  value="{!$Label.c.Consent_Confirmation}">
+                                            </lightning:formattedRichText>
+                            
+                        </div>
+     
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <div class="slds-align_absolute-center">
+                            <lightning:buttonGroup>
+                        <lightning:button variant="neutral"
+                                          label="No"
+                                          title="No"
+                                          onclick="{!c.handleNoConsent}"/>
+                        
+                        <lightning:button variant="neutral"
+                                          label="Yes"
+                                          title="Yes"
+                                          onclick="{!c.closeModel}"/>
+                                </lightning:buttonGroup>
+                            </div>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </div>
+    
+</aura:component>

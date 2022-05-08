@@ -1,0 +1,63 @@
+<aura:component controller="generateCPFDocuments" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+
+    <aura:attribute name="isCreditReqApproves" type="String" default="NO" />
+    <aura:handler name="change" value="{!v.isCreditReqApproves}" action="{!c.itemsChange}"/>
+    <aura:attribute name="fileType" type="List" default="['.png', '.jpg', '.jpeg','.pdf']" />
+    <aura:attribute name="fileName" type="String" default="No File Selected.." />
+    <aura:attribute name="multiple" type="Boolean" default="true" />
+    <aura:attribute name="disabled" type="Boolean" default="true" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="documentType" type="String" default="Credit Approval Document"/>
+    <aura:attribute name="showLoadingSpinner" type="boolean" default="false" />
+
+    <lightning:accordion activeSectionName="Credit Approval" allowMultipleSectionsOpen="false">
+        <lightning:accordionSection name="Credit Approval" label="Credit Approval" >
+            <lightning:recordEditForm aura:id="wasTheCreditRequestApprovedForm"
+                                              objectApiName="Opportunity"
+                                              recordId="{!v.recordId}"
+                                              onload="{!c.onload}"
+                                              onsuccess="{!c.handleSuccess}"
+                                              onerror="{!c.handleError}">
+                                              <lightning:inputField  aura:id="wasTheCreditRequestApproved" class="slds-hide" fieldName="Was_the_credit_request_approved__c"/>
+                <c:DynamicPicklistValueRenderer aura:id="InputUnlimitoBereleased"
+                                                picklistfieldName="Was_the_credit_request_approved__c"
+                                                picklistLabelName="Was the credit request approved?"
+                                                objectName="Opportunity"
+                                                value="{!v.isCreditReqApproves}"
+                                                required ="true"
+                                                />
+                <br/><br/>
+                <aura:if isTrue="{!v.isCreditReqApproves == 'YES'}">
+                    <lightning:card title="Document Type">
+                        <aura:set attribute="actions">
+                            <lightning:buttonMenu alternativeText="Show menu">
+                                <lightning:menuItem value="MenuItemOne" label="View File Details" disabled="true"/>
+                                <lightning:menuItem value="MenuItemTwo" label="Generate Document" disabled="true"/>
+                            </lightning:buttonMenu>
+                        </aura:set>
+                        <!--lightning:fileUpload aura:id="fileId"
+                                                label="Credit Approval Document"
+                                            name="fileUploader"
+                                            multiple="false"
+                                            accept="{!v.filetype}"
+                                            recordId="{!v.recordId}"
+                                            onuploadfinished="{!c.handleUploadFinished}"
+                                            /-->
+                        <lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" type="file"
+                        name="file" label="Select Attachment" multiple="false" />
+                        <br />
+                        <button class="slds-button slds-button_brand" onclick="{!c.doSave}">Upload
+                            Attachment</button>
+                        <div class="slds-text-body_small">{!v.fileName} </div>
+                        <aura:if isTrue="{!v.showLoadingSpinner}">
+                            <div class="slds-text-body_small slds-text-color_error">Uploading...
+                                <img src="/auraFW/resources/aura/images/spinner.gif" class="spinner-img"
+                                    alt="Loading" />'
+                            </div>
+                        </aura:if>
+                    </lightning:card>
+                </aura:if>
+            </lightning:recordEditForm>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

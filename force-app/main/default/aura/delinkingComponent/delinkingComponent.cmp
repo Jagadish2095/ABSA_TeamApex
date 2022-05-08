@@ -1,0 +1,277 @@
+<aura:component implements="lightning:availableForFlowScreens" controller="DelinkingController" access="global">
+
+    <aura:attribute name="clientKey" type="String" access="global"/>
+    <aura:attribute name="accountId" type="String" access="global"/>
+
+    <aura:attribute name="chequeAccounts" type="List"/>
+    <aura:attribute name="chequeAccountCharges" type="List"/>
+    <!-- used for excluding spousal pricing schemes -->
+    <aura:attribute name="spousalConstants" type="String[]" default="['spouse', 'spousal']"/>
+
+    <aura:attribute name="selectedChequeAccount" type="String"/>
+
+    <aura:attribute name="showChequeAccountCharge" type="Boolean"/>
+    <aura:attribute name="selectedAccountCharge" type="String"/>
+    <!-- Account number -->
+    <aura:attribute name="accountNumber" type="String"/>
+    <!-- Charge cap frequency -->
+    <aura:attribute name="chargeCapFrequencyOptions" type="List"/>
+    <aura:attribute name="chargeCapFrequencyValue" type="String" default="M"/>
+    <!-- Charge expiry date -->
+    <aura:attribute name="chargeExpiryDate" type="Date"/>
+    <!-- Current price scheme code -->
+    <aura:attribute name="currentPriceScheme" type="String"/>
+    <!-- Pricing scheme date -->
+    <aura:attribute name="pricingSchemeDate" type="Date"/>
+    <!-- Cap Date -->
+    <aura:attribute name="capDate" type="Date" default=""/>
+    <!-- CBP charge statement -->
+    <aura:attribute name="cbpChargeStatementOptions" type="List" default="[
+    {'label': 'Yes', 'value': 'Y'},
+    {'label': 'No', 'value': 'N'}
+    ]"/>
+    <aura:attribute name="cbpChargeStatementValue" type="String"/>
+    <!-- Mandate number -->
+    <aura:attribute name="mandateNumber" type="Long"/>
+    <!-- New price scheme selection -->
+    <aura:attribute name="newPriceSchemeOptions" type="List"/>
+
+    <aura:attribute name="cqs445o_output_area" type="Object"/>
+    <aura:attribute name="cashCharges" type="List"/>
+    <aura:attribute name="cashDeps" type="List"/>
+    <aura:attribute name="mgtcrgBariers" type="List"/>
+
+    <aura:attribute name="confirmChangesOptions" type="List" default="[
+        {'label': 'Yes', 'value': 'Yes'},
+        {'label': 'No', 'value': 'No'}
+    ]"/>
+    <aura:attribute name="confirmChangesValue" type="String" default="No"/>
+
+    <aura:attribute name="showSpinner" type="Boolean"/>
+    <aura:attribute name="delinkButtonDisabled" type="Boolean" default="true"/>
+    <aura:attribute name="showPricingScheme" type="Boolean"/>
+
+    <aura:attribute name="newPackageDesc" type="String"/>
+    <aura:attribute name="newPriceSchemeCode" type="String"/>
+    <aura:attribute name="updateMessages" type="List"/>
+    <aura:attribute name="updateSuccessfull" type="Boolean"/>
+    <aura:attribute name="showDelinkResult" type="Boolean"/>
+    <aura:attribute name="isAccountNumbersFetched" type="Boolean"/>
+    <aura:attribute name="isValueBundleOptionsFetched" type="Boolean"/>
+
+    <lightning:navigation aura:id="navService"/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!-- <div style="position: absolute;"> -->
+    <lightning:card>
+        <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner variant="brand" size="large"/>
+        </aura:if>
+
+        <aura:if isTrue="{!not(v.showDelinkResult)}">
+            <!-- Current Products -->
+            <lightning:card class="slds-p-horizontal_x-large" title="Current Products" iconName="standard:account">
+                <div class="slds-p-horizontal_large">
+                    <div class="slds-p-vertical_small slds-p-left_large" style="font-size: 0.9rem;">Please select the cheque account to be delinked from a Package</div>
+
+                    <lightning:layout multipleRows="true" horizontalAlign="space">
+
+                        <lightning:layoutItem padding="horizontal-large" size="6">
+                            <div class="slds-size_2-of-3">
+                                <lightning:combobox label="Cheque account" placeholder="Select an Option" options="{!v.chequeAccounts}" value="{!v.selectedChequeAccount}" onchange="{!c.handleChequeAccountChange}"/>
+                            </div>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="horizontal-large" size="6">
+                            <aura:if isTrue="{!v.showChequeAccountCharge}">
+                                <div class="slds-size_2-of-3">
+                                    <lightning:combobox label="Cheque account charge" placeholder="Select an Option" options="{!v.chequeAccountCharges}" value="{!v.selectedAccountCharge}" onchange="{!c.accountChargeClick}"/>
+                                </div>
+                            </aura:if>
+                        </lightning:layoutItem>
+
+                    </lightning:layout>
+                </div>
+            </lightning:card>
+            <!-- // Current Products -->
+            <br/>
+
+            <aura:if isTrue="{!v.showPricingScheme}">
+                <!-- New Pricing Scheme -->
+                <lightning:card class="slds-p-horizontal_x-large" title="New Pricing Scheme" iconName="standard:account">
+                    <div class="slds-p-horizontal_large">
+                        <div class="slds-p-vertical_small slds-p-left_large" style="font-size: 0.9rem;">Please confirm and capture the below details</div>
+
+                        <lightning:layout multipleRows="true" horizontalAlign="space">
+                            <!-- Account number -->
+                            <lightning:layoutItem  padding="horizontal-large" size="6">
+                                <div class="slds-size_2-of-3  slds-p-vertical_x-small">
+                                    <lightning:input disabled="true" value="{!v.accountNumber}" label="Account number"/>
+                                </div>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="horizontal-large" size="6">
+                                <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small"></div>
+                            </lightning:layoutItem>
+                            <!-- // Account number -->
+
+                            <!-- Charge cap frequency, Cap date -->
+                            <lightning:layoutItem padding="horizontal-large" size="6">
+                                <div class="slds-size_2-of-3 slds-p-vertical_x-small">
+                                    <lightning:combobox label="Charge cap frequency" placeholder="Select an Option" options="{!v.chargeCapFrequencyOptions}" value="{!v.chargeCapFrequencyValue}" disabled="true"/>
+                                </div>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="horizontal-large" size="6">
+                                <div class="slds-size_2-of-3 slds-p-vertical_x-small">
+                                    <lightning:input aura:id="capDate" type="date" value="{!v.capDate}" dateStyle="short" label="Cap date" required="true"/>
+                                </div>
+                            </lightning:layoutItem>
+                            <!-- // Charge cap frequency, Cap date -->
+
+                            <!-- Charge expiry date, CBP charge statement -->
+                            <lightning:layoutItem padding="horizontal-medium" size="6">
+                                <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small">
+                                    <lightning:input type="date" dateStyle="short" label="Charge expiry date" value="{!v.chargeExpiryDate}"/>
+                                </div>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="horizontal-medium" size="6">
+                                <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small">
+                                    <lightning:combobox label="CBP charge statement" placeholder="Select an Option" options="{!v.cbpChargeStatementOptions}" value="{!v.cbpChargeStatementValue}"/>
+                                </div>
+                            </lightning:layoutItem>
+                            <!-- // Charge expiry date, CBP charge statement -->
+
+                            <!-- Current price scheme code, New price scheme selection -->
+                            <lightning:layoutItem padding="horizontal-medium" size="6">
+                                <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small">
+                                    <lightning:input disabled="true" value="{!v.currentPriceScheme}" label="Current price scheme code"/>
+                                </div>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="horizontal-medium" size="6">
+                                <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small">
+                                    <lightning:combobox aura:id="newPriceSchemeCombobox" label="New price scheme selection" placeholder="Select an Option" options="{! v.newPriceSchemeOptions }" value="{!v.selectedAccountCharge}" required="true"/>
+                                </div>
+                            </lightning:layoutItem>
+                            <!-- // Current price scheme code, New price scheme selection -->
+
+                            <!-- Pricing scheme date, Mandate number -->
+                            <lightning:layoutItem padding="horizontal-medium" size="6">
+                                <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small">
+                                    <lightning:input aura:id="pricingSchemeDate" type="date" dateStyle="short" value="{!v.pricingSchemeDate}" label="Pricing scheme date" disabled="true"/>
+                                </div>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="horizontal-medium" size="6">
+                                <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small">
+                                    <lightning:input aura:id="mandateNumber" label="Mandate number" value="{!v.mandateNumber}" required="true"/>
+                                </div>
+                            </lightning:layoutItem>
+                            <!-- // Pricing scheme date, Mandate number -->
+
+                            <!-- Confirm charges -->
+                            <lightning:layoutItem padding="horizontal-medium" size="6">
+                                <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small"></div>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem padding="horizontal-medium" size="6">
+                                <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small">
+
+                                    <lightning:radioGroup label="Confirm changes"
+                                                        options="{!v.confirmChangesOptions}"
+                                                        value="{!v.confirmChangesValue}"
+                                                        onchange="{!c.confirmChangesClick}"
+                                                        type="radio"
+                                                        class="radioHorizontal"/>
+                                </div>
+                            </lightning:layoutItem>
+                            <!-- // Confirm charges -->
+                        </lightning:layout>
+                    </div>
+                </lightning:card>
+                <!-- // New Pricing Scheme -->
+            </aura:if>
+
+
+            <!-- Footer -->
+            <lightning:card class="slds-p-horizontal_x-large">
+                <div class="slds-p-horizontal_large">
+
+                    <lightning:layout multipleRows="true" horizontalAlign="space">
+
+                        <lightning:layoutItem padding="vertical-large" size="12">
+                            <div class="slds-p-vertical_medium"></div>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="horizontal-medium" size="6">
+                            <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small">
+                                <div style="float: left;">
+                                    <lightning:button variant="brand-outline" label="Cancel" onclick="{!c.navigateToHomePage}"/>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="horizontal-medium" size="6">
+                            <div class="slds-size_2-of-3 slds-p-left_x-small slds-p-vertical_x-small">
+                                <div style="float: right;">
+                                    <aura:if isTrue="{!v.showPricingScheme}">
+                                        <lightning:button variant="brand" label="Delink" disabled="{!v.delinkButtonDisabled}" onclick="{!c.delinkButtonClick}"/>
+                                    </aura:if>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+            </lightning:card>
+            <!-- // Footer -->
+        </aura:if>
+
+        <!-- Delinking result -->
+        <aura:if isTrue="{!v.showDelinkResult}">
+            <aura:if isTrue="{!v.updateSuccessfull}">
+                <!-- //Success result -->
+                <lightning:icon iconName="action:approval" size="large" class="slds-m-around_large slds-float_left"/>
+
+                <div style="margin-left: 7rem;">
+                    <br/><br/>
+                    <lightning:formattedText value="Thank you for choosing Absa" class="slds-text-heading_large"/><br/><br/>
+                    <lightning:formattedText value="The accounts have been successfully delinked" class="slds-text-heading_medium"/><br/><br/>
+                    <lightning:formattedText value="{! 'The customer\'s accounts have been successfully delinked into a ' + v.newPriceSchemeCode + ' - ' + v.newPackageDesc}" class="slds-text-heading_small"/><br/>
+                </div>
+                <!-- //Success result -->
+
+                <!-- Error result -->
+                <aura:set attribute="else">
+                    <div>
+                        <lightning:icon iconName="action:close" size="large" class="slds-m-around_large slds-float_left"/>
+                    </div>
+                    <div>
+                        <br/><br/>
+                        <lightning:formattedText value="Cannot delink package" class="slds-text-heading_large"/><br/><br/>
+                        <lightning:formattedText value="Unfortunately the package cannot be delinked at this time due to the following reasons" class="slds-text-heading_medium"/>
+                        <br/><br/>
+
+                        <div style="margin-left: 7rem">
+                            <aura:iteration items="{!v.updateMessages}" var="message">
+                                <br/>
+                                <lightning:icon iconName="utility:check"/>
+                                <lightning:formattedText value="{!message}" class="slds-text-heading_small slds-m-horizontal_medium"/>
+                            </aura:iteration>
+                        </div>
+                    </div>
+                </aura:set>
+                <!-- //Error result -->
+            </aura:if>
+
+            <div class="slds-float_right slds-m-around_large">
+                <br/>
+                <lightning:button variant="brand" label="Done" onclick="{!c.navigateToHomePage}"/>
+            </div>
+        </aura:if>
+
+    </lightning:card>
+    <!-- </div> -->
+</aura:component>

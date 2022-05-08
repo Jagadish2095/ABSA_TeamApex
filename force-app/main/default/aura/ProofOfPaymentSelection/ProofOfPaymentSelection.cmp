@@ -1,0 +1,153 @@
+<!--
+* Lightning Component for selecting what proof of payment types to send (payer/beneficiary)
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2021-02-08
+*
+-->
+
+<aura:component
+	controller="ProofOfPaymentSelController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+	access="global"
+>
+	<lightning:workspaceAPI aura:id="workspace" />
+
+	<!--Attribute Declaration-->
+	<aura:attribute
+		name="options"
+		type="List"
+		default="[{'label': 'Payer Proof of Payment', 'value': 'client'},
+                {'label': 'Recipient Proof of Payment', 'value': 'beneficiary'}]"
+	/>
+	<aura:attribute name="value" type="List" />
+	<aura:attribute name="proofOfPaymentRecipients" type="List" />
+	<aura:attribute name="clientSelected" type="Boolean" default="false" />
+	<aura:attribute name="beneficiarySelected" type="Boolean" default="false" />
+	<aura:attribute name="beneficiaryEmailAddress" type="String" />
+	<aura:attribute name="clientEmailAddress" type="String" />
+	<aura:attribute name="showNextButton" type="boolean" default="false" />
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="beneficiaryAttachment" type="String" />
+	<aura:attribute name="clientAttachment" type="String" />
+	<aura:attribute name="isFormReadOnly" type="Boolean" default="false" />
+	<!--Global/Flow Attribute Declaration-->
+	<aura:attribute name="caseIdFromFlow" type="String" access="global" />
+	<aura:attribute name="mbInitiateRespFromFlow" type="String" access="global" />
+	<aura:attribute name="uiFieldsForProofOfPaymentFromFlow" type="String" access="global" />
+	<aura:attribute name="isBusinessAccountFromFlow" type="String" access="global" />
+	<aura:attribute name="accountIdFromFlow" type="String" access="global" />
+	<aura:attribute name="showPaymentStatusSuccessFromFlow" type="Boolean" access="global" default="false" />
+	<aura:attribute name="selectedOOPFromFlow" type="String" access="global" />
+	<aura:attribute name="selectedBenPaymentFromFlow" type="String" access="global" />
+	<aura:attribute name="selectedBenEftFromFlow" type="String" access="global" />
+	<aura:attribute name="selectedBenNameFromFlow" type="String" access="global" />
+
+	<!--Start of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+	<aura:handler name="change" value="{!v.clientIDnVObjectParent}" action="{!c.handleObjectChange}" />
+	<aura:attribute name="clientIDnVObjectParent" type="Map" default="{}" />
+	<aura:attribute name="allowClientIDnVPolling" type="Boolean" default="false" />
+	<aura:attribute name="clientCifCodeParent" type="Boolean" default="false" />
+
+	<aura:if isTrue="{!v.allowClientIDnVPolling}">
+		<c:ClientIDnVPolling clientIDnVObject="{!v.clientIDnVObjectParent}" cifCodeFromParentCmp="{!v.clientCifCodeParent}" />
+	</aura:if>
+
+	<lightning:recordEditForm
+		aura:id="caseEditFormIDnV"
+		objectApiName="Case"
+		recordId="{!v.caseIdFromFlow}"
+		onload="{!c.handleCaseLoadIDnV}"
+		onsuccess="{!c.handleCaseSuccessIDnV}"
+	>
+		<lightning:inputField aura:id="statusFieldIDnV" fieldName="Status" class="slds-hide" />
+		<lightning:inputField aura:id="serviceGroupFieldIDnV" fieldName="sd_Service_Group__c" class="slds-hide" />
+		<lightning:inputField aura:id="clientCIFFieldIDnV" fieldName="Client_CIF_Number__c" class="slds-hide" />
+		<lightning:inputField aura:id="caseNumberFieldIDnV" fieldName="CaseNumber" class="slds-hide" />
+	</lightning:recordEditForm>
+	<!--End of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+	
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<ui:message title="Error" severity="error" closable="false"> {!v.errorMessage} </ui:message>
+	</aura:if>
+	<!--Payment Success Message Simangaliso Mathenjwa 19 March 2021-->
+	<aura:if isTrue="{!v.showPaymentStatusSuccessFromFlow}">
+		<ui:message title="Successful Transaction" severity="confirm" closable="true">Payment Status: Successful</ui:message>
+	</aura:if>
+
+	<lightning:layout multipleRows="true">
+		<aura:if isTrue="{!not(empty(v.accountIdFromFlow))}">
+			<!-- record Edit Form -->
+			<lightning:recordEditForm aura:id="accountEditForm" objectApiName="Account" recordId="{!v.accountIdFromFlow}" onload="{!c.handleLoad}">
+				<!-- Hidden Field(s) -->
+				<lightning:inputField aura:id="personEmailField" fieldName="PersonEmail" class="slds-hide" />
+				<lightning:inputField aura:id="activeEmailField" fieldName="Active_Email__c" class="slds-hide" />
+			</lightning:recordEditForm>
+		</aura:if>
+
+		<!--Spinner-->
+		<aura:if isTrue="{!v.showSpinner}">
+			<div class="slds-spinner_container">
+				<lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+			</div>
+		</aura:if>
+
+		<lightning:layoutItem padding="around-small" size="12">
+			<lightning:checkboxGroup
+				aura:id="popSelectionGroup"
+				name="Address Proof of Payment to"
+				label="Address Proof of Payment to"
+				required="true"
+				disabled="{!v.isFormReadOnly}"
+				options="{!v.options}"
+				value="{!v.value}"
+				onchange="{!c.handleChange}"
+			/>
+		</lightning:layoutItem>
+
+		<lightning:layoutItem padding="around-small" size="12">
+			<c:ChargeTransaction aura:id="chargeTransactionCmp" caseIdFromParentCmp="{!v.caseIdFromFlow}" />
+		</lightning:layoutItem>
+
+		<aura:if isTrue="{!v.clientSelected}">
+			<lightning:layoutItem padding="around-small" size="6">
+				<lightning:input
+					aura:id="clientEmailAddressField"
+					type="email"
+					name="email"
+					label="Client Email Address"
+					value="{!v.clientEmailAddress}"
+					required="true"
+					disabled="{!v.isFormReadOnly}"
+				/>
+			</lightning:layoutItem>
+		</aura:if>
+		<aura:if isTrue="{!v.beneficiarySelected}">
+			<lightning:layoutItem padding="around-small" size="6">
+				<lightning:input
+					aura:id="beneficiaryEmailAddressField"
+					type="email"
+					name="email"
+					label="Beneficiary Email Address"
+					value="{!v.beneficiaryEmailAddress}"
+					required="true"
+					disabled="{!v.isFormReadOnly}"
+				/>
+			</lightning:layoutItem>
+		</aura:if>
+		<aura:if isTrue="{!v.showNextButton}">
+			<lightning:layoutItem padding="around-small" size="12">
+				<lightning:button aura:id="nextBtn" label="Send Proof of Payment" variant="brand" onclick="{!c.onButtonClick}" disabled="{!v.isFormReadOnly}" />
+			</lightning:layoutItem>
+		</aura:if>
+	</lightning:layout>
+	<!--Flow custom Navigation - Simangaliso Mathenjwa 12 March 2021-->
+	<div aura:id="actionButtonBar" class="slds-clearfix slds-p-top_medium">
+		<div class="slds-float_right">
+			<lightning:button aura:id="NEXT" class="slds-m-top_small slds-float--right" label="Next" variant="brand" onclick="{!c.onButtonPressed}" />
+		</div>
+	</div>
+</aura:component>

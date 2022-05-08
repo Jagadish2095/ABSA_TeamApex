@@ -1,0 +1,560 @@
+<!--
+* Retrieve contact information from custom Case fields and display on Case.
+*
+* @author  Poornima Aduru
+* @since   2020-12-02
+-->
+
+<aura:component controller="BrokerNoteProcessController" implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes,force:hasRecordId" access="global" >
+	<aura:attribute name="caseObj" type="Case" default="{'sobjectType':'Case'}" />
+    <aura:attribute name="isComponentVisible" type="Boolean" default="true"/> 
+    <aura:attribute name="isConfirmModalOpen" type="Boolean" default="false"/> 
+    <aura:attribute name="isModalOpen" type="Boolean" default="false"/> 
+    <aura:attribute name="recordId" type="String"/>   
+    <aura:attribute name="isNewContactVisible" type="Boolean" />
+    <aura:attribute name="isEditMode" type="Boolean" default="false"/>
+    <aura:attribute name="isRefresh" type="Boolean" default="true"/>
+    <aura:attribute name="alternateContact" type="String" />
+    <aura:attribute name="fields" type="String[]" default="['First_Name__c','Last_Name__c','Initials__c',
+                                                           'Title__c','ID_Type__c','Customer_ID__c','Nationality__c','Birth_Date__c','Age__c','Language__c','Email__c','CIF_Custom__c',
+                                                           	'Occupation__c','Gender__c','BNPSegment__c','Phys_Addr_Line1__c','Phys_Addr_Line2__c','Phys_Addr_Line3__c',
+                                                           	'Phys_Addr_Line4__c','Phys_Addr_Post_Code__c','Post_Addr_Line1__c',
+                                                            'Post_Addr_Line2__c','Post_Addr_Line3__c','Post_Addr_Line4__c',
+                                                            'Post_Addr_Post_Code__c','Mobile__c','Home_Phone__c',
+                                                            'Work_Phone__c' ,'Alternate_Phone1__c','Alternate_Phone2__c',
+                                  							'Alternate_Phone3__c','Alternate_Phone4__c','Alternate_Phone5__c','Alternate_Phone6__c','Alternate_Phone7__c',
+                                                           'New_Alternate_Contact__c'  ]"/>
+    
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="c:PreviousButtonNotification" action="{!c.handlePreviousEvent}"/>
+    <aura:handler event="c:NextButtonNotification" action="{!c.handleNextEvent}"/>
+    <aura:handler event="c:FinishButtonNotification" action="{!c.handleFinishEvent}"/>
+    
+    <!-- Contact Info Display --> 
+    <aura:if isTrue="{!v.isComponentVisible}">
+    <lightning:card>
+    <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Con Info" aura:id="accordion" >
+       <lightning:accordionSection  name="Con Info" label="Contact Information" >
+           <aura:if isTrue="{!v.isEditMode}" >
+             <lightning:recordForm aura:id="recordHandler"
+                                   recordId="{!v.recordId}"
+                                   objectApiName="Case"
+                                   fields="{!v.fields}"
+                                   columns="2"
+                                   mode="edit" 
+                                   onsuccess="{!c.handleSuccess}"
+                                   oncancel="{!c.handleCancel}"/>  
+            <aura:set attribute="else">
+               <aura:if isTrue="{!v.isRefresh}" >
+              <lightning:recordViewForm recordId="{!v.recordId}" objectApiName="Case">
+                 <lightning:card>
+                    
+                     <lightning:layout multipleRows="true">
+                         	
+                     	<lightning:layoutItem size="5" >
+                            
+                         	<div class = "slds-border_bottom">
+                           
+                     			<lightning:outputField  fieldName="Customer_Full_Name__c" />
+                             </div>
+                         </lightning:layoutItem>
+        	
+                         
+                        <lightning:layoutItem size="1" >
+                          
+                             <img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" /> 	
+                           
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                 
+                            </lightning:layoutItem>
+                       
+                         
+                         <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="ID_Type__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                           
+                             <img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment2"/> 	
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                   
+                            </lightning:layoutItem>
+                         
+                         
+                         <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="Customer_ID__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                          
+                     	<lightning:layoutItem size="1" >
+                          
+                             <img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment2"/> 	
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                     	 
+                            </lightning:layoutItem>
+                        
+                         <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="Nationality__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                            
+                             <img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment2"/> 	
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                     	
+                            </lightning:layoutItem>
+                         
+                         	<lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="Birth_Date__c" />
+                             </div>
+                        </lightning:layoutItem>
+                          
+                        <lightning:layoutItem size="1" >
+                          
+                             <img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment2"/> 	
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                    
+                            </lightning:layoutItem>
+                        
+                             <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="Age__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                          
+                     	<lightning:layoutItem size="1" >
+                           
+                             <div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                          
+                            </lightning:layoutItem>
+                         
+                         	<lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="Language__c" />
+                             </div>
+                        </lightning:layoutItem>
+                         
+                        <lightning:layoutItem size="1" >
+                          
+                             <div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                         
+                            </lightning:layoutItem>
+                        
+                     	
+                     
+                     	<lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="Email__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                          
+                     	<lightning:layoutItem size="1" >
+                       
+                             <div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                              
+                            </lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="CIF_Custom__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                             
+                             <div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                                 
+                            </lightning:layoutItem>
+                                                
+                         <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="Occupation__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                           
+                             <div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                             
+                            </lightning:layoutItem>
+                        
+                         <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="Gender__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                           
+                             <div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                               
+                            </lightning:layoutItem>
+                        
+                     
+                         
+                         <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			<lightning:outputField fieldName="BNPSegment__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                            
+                             <div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                                 
+                            </lightning:layoutItem>
+                         
+                        <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                          		<lightning:outputField fieldName="Physical_Address_Formula__c" />
+                            </div>
+                        </lightning:layoutItem>
+                          
+                     	<lightning:layoutItem size="1" >
+                           
+                                <img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment2"/> 	
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                    
+                            </lightning:layoutItem>
+                        
+                     	<lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                             	<lightning:outputField fieldName="Postal_Address_Formula__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                          
+                     	<lightning:layoutItem size="1" >
+                          
+                             <div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                            
+                            </lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                             	<lightning:outputField fieldName="Previous_Adviser_Code__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                     	<lightning:layoutItem size="1" >
+                            
+                            </lightning:layoutItem>
+                         
+                         <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                             	<lightning:outputField fieldName="Previous_Adviser_Name__c" />
+                            </div>
+                     	</lightning:layoutItem>
+                     	<lightning:layoutItem size="1" >
+                         
+                            </lightning:layoutItem>
+                     
+                     	<lightning:layoutItem size="5" >
+                       	<div class = "slds-border_bottom">
+                     			    <label for="Mobile">Mobile</label><br/>
+                            <div class="PaddingStyle">
+                            <lightning:clickToDial id="Mobile" value="{!v.caseObj.Mobile__c}" recordId="{!v.recordId}"/>
+                            </div>
+                            </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                             
+                            <img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment2"/>
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                     	
+                            </lightning:layoutItem>
+                        
+                     	<lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     			    <label for="HomePhone">Home Phone</label><br/>
+                                <div class="PaddingStyle">
+                     			<lightning:clickToDial id="HomePhone" value="{!v.caseObj.Home_Phone__c}" recordId="{!v.recordId}"/>
+                                    </div>
+                            </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                            
+                             <img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment2"/> 	
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                     
+                            </lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                     		             <label for="WorkPhone">Work Phone</label><br/>
+                                 <div class="PaddingStyle">
+                     			<lightning:clickToDial id="WorkPhone" value="{!v.caseObj.Work_Phone__c}" recordId="{!v.recordId}"/>
+                                </div>
+                                </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                           
+                             <img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment2"/> 	
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                     	
+                            </lightning:layoutItem>
+                        
+                     	<lightning:layoutItem size="5" >
+                   	<div class = "slds-border_bottom">
+                                <label for="AlternatePhone1">Alternate Phone1</label><br/>
+                        		<div class="PaddingStyle">
+                     			<lightning:clickToDial id="AlternatePhone1" value="{!v.caseObj.Alternate_Phone1__c}" recordId="{!v.recordId}"/>
+                        </div>    
+                        </div>
+                     	</lightning:layoutItem>
+                          
+                     	<lightning:layoutItem size="1" >
+                            
+                             <div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                          
+                            </lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                                <label for="AlternatePhone2">Alternate Phone2</label><br/>
+                                <div class="PaddingStyle">
+                     			<lightning:clickToDial id="AlternatePhone2" value="{!v.caseObj.Alternate_Phone2__c}" recordId="{!v.recordId}"/>
+                                </div>
+                                </div>
+                     	</lightning:layoutItem>
+                          
+                     	<lightning:layoutItem size="1" >
+                        
+                            	<div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                           
+                         </lightning:layoutItem>
+                         
+                        <lightning:layoutItem size="5" >
+       						<div class = "slds-border_bottom">
+                                <label for="AlternatePhone3">Alternate Phone3</label><br/>
+                                <div class="PaddingStyle">
+                     			<lightning:clickToDial id="AlternatePhone3" value="{!v.caseObj.Alternate_Phone3__c}" recordId="{!v.recordId}"/>
+                                </div>
+                                </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                           
+                            	<div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                                 
+                         </lightning:layoutItem>
+                        
+                     	<lightning:layoutItem size="5" >
+                    	<div class = "slds-border_bottom">
+                                <label for="AlternatePhone4">Alternate Phone4</label><br/>
+                            	<div class="PaddingStyle">
+                     			<lightning:clickToDial id="AlternatePhone4" value="{!v.caseObj.Alternate_Phone4__c}" recordId="{!v.recordId}"/>
+                            </div>
+                            </div>
+                     	</lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                             
+                            	<div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                                 
+                         </lightning:layoutItem>
+                        
+                         <lightning:layoutItem size="5" >
+           	<div class = "slds-border_bottom">
+                                <label for="AlternatePhone5">Alternate Phone5</label><br/>
+                				<div class="PaddingStyle">
+                     			<lightning:clickToDial id="AlternatePhone5" value="{!v.caseObj.Alternate_Phone5__c}" recordId="{!v.recordId}"/>
+                </div>           
+                </div>
+                     	</lightning:layoutItem>
+                        
+                     	<lightning:layoutItem size="1" >
+                            	<div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                         </lightning:layoutItem>
+                        
+                         <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                                <label for="AlternatePhone6">Alternate Phone6</label><br/>
+                                <div class="PaddingStyle">
+                     			<lightning:clickToDial id="AlternatePhone6" value="{!v.caseObj.Alternate_Phone6__c}" recordId="{!v.recordId}"/>
+                                </div>
+                                </div>  
+                         </lightning:layoutItem>
+                         
+                     	<lightning:layoutItem size="1" >
+                            
+                            	<div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                                
+                         </lightning:layoutItem>
+                         
+                         <lightning:layoutItem size="5" >
+                         	<div class = "slds-border_bottom">
+                                <label for="AlternatePhone7">Alternate Phone7</label><br/>
+                                <div class="PaddingStyle">
+                     			<lightning:clickToDial id="AlternatePhone7" value="{!v.caseObj.Alternate_Phone7__c}" recordId="{!v.recordId}"/>
+                                </div>
+                                </div>
+                     	</lightning:layoutItem>
+                          
+                     	<lightning:layoutItem size="1" >
+                           
+                            	<div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                            
+                         </lightning:layoutItem>
+                         
+                    <aura:if isTrue="{!v.isNewContactVisible}">
+                     	<lightning:layoutItem size="4" >
+                           <div class = "slds-border_bottom">
+                     			<label for="NewAlternateContact">New Alternate Contact</label><br/>
+                               <div class="PaddingStyle">
+                     			<lightning:clickToDial id="NewAlternateContact" value="{!v.caseObj.New_Alternate_Contact__c}" recordId="{!v.recordId}"/>
+                               </div>
+                               </div>
+                        </lightning:layoutItem>
+                         
+                       <lightning:layoutItem size="1" >
+                          
+                            	<div class="VStyle">
+                            	<lightning:buttonIcon  iconName="utility:edit" variant="bare" onclick="{!c.handleClick }" alternativeText="Edit"  />
+                            </div>
+                       
+                         </lightning:layoutItem>
+                        
+                    	<lightning:layoutItem size="1">
+                           
+                          		<lightning:buttonIcon iconName="utility:delete" variant="bare" onclick="{!c.handlePreDelete }" alternativeText="Delete" title="Delete" />
+                          
+                            </lightning:layoutItem>
+                      
+            		</aura:if>                    
+               </lightning:layout>
+         </lightning:card>
+   </lightning:recordViewForm>
+                </aura:if>
+      <div class="VAllign"/>
+    
+      <!-- Button to add new contact -->          
+      
+          <div class="{!v.isNewContactVisible ? 'slds-hide' : 'slds-show'}">
+         <div class="slds-align_absolute-center" style="height:5rem">
+            <lightning:button  label="Add New Contact Number" iconName="utility:add" iconPosition="left" onclick="{!c.openModel}"/>
+         </div>
+          </div>
+               
+    </aura:set>
+   </aura:if>
+  </lightning:accordionSection>
+ </lightning:accordion>
+    
+    <!-- Pop up Modal start -->
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+             <div class="slds-modal__container">
+                    
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Contact Number</h2>
+                    </header>
+                    
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p> {!$Label.c.Add_New_Contact}
+                        </p><br/>
+                        <lightning:layout>
+                            <lightning:layoutItem size="5" padding="around-small">
+                            <lightning:input name="AlternateContact" label="Contact Number" maxlength="15" value="{!v.alternateContact}"/> 
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        <br/>
+                    </div>
+                  
+                    <footer class="slds-modal__footer">
+                        <div class="slds-float_left">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{!c.closeModel}"/>
+                        </div>
+                        <lightning:button variant="brand"
+                                          label="Add Contact"
+                                          title="Add Contact"
+                                          onclick="{!c.saveContactNumber}"/>
+                    </footer>
+                 
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+
+
+
+<aura:if isTrue="{!v.isConfirmModalOpen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+             <div class="slds-modal__container">
+                 
+                    
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-align_absolute-center" >
+                        <p> Are you sure you want to delete this contact number?    </p>
+                        </div><br/>
+                          
+                    </div>
+                  
+                    <footer class="slds-modal__footer">
+                        <div class="slds-align_absolute-center">
+                            <lightning:buttonGroup>
+                        <lightning:button variant="neutral"
+                                          label="No"
+                                          title="No"
+                                          onclick="{!c.closeConfirmModal}"/>
+                        
+                        <lightning:button variant="neutral"
+                                          label="Yes"
+                                          title="Yes"
+                                          onclick="{!c.handleDelete}"/>
+                                </lightning:buttonGroup>
+                            </div>
+                    </footer>
+                 
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>  
+        </lightning:card>
+        </aura:if>
+</aura:component>

@@ -1,0 +1,109 @@
+<!--Lightning cmp for Behavioural Reward Management (BehaviouralRewardsManager)
+    Author: Jason Q & Danie Booysen
+    Date : 2020/10/22
+-->
+<aura:component controller="BehaviouralRewardsManagerController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global">
+
+    <!--Handler Declaration-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <!--Global Attribute Declaration-->
+    <aura:attribute name="caseIdFromFlow" type="string" access="global" />
+    <aura:attribute name="isEscalatedFromFlow" type="Boolean" access="global" />
+
+    <!--Attribute Declaration-->
+    <aura:attribute name="closeCase" type="Boolean"/>
+    <aura:attribute name="approvalStatus" type="String" />
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" default="false"/>
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['voucherNumberField','voucherPartnerField','phoneField','dateIssuedField','reissueVoucherField','reissueVoucherReasonField']"/>
+
+    <aura:attribute name="appAndDigitalBanking" type="String" default="{!$Label.c.Behavioural_Rewards_App_And_Digital_Banking}" />
+    <aura:attribute name="eventDiscrepancy" type="String" default="{!$Label.c.Behavioural_Rewards_Event_Discrepancy}" />
+    <aura:attribute name="redeemingVoucher" type="String" default="{!$Label.c.Behavioural_Rewards_Redeeming_Voucher}" />
+    <aura:attribute name="voucherReissuing" type="String" default="{!$Label.c.Behavioural_Rewards_Voucher_Reissuing}" />
+
+    <!--Method Declaration-->
+    <aura:method name="handleActionMethod" action="{!c.handleAction}"/>
+    <aura:method name="isParentValidMethod" action="{!c.isParentValid}"/>
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError"><br/>
+            <h2 class="slds-section__title" style="color:red">{!v.errorMessage}</h2><br/>
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!not(empty(v.caseIdFromFlow))}">
+        <!-- Case Record Edit From -->
+        <lightning:recordEditForm aura:id="caseEditForm"
+                                    objectApiName="Case"
+                                    recordId="{!v.caseIdFromFlow}"
+                                    onload="{!c.handleCaseLoad}"
+                                    onsuccess="{!c.handleCaseSuccess}"
+                                    onerror="{!c.handleCaseError}">
+
+            <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide"/>
+            <lightning:inputField aura:id="caseSubjectField" fieldName="Subject" class="slds-hide"/>
+            <lightning:inputField aura:id="approvalStatusField" fieldName="Approval_Status__c" class="slds-hide"/>
+
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-x-small" size="6" aura:id="voucherNumber">
+                    <lightning:inputField  aura:id="voucherNumberField" fieldName="Voucher_Number__c" disabled="{!or(v.isEscalatedFromFlow, v.isFormReadOnly)}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-x-small" size="6" aura:id="voucherPartner">
+                    <lightning:inputField  aura:id="voucherPartnerField" fieldName="Voucher_Partner__c" disabled="{!or(v.isEscalatedFromFlow, v.isFormReadOnly)}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-x-small" size="6" aura:id="phone">
+                    <lightning:inputField  aura:id="phoneField" fieldName="Phone__c" disabled="{!or(v.isEscalatedFromFlow, v.isFormReadOnly)}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-x-small" size="6" aura:id="dateIssued">
+                    <lightning:inputField  aura:id="dateIssuedField" fieldName="Date_Issued__c" disabled="{!or(v.isEscalatedFromFlow, v.isFormReadOnly)}"/>
+                </lightning:layoutItem>
+
+                <!-- conditional fields for voucher reissuing -->
+                <lightning:layoutItem padding="around-x-small" size="6" aura:id="reissueStatus" class="slds-hide">
+                    <lightning:inputField  aura:id="reissueVoucherField" fieldName="Reissue_Voucher__c" onchange="{!c.reissueOnChangeAction}" disabled="{!v.isFormReadOnly}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-x-small" size="6" aura:id="reissueReason" class="slds-hide">
+                    <lightning:inputField  aura:id="reissueVoucherReasonField" fieldName="Reissue_Voucher_Reason__c" disabled="{!v.isFormReadOnly}"/>
+                </lightning:layoutItem>
+
+                <!-- isEscalatedFromFlow determines if it's the inbound or outbound consultant view -->
+                <aura:if isTrue="{!v.isEscalatedFromFlow}">
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:inputField aura:id="commentsField" fieldName="Comments__c" disabled="{!v.isFormReadOnly}"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-x-small" size="6">
+                        <aura:if isTrue="{!not(empty(v.approvalStatus))}">
+                            <b><lightning:input aura:id="approvalStatusOutput" label="Approval Status" readonly="true" value="{!v.approvalStatus}" style="color:red"/></b>
+                        </aura:if>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-x-small" size="6">
+                        <lightning:button aura:id="reqApprovalBtn" label="Request Approval" onclick="{!c.handleSave}" variant="brand" class="slds-float_right slds-hide" />
+                        <lightning:button aura:id="closeCaseBtn" label="Close Case" onclick="{!c.handleAction}" variant="brand" class="slds-float_right"/>
+                    </lightning:layoutItem>
+
+                    <aura:set attribute="else">
+
+                        <lightning:layoutItem padding="around-x-small" size="12">
+                            <c:CaseResolvedSelection aura:id="caseResolvedSelectionCmp" caseIdFromFlow="{!v.caseIdFromFlow}" closeCase="{!v.closeCase}" parent="{!this}" isFormReadOnly="{!v.isFormReadOnly}"/>
+                        </lightning:layoutItem>
+
+                    </aura:set>
+                </aura:if>
+            </lightning:layout>
+        </lightning:recordEditForm>
+    </aura:if>
+</aura:component>

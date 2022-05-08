@@ -1,0 +1,202 @@
+<!-- This is the EMO_Boards Component for displaying the mood board functionality
+  @description       : 
+  @author            : Nagpal Singh
+  @since   2021-06-04
+  @group             : 
+  @last modified on  : 2021-09-08
+  @last modified by  : humbelani.denge@absa.africa
+  @Original Work Id: W-011445 
+  @Work Id: W-014033
+-->
+
+<aura:component controller="EMOBoards" implements="flexipage:availableForAllPageTypes,force:hasRecordId" access="global">
+	<!--Attribute Declaration-->
+	<aura:attribute name="recordId" type="String" />
+	<aura:attribute name="placeHolder" type="string" />
+	<aura:attribute name="logUserID" type="String" />
+	<aura:attribute name="GifStoreValue" type="string" />
+	<aura:attribute name="moodStoreName" type="string" />
+	<aura:attribute name="notification" type="String" />
+	<aura:attribute name="nameStaticResourc" type="String" />
+	<aura:attribute name="holdStaticResourcURL" type="String" />
+	<aura:attribute name="showEMODashboard" type="Boolean" />
+	<aura:attribute name="showEMOBoard" type="Boolean" default="true" />
+	<aura:attribute name="CollaborationList" type="List" />
+	<aura:attribute name="selectedDate" type="Date" />
+	<aura:attribute name="litPercentage" type="Integer" />
+	<aura:attribute name="soSoPercentage" type="Integer" />
+	<aura:attribute name="crankyPercentage" type="Integer" />
+	<aura:attribute name="storeAvrageImg" type="String" />
+	<aura:attribute name="showOnThisDate" type="Boolean" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute
+		name="selectYesOrNo"
+		type="List"
+		default="[
+                                                              {'label': 'Lit', 'value': 'Lit'},
+                                                              {'label': 'So-So', 'value': 'So-So'},
+                                                              {'label': 'Cranky', 'value': 'Cranky'}
+                                                              ]"
+	/>
+
+	<!--Handler Declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<aura:if isTrue="{!(v.showEMOBoard)}">
+		<div>
+			<h2 style="font-weight: bold; margin-left: 2.2%">{!v.placeHolder}</h2>
+		</div>
+		<lightning:radioGroup
+			name="SelectMood"
+			options="{! v.selectYesOrNo }"
+			value="{! v.notification }"
+			type="radio"
+			class="customRadioCls"
+			onchange="{!c.SelectMood}"
+		/>
+		<!--Showing GIF for particular mood-->
+		<div class="slds-m-top_large" onclick="{!c.saveSelectedGifAndMood}">
+			<aura:if isTrue="{!v.GifStoreValue=='Lit'}">
+				<h2 style="font-weight: bold; margin-left: 2.2%">Select the expression that best describes how you feel</h2>
+				<div class="slds-m-top_x-large selectable selectable target">
+					<!-- Gifs updated by Mradul in August 2021 
+                    Have added more Static Resources file due to space limits-->
+					<img src="{!$Resource.Lit1 + '/Lit/Lit1.gif'}" style="height: 150px; width: 150px; margin-left: 30px" id="Lit1" />
+					<img src="{!$Resource.Lit1 + '/Lit/Lit2.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Lit2" />
+					<img src="{!$Resource.Lit1 + '/Lit/Lit3.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Lit3" />
+					<img src="{!$Resource.Lit1 + '/Lit/Lit4.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Lit4" />
+					<br />
+					<img src="{!$Resource.Lit2 + '/Lit/Lit5.gif'}" style="height: 150px; width: 150px; margin-left: 30px" id="Lit5" />
+					<img src="{!$Resource.Lit1 + '/Lit/Lit6.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Lit6" />
+					<img src="{!$Resource.Lit3 + '/Lit/Lit7.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Lit7" />
+					<img src="{!$Resource.Lit3 + '/Lit/Lit8.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Lit8" />
+				</div>
+			</aura:if>
+			<aura:if isTrue="{!v.GifStoreValue=='So-So'}">
+				<h2 style="font-weight: bold; margin-left: 2.2%">Select the expression that best describes how you feel</h2>
+				<div class="slds-m-top_x-large">
+					<!-- Gifs updated by Mradul in August 2021
+                    Have added more Static Resources file due to space limits -->
+					<img src="{!$Resource.Soso + '/Soso/Soso1.gif'}" style="height: 150px; width: 150px; margin-left: 30px" id="Soso1" />
+					<img src="{!$Resource.Soso + '/Soso/Soso2.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Soso2" />
+					<img src="{!$Resource.Soso + '/Soso/Soso3.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Soso3" />
+					<img src="{!$Resource.Soso2 + '/Soso/Soso4.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Soso4" />
+					<br />
+					<img src="{!$Resource.Soso2 + '/Soso/Soso5.gif'}" style="height: 150px; width: 150px; margin-left: 30px" id="Soso5" />
+					<img src="{!$Resource.Soso2 + '/Soso/Soso6.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Soso6" />
+					<img src="{!$Resource.Soso3 + '/Soso/Soso7.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Soso7" />
+					<img src="{!$Resource.Soso3 + '/Soso/Soso8.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Soso8" />
+				</div>
+			</aura:if>
+			<aura:if isTrue="{!v.GifStoreValue=='Cranky'}">
+				<h2 style="font-weight: bold; margin-left: 2.2%">Select the expression that best describes how you feel</h2>
+				<div class="slds-m-top_x-large">
+					<!-- Gifs updated by Mradul in August 2021
+                    Have added more Static Resources file due to space limits -->
+					<img src="{!$Resource.Cranky1 + '/Cranky/Cranky1.gif'}" style="height: 150px; width: 150px; margin-left: 30px" id="Cranky1" />
+					<img src="{!$Resource.Cranky1 + '/Cranky/Cranky2.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Cranky2" />
+					<img src="{!$Resource.Cranky1 + '/Cranky/Cranky3.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Cranky3" />
+					<img src="{!$Resource.Cranky1 + '/Cranky/Cranky4.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Cranky4" />
+					<br />
+					<img src="{!$Resource.Cranky2 + '/Cranky/Cranky5.gif'}" style="height: 150px; width: 150px; margin-left: 30px" id="Cranky5" />
+					<img src="{!$Resource.Cranky2 + '/Cranky/Cranky6.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Cranky6" />
+					<img src="{!$Resource.Cranky2 + '/Cranky/Cranky7.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Cranky7" />
+					<img src="{!$Resource.Cranky2 + '/Cranky/Cranky8.gif'}" style="height: 150px; width: 150px; margin-left: 10px" id="Cranky8" />
+				</div>
+			</aura:if>
+
+			<!--Text for selected mood-->
+			<aura:if isTrue="{!v.nameStaticResourc!=null}">
+				<h2 style="font-weight: bold; margin-left: 30px" class="slds-m-top-small">You have selected : &nbsp;{!v.nameStaticResourc}</h2>
+			</aura:if>
+
+			<!--Buttons for save and view mood-->
+			<lightning:layout multipleRows="true">
+				<lightning:layoutItem size="12" padding="around-small">
+					<lightning:button variant="brand" label="Save and Continue" onclick="{! c.createCollaNewRecord }" />
+					<lightning:button variant="brand" label="View Team Mood" onclick="{! c.viewTeamMood }" />
+				</lightning:layoutItem>
+			</lightning:layout>
+		</div>
+	</aura:if>
+
+	<!--Date Picker-->
+	<aura:if isTrue="{!(v.showOnThisDate)}">
+		<h1 class="slds-text-heading_medium slds-m-bottom_medium"><b>Team Moodboard</b></h1>
+		<lightning:layout multipleRows="true">
+			<lightning:layoutItem size="6" padding="around-small">
+				<lightning:input
+					aura:id="mooddate"
+					type="date"
+					name="mooddate"
+					label="On This Date"
+					value="{!v.selectedDate}"
+					onchange="{!c.handleDateChange}"
+				/>
+			</lightning:layoutItem>
+		</lightning:layout>
+	</aura:if>
+
+	<!--Showing Avereage mood and Average Image-->
+	<aura:if isTrue="{!(v.showEMODashboard)}">
+		<div class="slds-box slds-m-top_x-large" style="height: 17rem">
+			<lightning:layout multipleRows="true">
+				<lightning:layoutItem size="5" padding="around-small">
+					<h1 class="slds-text-heading_medium slds-m-bottom_medium"><b>Team Average:</b>&nbsp; {!v.moodStoreName}</h1>
+					<br />
+					<img src="{!v.storeAvrageImg}" style="height: 150px; width: 150px" />
+				</lightning:layoutItem>
+
+				<!--Percentage Bar-->
+				<lightning:layoutItem size="7" padding="around-small">
+					<h1>Lit</h1>
+					<lightning:progressBar value="{!v.litPercentage}" size=" large" class="slds-m-bottom_medium" />
+					{!v.litPercentage}%
+					<h1>So-So</h1>
+					<lightning:progressBar value="{!v.soSoPercentage}" size="large" class="slds-m-bottom_medium" />
+					{!v.soSoPercentage}%
+					<h1>Cranky</h1>
+					<lightning:progressBar value="{!v.crankyPercentage}" size="large" class="slds-m-bottom_medium" />
+					{!v.crankyPercentage}%
+				</lightning:layoutItem>
+			</lightning:layout>
+		</div>
+
+		<!--Showing the individual record of users-->
+		<div class="slds-box slds-m-top_x-small">
+			<table>
+				<h1 class="slds-text-heading_medium slds-m-bottom_medium"><b>How the team is feeling</b></h1>
+				<div class="slds-grid slds-wrap">
+					<aura:iteration items="{!v.CollaborationList}" var="coll">
+						<div class="slds-col slds-size_2-of-12">
+							<ul>
+								<li class="slds-tile slds-hint-parent">
+									<div class="slds-tile__detail">
+										<dl class="slds-dl--horizontal slds-text-body--small">
+											<dd class="slds-dl--horizontal__detail slds-tile__meta">
+												<p class="slds-truncate">
+													<ui:outputRichText value="{!coll.GIF_Image__c}" />
+												</p>
+											</dd>
+											<dd class="slds-dl--horizontal__detail slds-tile__meta">
+												<p class="slds-truncate"><b>{!coll.Owner.Name}:</b>&nbsp;{!coll.Capture_Mood__c}</p>
+											</dd>
+										</dl>
+									</div>
+								</li>
+							</ul>
+						</div>
+					</aura:iteration>
+				</div>
+			</table>
+		</div>
+	</aura:if>
+</aura:component>

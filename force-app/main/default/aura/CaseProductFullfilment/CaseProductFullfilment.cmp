@@ -1,0 +1,210 @@
+<aura:component controller="CaseProductFullfilmentController" implements="force:appHostable,lightning:actionOverride,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global">
+    <aura:attribute name="parentproductId" type="String"/>
+    <aura:attribute name="parentproductModal" type="boolean" default="false"/>
+    <aura:attribute name="parentproductfields" type="String[]"/>
+    <aura:attribute name="childproductList" type="list"/>
+    <aura:attribute name="productdetailid" type="String"/>
+    <aura:attribute name="productdetailmodal" type="boolean" default="false"/>
+    <aura:attribute name="productdetailtype" type="String"/>
+    <aura:attribute name="LDPType" type="String"/>
+    <aura:attribute name="contractfields" type="list"/>
+    <aura:attribute name="guaranteefields" type="list"/>
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="sortDirection" type="String" default="asc" />
+    <aura:attribute name="defaultSortDirection" type="String" default="asc" />
+    <aura:attribute name="sortedBy" type="String" />
+    <aura:attribute name="labelText" type="Object"/>
+    <aura:attribute name="activeSections" type="List" default="['A','B','C']" />
+    <aura:attribute name="activeSectionschild" type="List" default="['A','B']" />
+    <aura:attribute name="IsSpinner" type="Boolean" default="true"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+	<lightning:card>
+        <aura:if isTrue="{!v.IsSpinner}">
+            <lightning:spinner variant="brand"  size="medium" alternativeText="Loading" />
+        </aura:if>
+        <lightning:notificationsLibrary aura:id="notifLib"/>
+        <lightning:tabset>
+          <lightning:tab label="Parent Guarantee">
+            <lightning:recordEditForm aura:id="myRecordFormparent" objectApiName="Application_Product__c" onsuccess="{!c.handlesuccessparent}" onerror="{!c.handleerrors}" recordId="{!v.parentproductId}" onsubmit="{!c.handleSubmitParent}">
+                <lightning:messages />
+                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{!v.activeSections}">
+                    <lightning:accordionSection name="A" label="ACCOUNT DETAILS">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                <lightning:inputField fieldName="Account_Number__c"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </lightning:accordionSection>
+                    <lightning:accordionSection name="B" label="BENEFICIARY DETAILS">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                <lightning:inputField fieldName="Beneficiary_Name__c" class="customRequiredparent" aura:id="requiredFieldparent"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                <lightning:inputField fieldName="Beneficiary_Address_Line_1__c" class="customRequiredparent" aura:id="requiredFieldparent"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                <lightning:inputField fieldName="Beneficiary_Address_Line_2__c" class="customRequiredparent" aura:id="requiredFieldparent"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                <lightning:inputField fieldName="Beneficiary_Address_Line_3__c" class="customRequiredparent" aura:id="requiredFieldparent"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </lightning:accordionSection>
+                    <lightning:accordionSection name="C" label="GUARANTOR DETAILS">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                <lightning:inputField fieldName="Bank_Branch_Name__c" class="customRequiredparent" aura:id="requiredFieldparent"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                <lightning:inputField fieldName="Absa_Representive_Full_Name1__c" class="customRequiredparent" aura:id="requiredFieldparent"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                <lightning:inputField fieldName="Absa_Representive_Capacity_1__c" class="customRequiredparent" aura:id="requiredFieldparent"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                <lightning:inputField fieldName="Absa_Representive_Full_Name2__c" class="customRequiredparent" aura:id="requiredFieldparent"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                <lightning:inputField fieldName="Absa_Representive_Capacity_2__c" class="customRequiredparent" aura:id="requiredFieldparent"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                <lightning:layout horizontalAlign="center">
+                    <lightning:layoutItem padding="around-small" class="nopaddingtop" flexibility="auto">
+                        <lightning:button variant="brand" type="submit" label="Save" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:recordEditForm>
+          </lightning:tab>
+          <lightning:tab label="Child Guarantees">
+              <lightning:layout>
+               <lightning:layoutItem padding="around-small" size="12">
+                   <div class="slds-float_right">
+                     <lightning:button variant="brand-outline" label="Add Product" title="Add Product" onclick="{!c.createRecord}" />
+                   </div>
+               </lightning:layoutItem>
+              </lightning:layout>
+             <lightning:datatable
+                    keyField="id"
+                    columns="{!v.columns }"
+                    data="{!v.childproductList}"
+                    hideCheckboxColumn="true"
+                    defaultSortDirection="{!v.defaultSortDirection}"
+                    sortedDirection="{!v.sortDirection}"
+                    sortedBy="{!v.sortedBy}"
+                    onsort="{!c.handleSort}" onrowaction="{!c.handleRowAction}">
+                </lightning:datatable>
+          </lightning:tab>
+        </lightning:tabset>
+       
+                
+       <aura:if isTrue="{!v.productdetailmodal}">
+        <div role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open ">
+            <div class="slds-modal__container" style="max-width: 70rem !important; width: 100% !important;">
+                <aura:if isTrue="{!v.IsSpinner}">
+                    <lightning:spinner variant="brand"  size="medium" alternativeText="Loading" />
+                </aura:if>
+                <div class="slds-modal__header">
+                    <div class="slds-float_right">                    
+                        <lightning:Icon size="x-small" style="margin-right:-15%" iconName="action:close" variant="brand" onclick="{!c.closeModel}" alternativeText="Close" />
+                    </div>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Application Product Details</h2>
+                </div>
+                <div class="slds-modal__content slds-p-around--medium">
+                   <aura:if isTrue="{!v.productdetailtype=='edit'}">
+                    <lightning:recordEditForm aura:id="myRecordForm" objectApiName="Application_Product__c" onsuccess="{!c.handlesuccess}" onerror="{!c.handleerrors}" recordId="{!v.productdetailid}" onsubmit="{!c.handleSubmit}">
+                        <lightning:messages />
+                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{!v.activeSectionschild}">
+                           <aura:if isTrue="{!v.contractfields.length>0}">
+                             <lightning:accordionSection name="A" label="CONTRACT DETAILS">
+                              <lightning:layout multipleRows="true">
+                                  <aura:iteration items="{!v.contractfields}" var="contr">
+                                     <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                         <aura:if isTrue="{!contr.mandatory}">
+                                           <lightning:inputField fieldName="{!contr.fieldname}" class="customRequired" aura:id="requiredField"/>
+                                             <aura:set attribute="else">
+                                              <lightning:inputField fieldName="{!contr.fieldname}"/>
+                                            </aura:set>
+                                         </aura:if>
+                                     </lightning:layoutItem>
+                                  </aura:iteration>
+                              </lightning:layout>
+                            </lightning:accordionSection>
+                           </aura:if>
+                           <aura:if isTrue="{!v.guaranteefields.length>0}">
+                             <lightning:accordionSection name="B" label="GUARANTEE DETAILS">
+                              <lightning:layout multipleRows="true">
+                                  <aura:iteration items="{!v.guaranteefields}" var="guarnt">
+                                     <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                      <aura:if isTrue="{!guarnt.mandatory}">
+                                          <lightning:inputField fieldName="{!guarnt.fieldname}" class="customRequired" aura:id="requiredField"/>
+                                          <aura:set attribute="else">
+                                              <lightning:inputField fieldName="{!guarnt.fieldname}"/>
+                                          </aura:set>
+                                      </aura:if> 
+                                     </lightning:layoutItem>
+                                  </aura:iteration>
+                              </lightning:layout>
+                            </lightning:accordionSection>
+                           </aura:if>
+                         </lightning:accordion>
+                        <lightning:layout horizontalAlign="center">
+                            <lightning:layoutItem padding="around-small" class="nopaddingtop" flexibility="auto">
+                              <lightning:button variant="brand" type="submit" label="Save" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" class="nopaddingtop" flexibility="auto">
+                              <lightning:button name="cancel" label="Cancel" onclick="{!c.handlecancel}"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </lightning:recordEditForm>
+                   </aura:if>
+                   <aura:if isTrue="{!v.productdetailtype=='view'}">
+                    <lightning:recordViewForm objectApiName="Application_Product__c" recordId="{!v.productdetailid}">
+                        <lightning:messages />
+                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{!v.activeSectionschild}">
+                            <aura:if isTrue="{!v.contractfields.length>0}">
+                        	    <lightning:accordionSection name="A" label="CONTRACT DETAILS">
+                              		<lightning:layout multipleRows="true">
+                                  <aura:iteration items="{!v.contractfields}" var="contr">
+                                     <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                         <aura:if isTrue="{!contr.mandatory}">
+                                           <lightning:outputField fieldName="{!contr.fieldname}" class="customRequired" aura:id="requiredField"/>
+                                             <aura:set attribute="else">
+                                              <lightning:outputField fieldName="{!guarnt.fieldname}"/>
+                                            </aura:set>
+                                         </aura:if>
+                                     </lightning:layoutItem>
+                                  </aura:iteration>
+                              </lightning:layout>
+                                </lightning:accordionSection>
+                            </aura:if>
+                            <aura:if isTrue="{!v.guaranteefields.length>0}">
+                         		 <lightning:accordionSection name="B" label="GUARANTEE DETAILS">
+                          		    <lightning:layout multipleRows="true">
+                                  <aura:iteration items="{!v.guaranteefields}" var="guarnt">
+                                     <lightning:layoutItem padding="around-small" size="6" class="nopaddingtop">
+                                      <aura:if isTrue="{!guarnt.mandatory}">
+                                          <lightning:outputField fieldName="{!guarnt.fieldname}" class="customRequired" aura:id="requiredField"/>
+                                          <aura:set attribute="else">
+                                              <lightning:outputField fieldName="{!guarnt.fieldname}"/>
+                                          </aura:set>
+                                      </aura:if> 
+                                     </lightning:layoutItem>
+                                  </aura:iteration>
+                              </lightning:layout>
+                                 </lightning:accordionSection>
+                            </aura:if>                        
+                         </lightning:accordion>
+                    </lightning:recordViewForm>
+                   </aura:if>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+       </aura:if>
+    </lightning:card>
+</aura:component>

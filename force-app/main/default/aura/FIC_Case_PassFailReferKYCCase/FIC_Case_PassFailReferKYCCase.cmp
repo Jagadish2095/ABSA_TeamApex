@@ -1,0 +1,144 @@
+<aura:component description="FIC_Case_PassFailReferKYCCase"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+    access="global" controller="PassFailReferKYCCaseController">
+
+    <aura:attribute name="Case" type="Case"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="openReferral" type="Boolean" default="false"/>
+    <aura:attribute name="notAllDocsInOrder" type="Boolean" default="true"/>
+    <aura:attribute name="openFail" type="Boolean" default="false"/>
+    <aura:attribute name="openPass" type="Boolean" default="false"/>
+    <aura:attribute name="Spinner" type="Boolean" default="false"/>
+    
+    <aura:attribute name="removeFiclock" type="Boolean" />
+    <aura:attribute name="DocumentConsent" type="Object" />
+	<aura:attribute name="options" type="List" default="[
+                                                       {'label': 'Yes', 'value': 'true'},
+                                                       {'label': 'No', 'value': 'false'}
+                                                       ]"/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.onRefreshView}" />
+    <aura:handler event="c:RefreshPassKYC" action="{!c.doInit}" />
+
+
+    <aura:if isTrue="{! v.Case.Owner_Queue_Name__c !='FIC Referral'}">
+    <button class="slds-button slds-button_outline-brand" onclick="{!c.openReferralModal}">Send for referral</button>
+    </aura:if>
+    <button class="slds-button slds-button_destructive" onclick="{!c.openFailModal}">Fail</button>
+    <button class="slds-button slds-button_brand" disabled="{!v.notAllDocsInOrder}" onclick="{!c.openPassModal}">Pass</button>
+   
+    <aura:if isTrue="{!v.openReferral}">
+       
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Send for referral</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                     <!--loading spinner start... style=Brand Medium (blue dots)-->
+                    <aura:if isTrue="{!v.Spinner}">
+                        <lightning:spinner alternativeText="Loading" size="large" variant="brand"/>
+                    </aura:if>
+                    <!-- Loading spinner end-->
+                    <lightning:recordEditForm aura:id="formReferral"
+                                              objectApiName ="Case"
+                                              recordId="{!v.recordId}"
+                    >
+                        <lightning:inputField fieldName="Referral_Reason__c"  aura:id="referralReason"/>
+                        <aura:if isTrue="{! v.Case.Case_Record_Type_Name__c =='AOL'}">
+                            <lightning:inputField fieldName="Category__c"  aura:id="category" value="AOL" disabled="true"/>
+                        <lightning:inputField fieldName="DD_Case_Outcome__c"  aura:id="caseoutcome" />
+                        </aura:if>
+  
+                        <lightning:inputField fieldName="FIC_Case_ReferralComments__c" aura:id="refAdditionInfo"/>
+                    </lightning:recordEditForm>
+                </div>
+                <footer class="slds-modal__footer slds-modal__footer_directional">
+                    <button class="slds-button slds-button_neutral"  onclick="{!c.closeReferralModal}">Cancel</button>
+                    <button class="slds-button slds-button_brand"  onclick="{!c.handleReferralButton}">Save</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.openFail}">
+        <!--loading spinner start... style=Brand Medium (blue dots)-->
+        <aura:if isTrue="{!v.Spinner}">
+            <lightning:spinner alternativeText="Loading" size="large" variant="brand"/>
+        </aura:if>
+        <!-- Loading spinner end-->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Failed Reason</h2>
+                    <p class="slds-m-top_x-small"><a>Please enter your reason for failing this case</a>.</p>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <!--loading spinner start... style=Brand Medium (blue dots)-->
+                    <aura:if isTrue="{!v.Spinner}">
+                        <lightning:spinner alternativeText="Loading" size="large" variant="brand"/>
+                    </aura:if>
+                    <!-- Loading spinner end-->
+                    <lightning:recordEditForm aura:id="formFail"
+                                              objectApiName ="Case"
+                                              recordId="{!v.recordId}"
+                    >
+                        <lightning:inputField fieldName="Fail_Reason__c" aura:id="failReason"/>
+                        <lightning:inputField fieldName="Fail_Additional_Information__c" aura:id="failAdditional"/>
+                        <lightning:inputField fieldName="FIC_Case_FailedComments__c"  aura:id="failComments" />
+                    </lightning:recordEditForm>
+                </div>
+                <footer class="slds-modal__footer slds-modal__footer_directional">
+                    <button class="slds-button slds-button_neutral" onclick="{!c.closeFailModal}">Cancel</button>
+                    <button class="slds-button slds-button_brand"  onclick="{!c.handleFailButton}">Save</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.openPass}">
+        <!--loading spinner start... style=Brand Medium (blue dots)-->
+    <aura:if isTrue="{!v.Spinner}">
+        <lightning:spinner alternativeText="Loading" size="large" variant="brand"/>
+    </aura:if>
+    <!-- Loading spinner end-->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Passed case</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <!--loading spinner start... style=Brand Medium (blue dots)-->
+                    <aura:if isTrue="{!v.Spinner}">
+                        <lightning:spinner alternativeText="Loading" size="large" variant="brand"/>
+                    </aura:if>
+                    <!-- Loading spinner end-->
+                    <lightning:recordEditForm aura:id="Pass"
+                                              objectApiName ="Case"
+                                              recordId="{!v.recordId}"
+                    >
+                        <!--<lightning:inputField fieldName="FIC_RemoveFromFICLock__c" aura:id="ficlockinfo"/> 
+                        <lightning:radioGroup aura:id="radios"
+                          label="Is the document in order?"
+                          options="{! v.options }"
+                          value="{! v.removeFiclock }"
+                          type="radio"
+                          required="true"
+                          class="customRadioCls"
+    					/> -->
+                        <lightning:inputField fieldName="Additional_Information__c" aura:id="passAdditionInfo"/>
+                    </lightning:recordEditForm>
+                </div>
+                <footer class="slds-modal__footer slds-modal__footer_directional">
+                    <button class="slds-button slds-button_neutral" onclick="{!c.closePassModal}">Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick="{!c.handlePassButton}">Done</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+
+</aura:component>

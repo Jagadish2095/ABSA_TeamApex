@@ -1,0 +1,98 @@
+<!--
+* Lightning Component for  Covid 19 product Bank Guarantee or Credit maintenance  fulfilment
+* 
+* @author  Almas Aleem : Absa
+* @version v1.0
+* @since   2020-11-20
+* @UserStory W-007443
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" 
+                controller="CovidFulfilmentController">
+    <!-- Attributes Declaration-->
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="hideFulfilmentButton" type="Boolean" default="true"/>
+    <aura:attribute name="caseHistoryList" type="List" />
+    
+    <aura:attribute name="activeSections" type="List" default="['Product fulfilment', 'Products for fulfilment']" />
+    
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <aura:attribute name="url" type="String"/>
+    <aura:attribute name="pageReference" type="Object"/>
+    
+    <lightning:navigation aura:id="navId"/>
+    
+    
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    
+    <!-- Read Opportunity Record Type -->
+     
+    
+    <aura:attribute name="OppRecord" type="Object"/>
+     <force:recordData aura:id="recordLoader"
+                      fields="Id,AccountId,RecordTypeName__c,Is_Submitted_FulFilment__c"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.OppRecord}"
+                     
+                      />
+    
+    <!-- UI Section -->
+    <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections }">
+        <!-- Fulfilment sections -->
+        <lightning:accordionSection name="Product fulfilment" label="Product fulfilment">
+            <!-- view document -->
+            <!--<lightning:button variant="brand" class="slds-align_absolute-center slds-var-m-top_xx-large"
+                              label="View All Documents" type="submit" onclick="{!c.goDocumentsTab}" />
+            
+            -->
+            <!-- Submit for fulfilment-->
+            <p>
+                Congratulations! You are one step away from submitting this application for fulfilment. The following products will be directed to the fulfilment team when you submit this application.
+            </p> 
+            
+            <lightning:recordEditForm aura:id="EditOpp" objectApiName="Opportunity" recordId="{!v.recordId}" >
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <p>I am ready to submit this application.</p> 
+                        <lightning:inputField fieldName="Is_Submitted_FulFilment__c" aura:id="fulfillDecision"  variant="label-hidden"
+                                              onchange="{!c.showButton}" disabled="{!v.OppRecord.Is_Submitted_FulFilment__c}"/>
+                    </span>
+                </div>
+                <aura:if isTrue="{!not(v.hideFulfilmentButton) || (v.OppRecord.Is_Submitted_FulFilment__c)}">
+                    <lightning:button variant="brand" class="slds-align_absolute-center slds-var-m-top_xx-large"
+                                      label="Submit For Fulfilment" type="submit" onclick="{!c.submitFulfilment}" disabled="{!v.OppRecord.Is_Submitted_FulFilment__c}" />
+                    
+                </aura:if>
+            </lightning:recordEditForm>
+            
+        </lightning:accordionSection>
+        <lightning:accordionSection name="Products for fulfilment" label="Products for fulfilment">
+            <div class="slds-grid slds-gutters " style="">
+                <div class="slds-col" style="width:200px !important;" >Product</div> 
+                <div class="slds-col" style="width:200px !important;">Product Type</div> 
+                <div class="slds-col" style="width:150px !important;">Account Number</div>
+                <div class="slds-col" style="width:150px !important;">Amount</div> 
+                <div class="slds-col" style="width:150px !important;">Case #</div>
+                <div class="slds-col" style="width:150px !important;">Status</div> 
+                <div class="slds-col" style="width:150px !important;">Last Updated</div> 
+                
+            </div> 
+            <aura:iteration items="{!v.caseHistoryList}" var="caseHisRec" >
+                
+                <div class="slds-grid slds-gutters marginclass">
+                    <div class="slds-col" style="width:200px !important;" ><lightning:formattedText value="{!caseHisRec.product}" /></div> 
+                    <div class="slds-col" style="width:200px !important;"><lightning:formattedText value="{!caseHisRec.productType}" /></div> 
+                    <div class="slds-col" style="width:150px !important;"><lightning:formattedText value="{!caseHisRec.accountNumber}" /></div>
+                    <div class="slds-col" style="width:150px !important;"><lightning:formattedNumber value="{!caseHisRec.amount}" /></div> 
+                    <div class="slds-col" style="width:150px !important;"><lightning:formattedText value="{!caseHisRec.caseNum}" /></div>
+                    <div class="slds-col" style="width:150px !important;"><lightning:formattedText value="{!caseHisRec.Status}" /></div> 
+                    <div class="slds-col" style="width:150px !important;"><lightning:formattedText value="{!caseHisRec.lastUpdated}" /></div>
+                </div>
+                
+            </aura:iteration>    
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

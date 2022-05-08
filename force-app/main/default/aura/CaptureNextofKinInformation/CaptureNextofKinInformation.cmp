@@ -1,0 +1,144 @@
+<!--
+* Lightning Component for capturing Next to Kin Information)
+*
+* @author  Stya Boyenepalli
+*
+* @edit		Clifford Willers : ABSA (IQ Business)
+* 	- 29/10/2020
+-->
+
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,force:hasSObjectName" 
+                access="global" 
+                controller="BranchCustomerController">
+    <aura:attribute name="errorMap" type="Map" />
+    <aura:attribute name="relationshipOptions" type="List" />
+    <aura:attribute name="firstName" type="string" />
+    <aura:attribute name="lastName" type="string" />
+    <aura:attribute name="relationship" type="string" />
+    <aura:attribute name="cellphoneNumber" type="string" />
+    <aura:attribute name="telephoneNumber" type="string" />
+    <aura:attribute name="emailAddress" type="string" />
+    <aura:attribute name="mainCustomerCellNumber" type="string" />
+    <aura:attribute name="updating" type="Boolean" default="true"/>
+    <aura:attribute name="actionClicked" type="string" default=""/>
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <div class="slds-is-relative" >
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="12">
+                <div>
+                    <lightning:recordEditForm aura:id = "NextOfKinDetail"
+                                              recordId="{! v.recordId }"
+                                              objectApiName="Account"
+                                              density="comfy"
+                                              onload="{! c.nextOfKinLoaded }"
+                                              onsubmit="{! c.nextOfKinSubmit }"
+                                              onerror="{! c.nextOfKinError }"
+                                              onsuccess="{! c.nextOfKinSuccess }">
+                        <!-- Needs one field on RecordEdit to fire onsubmit() -->
+                        <lightning:inputField fieldName="Next_of_Kin_First_Name_s__pc" class="hidden_field"/>
+                        <lightning:inputField fieldName="Next_of_Kin_Last_Name__pc" class="hidden_field"/>
+                        <lightning:inputField fieldName="Next_of_Kin_Relationship__pc" class="hidden_field"/>
+                        <lightning:inputField fieldName="Next_of_Kin_Cellphone_Number__pc" class="hidden_field"/>
+                        <lightning:inputField fieldName="Next_of_Kin_Telephone_Number__pc" class="hidden_field"/>
+                        <lightning:inputField fieldName="Next_of_Kin_Email_Address__pc" class="hidden_field"/>
+                        <!-- Submit button needed so that onsubmit is fired from flow to save attribute values -->
+                        <button id="{! globalId + '_nextOfKin_submit' }" type="submit" class="hidden_field"/> 
+                    </lightning:recordEditForm> 
+                    
+                    <lightning:layout >
+                        <lightning:layoutItem padding="around-medium" size="6">
+                            <legend class="slds-text-heading_small slds-var-p-vertical_medium" >
+                                <b>Next of Kin</b>
+                            </legend>
+                            <lightning:layout>
+                                <lightning:layoutitem size="6">
+                                    <div id="{! globalId + '_NextofKinFirstName' }" class="slds-var-p-around_x-small">
+                                        <label for="NextofKinFirstName" >First name</label>
+                                        <lightning:input aura:id="NextofKinFirstName"
+                                                         name="NextofKinFirstName"
+                                                         value="{! v.firstName }" 
+                                                         required="true" 
+                                                         variant="label-hidden"
+                                                         pattern="[a-zA-Z\\ \\'\\-]+" />
+                                    </div>
+                                    <div id="{! globalId + '_NextofKinRelationship' }" class="slds-var-p-around_x-small">
+                                        <label for="NextofKinRelationship" >Relationship to applicant</label>
+                                        <lightning:select aura:id="NextofKinRelationship"
+                                                          name="NextofKinRelationship"
+                                                          label="" 
+                                                          class="label-hidden"
+                                                          value="{! v.relationship }"
+                                                          required="true" >   
+                                            <option value="">please select...</option>
+                                            <aura:iteration items="{! v.relationshipOptions }" var="rValue">
+                                                <option value="{!rValue}" selected="{!rValue==v.relationship}">{!rValue}</option>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </div>
+                                </lightning:layoutitem>
+                                <lightning:layoutitem size="6">
+                                    <div id="{! globalId + '_NextofKinLastName' }" class="slds-var-p-around_x-small">
+                                        <label for="NextofKinLastName" >Surname</label>
+                                        <lightning:input aura:id="NextofKinLastName" 
+                                                         name="NextofKinLastName"
+                                                         value="{! v.lastName }" 
+                                                         required="true" 
+                                                         variant="label-hidden"
+                                                         pattern="[a-zA-Z\\ \\'\\-]+" />
+                                    </div>
+                                </lightning:layoutitem>
+                            </lightning:layout> 
+                            <lightning:layout>
+                                <lightning:layoutitem size="6">
+                                    <div id="{! globalId + '_NextofKinCellphoneNumber' }" class="slds-var-p-around_x-small">
+                                        <label for="NextofKinCellphoneNumber" >Cellphone number</label>
+                                        <lightning:input aura:id="NextofKinCellphoneNumber" 
+                                                         name="NextofKinCellphoneNumber"
+                                                         value="{! v.cellphoneNumber }" 
+                                                         required="true" 
+                                                         variant="label-hidden"
+                                                         pattern="[0-9]+" />
+                                    </div>
+                                    <div id="{! globalId + '_NextofKinTelephoneNumber' }" class="slds-var-p-around_x-small">
+                                        <label for="NextofKinTelephoneNumber" >Work number (optional)</label>
+                                        <lightning:input aura:id="NextofKinTelephoneNumber" 
+                                                         name="NextofKinTelephoneNumber"
+                                                         value="{! v.telephoneNumber }" 
+                                                         variant="label-hidden"
+                                                         pattern="[0-9]+" />
+                                    </div>
+                                </lightning:layoutitem>
+                                <lightning:layoutitem size="6">
+                                    <div id="{! globalId + '_NextofKinEmailAddress' }" class="slds-var-p-around_x-small">
+                                        <label for="NextofKinEmailAddress" >Email address (optional)</label>
+                                        <lightning:input aura:id="NextofKinEmailAddress" 
+                                                         name="NextofKinEmailAddress"
+                                                         value="{! v.emailAddress }" 
+                                                         variant="label-hidden"
+                                                         type="email" />
+                                    </div>
+                                </lightning:layoutitem>
+                            </lightning:layout> 
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div>
+                            <c:BranchFlowFooter aura:id="branchFlowFooter" 
+                                                availableActions="{! v.availableActions }" 
+                                                navigateFlowEvent="{! c.handleNavigate }"/>
+                        </div>
+                    </lightning:layoutItem> 
+                </div>
+            </lightning:layoutItem> 
+            <aura:if isTrue="{! v.updating }">
+                <div class="slds-spinner_container" >
+                    <div role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand" >
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a" />
+                        <div class="slds-spinner__dot-b" />
+                    </div>
+                </div>
+            </aura:if>
+        </lightning:layout>
+    </div>
+</aura:component>

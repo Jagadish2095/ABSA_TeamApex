@@ -1,0 +1,123 @@
+<aura:component access="GLOBAL" extensible="false" implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="HotDocsController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="interviewUrl" type="String"/> 
+    <aura:attribute name="answerSetId" type="String"/>
+    <aura:attribute name="workItemId" type="String"/>
+    <aura:attribute name="token" type="String"/>
+    <aura:attribute name="templateId" type="String"/>
+    <aura:attribute name="isOpen" type="Boolean"/>
+    <aura:attribute name="recordId" type="Id"/>
+    
+    <!-- drafting Comp-->
+    <aura:attribute name="showDispatch" type="Boolean"/>
+    <aura:attribute name="showNoCheckingReasons" type="Boolean"/> 
+    <aura:attribute name="showCheckingCompleted" type="Boolean"/>
+    <aura:attribute name="checkingCompleted" type="Boolean"/>
+    <aura:attribute name="noCheckingReason" type="String"/>
+    <aura:attribute name="noCheckingReasons" type="List"/>
+    <aura:attribute name="checkingRequiredOptions" type="List"/>
+    <aura:attribute name="checkingRequired" type="String"/>  
+    <!--Email Adrress -->
+    <aura:attribute name="emailOptions" type="List"/>
+    <aura:attribute name="selectedEmail" type="String"/>
+    <aura:attribute name="showAlternativeEmail" type="boolean" default="false"/>
+    <aura:attribute name="alternativeEmail" type="String"/>
+    
+    <aura:if isTrue="{!v.isOpen}">
+        <div>        
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <!--<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">HotDocs</h2>-->
+                    </header>
+                    <div class="slds-modal__content slds-p-around_large" id="modal-content-id-1">
+                        <iframe aura:id="hotdocsFrame" src="{!v.interviewUrl}" width="99%" height="445px"></iframe>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>            
+    </aura:if>
+    
+    <!--Declare Spinner-->
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>    
+    
+    <!-- Drafting component for hotdocs -->
+    <lightning:layout multipleRows="true">
+        
+        <lightning:layoutItem size="12">
+            <lightning:button variant="brand" label="Launch Interview"  onclick="{!c.lauchInterview}"/>
+        </lightning:layoutItem>
+        <aura:if isTrue="{!v.showDispatch}">
+            <lightning:layoutItem padding="around-small" size="8">           
+                <lightning:radioGroup
+                                      aura:id="checkingRequiredRadio"
+                                      name="checkRequiredRadioButtonGroup"
+                                      label="Is Checking Required"
+                                      options="{! v.checkingRequiredOptions}"
+                                      value="{! v.checkingRequired}"
+                                      onchange="{!c.onChange}" />    
+                
+            </lightning:layoutItem>
+            
+            <aura:if isTrue="{!v.showNoCheckingReasons}">
+                <lightning:layoutItem padding="around-small" size="8">
+                    <lightning:select aura:id="noCheckingReasons" value="{!v.noCheckingReason}"  label = "Checking Reasons Exempted" onchange="{!c.onChange}">
+                        <aura:iteration items="{!v.noCheckingReasons}" var="item">
+                            <option text="{!item.label}" value="{!item.value}"/>
+                        </aura:iteration>
+                    </lightning:select>          
+                </lightning:layoutItem>
+            </aura:if>
+            <aura:if isTrue="{!v.showCheckingCompleted}">
+                <lightning:layoutItem padding="around-small" size="8">            
+                    <b>
+                        <ui:inputCheckbox  aura:id="checkingCompleted"  label="Confirm Checking Completed?" value="{!v.checkingCompleted}" required="true" change="{!c.onChange}"/>
+                    </b> 
+                </lightning:layoutItem>
+            </aura:if>  
+            <lightning:layoutItem padding="around-small" size="12"> 
+                
+            </lightning:layoutItem>
+            <!--New code added for CC email-->
+            
+            <lightning:layoutItem padding="around-small" size="8">
+                <lightning:select aura:id="emailSelect" name="SelectEmail" label="Dispatching Email Address :" value="{!v.selectedEmail}" onchange="{!c.onPicklistEmailChange}" required="true">
+                    <aura:iteration items="{!v.emailOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem size="1">
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                <ui:inputCheckbox aura:id="completedCheckbox" class="slds-float--right" label="Add Alternative Email?" change="{!c.onCompletedCheck}"/>
+            </lightning:layoutItem>
+            
+            <aura:if isTrue="{!v.showAlternativeEmail}">
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="altEmail" value="{!v.alternativeEmail}" label="Addtional Email Address" type="Text" required="true"/>
+                </lightning:layoutItem>
+            </aura:if>
+            
+            <!-- END Code New code added for CC email-->
+            
+            <lightning:layoutItem size="12">
+                <lightning:button variant="brand" label="Dispatch Drafted Will" onclick="{!c.dispatchDraftedWill}"/>
+            </lightning:layoutItem>
+        </aura:if>
+    </lightning:layout>
+    
+</aura:component>

@@ -1,0 +1,175 @@
+<aura:component controller="ClientSecuritiesController" implements="flexipage:availableForAllPageTypes,force:hasRecordId,lightning:isUrlAddressable" access="global">
+
+  <aura:handler name="init" value="{!this}" action="{!c.initComp}"/>
+    
+   <aura:attribute name="recordId" type="String" /> 
+   <aura:attribute name="listOfSearchRecords" type="List" description="Use,for store the list of search records which returns from apex class"/>
+   <aura:attribute name="minimunListRecords" type="List"/>
+   <aura:attribute name="searchRecordsSize" type="Integer"/>
+   <aura:attribute name="message" type="string"/>
+   <aura:attribute name="errorMessage" type="string"/>
+   <aura:attribute name="isOpen" type="boolean" default = "false"/>
+   <aura:attribute name="isGenerated" type="boolean" default = "false"/>
+   <aura:attribute name="isHide" type="Boolean" default="false" />
+   <aura:attribute name="showTable" type="Boolean" default="false" />
+   <aura:attribute name="showErrors" type="Boolean" default="false" />
+   <aura:attribute name="isSecurityEmpty" type="Boolean" default="false" />
+   <aura:attribute name="isBondOpen" type="Boolean" default="false" /> 
+   <aura:attribute name="popupFlag" type="Boolean" default="false" />
+   <aura:attribute name="paginationList" type="List"/>
+   <aura:attribute name="pageSize" type="Integer" default="10"/>
+   <aura:attribute name="totalSize" type="Integer"/>
+   <aura:attribute name="start" type="Integer" />
+   <aura:attribute name="end" type="Integer"/>
+   <aura:attribute name="oBonds" type="sObject"/>
+   <aura:attribute name="oSecurityHolds" type="sObject"/>
+   <aura:attribute name="isPagination" type="Boolean" default="false" />
+   <aura:attribute name="isLastPage" type="Boolean" default="false"/>
+
+	
+  
+   <!--<aura:if isTrue="{!v.isGenerated}">-->
+   <div class="slds-card slds-card_boundary slds-m-top--medium">
+   <div class="slds-card slds-card_boundary">   
+   <header class="slds-card__header slds-grid">
+      <div class="slds-media slds-media--center slds-has-flexi-truncate">
+      <div class="slds-media__figure">
+         <lightning:icon iconName="custom:custom45" alternativeText="Absa Products" size="small" />
+      </div>
+      <div class="slds-media__body slds-truncate">
+        <h2>
+          <a href="javascript:void(0);" class="slds-text-link--reset">
+            <span class="slds-text-heading--small">Security Outstanding</span>
+          </a>
+        </h2>
+      </div>
+    </div>
+    
+    </header>
+    </div>
+    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" >
+        <aura:if isTrue="{!v.showErrors}">
+            	<div class="slds-notify slds-notify_toast slds-theme_error">
+                <span class="slds-assistive-text">error</span>
+                <div class="slds-notify__content">
+                    <h6 class="slds-text-heading_small">Error Message </h6>
+                    <br/>
+                    <p class="slds-align_absolute-center">{!v.errorMessage}</p>                
+                </div>
+            </div>
+            <aura:set attribute="else">
+            	<table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                        <thead>
+                              <th  class="" scope="col">
+                                 <div class="slds-truncate" title="Account Reference Number">Client Code</div>
+                              </th>
+                              <th  class="" scope="col">
+                                 <div class="slds-truncate" title="Responsible Site">Responsible Site</div>
+                              </th>
+                             <th  class="" scope="col">
+                              	 <div class="slds-truncate" title="Hold Indication">Hold Indication</div>
+                              </th>
+                               <th  class="" scope="col">
+                                 <div class="slds-truncate" title="Status">Status</div>
+                              </th>
+                        </thead>
+               			<tbody>
+                            
+                            <!--<aura:iteration items="{!v.minimunListRecords}" var="row">-->
+                             <tr class="slds-hint-parent">
+                            	<th data-label="Client Code" scope="row">
+        							<div onclick="{!c.selectedItem}" data-value="{!v.oSecurityHolds.clcd}" class="slds-truncate" title="Client Code">
+          							<a href="javascript:void(0);" value="{!v.oSecurityHolds.clcd}" tabindex="-1">{!v.oSecurityHolds.clcd}</a>
+        							</div>
+      							</th>
+                                 
+                                <td>
+        							<div class="slds-truncate" title="Responsible Site"></div>
+      							</td>
+                                <td>
+        							<div class="slds-truncate" title="Holds">{!v.oSecurityHolds.holdInd}</div>
+      							</td>
+                                 
+                                 <td>
+        							<div class="slds-truncate" title="Status"></div>
+      							</td>
+
+                             </tr>
+                             <!--</aura:iteration>-->
+                            
+                        </tbody>
+        			</table>
+            </aura:set>
+        </aura:if>    
+        	
+        
+        <aura:if isTrue="{!v.isSecurityEmpty}">
+            <div class="slds-notify__content">
+        			<p>No Securities found</p>
+            </div>
+        </aura:if>
+        
+        
+        </div>    
+
+  
+  
+  </div>
+    
+  <!--</aura:if> -->
+   
+    <aura:if isTrue="{!v.isBondOpen}">
+    		<section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container" >
+            	<div class="slds-card slds-card_boundary" style="width:1000px"> 
+   					<div class="slds-card slds-card_boundary">   
+   						<header class="slds-card__header slds-grid">
+      						<div class="slds-media slds-media--center slds-has-flexi-truncate">
+      								<div class="slds-media__figure">
+         								<lightning:icon iconName="custom:custom45" alternativeText="Absa Products" size="small" />
+      								</div>
+      								<div class="slds-media__body slds-truncate">
+        							    <h2>
+          								    <a href="javascript:void(0);" class="slds-text-link--reset">
+            							        <span class="slds-text-heading--small">Security Outstanding Record Details</span>
+          								    </a>
+        							    </h2>
+      								</div>
+    						</div>
+    
+                        </header>
+                    </div>
+    				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" > 
+                        <table>
+                                 <tr>
+                                     <td><b>Responsible Site</b>
+                                         <div></div>   
+                                     </td>
+                                     <td><b>Status</b>
+                                         <div></div> 
+                                     </td>
+                                     
+                                 </tr>   
+                                 <tr>
+                                     <td><b>Client Code</b>
+                                         <div>{!v.oSecurityHolds.clcd}</div>   
+                                     </td>
+                                     <td><b>Hold Indicator</b>
+                                         <div>{!v.oSecurityHolds.holdInd}</div> 
+                                     </td>
+                                     
+                                 </tr>   
+                           </table>
+        		</div>    
+				<footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" 
+                                          label="Close"
+                                          title="Close"
+                                          onclick="{! c.closeBondsDetailsModel }"/>
+                </footer>
+            </div>
+            </div>     
+        </section>
+    </aura:if>
+   
+</aura:component>

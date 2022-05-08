@@ -1,0 +1,413 @@
+<!--
+* Lightning Component for capturing customer contact information
+*
+* @author  Paul John du Randt : ABSA (IQ Business)
+* @version v1.0
+* @since   2020-09-18
+* @edit	   Clifford Willers : ABSA (IQ Business)
+* @modified 2021-06-24 - Aaron Castelyn : ABSA - Added Residential and Postal Street 2
+*
+-->
+
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,force:hasSObjectName" 
+                access="global"
+                controller="BranchCustomerController" >
+    <aura:attribute name="communicationLanguageOptions" type="List" />
+    <aura:attribute name="communicationMethodOptions" type="List" />
+    <aura:attribute name="personEmail" type="string" />
+    <aura:attribute name="personOtherPhone" type="string" default="" />
+    <aura:attribute name="communicationLanguage" type="string" />
+    <aura:attribute name="personMobilePhone" type="string" />
+    <aura:attribute name="communicationMethod" type="string" />
+    <aura:attribute name="residentialRecordId" type="String" default="" />
+    <aura:attribute name="residentialStreet" type="String" />
+    <aura:attribute name="residentialStreet2" type="String" />
+    <aura:attribute name="residentialSuburb" type="String" />
+    <aura:attribute name="residentialCity" type="String" />
+    <aura:attribute name="residentialProvince" type="String" />
+    <aura:attribute name="residentialPostalCode" type="String" />
+    <aura:attribute name="residentialCountry" type="String" />
+    <aura:attribute name="residentialLoaded" type="String" default="false" />
+    <aura:attribute name="postalRecordId" type="String" default=""/>
+    <aura:attribute name="postalStreet" type="String" />
+    <aura:attribute name="postalStreet2" type="String" />
+    <aura:attribute name="postalSuburb" type="String" />
+    <aura:attribute name="postalCity" type="String" />
+    <aura:attribute name="postalProvince" type="String" />
+    <aura:attribute name="postalPostalCode" type="String" />
+    <aura:attribute name="postalCountry" type="String" />
+    <aura:attribute name="postalSame" type="String" default="false" />
+    <aura:attribute name="postalSameIf" type="String" default="false" />
+    <aura:attribute name="postalTest" type="String" default="false" />
+    <aura:attribute name="postalLoaded" type="String" default="false" />
+    <aura:attribute name="postalUpdate" type="Boolean" default="false" />
+    <aura:attribute name="countryOptions" type="List" default="[]" />
+    <aura:attribute name="statementOptions" type="List" default="[]" />
+    <aura:attribute name="statementOptionsValue" type="String" />
+    <aura:attribute name="postalOptions" type="List" />
+    <aura:attribute name="errorMap" type="Map" />
+    <aura:attribute name="emailRequired" type="Boolean" default="false"/>
+    <aura:attribute name="updating" type="Boolean" default="true"/>
+    <aura:attribute name="actionClicked" type="string" default=""/>
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+
+    <aura:handler name="addressSearchEvent" event="c:BranchAddressSearchEvent" action="{! c.handleSearchEvent }"/>
+    <aura:handler name="addressClearEvent" event="c:BranchAddressClearEvent" action="{! c.handleClearEvent }"/>
+    <aura:handler name="change" value="{! v.residentialStreet }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialStreet2 }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialSuburb }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialCity }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialProvince }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialPostalCode }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialCountry }" action="{! c.addressChanged }" />
+
+    <aura:handler name="change" value="{! v.communicationMethod }" action="{! c.checkForEmail }" />
+    <aura:handler name="change" value="{! v.statementOptionsValue }" action="{! c.checkForEmail }" />
+    
+    <div class="slds-is-relative" >
+        <lightning:recordEditForm aura:id = "ContactInformation"
+                                    recordId="{! v.recordId }"
+                                    objectApiName="{! v.sObjectName }"
+                                    density="comfy"
+                                    onload="{! c.contactRecordLoaded }"
+                                    onsubmit="{! c.contactRecordSubmit }"
+                                    onerror="{! c.contactRecordError }"
+                                    onsuccess="{! c.contactRecordSuccess }">
+            <lightning:inputField fieldName="PersonEmail" class="hidden_field"/>
+            <lightning:inputField fieldName="PersonOtherPhone" class="hidden_field"/>
+            <lightning:inputField fieldName="Communication_Language__pc" class="hidden_field"/>
+            <lightning:inputField fieldName="PersonMobilePhone" class="hidden_field"/>
+            <lightning:inputField fieldName="Preferred_Communication_Method__pc" class="hidden_field"/>
+            <button id="{! globalId + '_contact_submit' }" type="submit" class="hidden_field"/>
+        </lightning:recordEditForm>
+        <aura:if isTrue="{! (v.residentialRecordId != '') }">
+            <lightning:recordEditForm aura:id="ResidentialAddressDetail"
+                                        recordId="{! v.residentialRecordId }"
+                                        objectApiName="Address__c"
+                                        density="comfy"
+                                        onload="{! c.residentialRecordLoaded }"
+                                        onsubmit="{! c.residentialRecordSubmit }"
+                                        onerror="{! c.residentialRecordError }"
+                                        onsuccess="{! c.residentialRecordSuccess }">
+                <lightning:inputField fieldName="Address_Type__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_Street__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_Street_2__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_Zip_Postal_Code__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_Suburb__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_City__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_State_Province__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_Country__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Valid_Update_Bypass__c" class="hidden_field"/>
+                <button id="{! globalId + '_residential_submit' }" type="submit" class="hidden_field"/>
+            </lightning:recordEditForm>
+        </aura:if>
+        <aura:if isTrue="{! (v.postalRecordId != '') }">
+            <lightning:recordEditForm aura:id="PostalAddressDetail"
+                                        recordId="{! v.postalRecordId }"
+                                        objectApiName="Address__c"
+                                        density="comfy"
+                                        onload="{! c.postalRecordLoaded }"
+                                        onsubmit="{! c.postalRecordSubmit }"
+                                        onerror="{! c.postalRecordError }"
+                                        onsuccess="{! c.postalRecordSuccess }">
+                <lightning:inputField fieldName="Address_Type__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_Street__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_Street_2__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_Zip_Postal_Code__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_Suburb__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_City__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_State_Province__c" class="hidden_field"/>
+                <lightning:inputField fieldName="Shipping_Country__c" class="hidden_field"/>
+                <button id="{! globalId + '_postal_submit' }" type="submit" class="hidden_field"/>
+            </lightning:recordEditForm>
+        </aura:if>
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <lightning:layout>
+                    <lightning:layoutItem padding="horizontal-medium" size="6">
+                        <legend class="slds-text-heading_small slds-var-p-vertical_medium">
+                            <b>Contact information</b>
+                        </legend>
+                        <lightning:layout>
+                            <lightning:layoutitem size="6">
+                                <div id="{! globalId + '_PersonEmail' }" class="slds-var-p-around_x-small">
+                                    <label for="PersonEmail" >Email address</label>
+                                    <lightning:input aura:id="PersonEmail"
+                                                     name="PersonEmail"
+                                                     value="{! v.personEmail }"
+                                                     type="email"
+                                                     required="{! v.emailRequired }"
+                                                     variant="label-hidden" />
+                                </div>
+                                <div id="{! globalId + '_PersonOtherPhone' }" class="slds-var-p-around_x-small">
+                                    <label for="PersonOtherPhone" >Alternative contact number (optional)</label>
+                                    <lightning:input aura:id="PersonOtherPhone"
+                                                     name="PersonOtherPhone"
+                                                     value="{! v.personOtherPhone }"
+                                                     variant="label-hidden"
+                                                     pattern="[0-9]{10}" />
+                                </div>
+                                <div id="{! globalId + '_CommunicationLanguage' }" class="slds-var-p-around_x-small">
+                                    <label for="CommunicationLanguage" >Communication language</label>
+                                    <lightning:select aura:id="CommunicationLanguage"
+                                                      name="CommunicationLanguage"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.communicationLanguage }"
+                                                      required="true" >
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.communicationLanguageOptions }" var="clValue">
+                                            <option value="{!clValue}" selected="{!clValue==v.communicationLanguage}">{!clValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem size="6">
+                                <div id="{! globalId + '_PersonMobilePhone' }" class="slds-var-p-around_x-small">
+                                    <label for="PersonMobilePhone" >Cellphone number</label>
+                                    <lightning:input aura:id="PersonMobilePhone"
+                                                     name="PersonMobilePhone"
+                                                     value="{! v.personMobilePhone }"
+                                                     required="true"
+                                                     variant="label-hidden"
+                                                     pattern="[0-9]{10}" />
+                                </div>
+                                <div id="{! globalId + '_PreferredCommunicationMethod' }" class="slds-var-p-around_x-small">
+                                    <label for="PreferredCommunicationMethod" >Preferred communication channel</label>
+                                    <lightning:select aura:id="PreferredCommunicationMethod"
+                                                      name="PreferredCommunicationMethod"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.communicationMethod }"
+                                                      required="true" >
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.communicationMethodOptions }" var="cmValue">
+                                            <option value="{!cmValue}" selected="{!cmValue==v.communicationMethod}">{!cmValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem size="12">
+                                <div class="slds-p-around_x-small">
+                                    <lightning:radioGroup aura:id="statementOptionsRadioGroup"
+                                                          type="radio"
+                                                          name="statementOptionsRadioGroup"
+                                                          label="How would you like to receive your monthly statement?"
+                                                          options="{! v.statementOptions }"
+                                                          value="{! v.statementOptionsValue }"
+                                                          onchange="{! c.handleStatementOptionsGroup }"
+                                                          required="true" />
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <aura:if isTrue="{! (v.statementOptionsValue == 'Email') }">
+                                <lightning:layoutitem size="12">
+                                    <div >
+                                        <c:BranchMessage mediaBody='The email address already provided by the customer will be used for eStatements.' />
+                                    </div>
+                                </lightning:layoutitem>
+                            </aura:if>
+                        </lightning:layout>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <lightning:layout>
+                    <lightning:layoutItem padding="horizontal-medium" size="6">
+                        <legend class="slds-text-heading--small slds-p-vertical--medium">
+                            <b>Address information</b>
+                        </legend>
+                        <lightning:layout>
+                            <lightning:layoutitem size="12">
+                                <div id="{! globalId + '_ResidentialStreet' }" class="slds-p-around_x-small">
+                                    <label for="ResidentialStreet" >Residential address line 1</label>
+                                    <lightning:input aura:id="ResidentialStreet"
+                                                     value="{! v.residentialStreet }"
+                                                     variant="label-hidden"
+                                                     required="true"
+                                                     maxlength = "30">
+                                    </lightning:input>
+                                </div>
+                                <div id="{! globalId + '_ResidentialStreet2' }" class="slds-p-around_x-small">
+                                    <label for="ResidentialStreet2" >Residential address line 2</label>
+                                    <lightning:input aura:id="ResidentialStreet2"
+                                                     value="{! v.residentialStreet2 }"
+                                                     variant="label-hidden"
+                                                     required="false"
+                                                     maxlength = "30">
+                                    </lightning:input>
+                                </div>
+                                <lightning:layout>
+                                    <lightning:layoutitem size="6">
+                                        <div id="{! globalId + '_ResidentialSuburb' }" class="slds-var-p-around_x-small">
+                                            <label for="ResidentialSuburb" >Suburb</label>
+                                            <c:BranchAddressInfo aura:id="ResidentialSuburb"
+                                                                 addressType="Residential"
+                                                                 addressLabel="Suburb"
+                                                                 addressRequired="true"
+                                                                 addressVariant="label-hidden"
+                                                                 addressSuburb="{! v.residentialSuburb }" />
+                                        </div>
+                                        <div id="{! globalId + '_ResidentialPostalCode' }" class="slds-var-p-around_x-small">
+                                            <label for="ResidentialPostalCode" >Postal code/Zip code</label>
+                                            <lightning:input aura:id="ResidentialPostalCode"
+                                                             value="{! v.residentialPostalCode }"
+                                                             variant="label-hidden"
+                                                             required="true"
+                                                             pattern="[0-9]{4}"/>
+                                        </div>
+                                    </lightning:layoutitem>
+                                    <lightning:layoutitem size="6">
+                                        <div id="{! globalId + '_ResidentialCity' }" class="slds-var-p-around_x-small">
+                                            <label for="ResidentialCity" >City</label>
+                                            <lightning:input aura:id="ResidentialCity"
+                                                             value="{! v.residentialCity }"
+                                                             variant="label-hidden"
+                                                             required="true"/>
+                                        </div>
+                                        <div id="{! globalId + '_ResidentialProvince' }" class="slds-var-p-around_x-small">
+                                            <label for="ResidentialProvince" >Province</label>
+                                            <lightning:input aura:id="ResidentialProvince"
+                                                             value="{! v.residentialProvince }"
+                                                             variant="label-hidden"/>
+                                        </div>
+                                    </lightning:layoutitem>
+                                </lightning:layout>
+                                <div id="{! globalId + '_ResidentialCountry' }" class="slds-var-p-around_x-small">
+                                    <label for="ResidentialCountry" >Country</label>
+                                    <lightning:select aura:id="ResidentialCountry"
+                                                      name="ResidentialCountry"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.residentialCountry }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.countryOptions }" var="countryValue">
+                                            <option value="{!countryValue}" selected="{!countryValue==v.addressCountry}">{!countryValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:layoutItem>
+            <lightning:layoutitem padding="horizontal-small" size="12">
+                <lightning:layout >
+                    <lightning:layoutItem padding="horizontal-medium" size="6">
+                        <div class="slds-p-around_x-small">
+                            <lightning:radioGroup aura:id="PostalRadioGroup"
+                                                  name="PostalSameResidential"
+                                                  label="Postal address same as residential address?"
+                                                  options="{! v.postalOptions }"
+                                                  value="{! v.postalSame }"
+                                                  type="radio"
+                                                  required="true"
+                                                  onchange="{! c.postalSelectionChange }"
+                                                  />
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:layoutitem>
+            <aura:if isTrue="{!(v.postalSameIf == 'false')}">
+                <lightning:layoutItem padding="horizontal-small" size="12">
+                    <lightning:layout>
+                        <lightning:layoutItem padding="horizontal-medium" size="6">
+                            <lightning:layout>
+                                <lightning:layoutitem size="12">
+                                    <div id="{! globalId + '_PostalStreet' }" class="slds-p-around_x-small">
+                                        <label for="PostalStreet" >Postal address line 1</label>
+                                        <lightning:input aura:id="PostalStreet"
+                                                         value="{! v.postalStreet }"
+                                                         variant="label-hidden"
+                                                         required="true"
+                                                         maxlength = "30">
+                                        </lightning:input>
+                                    </div>
+                                    <div id="{! globalId + '_PostalStreet2' }" class="slds-p-around_x-small">
+                                        <label for="PostalStreet2" >Postal address line 2</label>
+                                        <lightning:input aura:id="PostalStreet2"
+                                                         value="{! v.postalStreet2 }"
+                                                         variant="label-hidden"
+                                                         required="false"
+                                                         maxlength = "30">
+                                        </lightning:input>
+                                    </div>
+                                    <lightning:layout>
+                                        <lightning:layoutitem size="6">
+                                            <div id="{! globalId + '_PostalSuburb' }" class="slds-var-p-around_x-small">
+                                                <label for="PostalSuburb" >Suburb</label>
+                                                <c:BranchAddressInfo aura:id="PostalSuburb"
+                                                                     addressType="Postal"
+                                                                     addressLabel="Suburb"
+                                                                     addressRequired="true"
+                                                                     addressVariant="label-hidden"
+                                                                     addressSuburb="{! v.postalSuburb }"/>
+                                            </div>
+                                            <div id="{! globalId + '_PostalPostalCode' }" class="slds-var-p-around_x-small">
+                                                <label for="PostalPostalCode" >Postal code/Zip code</label>
+                                                <lightning:input aura:id="PostalPostalCode"
+                                                                 value="{! v.postalPostalCode }"
+                                                                 variant="label-hidden"
+                                                                 required="true"
+                                                                 pattern="[0-9]{4}"/>
+                                            </div>
+                                        </lightning:layoutitem>
+                                        <lightning:layoutitem size="6">
+                                            <div id="{! globalId + '_PostalCity' }" class="slds-var-p-around_x-small">
+                                                <label for="PostalCity" >City</label>
+                                                <lightning:input aura:id="PostalCity"
+                                                                 value="{! v.postalCity }"
+                                                                 variant="label-hidden"
+                                                                 required="true"/>
+                                            </div>
+                                            <div id="{! globalId + '_PostalProvince' }" class="slds-var-p-around_x-small">
+                                                <label for="PostalProvince" >Province</label>
+                                                <lightning:input aura:id="PostalProvince"
+                                                                 value="{! v.postalProvince }"
+                                                                 variant="label-hidden"/>
+                                            </div>
+                                        </lightning:layoutitem>
+                                    </lightning:layout>
+                                    <div id="{! globalId + '_PostalCountry' }" class="slds-var-p-around_x-small">
+                                        <label for="PostalCountry" >Country</label>
+                                        <lightning:select aura:id="PostalCountry"
+                                                          name="PostalCountry"
+                                                          label=""
+                                                          class="label-hidden"
+                                                          value="{! v.postalCountry }"
+                                                          required="true">
+                                            <option value="">please select...</option>
+                                            <aura:iteration items="{! v.countryOptions }" var="countryValue">
+                                                <option value="{!countryValue}" selected="{!countryValue==v.addressCountry}">{!countryValue}</option>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </div>
+                                </lightning:layoutitem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </lightning:layoutItem>
+            </aura:if>
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <div>
+                    <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                        availableActions="{! v.availableActions }"
+                                        navigateFlowEvent="{! c.handleNavigate }"/>
+                </div>
+            </lightning:layoutItem>
+            <aura:if isTrue="{! v.updating }">
+                <div class="slds-spinner_container" >
+                    <div role="status" aria-hidden="false" class="slds-spinner slds-spinner_medium slds-spinner_brand" >
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a" />
+                        <div class="slds-spinner__dot-b" />
+                    </div>
+                </div>
+            </aura:if>
+        </lightning:layout>
+    </div>
+</aura:component>

@@ -1,0 +1,88 @@
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+    access="global" controller="merchantOnboardingWebsiteDetailsCtrl">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="showLoadingSpinner" type="boolean" default="false" />
+    <aura:attribute name="fileName" type="String" default="No File Selected.." />
+    <aura:attribute name="fileType" type="String" />
+    <aura:attribute name="picklistValues" type="Object" />
+    <aura:attribute name="documentMetadata" type="Document_Template__c"
+        default="{sobjectType:'Document_Template__c'}" />
+    <aura:attribute name="data" type="List" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="objectApiName" type="String" />
+    <aura:attribute name="fieldName" type="String" />
+    <aura:attribute name="opps" type="Object" default="" />
+    <aura:attribute name="optionsNotEmpty" type="boolean" default="true" />
+    <aura:attribute name="selectedRows" type="List" default="" />
+    <aura:attribute name="isApprovalPending" type="Boolean" default="false" /> <!-- PJAIN: 20200630 -->
+    <aura:attribute name="opportunityRecord" type="Object" /> <!-- PJAIN: 20200630 -->
+    <aura:attribute name="opportunityProductId" type="String" default="" />
+    <aura:attribute name="draftValues" type="Object" />
+
+    <!-- PJAIN: 20200630 -->
+    <aura:if isTrue="{!v.isApprovalPending}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title slds-text-align_left" style="color:red">Approval(s) pending for this
+                opportunity.</h2>
+            <br />
+        </div>
+    </aura:if>
+
+    <div class="slds-size_1-of-1">
+        <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+
+            <aura:if isTrue="{!not(empty(v.objectApiName))}">
+                <aura:if isTrue="{!not(empty(v.opps))}">
+                    <lightning:datatable data="{! v.opps }" columns="{! v.columns }" keyField="Id"
+                        draftValues="{! v.draftValues }" hideCheckboxColumn="true" maxRowSelection="1"
+                        onsave="{!c.onSave}" onrowselection="{!c.UpdateSelectedRows}" selectedRows="{! v.selectedRows }"
+                        minColumnWidth="500" editable="true" fixedWidth="500" />
+                </aura:if>
+            </aura:if>
+
+            <div class="slds-p-around_x-small">
+                <article aura:id="gridContainer" class="slds-card slds-card_boundary slds-p-around_xx-small">
+                    <div class="slds-p-around_x-small">
+                        <table>
+                            <tr>
+                                <td>
+                                    Document Type<br />
+                                    {!v.fileType}<br />
+                                    <lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" type="file"
+                                        name="file" label="Upload Attachment" multiple="false" />
+                                    <br />
+                                    <button class="slds-button slds-button_brand" onclick="{!c.doSave}">Upload
+                                        Attachment</button>
+                                    <div class="slds-text-body_small">{!v.fileName} </div>
+                                    <aura:if isTrue="{!v.showLoadingSpinner}">
+                                        <div class="slds-text-body_small slds-text-color_error">Uploading...
+                                            <img src="/auraFW/resources/aura/images/spinner.gif" class="spinner-img"
+                                                alt="Loading" />'
+                                        </div>
+                                    </aura:if>
+                                </td>
+                                <!--td style="vertical-align:top">
+                                    <lightning:buttonMenu alternativeText="Document Actions"
+                                        onselect="{!c.handleSelect}" iconSize="small">
+                                        <lightning:menuItem value="viewFileDetails" label="View File Details" /-->
+
+                                        <!-- lightning:menuItem value="addDocument" label="Add Document" / -->
+
+                                        <!--lightning:menuItem value="generateDocument" label="Generate Document" />
+                                        <lightning:menuItem value="writeDocument" label="Write Document" />
+                                        <lightning:menuItem value="signDocument" label="Sign Document" />
+                                        <lightning:menuItem value="shareDocument" label="Share Document" />
+                                    </lightning:buttonMenu>
+                                </td-->
+                            </tr>
+                        </table>
+                    </div>
+                </article>
+            </div>
+        </article>
+    </div>
+</aura:component>

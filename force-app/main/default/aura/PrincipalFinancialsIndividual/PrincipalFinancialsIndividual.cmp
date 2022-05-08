@@ -1,0 +1,239 @@
+<!--
+* Lightning Component for Principal Financials Individuals (PrincipalFinancialsIndividual)
+*
+* @author  Ephetehe Mokgopanyane
+* @version v1.0
+* @since   2020-09-01
+*
+-->
+
+<aura:component access="global" 
+                controller="PrincipalFinancialsIndividualCtrl" 
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId">
+	
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.accountId}" action="{!c.doInit}"/>
+    
+    <!-- Attribute Declaration -->
+	<aura:attribute name="assetsAndLiabilities" type="String[]" default="" access="public"/>
+    <aura:attribute name="idNumber" type="String" default="" access="public"/>
+	<aura:attribute name="clientName" type="String" default="" access="public"/>
+    <aura:attribute name="showSpinner" type="boolean" access="public"/>
+	<aura:attribute name="opportunityId" type="String" default="" access="public"/>
+	<aura:attribute name="accountId" type="String" default="" access="public"/>
+    <aura:attribute name="recordId" type="String" access="public"/>
+    <aura:attribute name="disableClientChange" type="boolean" default="false" access="public"/>
+	<aura:attribute name="picklistVals" type="String[]" default="Yes,No"/>
+	<aura:attribute name="outcomePositive" type="String" default="0.00" access="private"/>
+	<aura:attribute name="asAtDate" type="Date" default="0.00" access="private"/>
+	<aura:attribute name="deedsOfficeSearchAvailable" type="String" default="0.00" access="private"/>
+	<aura:attribute name="dateDeedsOfficeSearch" type="Date" default="0.00" access="private"/>
+	<aura:attribute name="assetsOwnerTotal" type="Decimal" default="0.00" access="private"/>
+	<aura:attribute name="assetsBranchTotal" type="Decimal" default="0.00" access="private"/>
+	<aura:attribute name="liabilitiesOwnerTotal" type="Decimal" default="0.00" access="private"/>
+	<aura:attribute name="liabilitiesBranchTotal" type="Decimal" default="0.00" access="private"/>
+	<aura:attribute name="networthOwnerEstimateCurrent" type="Decimal" default="0.00" access="private"/>
+	<aura:attribute name="networthManagerEstimateCurrent" type="Decimal" default="0.00" access="private"/>
+	<aura:attribute name="fixedPropertyOwnerTotal" type="Decimal" default="0.00" access="private"/>
+	<aura:attribute name="fixedPropertyBranchTotal" type="Decimal" default="0.00" access="private"/>
+    
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="large" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    <div class="slds-grid slds-wrap slds-gutters_medium">
+        <div class="slds-col slds-size_12-of-12 slds-text-align_left">
+            <table class="slds-table slds-table_cell-buffer slds-table_striped tableStyle">
+                <tr>
+                    <td style="text-align: left;">As at (date)</td>
+                    <td style="text-align: right;width: 20%;">
+                        <lightning:input type="date" value="{!v.asAtDate}" variant="label-hidden"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="text-align: left;">ID Number</td>
+                    <td style="text-align: right;width: 20%;">{!v.idNumber}</td>
+                </tr>
+            </table><br/><br/>
+            
+            <table class="slds-table slds-table_cell-buffer slds-table_striped tableStyle">
+                <tr class="headerTableRow">
+                    <th class="nameColumn">Assets</th>
+                    <th class="valueColumn">Owner's Valuation</th>
+                    <th class="valueColumn">Branch Valuation</th>
+                </tr>
+                <aura:iteration items="{!v.assetsAndLiabilities}" var="assetLiab">
+                    <aura:if isTrue="{!assetLiab.RecordType.Name == 'Asset'}">
+                        <tr>
+                            <td class="tdNameColumn">{!assetLiab.Type__c}</td>
+                            <td>
+                                <lightning:input formatter="currency" type="number" value="{!assetLiab.Amount_Owners_Valuation__c}" variant="label-hidden" onchange="{!c.handleAssetsOwnerTotalChange}"/>
+                            </td>
+                            <td>
+                                <lightning:input formatter="currency" type="number" value="{!assetLiab.Amount__c}" variant="label-hidden" onchange="{!c.handleAssetsBranchTotalChange}"/>
+                            </td>
+                        </tr>
+                    </aura:if>
+                </aura:iteration>
+                
+                <tr>
+                    <th style="text-align:right"><b>Total Assets</b></th>
+                    <td class="totalName">
+                        R{!v.assetsOwnerTotal}
+                    </td>
+                    <td class="totalValue">
+                        R{!v.assetsBranchTotal}
+                    </td>
+                </tr>
+            </table><br/><br/>
+            
+            <table class="slds-table slds-table_cell-buffer slds-table_striped tableStyle">
+                <tr class="headerTableRow">
+                    <th class="nameColumn">Liabilities</th>
+                    <th class="valueColumn">Historical</th>
+                    <th class="valueColumn">Current</th>
+                </tr>
+                <aura:iteration items="{!v.assetsAndLiabilities}" var="assetLiab">
+                    <aura:if isTrue="{!assetLiab.RecordType.Name == 'Liability'}">
+                        <tr>
+                            <td class="tdNameColumn">{!assetLiab.Type__c}</td>
+                            <td>
+                                <lightning:input type="number" value="{!assetLiab.Amount_Owners_Valuation__c}" variant="label-hidden" onchange="{!c.handleLiabilitiesOwnerTotalChange}"/>
+                            </td>
+                            <td>
+                                <lightning:input type="number" value="{!assetLiab.Amount__c}" variant="label-hidden" onchange="{!c.handleLiabilitiesBranchTotalChange}"/>
+                            </td>
+                        </tr>
+                    </aura:if>
+                </aura:iteration>
+                <tr>
+                    <th style="text-align:right"><b>Total Liabilities</b></th>
+                    <td class="totalName">
+                        R{!v.liabilitiesOwnerTotal}
+                    </td>
+                    <td class="totalValue">
+                        R{!v.liabilitiesBranchTotal}
+                    </td>
+                </tr>
+                <tr>
+                    <th style="text-align:right">&nbsp;</th>
+                    <td class="totalName">&nbsp;</td>
+                    <td class="totalValue">&nbsp;</td>
+                </tr>
+                <tr>
+                    <th style="text-align:right">&nbsp;</th>
+                    <td class="totalName">&nbsp;</td>
+                    <td class="totalValue">&nbsp;</td>
+                </tr>
+                <tr>
+                    <th style="text-align:right"><b>Net Worth Owner's Estimate</b></th>
+                    <td class="blankColumn"></td>
+                    <td class="totalValue">
+                        R{!v.networthOwnerEstimateCurrent}
+                    </td>
+                </tr>
+                <tr>
+                    <th style="text-align:right"><b>Net Worth Manager's Estimate</b></th>
+                    <td class="blankColumn"></td>
+                    <td class="totalValue">
+                        R{!v.networthManagerEstimateCurrent}
+                    </td>
+                </tr>
+            </table><br/><br/><br/>
+            
+            <table class="slds-table slds-table_cell-buffer slds-table_striped tableStyle">
+                <tr class="headerTableRow">
+                    <th class="nameColumn">Fixed Property &amp; Bond Details</th>
+                    <th class="valueColumn">Historical</th>
+                    <th class="valueColumn">Current</th>
+                </tr>
+                <aura:iteration items="{!v.assetsAndLiabilities}" var="assetLiab">
+                    <aura:if isTrue="{!assetLiab.RecordType.Name == 'Fixed Property Bond'}">
+                        
+                        <aura:if isTrue="{!not(or(assetLiab.Type__c == 'Total Bond Registered', assetLiab.Type__c == 'Notarial Bond Amount'))}">
+                            <tr>
+                                <td class="tdNameColumn">{!assetLiab.Type__c}</td>
+                                <td>
+                                    <lightning:input type="number" value="{!assetLiab.Amount_Owners_Valuation__c}" variant="label-hidden" onchange="{!c.handleFixedPropertyOwnerTotal}"/>
+                                </td>
+                                <td>
+                                    <lightning:input type="number" value="{!assetLiab.Amount__c}" variant="label-hidden" onchange="{!c.handleFixedPropertyBranchTotal}"/>
+                                </td>
+                            </tr>
+                        </aura:if>
+                    </aura:if>
+                </aura:iteration>
+                <tr>
+                    <th style="text-align:right"><b>Total Properties</b></th>
+                    <td class="totalName">
+                        R{!v.fixedPropertyOwnerTotal}
+                    </td>
+                    <td class="totalValue">
+                        R{!v.fixedPropertyBranchTotal}
+                    </td>
+                </tr>
+                <aura:iteration items="{!v.assetsAndLiabilities}" var="assetLiab">
+                    <aura:if isTrue="{!assetLiab.RecordType.Name == 'Fixed Property Bond'}">
+                        
+                        <aura:if isTrue="{!or(assetLiab.Type__c == 'Total Bond Registered', assetLiab.Type__c == 'Notarial Bond Amount')}">
+                            <tr>
+                                <td class="tdNameColumn">{!assetLiab.Type__c}</td>
+                                <td>
+                                    <lightning:input type="number" value="{!assetLiab.Amount_Owners_Valuation__c}" variant="label-hidden"/>
+                                </td>
+                                <td>
+                                    <lightning:input type="number" value="{!assetLiab.Amount__c}" variant="label-hidden"/>
+                                </td>
+                            </tr>
+                        </aura:if>
+                    </aura:if>
+                </aura:iteration>
+            </table><br/><br/><br/>
+            
+            <table class="slds-table slds-table_cell-buffer slds-table_striped tableStyle">
+                <tr class="headerTableRow">
+                    <th class="nameColumn">Deeds Office Details:</th>
+                    <th class="valueColumn"></th>
+                    <th class="valueColumn"></th>
+                </tr>
+                <tr>
+                    <td class="tdNameColumn">Deeds office search available (Y/N)</td>
+                    <td class="blankColumn"></td>
+                    <td>
+                        
+                        <lightning:select aura:id="Deeds_office_search_avaialable_Y_N__c" name="deedsOfficeSearchAvailable" onchange="{!c.onDeedsOfficeDetailsChange}">
+                            <option value="">Select an option</option>
+                            <aura:iteration items="{!v.picklistVals}" var="picklistVal">
+                                <option text="{!picklistVal}" value="{!picklistVal}" selected="{!picklistVal == v.deedsOfficeSearchAvailable}"></option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="tdNameColumn">Date deeds office search</td>
+                    <td class="blankColumn"></td>
+                    <td>
+                        <lightning:input fieldName="Date_deeds_office_search__c" type="date" value="{!v.dateDeedsOfficeSearch}" variant="label-hidden" onchange="{!c.onDeedsOfficeDetailsChange}"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="tdNameColumn">Outcome positive (Y/N)</td>
+                    <td class="blankColumn"></td>
+                    <td>
+                        <lightning:select aura:id="Outcome_Positive_Y_N__c" name="outcomePositive" variant="label-hidden" onchange="{!c.onDeedsOfficeDetailsChange}">
+                            <option value="">Select an option</option>
+                            <aura:iteration items="{!v.picklistVals}" var="picklistVal">
+                                <option text="{!picklistVal}" value="{!picklistVal}" selected="{!equals(picklistVal,v.outcomePositive)}"></option>
+                            </aura:iteration>
+                        </lightning:select>
+                    </td>
+                </tr>
+            </table><br/><br/><br/>
+        </div>
+    </div>
+    <lightning:button class="slds-m-top_small validateButton" type="submit" variant="brand" label="Validate &amp; Save" onclick="{!c.onSubmit}"/>
+</aura:component>

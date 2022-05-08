@@ -1,0 +1,366 @@
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" controller="CrossSellProductsController">
+    
+    <!--quoteeditattrib-->
+    <aura:attribute name="showQuoteEdit" type="boolean" default="false"/>
+    <aura:attribute name="updateQuoteScreenClose" type="boolean" default="false"/>
+    
+    <aura:attribute name="raiderDetails" type="object"/>
+    <aura:attribute name="opportunityDetails" type="Opportunity" default="{sobjectType:'Opportunity'}"/>
+    <aura:attribute name="OpportunityPartyDetailsList" type="object[]" description="existing party data except rider data"/>
+    <aura:attribute name="OpportunityPartyDetailsListDelete" type="object[]" description="used to delete the data in backend"/>
+    <aura:attribute name="OpportunityPartyDetailsMap" type="object" description=""/>
+    <aura:attribute name="allBeneficiaries" type="object[]"/>
+    <aura:attribute name="allBeneficiariesMap" type="object" />
+    <aura:attribute name="quoteStatus" type="String" />
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    
+    
+    <aura:attribute name="RiderTypeOptions" type="List" />
+    <aura:attribute name="IdTypeOptions" type="List" />
+    <aura:attribute name="captureOptions" type="List" />
+    <aura:attribute name= "existingFamilyOptions" type = "List"/>
+    
+    
+    <aura:attribute name="selectedRiderType" type="String" />
+    <aura:attribute name="selectedGenderValue" type="String" />
+    <aura:attribute name="selectedIdType" type="String" />
+    <aura:attribute name="selectedCaptureResponse" type="String" />
+    <aura:attribute name="selectedFamilyMemberResponse" type="String" />
+    <aura:attribute name="updateRecordId" type="String"/>
+    
+    
+    <aura:attribute name="riderIndCount" type="Integer" default="0"/>
+    <aura:attribute name="riderfamCount" type="Integer" default="0"/>
+    <aura:attribute name="indexVar" type="Integer" description="Use For update Row" />
+    
+    <aura:attribute name="showAddPanel" type="boolean" default="false"/>
+    <aura:attribute name="showRiderTable" type="boolean" default="false"/>
+    <aura:attribute name="showNewPanelRider" type="boolean" default="false"/>
+    <aura:attribute name="showNewRiderButton" type="boolean" default="false"/>
+    <aura:attribute name="showraiderAsMainMemOption" type="boolean" default="false"/>
+    <aura:attribute name="showUpdatePanelModal" type="boolean" default="false"/>
+    <aura:attribute name="showMainMemberOneTime" type="boolean" default="false"/>
+    <aura:attribute name="disableNewRiderButton" type="boolean" default="false"/>
+    <aura:attribute name="disableField" type="boolean" default="false"/>
+    <aura:attribute name="showexistingFamilyOptions" type="boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="CoverPremium" type="Double" default="0.00"/>
+    <aura:attribute name="isQuoteDone" type="boolean" default="false"/>
+    <aura:attribute name="availableActions" type="String[]" />
+    <aura:registerEvent name="navigateFlowEvent" type="c:navigateFlowEvt"/>
+    
+    <!--Added new attributes for outcome added on 19022021  by pranav-->
+    <aura:attribute name="outCome" type="String" />
+    <aura:attribute name="outComeReason" type="String" />
+    <aura:attribute name="quoteStatus1" type="String" />
+    
+    <!--attributes for search functionality-->
+    <aura:attribute name="searchValue" type="String" />
+    
+    <aura:attribute name="isNotValidSearchValue" type="boolean" default="true"/>
+    
+    <!--aded on 11032021 by pranav for sti requ-->
+    <aura:attribute name="accountNotValid" type="boolean" default="true"/>
+    <aura:attribute name="accountInValidReason" type="String"/>
+    
+    <!--# Flow Attribute -->
+    <aura:attribute name="selectedProductFromFlow" type="String" access="global"/>
+    <aura:attribute name="QuoteFromFlow" type="String" access="global"  />
+    <aura:attribute name="OpportunityFromFlow" type="String" access="global" default="0061x00000JhTmyAAF"  />
+    <aura:attribute name="OutcomeToFlow" type="String" access="global"  />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <!--Event handler-->
+    <aura:handler name="removeRowEvt" event="c:removeRowEvt" action="{!c.removeDeletedRow}"/>
+    <aura:handler name="editRowEvt" event="c:editRowEvt" action="{!c.editRow}"/>
+    
+    
+    <!--<lightning:card  title="{!v.roadCoverTitle}" class="slds-text-heading_large"> -->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.accountNotValid}">
+        <lightning:layout multipleRows="true" class="slds-notify slds-notify_toast slds-theme_error">
+            <div class="slds-notify__content">
+                <h6 class="slds-text-heading_small">Error Message </h6>
+                <br/>
+                <p class="slds-align_absolute-center">{!v.accountInValidReason}</p>
+            </div>
+            <lightning:layoutItem size="12">
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Refresh" onclick="{!c.doInit}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+        <aura:set attribute="else">
+            
+            <h1 class="slds-section__title"><b>Road Cover Product</b></h1>
+            <div></div>
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12">
+                    <h2 class="slds-section__title">New Rider Details</h2>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="4">
+                    <lightning:select aura:id="raiderPick"  name="selectRaiderType" class="magnifyLabel" label="Select Rider Type" value="{!v.selectedRiderType}" onchange="{!c.onPicklistselectedRiderTypeChange}">
+                        <aura:iteration items="{!v.RiderTypeOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <aura:if isTrue="{!v.showraiderAsMainMemOption}">
+                    <lightning:layoutItem padding="around-small" size="8">
+                        <lightning:select aura:id="raiderAsMainMem" name="raiderAsMainMem" class="magnifyLabel" label="Do You want to create Policy for existing Contacts ?" value="{!v.selectedCaptureResponse}" onchange="{!c.onPicklistselectedCaptureResponseChange}" required="true">
+                            <option value="">--None--</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.showexistingFamilyOptions}">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select aura:id="existingFamilyOptions" name="existingFamilyOptions" label="Existing Family Members" value="{!v.selectedFamilyMemberResponse}" onchange="{!c.onPicklistexistingFamilyOptionsChange}" required="true">
+                            <aura:iteration items="{!v.existingFamilyOptions}" var="item">
+                                <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.showNewRiderButton}">
+                    <lightning:layoutItem size="12">
+                        <aura:if isTrue="{!v.showNewPanelRider}">
+                            <aura:set attribute="else">
+                                <lightning:button aura:id="newRiderButton" class="slds-m-top_small slds-float--right" variant="brand" iconName="utility:add" iconPosition="left" label="New Rider" onclick="{!c.newRider}" disabled ="{!v.disableNewRiderButton}"/>
+                            </aura:set>
+                        </aura:if> 
+                    </lightning:layoutItem>
+                </aura:if>
+            </lightning:layout>
+            <!-- </lightning:card> -->
+            <aura:if isTrue="{!v.showNewPanelRider}">
+                <!--###### MODAL BOX Start######--> 
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <!-- ###### MODAL BOX HEADER Start ######-->
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{!c.cancelRider}"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add New Rider</h2>
+                        </header>
+                        <!--###### MODAL BOX BODY Part Start######-->
+                        
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <div class="c-container">
+                                <lightning:layout multipleRows="true">
+                                    <lightning:layoutItem padding="around-small" >
+                                        <!-- Search value -->
+                                        <lightning:input aura:id="iSearchValue" value="{!v.searchValue}" type="text" placeholder="Search Value" label="" onchange="{!c.validateSearchValueLength}"/>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" >
+                                        <lightning:button variant="brand" class="slds-m-top--medium" disabled="{!v.isNotValidSearchValue}" aura:id="btnCifSearch"  label="ID Number Search" onclick="{!c.searchClient}" iconName="utility:search"/>
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </div>
+                            <lightning:layout multipleRows="true">
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:input aura:id="riderForm" value="{!v.raiderDetails.First_Name__c}" label="First Name" required="true"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:input aura:id="riderForm" value="{!v.raiderDetails.Last_Name__c}" label="Last Name" required="true"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:select aura:id="riderForm" name="gender" label="Gender" value="{!v.raiderDetails.Gender__c}" onchange="{!c.onPicklistGenderChange}" required="true">
+                                        <option value=""  >--None--</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </lightning:select>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:select aura:id="riderForm" name="RiderType" label="Rider Type" value="{!v.selectedRiderType}" disabled="true">
+                                        <aura:iteration items="{!v.RiderTypeOptions}" var="item">
+                                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </lightning:layoutItem>
+                                
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:select aura:id="riderForm" name="idType" label="ID Type" value="{!v.raiderDetails.ID_Type__c}" onchange="{!c.onPicklistselectedIdTypeChange}" required="false">
+                                        <aura:iteration items="{!v.IdTypeOptions}" var="item">
+                                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:input aura:id="riderForm" value="{!v.raiderDetails.RSA_ID_Number__c}" label="ID Number" maxlength="13" required="false"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:input aura:id="riderForm" value="{!v.raiderDetails.Date_of_Birth__c}" label="Date of Birth" type="date" required="true"/>
+                                </lightning:layoutItem> 
+                                
+                            </lightning:layout>
+                        </div>
+                        <!--###### MODAL BOX FOOTER Part Start ######-->
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral" 
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{!c.cancelRider}"/>
+                            <lightning:button variant="brand" 
+                                              label="Add Rider"
+                                              title="Confirm"
+                                              onclick="{!c.addRider}"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+                <!--###### MODAL BOX Part END Here ######-->
+            </aura:if><br/>
+            
+            <!--<lightning:layout multipleRows="true" class="slds-scrollable_x slds-scrollable_y"  >
+        <lightning:layoutItem size="12">-->
+            <div class="slds-scrollable_x" style="width:100%">
+                <table class="slds-table  slds-table_bordered slds-table_cell-buffer slds-table_col-bordered"> 
+                    <thead>
+                        <tr class="slds-text-title_caps">
+                            <th scope="col"><div class="slds-truncate">S.No</div></th>
+                            <th scope="col"><div class="slds-truncate" title="First Name">First Name</div></th>
+                            <th scope="col"><div class="slds-truncate" title="Last Name">Last Name</div></th>
+                            <th scope="col"><div class="slds-truncate" title="Gender">Gender</div></th>
+                            <th scope="col"><div class="slds-truncate" title="Rider Type">Rider Type</div></th>
+                            <th scope="col"><div class="slds-truncate" title="Id Type">Id Type</div></th>
+                            <th scope="col"><div class="slds-truncate" title="Id  Number">Id Number</div></th>
+                            <th scope="col"><div class="slds-truncate" title="Dob">Date of Birth</div></th>
+                            <th scope="col"><div class="slds-truncate" title="Premium">Premium</div></th>
+                        </tr>
+                    </thead> 
+                    <tbody>
+                        <!--Iterate the child Component for display Table rows 
+               with pass the List Item Index for track the Every child Component 
+               and pass each List Rider Instance -->         
+                        <aura:iteration items="{!v.allBeneficiaries}" var="item" indexVar="index">
+                            <c:crossSellProductsChild riderInstance="{!item}" rowIndex="{!index}" />
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </div>
+            <!-- </lightning:layoutItem>
+    </lightning:layout>-->
+            <br/>
+            <lightning:recordEditForm aura:id="iCreateOpportunity" objectApiName="Opportunity" recordId="{!v.OpportunityFromFlow}">
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:inputField class="magnifyLabel" fieldName="Quote_Outcome__c" aura:id="Quote_Outcome__c" value="{!v.opportunityDetails.Quote_Outcome__c}" disabled="{!v.readOnlyFields}" required="true"/>
+                        <aura:if isTrue="{!v.isQuoteDone}">
+                            <lightning:input  class="magnifyLabel"  label="Quote Outcome Reason" aura:id="Last_Name__c" value="{!v.opportunityDetails.Quote_Outcome_Reason__c}" disabled="{!v.readOnlyFields}" /> 
+                            <aura:set attribute="else">
+                                <lightning:inputField class="magnifyLabel" fieldName="Quote_Outcome_Reason__c" aura:id="Quote_Outcome_Reason__c" value="{!v.opportunityDetails.Quote_Outcome_Reason__c}" disabled="{!v.readOnlyFields}" />
+                            </aura:set>
+                        </aura:if>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:recordEditForm>
+            <div class="slds-float_right"> 
+                <lightning:layout multipleRows="true">
+                    <aura:if isTrue="{!v.showQuoteEdit}">
+                        <lightning:button variant="brand" label="Quote" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+                        <aura:set attribute="else"> 
+                            <!--  <lightning:button variant="brand" label="Previous" aura:id="BACK" onclick="{!c.handleChangePrev}"/>-->
+                            <aura:if isTrue="{!v.isQuoteDone}">
+                                <lightning:button variant="brand" label="Next" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+                                <aura:set attribute="else">
+                                    <lightning:button variant="brand" label="Quote" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </lightning:layout>
+            </div>
+            <p style="margin-top:5px">* Only a maximum of 5 Ride Individuals and  Ride Families will be covered.</p> 
+        </aura:set>  
+    </aura:if><!--account check if close-->
+    
+    
+    <aura:if isTrue="{!v.showUpdatePanelModal}">
+        <!--###### MODAL BOX Start######--> 
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeConfirmation}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Close Confirmation</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem size="12">
+                            <h2 class="slds-section__title">Update Rider</h2>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.raiderDetails.First_Name__c}" label="First Name" required="true" pattern="^([^0-9]*)$" messageWhenPatternMismatch="Input can not contain numbers" disabled="{!v.disableField}"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.raiderDetails.Last_Name__c}" label="Last Name" required="true" pattern="^([^0-9]*)$" messageWhenPatternMismatch="Input can not contain numbers" disabled="{!v.disableField}"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:select aura:id="updateForm" name="gender" label="Gender" value="{!v.raiderDetails.Gender__c}"  required="true" disabled="{!v.disableField}">
+                                <option value="">--None--</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:select aura:id="updateForm" name="idType" label="Id Type" value="{!v.raiderDetails.ID_Type__c}" onchange="{!c.onPicklistselectedIdTypeChange}" required="false" disabled="{!v.disableField}">
+                                <aura:iteration items="{!v.IdTypeOptions}" var="item">
+                                    <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:input aura:id="updateForm" value="{!v.raiderDetails.RSA_ID_Number__c}" label="ID Number" maxlength="13" required ="false" disabled="{!v.disableField}"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:select aura:id="updateForm" name="RiderType" label="Rider Type" value="{!v.raiderDetails.DD_Cross_Sell_Product_Member_Type__c}" disabled="true">
+                                <aura:iteration items="{!v.RiderTypeOptions}" var="item">
+                                    <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                </aura:iteration>
+                                <option value="Main Member">Main Member</option>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:input aura:id="updateForm" value="{!v.raiderDetails.Date_of_Birth__c}" label="Date of Birth" type="date" required="true" disabled="{!v.disableField}" />
+                        </lightning:layoutItem>
+                        
+                        
+                    </lightning:layout>
+                </div>
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{!c.closeConfirmation}"/>
+                    <lightning:button variant="brand" 
+                                      label="Confirm"
+                                      title="Confirm"
+                                      onclick="{!c.confrimAndClose}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+    </aura:if>
+    
+    
+    <!--</aura:if>-->
+</aura:component>

@@ -1,0 +1,196 @@
+<!--
+ - This is a component for uploading documents to the ECM Service
+ - @author Masimba Chingwende
+ - @author  Nelson Chisoko (Dariel)
+ - @since   2019-02-19
+ - @modified 2019-06-14 by Robert McLean.
+ - @Change description added picklist for fileType
+ - @modified 2019-11-13 by Vladimir Panajic
+ - @change description added optionsSignature field and related functionality
+ - @modified 2021-01-04 by Prashanth Boeni
+ - @change description added isCAFApplication attribute and related functionality
+ -->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global"
+                controller="DocumentController">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleRelatedParty}"/>
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="showLoadingSpinner" type="boolean" default="false"/>
+    <aura:attribute name="fileName" type="String" default="No File Selected.."/>
+    <aura:attribute name="fileType" type="String"></aura:attribute>
+    <aura:attribute name="picklistValues" type="Object"/>
+    <aura:attribute name="documentTypePickList" type="Object"/>
+    <aura:attribute name="childDocumentPicklistValues" type="Object"/>
+    <aura:attribute name="documentType" type="Object"/>
+    <aura:attribute name="documentMetadata" type="Document_Template__c" default="{sobjectType:'Document_Template__c'}"/>
+    <aura:attribute name="fileExtension" type="string"/>
+    <aura:attribute name="disableRadioButtonGroup" type="boolean" default="true"/>
+    <aura:attribute name="oppStage" type="String" /> <!--W-08562-->
+    <aura:attribute name="selectSignedManuallyOption" type="Boolean"/>
+    <aura:attribute name="optionsSignature" type="List" default="[
+                                                                 {'label': 'Yes', 'value': 'Yes'},
+                                                                 {'label': 'No', 'value': 'No'}
+                                                                 ]"/>
+    <aura:attribute name="relatedPartyID" type="String"/>
+
+    <!-- Attributes for CAF Product Added by Prashanth Boeni-->
+    <aura:attribute name="isCAFApplication" type="boolean" default="false"/>
+    <aura:attribute name="applicationPicklistValues" type="Object"/>
+    <aura:attribute name="applicationId" type="String" />
+    <aura:attribute name="isOppcase" type="boolean" default = "false" />
+    <aura:attribute name="uploadedDocumentId" type="String" />
+    <aura:attribute name="caseStatus" type="String"/>
+    <aura:attribute name="showFilesPopup" type="Boolean"/>
+
+     <aura:attribute name="fileoptions" type="List" />
+    <aura:attribute name="selectedFile" type="String"/>
+    <aura:attribute name="documentSource" type="String"/>
+    <!-- Start of Attributes added by Masechaba Maseli 130321 for W-009686 -->
+    <aura:attribute name="caseRecord" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="IsClosed"
+                      targetFields="{!v.caseRecord}"
+                      targetError="{!v.recordLoadError}"
+                      />
+
+    <!-- End of Attributes added by Masechaba Maseli 130321 for W-009686 -->
+
+    <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+        <lightning:card title="Upload Documents" iconName="standard:document" class="slds-m-left_small">
+            <lightning:select name="documentType" label="Select the type for document upload." required="true"
+                              onchange="{!c.onPicklistDocumentTypeChange}" value="{!v.documentType}">
+                <option value="">Choose one...</option>
+                <aura:iteration items="{!v.documentTypePickList}" var="item">
+                    <option value="{!item.value}">
+                        {!item}
+                    </option>
+                </aura:iteration>
+                <option value="Other">Other</option>
+            </lightning:select>
+
+            <lightning:layoutItem padding="around-small">
+            </lightning:layoutItem>
+
+            <lightning:select name="uploadFileType" label="Select document to upload." required="true"
+                              onchange="{!c.onPicklistDocumentChange}" value="{!v.fileType}">
+                <option value="">Choose one...</option>
+                <aura:iteration items="{!v.childDocumentPicklistValues}" var="item">
+                    <option value="{!item.value}">
+                        {!item}
+                    </option>
+                </aura:iteration>
+            </lightning:select>
+
+              <!--   <aura:if isTrue="{!v.isCAFApplication}">  -->
+             <aura:if  isTrue="{!and(v.isCAFApplication, v.isOppcase)}" >
+                <lightning:layoutItem padding="around-small">
+                </lightning:layoutItem>
+                <lightning:select  aura:id="applistId" name="applicationForDoc" label="Select Application for this document" required="true"
+                                  onchange="" value="{!v.applicationId}">
+                    <option value="">Choose one...</option>
+                    <aura:if  isTrue="{!or(or(v.fileType == 'EDD level ll report',v.fileType == 'Management sign off'),v.fileType == 'Proof of source of Income / funds')}" >
+                        =={!v.fileType}==
+                   <option value="{!v.recordId}">Shared across all applications</option> 
+                    </aura:if>
+                    <aura:iteration items="{!v.applicationPicklistValues}" var="item">
+                        <option value="{!item.Id}">
+                            {!item.Name}
+                        </option>
+                    </aura:iteration>
+                </lightning:select>
+            </aura:if>
+
+            <lightning:layoutItem padding="around-small">
+            </lightning:layoutItem>
+
+             <aura:if isTrue="{!v.isCAFApplication == false}">
+
+            <c:RelatedPartySelector recordId="{!v.recordId}"/>
+
+            <lightning:layoutItem padding="around-small">
+            </lightning:layoutItem>
+
+            <lightning:radioGroup
+                                  aura:id="radioGrp"
+                                  name="radioButtonGroup"
+                                  label="Please indicate if this document has been signed manually."
+                                  options="{!v.optionsSignature}"
+                                  value="{!v.selectSignedManuallyOption}"
+                                  class="customRadioCls"
+                                  disabled="{!v.disableRadioButtonGroup}"/>
+
+            </aura:if>
+
+            <br/>
+            <aura:if isTrue="{!v.documentSource != 'Salesforce'}">
+                <lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" type="file" name="file" label="Upload Attachment" multiple="false"/>
+                <br/>
+                <aura:if isTrue="{!and(v.caseRecord.IsClosed == false,v.isCAFApplication)}"> <!-- "{!and(v.isCAFApplication, v.isOppcase)}"-->
+                    <button class="slds-button slds-button_brand" onclick="{!c.doSave}">Upload Attachment</button>
+                <aura:set attribute="else">
+                    <aura:if isTrue="{!and(v.caseRecord.IsClosed == true,v.isCAFApplication)}">
+                        
+                        <aura:set attribute="else">
+                            <button class="slds-button slds-button_brand" onclick="{!c.doSave}">Upload Attachment</button>
+                        </aura:set>
+                    </aura:if>
+                    
+                </aura:set>
+                </aura:if>
+                <aura:set attribute="else">
+                    <aura:if isTrue="{!v.caseRecord.IsClosed == false}">
+                        <a onclick="{!c.getFiles}"> Click here to select file.</a><br/><br/>
+                        <button class="slds-button slds-button_brand" onclick="{!c.doSaveFile}">Upload Attachment</button>
+                    </aura:if>
+                </aura:set>
+            </aura:if>
+            <div class="slds-text-body_small">{!v.fileName}</div>
+            <aura:if isTrue="{!v.showLoadingSpinner}">
+                <div class="slds-text-body_small slds-text-color_error">Uploading...
+                    <img src="/auraFW/resources/aura/images/spinner.gif" class="spinner-img" alt="Loading"/>'
+                </div>
+            </aura:if>
+            <br/>
+        </lightning:card>
+    </article>
+     <aura:if isTrue="{!v.showFilesPopup}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- ###### MODAL BOX HEADER Start ######-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModelFiles }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Select Files</h2>
+                    </header>
+                    <!--###### MODAL BOX BODY Part Start######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <lightning:radioGroup name="radioGroup"
+                                              label="Select File"
+                                              options="{! v.fileoptions }"
+                                              value="{! v.selectedFile }"
+                                              type="radio"/>
+                    </div>
+                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeModelFiles }"/>
+                        <lightning:button variant="brand"
+                                          label="Save"
+                                          title="Save"
+                                          onclick="{! c.saveSelectedFile }"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+            <!--###### MODAL BOX Part END Here ######-->
+    </aura:if>
+</aura:component>

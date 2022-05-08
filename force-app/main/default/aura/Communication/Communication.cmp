@@ -1,0 +1,139 @@
+<aura:component controller="CommunicationController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction" access="global" >
+    <!--Initialization handler-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <!--Attribute declarations-->
+    <aura:attribute name="applicationByOpportunity" type="Application__c" />
+    <aura:attribute name="communicationPreferenceSet" type="Boolean"/>
+    <aura:attribute name="communicationPreferenceType" type="String"/>
+    <aura:attribute name="emailSelected" type="Boolean" />
+    <aura:attribute name="smsSelected" type="Boolean"/>
+    <aura:attribute name="showAltEmail" type="Boolean"/>
+    <aura:attribute name="showAltSMS" type="Boolean"/>
+    <aura:attribute name="emailsList" type="List"/>
+    <aura:attribute name="phonesList" type="List"/>
+    <aura:attribute name="altEmail" type="String"/>
+    <aura:attribute name="altSMS" type="String"/>
+    <aura:attribute name="currentEmail" type="String"/>
+    <aura:attribute name="currentSMS" type="String"/>
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Email', 'value': 'Email'},
+                                                        {'label': 'SMS', 'value': 'SMS'}
+                                                        ]"/>
+    <aura:attribute name="validPhoneExists" type="Boolean" default="false"/>
+    <aura:attribute name="validEmailExists" type="Boolean" default="false"/>
+    <aura:attribute name="joinClientType" type="Boolean" default="false"/>
+    
+    <!--Display if no communication preference has been set-->
+    <aura:if isTrue="{!v.communicationPreferenceSet == false}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="10">
+                <lightning:radioGroup
+                                      aura:id="communicationPreferenceRadio"
+                                      name="communicationRadioButtonGroup"
+                                      label="Please select your Communication Preference"
+                                      options="{! v.options }"
+                                      value="{! v.communicationPreferenceType}"
+                                      onchange="{!c.onChange}"
+                                      />
+            </lightning:layoutItem>
+        </lightning:layout>
+        <lightning:layout multipleRows="true">
+            <aura:if isTrue="{!v.emailSelected}">
+                <aura:if isTrue="{!v.validEmailExists}">
+                    <lightning:layoutItem padding="around-small" size="8">
+                        <lightning:select aura:id="emailSelect" value="{!v.currentEmail}" label=" Current  Email" class="currEmail" onchange="{!c.onChange}">
+                            <aura:iteration items="{!v.emailsList}" var="item">
+                                <option text="{!item.label}" value="{!item.value}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                        <ui:inputCheckbox  aura:id="altEmailCheckbox" class="slds-float--right" label="Use Alternative Email?" value="{!v.showAltEmail}" change="{!c.onChange}"/>
+                    </lightning:layoutItem>
+                    <aura:if isTrue="{!v.showAltEmail}">
+                        <lightning:layoutItem padding="around-small" size="8">
+                            <lightning:input aura:id="altEmail" value="{!v.altEmail}" label="Alternative Email" type="Email" required="true"/>
+                        </lightning:layoutItem>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.joinClientType}">
+                            <p style="font-size:16px"><lightning:icon size="small" iconName="utility:warning" alternativeText="Warning" /> No valid email addresses on any the contacts linked to the joint account, please add a valid email address to at least one of the contacts and then try again.</p>    
+                            <aura:set attribute="else">
+                                <p style="font-size:16px"><lightning:icon size="small" iconName="utility:warning" alternativeText="Warning" /> No valid email address on the account, please update the account and then try again.</p>
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </aura:if>
+            <aura:if isTrue="{!v.smsSelected}">
+                <aura:if isTrue="{!v.validPhoneExists}">
+                    <lightning:layoutItem padding="around-small" size="8">
+                        <lightning:select aura:id="smsSelect" value="{!v.currentSMS}" label=" Current  SMS" onchange="{!c.onChange}">
+                            <aura:iteration items="{!v.phonesList}" var="item">
+                                <option text="{!item.label}" value="{!item.value}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                        <ui:inputCheckbox  aura:id="altSMSCheckbox" class="slds-float--right" label="Use Alternative SMS?" value="{!v.showAltSMS}" change="{!c.onChange}"/>
+                    </lightning:layoutItem>
+                    <aura:if isTrue="{!v.showAltSMS}">
+                        <lightning:layoutItem padding="around-small" size="8">
+                            <lightning:input aura:id="altSMS" value="{!v.altSMS}" label="Alternative SMS" type="Phone" required="true"/>
+                        </lightning:layoutItem>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.joinClientType}">
+                            <p style="font-size:16px"><lightning:icon size="small" iconName="utility:warning" alternativeText="Warning" /> No valid mobile phones on any the contacts linked to the joint account, please add a valid mobile phone to at least one of the contacts and then try again.</p>    
+                            <aura:set attribute="else">
+                                <p style="font-size:16px"><lightning:icon size="small" iconName="utility:warning" alternativeText="Warning" /> No valid mobile phone on the account, please update the account and then try again.</p>
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </aura:if>
+            <lightning:layoutItem size="12">
+                <!--Control displaying update and cancel buttons-->
+                <aura:if isTrue="{!v.communicationPreferenceType != null}">
+                    <lightning:buttonGroup class="slds-m-top_small slds-float--right">
+                        <aura:if isTrue="{!or(
+                                         
+                                         and(v.communicationPreferenceType == 'Email', or(v.currentEmail != '', v.altEmail.length > 0)),
+                                         and(v.communicationPreferenceType == 'SMS', or(v.currentSMS != '', v.altSMS.length > 0))
+                                         )}">
+                            
+                            <lightning:button variant="brand" label="Update"  onclick="{!c.update}"/>
+                        </aura:if>
+                        <lightning:button variant="brand" label="Cancel" onclick="{!c.cancel}" />
+                    </lightning:buttonGroup>
+                </aura:if>
+            </lightning:layoutItem>
+        </lightning:layout>        
+    </aura:if>
+    <!--Display if a communication preference has been set-->
+    <aura:if isTrue="{!v.communicationPreferenceSet}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12" padding="around-small">
+                <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> Communication Preference has been set.</p>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12" padding="around-small">
+                <!--Display if communication preference has been set to email-->
+                <aura:if isTrue="{!v.communicationPreferenceType == 'Email'}">
+                    <div class="width">
+                        <b><label class="slds-form-element__label">Email: </label></b><ui:outputEmail value="{!v.applicationByOpportunity.Preferred_Email__c}" />
+                    </div>
+                </aura:if>
+                <!--Display if communication preference has been set to phone-->
+                <aura:if isTrue="{!v.communicationPreferenceType == 'SMS'}">
+                    <div class="width">
+                        <b><label class="slds-form-element__label">SMS: </label></b><ui:outputPhone value="{!v.applicationByOpportunity.Preferred_SMS__c}" />
+                    </div>
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem size="12" padding="around-small">
+                <lightning:button class="slds-m-top_small slds-float--right" iconName="utility:edit" variant="brand" type="edit" name="add" label="Update Communication Preference" onclick="{!c.updateCommunicationPreference}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+</aura:component>

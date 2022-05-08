@@ -1,0 +1,129 @@
+<!--
+* Lightning Component for Onboarding Merchant - Banking Details Section
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2020-04-03
+*
+-->
+<aura:component controller="MerchantBankingDetailsController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+
+    <!--Initialization handler-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!-- Event listener -->
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}"/>
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}"/>
+
+    <!-- Parent Cmp Attribute Declaration -->
+    <aura:attribute name="cmpFormStatus" type="String" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+
+    <!--Attribute Initializations-->
+    <aura:attribute name="entityId" type="String" access="public" />
+    <aura:attribute name="bankAccDetailsType" type="String" access="public" />
+    <aura:attribute name="paymentPlan" type="Payment_Plan__c" default="{'sobjectType': 'Payment_Plan__c'}"/>
+    <aura:attribute name="applicationId" type="String" />
+    <aura:attribute name="accTypeOptions" type="List"/>
+    <aura:attribute name="isShowSuccessToast" type="Boolean" />
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['accountTypeField', 'accountNumberField']" />
+
+    <!-- Aura methods-->
+    <aura:method name="setSelectedBankAndBranchName" action="{!c.setSelectedBankAndBranchName}" access="public">
+        <aura:attribute name="selectedBankName" type="String" />
+        <aura:attribute name="selectedBranchName" type="String" />
+    </aura:method>
+    <aura:method name="saveFormMethod" action="{!c.executeSaveFormMethod}" />
+
+    <!--Declare Spinner-->
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <!-- Lightning Spinner -->
+    <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+
+    <lightning:layout multipleRows="true">
+
+        <!--Bank Lookups Starts here -->
+        <!-- Bank Name -->
+        <div class="{!if((v.isFormReadOnly), 'slds-col slds-size_12-of-12 slds-hide', 'slds-col slds-size_12-of-12')}" padding="around-small" >
+            <lightning:layoutItem padding="around-small" size="6">
+                <label class="slds-float_left" padding="around-small"><span style="color:red;" align="left">*</span>Select Bank Name </label>
+                <c:customLookUp aura:id="customLookUpCmp" IconName="custom:custom17" selectedRecord="{!v.paymentPlan.Bank_Name__c}" label="" />
+            </lightning:layoutItem>
+        </div>
+
+        <!-- Bank Name Read Only -->
+        <div class="{!if((v.isFormReadOnly), 'slds-col slds-size_12-of-12', 'slds-col slds-size_12-of-12 slds-hide')}">
+            <lightning:layoutItem size="6" padding="around-small">
+                <lightning:input type="text" aura:id="bankNameReadOnly" label="Select Bank Name" value="{!v.paymentPlan.Bank_Name__c}"  required="true" disabled="true"/>
+            </lightning:layoutItem>
+        </div>
+
+        <!--Branch Lookup Starts here -->
+        <!-- Branch Name -->
+        <div class="{!if((v.isFormReadOnly), 'slds-col slds-size_12-of-12 slds-hide', 'slds-col slds-size_12-of-12')}" padding="around-small" >
+            <lightning:layoutItem padding="around-small" size="6">
+                <label class="slds-float_left" padding="around-small"><span style="color:red;" align="left">*</span>Select Branch Name </label>
+                <c:dependentCutomLookup aura:id="dependentCutomLookupCmp" dselectedBankName="{!v.paymentPlan.Bank_Name__c}" IconName="custom:custom16" selectedRecord="{!v.paymentPlan.Branch_Name__c}" label=""/>
+            </lightning:layoutItem>
+        </div>
+
+        <!-- Branch Name Read Only -->
+        <div class="{!if((v.isFormReadOnly), 'slds-col slds-size_12-of-12', 'slds-col slds-size_12-of-12 slds-hide')}">
+            <lightning:layoutItem size="6" padding="around-small">
+                <lightning:input type="text" aura:id="branchNameReadOnly" label="Select Bank Name" value="{!v.paymentPlan.Branch_Name__c}"  required="true" disabled="true"/>
+            </lightning:layoutItem>
+        </div>
+
+        <!--Display Branch Code  -->
+        <div class="slds-col slds-size_12-of-12" padding="around-small" >
+            <lightning:layoutItem padding="around-small" size="12">
+                <label class="slds-float_left" padding="around-small">Branch Code Selected :</label>
+                <br/><a>{!v.paymentPlan.Branch_Code__c}</a>
+            </lightning:layoutItem>
+        </div>
+
+        <!-- Account Type -->
+        <div class="slds-col slds-size_12-of-12" padding="around-small" >
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:select aura:id="accountTypeField" name="AccountType" label="Account Type" value="{!v.paymentPlan.Account_Type__c}" onchange="{!c.onPicklistAccTypeChange}" required="true" disabled="{!v.isFormReadOnly}">
+                    <aura:iteration items="{!v.accTypeOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.paymentPlan.Account_Type__c}"/>
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>
+        </div>
+
+        <!-- Account Number -->
+        <div class="slds-col slds-size_12-of-12" padding="around-small" >
+            <lightning:layoutItem size="6" padding="around-small">
+                <lightning:input type="text" aura:id="accountNumberField" label="Bank Account Number" value="{!v.paymentPlan.Account_Number__c}"  placeholder="Bank Account Number" required="true" disabled="{!v.isFormReadOnly}"/>
+            </lightning:layoutItem>
+        </div>
+
+        <!-- Error message-->
+        <div class="slds-col slds-size_12-of-12 slds-hide" padding="around-small" aura:id="errorMsg">
+            <lightning:layoutItem size="12" padding="around-small">
+                <h4 class="slds-section__title slds-align_absolute-left" style="color:red">{!v.paymentPlan.Bank_Name__c} bank account details invalid. Please correct before continuing. These details have not been saved.</h4>
+            </lightning:layoutItem>
+        </div>
+
+        <!-- Validate Account Button -->
+        <div class="slds-col slds-size_6-of-12" padding="around-small" >
+            <lightning:layoutItem size="6" padding="around-small">
+                <lightning:button disabled="{!or(empty(v.applicationId),v.isFormReadOnly)}"
+                                  variant="brand"
+                                  class="slds-align_absolute-left slds-m-top_xx-large"
+                                  label="Save"
+                                  title="Save"
+                                  onclick="{!c.validateAcc}" aura:id="saveBtn"/>
+            </lightning:layoutItem>
+        </div>
+
+    </lightning:layout>
+
+</aura:component>

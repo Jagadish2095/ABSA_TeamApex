@@ -1,0 +1,83 @@
+<!--
+* Lightning Component for Saving Merchant Device/Terminal Details (MerchantDevice)
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2020-05-18
+*
+-->
+<aura:component access="global"
+                controller="MerchantDeviceController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+                <!-- Event Handler Declaration -->
+                <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+                <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}"/>
+
+                <!-- Parent Cmp Attribute Declaration -->
+                <aura:attribute name="cmpFormStatus" type="String" />
+                <aura:attribute name="isFormReadOnly" type="Boolean" />
+
+                <!-- Attribute Declaration -->
+                <aura:attribute name="applicationProdMerchId" type="String" default="" />
+                <aura:attribute name="activeSections" type="List" default="['MerchantDeviceInfo']" />
+                <aura:attribute name="merchantDeviceList" type="List" />
+                <aura:attribute name="isShowSuccessToast" type="Boolean" />
+                <aura:attribute name="errorMessage" type="String" default="" />
+                <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['serialNumber', 'dialTime']" />
+                <aura:attribute name="resetFieldsList" type="List" default="['dialTime']" />
+    
+    <!-- This is to be used in determining field visibility -->
+    			<aura:attribute name="productDeviceTypeName" type="String" />
+
+                <!-- Method Declaration -->
+                <aura:method name="saveFormMethod" action="{!c.executeSaveFormMethod}" />
+
+                <!-- Start of Device/Terminal section -->
+                <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" aura:id="terminalSection">
+                    <lightning:accordionSection name="MerchantDeviceInfo" label="Terminal" >
+                        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                            <div class="recordError">
+                                <br/>
+                                <h2 class="slds-section__title slds-align_absolute-left" style="color:red">{!v.errorMessage}</h2>
+                                <br/>
+                            </div>
+                        </aura:if>
+
+                        <!-- Start of loop for the Device List -->
+                        <aura:iteration items="{!v.merchantDeviceList}" var="merchDevice" indexVar="idx">
+                            <p>Terminal {!idx+1}</p>
+	                            <!-- Lightning RecordEditForm -->
+                                <lightning:recordEditForm aura:id="deviceForm"
+                                                          recordId="{!merchDevice.Id}"
+                                                          objectApiName="Device_Merchant__c"
+                                                          onload="{!c.handleOnLoad}"
+                                                          onsuccess="{!c.handleSuccess}"
+                                                          onerror="{!c.handleError}">
+
+                                    <lightning:layout multipleRows="true">
+                                        <lightning:messages />
+
+                                        <lightning:layoutItem padding="around-small" size="4">
+                                            <lightning:inputField aura:id="serialNumber" fieldName="Serial_Number__c" disabled="{!v.isFormReadOnly}" />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="4">
+                                            <lightning:inputField aura:id="branchID" fieldName="Branch_ID__c" disabled="{!v.isFormReadOnly}" />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="4">
+                                            <lightning:inputField aura:id="dialTime" fieldName="Dial_Time__c" disabled="{!v.isFormReadOnly}" />
+                                        </lightning:layoutItem>
+
+                                    </lightning:layout>
+
+                                </lightning:recordEditForm>
+
+                                <br/>
+                        </aura:iteration>
+                        <!-- End of loop for the Device List -->
+                        <lightning:button aura:id="savebtn" type="submit" onclick="{!c.handleSubmitButton}" label="Save" variant="brand" class="slds-align_absolute-center slds-m-top_x-large" disabled="{!or(empty(v.merchantDeviceList), v.isFormReadOnly)}" />
+
+                </lightning:accordionSection>
+            </lightning:accordion>
+
+</aura:component>

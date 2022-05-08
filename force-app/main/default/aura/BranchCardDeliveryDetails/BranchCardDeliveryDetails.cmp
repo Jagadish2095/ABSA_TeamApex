@@ -1,0 +1,157 @@
+<!--
+* Lightning Component for Branch Card Delivery Details
+*
+* @author  Clifford Willers : ABSA (IQ Business)
+* @version v1.0
+* @since   2021-01-12
+*
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" 
+                access="global"
+                controller="BranchApplicationController" >
+    <aura:attribute name="applicationRecordId" type="String" />
+    <aura:attribute name="applicationProductRecordId" type="String" />
+    <aura:attribute name="completeOneResult" type="String" default="" />
+    <aura:attribute name="completeTwoResult" type="String" default="" />
+    <aura:attribute name="lockVersionId" type="String" default="" />
+    <aura:attribute name="cardProdSubProdGroupId" type="String" default="" />
+    <aura:attribute name="ccApplicationNumber" type="String" default="" />
+    <aura:attribute name="scoringResult" type="String" default="" />
+    <aura:attribute name="applicationInfoResponse" type="String" />
+    <aura:attribute name="isReferred" type="Boolean" default="false" />
+    <aura:attribute name="deliveryOptions" type="List" default="[]" />
+    <aura:attribute name="deliveryOptionsValue" type="String" default="" />
+    <aura:attribute name="addressOptions" type="List" default="[]" />
+    <aura:attribute name="addressOptionsValue" type="String" />
+    <aura:attribute name="deliveryStreet" type="String" />
+    <aura:attribute name="deliveryProvince" type="String"/>
+    <aura:attribute name="deliverySuburb" type="String"/>
+    <aura:attribute name="deliveryCity" type="String"/>
+    <aura:attribute name="deliveryPostalCode" type="String"/>
+    <aura:attribute name="deliveryCountry" type="String"/>
+    <aura:attribute name="updating" type="Boolean" default="true"/>
+    <aura:attribute name="actionClicked" type="string" default=""/>
+    <aura:attribute name="completeTwo" type="Boolean" default="false"/>
+    <aura:attribute name="showAccountPopUp" type="Boolean" default="false"/>
+    <aura:attribute name="salaryAccountError" type="Boolean" default="false"/>
+    <aura:attribute name="salaryError" type="string" default=""/>
+    <aura:attribute name="debitAccountError" type="Boolean" default="false"/>
+    <aura:attribute name="debitError" type="string" default=""/>
+    <aura:attribute name="useSalaryAccount" type="Boolean" default="false" />
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <lightning:recordEditForm aura:id = "ApplicationProductDetail"
+                              recordId="{! v.applicationProductRecordId }"
+                              objectApiName="Application_Product__c"
+                              density="comfy"
+                              onload="{! c.applicationProductLoaded }"
+                              onsubmit="{! c.applicationProductSubmit }"
+                              onerror="{! c.applicationProductError }"
+                              onsuccess="{! c.applicationProductSuccess }">
+        <!-- Needs one field on RecordEdit to fire onsubmit() -->
+        <lightning:inputField fieldName="AddressType__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Delivery_Address_1__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Postal_code__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Suburb__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Town__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Province__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Country__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Card_Delivery_Site_Code__c" class="hidden_field"/>
+        <lightning:inputField fieldName="CardDeliverySite__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Card_Delivery_Method__c" class="hidden_field"/>
+        <!-- Submit button needed so that onsubmit is fired from flow to save attribute values -->
+        <button id="{! globalId + '_applicationproduct_submit' }" type="submit" class="hidden_field"/>
+    </lightning:recordEditForm>
+    <div class="slds-is-relative" >
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-medium" size="6">
+                        <legend class="slds-text-heading_small slds-var-p-vertical_medium">
+                            <b>Credit card delivery</b>
+                        </legend>
+                        <c:BranchMessage mediaBody='The customer will need to have their ID book on hand when their credit card is delivered.' />
+                        <div id="{! globalId + '_deliveryOptionsRadioGroup' }" class="slds-p-around_x-small">
+                            <lightning:radioGroup aura:id="deliveryOptionsRadioGroup"
+                                                  type="radio"
+                                                  name="deliveryOptionsRadioGroup"
+                                                  label="Delivery method"
+                                                  options="{! v.deliveryOptions }"
+                                                  value="{! v.deliveryOptionsValue }"
+                                                  class="customRadioCls" />
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <aura:if isTrue="{! v.deliveryOptionsValue == 'Branch' }">
+                    <lightning:layout>
+                        <lightning:layoutItem padding="horizontal-medium" size="6">
+                            <div id="{! globalId + '_branchSite' }" class="slds-p-around_x-small">
+                                <c:BranchSiteInfo aura:id="branchSite"
+                                                  siteLabel="Please specify branch"
+                                                  siteRequired="true" />
+                            </div>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </aura:if>
+                <aura:if isTrue="{! v.deliveryOptionsValue == 'Courier' }">
+                    <lightning:layout>
+                        <lightning:layoutItem padding="around-medium" size="6">
+                            <div id="{! globalId + '_addressOptionsRadioGroup' }" class="slds-p-around_x-small">
+                                <lightning:radioGroup aura:id="addressOptionsRadioGroup"
+                                                      type="radio"
+                                                      name="addressOptionsRadioGroup"
+                                                      label="Please specify which address the card must be delivered to:"
+                                                      options="{! v.addressOptions }"
+                                                      value="{! v.addressOptionsValue }" />
+                            </div>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    <aura:if isTrue="{! v.addressOptionsValue == 'Residential' }">
+                        <c:BranchAddress aura:id="residentialAddress"
+                                         recordId="{! v.recordId }"
+                                         addressType="Residential"
+                                         addressDisabled="true" />
+                    </aura:if>
+                    <aura:if isTrue="{! v.addressOptionsValue == 'Employers' }">
+                        <c:BranchAddress aura:id="employersAddress"
+                                         recordId="{! v.recordId }"
+                                         addressType="Employers"
+                                         addressDisabled="true" />
+                    </aura:if>
+                    <aura:if isTrue="{! v.addressOptionsValue == 'Card Delivery' }">
+                        <c:BranchAddress aura:id="otherAddress"
+                                         recordId="{! v.recordId }"
+                                         addressType="Previous Business Address"
+                                         addressRequired="true" />
+                    </aura:if>
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <div>
+                    <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                        availableActions="{! v.availableActions }"
+                                        navigateFlowEvent="{! c.handleNavigate }"/>
+                </div>
+            </lightning:layoutItem>
+            <aura:if isTrue="{! v.updating }">
+                <div class="slds-spinner_container" >
+                    <div role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand" >
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a" />
+                        <div class="slds-spinner__dot-b" />
+                    </div>
+                </div>
+            </aura:if>
+            <aura:if isTrue="{! v.showAccountPopUp }">
+                <div class="slds-var-p-around_x-small">
+                    <c:BranchCardAccountUpdate recordId="{! v.applicationRecordId }"
+                                               showPopUp="{! v.showAccountPopUp }"
+                                               showSalaryAccount="{! v.salaryAccountError }"
+                                               salaryError="{! v.salaryError }"
+                                               useSalaryAccount="{! v.useSalaryAccount }"
+                                               showPaymentAccount="{! v.debitAccountError }"
+                                               paymentError="{! v.debitError }" />
+                </div>
+            </aura:if>
+        </lightning:layout>
+    </div>
+</aura:component>

@@ -1,0 +1,132 @@
+<!--
+* Lightning Component for confirming customer income and expenses (ConfirmCustomerIncomeExpense)
+*
+* @author  Aaron Castelyn : Absa
+* @version v1.0
+* @since   2020-09-22
+*
+-->
+
+<aura:component access="global" controller="CustomerIncomeExpenseController"    
+    implements="lightning:isUrlAddressable,lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">
+
+    <aura:attribute name="applicationId" type="String" default="a0u5E00000CM9lCQAT" />
+    <aura:attribute name="sObjectName" type="String" default="Application__c" />
+    <aura:attribute name="incomeLeft" type="Double" default="0.00" />
+    <aura:attribute name="applicationNumber" type="String" />
+    <aura:attribute name="preAssessedCreditLimit" type="String" />
+    <aura:attribute name="approvedCreditLimit" type="String" />
+    <aura:attribute name="scoringResult" type="String" />
+    <aura:attribute name="lockVersionId" type="String" />
+    <aura:attribute name="scoringOutcome" type="String" />
+
+
+    <aura:html tag="style">.toastMessage.forceActionsText{white-space : pre-line !important;}</aura:html>
+    
+    <aura:registerEvent name="updateIncomeEvent" type="c:ceUpdateCustomerIncomeExpense" />
+
+    <!--Handlers-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    
+    <aura:attribute name="activeSections" type="List" default="['MonthlyIncome','MonthlyRepayments', 'MonthlyLivingExpenses']" />
+    <aura:attribute name="consent" type="List" default="[{'label': 'Yes', 'value': 'Y'}, {'label': 'No', 'value': 'N'}]"/>
+    <aura:attribute name="consentSelected" type="String" />
+    <aura:attribute name="warrantChecked" type="Boolean" />
+    <aura:attribute name="doFinalScoring" type="Boolean" default="true" />
+    <aura:attribute name="showSpinner" type="Boolean" />
+
+    <div class="slds-is-relative">
+        <aura:if isTrue="{!v.showSpinner}">
+            <div class="slds-spinner_container">
+                <lightning:spinner aura:id="TheSpinner" variant="brand" size="medium"/>
+            </div>
+        </aura:if>
+        <center style="z-index:99">
+            <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+        </center>
+
+        <div class="slds-var-m-bottom_medium">
+            <c:BranchMessage mediaBody='Confirm customer&#8217;s income and expenses' iconName='standard:account' mediaTheme='' mediaBodyClass='slds-text-heading_large slds-var-p-vertical_medium' />    
+            <c:BranchMessage mediaBody="Confirm if the below income and expense information is correct or update if the amounts are different" />
+        </div>    
+        
+        <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true">
+            <lightning:accordionSection name="MonthlyIncome" label="Monthly Income">
+                <aura:set attribute="actions">                
+                    <lightning:button label="Update" onclick="{!c.updateIncome}" />
+                </aura:set>
+                <aura:set attribute="body">
+                    <div aura:id="incomeMessage" class="slds-hide">
+                        <c:BranchMessage mediaBody='Not Updated' iconName='utility:warning' mediaTheme='slds-theme_warning' mediaBodyClass='slds-text-heading_medium slds-var-p-vertical_medium' />
+                    </div>
+
+                    <c:CustomerMonthlyIncome aura:id="monthlyIncome" recordId="{!v.recordId}" applicationId="{!v.applicationId}" readOnly="true" doClientUpdate="false" />
+                </aura:set>            
+            </lightning:accordionSection>
+            <lightning:accordionSection name="MonthlyRepayments" label="Monthly loan and credit repayments">
+                <aura:set attribute="actions">
+                    <lightning:button label="Update" onclick="{!c.updateExpenses}" />
+                </aura:set>
+                <aura:set attribute="body">
+                    <div aura:id="expenseMessage" class="slds-hide">
+                        <c:BranchMessage mediaBody='Not Updated' iconName='utility:warning' mediaTheme='slds-theme_warning' mediaBodyClass='slds-text-heading_medium slds-var-p-vertical_medium' />
+                    </div>
+
+                    <c:CustomerMonthlyLoanCreditRepayment aura:id="monthlyExpenses" applicationId="{!v.applicationId}" readOnly="true" />
+                </aura:set>            
+            </lightning:accordionSection>
+            <lightning:accordionSection name="MonthlyLivingExpenses" label="Monthly living expenses">
+                <aura:set attribute="actions">
+                    <lightning:button label="Update" onclick="{!c.updateLivingExpenses}" />
+                </aura:set>
+                <aura:set attribute="body">
+                    <div aura:id="livingExpenseMessage" class="slds-hide">
+                        <c:BranchMessage mediaBody='Not Updated' iconName='utility:warning' mediaTheme='slds-theme_warning' mediaBodyClass='slds-text-heading_medium slds-var-p-vertical_medium' />
+                    </div>
+
+                    <c:CustomerMonthlyLivingExpense aura:id="monthlyLivingExpenses" applicationId="{!v.applicationId}" readOnly="true" />
+                </aura:set>            
+            </lightning:accordionSection>
+        </lightning:accordion>
+
+        <div class="slds-box slds-theme_default">
+            <lightning:layout>
+                <lightning:layoutItem size="3">
+                    <div class="slds-var-m-bottom_medium">
+                        <p class="slds-text-body_regular"><b>Income left over</b></p>
+                    </div>                
+                </lightning:layoutItem>
+                <lightning:layoutItem size="3">
+                    <div class="slds-var-m-bottom_medium">
+                        <p class="slds-text-body_regular"><b><lightning:formattedNumber style="currency" currencyCode="ZAR" value="{!v.incomeLeft}" /></b></p>
+                    </div>                
+                </lightning:layoutItem>            
+            </lightning:layout>
+        </div>
+
+        <div class="slds-box slds-theme_default">            
+            <lightning:layout>
+                <lightning:layoutItem>
+                    <div aura:id="confirmMessage" class="slds-hide">
+                        <c:BranchMessage mediaBody='Information not warranted and/or no consent received' iconName='utility:warning' mediaTheme='slds-theme_warning' mediaBodyClass='slds-text-heading_medium slds-var-p-vertical_medium' />
+                    </div>
+                    <div class="slds-var-m-bottom_medium">
+                        <lightning:input type="checkbox" class="slds-var-m-right_xx-large" name="warrant" 
+                            label="I/we warrant that all information I/we have supplied is to the best of my/our knowledge and belief true and correct in all aspects and I/we am/are not aware of any other information which, should it be known to the Bank, would affect the consideration of my/our application in any way."
+                            checked="{!v.warrantChecked}" /> 
+
+                    </div>                
+                    <div class="slds-var-m-bottom_medium">
+                        <lightning:radioGroup type="radio" class="slds-var-m-right_xx-large" name="consent"                    
+                                            label="Absa requires your consent to provide your information to 3rd parties who are attempting to evaluate your creditworthiness, I give permission to Absa to provide information regarding my credit score or creditworthiness to 3rd parties."
+                                            options="{!v.consent}" value="{!v.consentSelected}" />
+                    </div>                
+                </lightning:layoutItem>            
+            </lightning:layout>
+        </div>
+
+        <div class="slds-var-p-around_x-small">
+            <c:BranchFlowFooter aura:id="branchFlowFooter" availableActions="{! v.availableActions }" navigateFlowEvent="{!c.handleNavigate}"/>
+        </div>
+    </div>
+</aura:component>

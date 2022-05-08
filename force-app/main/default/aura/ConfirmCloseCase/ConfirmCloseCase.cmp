@@ -1,0 +1,68 @@
+<!--
+* Lightning Component handling the general action of closing a Case
+* Two text strings must be passed into the component to display to the text the user and the Case can be closed from the button click
+* The btnLabel attribute value can be modified as required the default value is Close Case indicating it's function
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2020-11-09
+*
+-->
+
+<aura:component
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+    access="global"
+>
+    <!--Handler Declaration-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <!--Attribute Declaration-->
+    <!--Global Attributes-->
+    <aura:attribute name="caseIdFromFlow" type="String" access="global" />
+    <aura:attribute name="headerTextFromFlow" type="String" access="global" />
+    <aura:attribute name="paragraphTextFromFlow" type="String" access="global" />
+    <!--Local Attributes-->
+    <aura:attribute name="btnLabel" type="String" default="Close Case" />
+    <aura:attribute name="isSpinner" type="Boolean" default="false" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+            <br />
+        </div>
+    </aura:if>
+
+    <!-- Case Record Edit From -->
+    <lightning:recordEditForm
+        aura:id="caseCloseEditForm"
+        objectApiName="Case"
+        recordId="{!v.caseIdFromFlow}"
+        onload="{!c.handleLoad}"
+        onsubmit="{!c.handleSubmit}"
+        onsuccess="{!c.handleSuccess}"
+        onerror="{!c.handleError}"
+    >
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="12">
+                <h2 style="font-weight: bold; font-size: large">{!v.headerTextFromFlow}</h2>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="12">
+                <p>{!v.paragraphTextFromFlow}</p>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="12">
+                <lightning:button label="{!v.btnLabel}" type="submit" variant="brand" class="slds-float_right" disabled="{!v.isFormReadOnly}" />
+            </lightning:layoutItem>
+        </lightning:layout>
+    </lightning:recordEditForm>
+</aura:component>

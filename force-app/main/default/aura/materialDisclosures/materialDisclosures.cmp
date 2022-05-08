@@ -1,0 +1,78 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="MaterialDisclosuresController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="allClauses" type="Clause__c[]"/>
+    
+    <aura:attribute name="clause" type="Clause__c[]"/>
+    
+    <aura:attribute name="isCompleted" type="boolean" default="false"/>
+    
+    <!-- <aura:attribute name="showMaterialScreen" type="boolean" default="true"/> -->
+    <aura:attribute name="showFinishedScreen" type="boolean" default="false"/>
+    <aura:attribute name="showRevalidate" type="boolean" default="false"/>
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.showFinishedScreen}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> Material Disclosures Successfully Validated.</p>            
+            </lightning:layoutItem>
+        </lightning:layout>
+        
+        <br/>
+        
+        <aura:set attribute="else">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12">
+                    <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:close" alternativeText="Done" /> Material Disclosures not yet completed.</p>  
+                    
+                    <aura:if isTrue="{!v.showRevalidate}">
+                    	<p style="font-size:12px">A new quote was created, please confirm new commission with client and re-validate.</p> 
+                    </aura:if>
+                    
+                </lightning:layoutItem>
+            </lightning:layout>
+            <br/>
+        </aura:set>        
+    </aura:if>
+    
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem size="12">
+            <div>
+                <lightning:datatable
+                                     aura:id="dataTableCmp"
+                                     columns="{!v.columns}"
+                                     data="{!v.data}"
+                                     keyField="id"
+                                     hideCheckboxColumn="true"               
+                                     showRowNumberColumn="true"
+                                     maxColumnWidth="2000"
+                                     minColumnWidth="100"
+                                     onrowselection="{!c.updateSelectedData}"/>
+            </div> 
+        </lightning:layoutItem>
+        
+        <aura:if isTrue="{!v.showFinishedScreen == false}">
+            <lightning:layoutItem class="slds-p-top_large" size="9">
+                <b><ui:inputCheckbox class="slds-float--left" aura:id="completedCheckbox" label="&nbsp; Have all of the above material disclosures been communicated?" change="{!c.onCompletedCheck}"/></b>
+            </lightning:layoutItem>
+            <lightning:layoutItem class="slds-p-top_large" size="3">
+                <lightning:button class="slds-float--right" aura:id="validateButton" variant="brand" type="submit" name="add" label="Validate" onclick="{!c.submitDisclosures}"/>
+            </lightning:layoutItem>
+        </aura:if>
+    </lightning:layout>
+    <!-- </aura:if> -->
+    
+    
+
+</aura:component>

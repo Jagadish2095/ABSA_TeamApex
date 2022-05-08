@@ -1,0 +1,80 @@
+<!--
+    @description: Aura component for the client contacted check screen after 
+    the product selection screen with account number
+    @created by: Bhanumurty Rayala
+    @created date: 2021-06-09
+-->
+<aura:component controller="BAPIAccountFinancialInformation"
+	implements="lightning:availableForFlowScreens,force:hasRecordId" access="global">
+	<!--component attributes-->
+	<aura:attribute name="isLatestContactDate" type="Boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="value" type="String" default="" />
+
+	<!-- Global attributes -->
+	<aura:attribute name="selectedAccountNumber" type="String" access="global" />
+	<aura:attribute name="CaseAccountId" type="String" access="global" />
+	<aura:attribute name="caseId" type="String" access="global" />
+	<aura:attribute name="clientSurname" type="String" access="global" />
+	<aura:attribute name="clientEmail" type="String" access="global" />
+	<aura:attribute name="latestContactDate" type="Date" access="global" />
+	<aura:attribute name="clientContactStatus" type="String" access="global" />
+	<aura:attribute name="accountNumberCategory" type="String" access="global" />
+
+	<!--Radio group attributes-->
+	<aura:attribute name="options" type="List" default="[
+    {'label': 'Yes', 'value': 'contacted'},
+    {'label': 'No', 'value': 'notContacted'}
+    ]" />
+
+
+	<!-- changes made for Ford/Avaf Indicator by Mradul  W-016021 for Avaf-delinquent customer email-->
+	<c:FordAvafIndicator aura:id="fordAvaf" caseId="{!v.caseId}" accountNumber="{!v.selectedAccountNumber}" />
+
+
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<article>
+		<!-- Spinner -->
+		<aura:if isTrue="{!v.isSpinner}">
+			<lightning:spinner variant="brand" alternativeText="Busy" />
+		</aura:if>
+
+		<lightning:layout>
+			<lightning:radioGroup aura:id="contactClient" name="clientContact" label="Has the client been contacted?"
+				options="{! v.options }" value="{! v.value }" type="radio" required="true"
+				onchange="{!c.getSelectedRadioValue}" />
+		</lightning:layout>
+		<aura:if isTrue="{!v.isLatestContactDate}">
+			<lightning:layout>
+				<lightning:layoutItem size="6" padding="around-small">
+					<lightning:input type="date" label="Latest contact by date" required="true"
+						value="{!v.latestContactDate}" />
+				</lightning:layoutItem>
+			</lightning:layout>
+		</aura:if>
+		<lightning:recordEditForm aura:id="recordEditForm" recordId="{!v.CaseAccountId}" objectApiName="Account"
+			class="slds-hidden" onload="{!c.handleOnLoad}">
+			<lightning:inputField aura:id="personEmailField" fieldName="PersonEmail" />
+			<lightning:inputField aura:id="surnameField" fieldName="LastName" />
+		</lightning:recordEditForm>
+		<lightning:layout multipleRows="true">
+			<lightning:layoutItem size="6" padding="around-small">
+				<lightning:button class="slds-float_left" label="Previous" variant="neutral"
+					onclick="{!c.navigatePrevious}" />
+			</lightning:layoutItem>
+			<lightning:layoutItem size="6" padding="around-small">
+				<lightning:button class="slds-float_right" label="Next" variant="brand"
+					onclick="{!c.navigateNext}" />
+			</lightning:layoutItem>
+		</lightning:layout>
+	</article>
+</aura:component>

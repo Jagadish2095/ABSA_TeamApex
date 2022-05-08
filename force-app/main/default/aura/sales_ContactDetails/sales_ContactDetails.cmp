@@ -1,0 +1,410 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="client" type="Map" />
+    <aura:attribute name="current_address_since" type="Date" default=""/> 
+
+	<aura:handler name="change" value="{!v.client.residential_address_country_value}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.residential_status_value}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.section_129_notice_delivery_address_value}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.preffered_communication_channel_value}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.credit_worthiness}" action="{!c.check_validation}"/>
+    <aura:attribute name="credit_worthiness_condition" type="Boolean" default="true"/>
+    <aura:handler name="change" value="{!v.client.absa_group_electronic}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.postal_address_line_2}" action="{!c.check_validation}"/>
+    <aura:attribute name="absa_group_electronic_condition" type="Boolean" default="true"/>
+    
+    <!--<aura:attribute name="postal_address_line_1_3_condition" type="Boolean" default="true"/>-->
+    <aura:attribute name="postal_address_line_1_condition" type="Boolean" default="true"/>
+    <aura:attribute name="town_city_foreign_country_condition" type="Boolean" default="true"/>
+    <aura:attribute name="residential_address_country_condition" type="Boolean" default="true"/>
+    <aura:attribute name="residential_status_condition" type="Boolean" default="true"/>
+    <aura:attribute name="section_129_notice_condition" type="Boolean" default="true"/>
+    <aura:attribute name="preffered_communication_condition" type="Boolean" default="true"/>
+    <aura:attribute name="postal_address_line_2_condition" type="Boolean" default="true"/>
+    
+    <div class="slds-grid slds-wrap "> 
+        
+        <div class="slds-size_1-of-2 slds-p-right_xx-large">
+            <h1 class="header-class">Contact details</h1>
+            <div class="slds-m-right_x-large">
+                
+                <div  class="slds-p-right_xx-large">
+                    <h1 class="header-class">Physical</h1>
+                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Residential address:
+                        </div>
+                        <!-- Joshua and Rakesh 14-09-2020 -->
+                        <div class="slds-col slds-text-title_bold">
+                            <p style = "text-align:right;">{!v.client.postal_address_line_1}</p>
+                            <p style = "text-align:right;">{!v.client.postal_address_line_2}</p>
+                            <p style = "text-align:right;">{!v.client.town_city_foreign_country}</p>
+                            <p style = "text-align:right;">{!v.client.postal_code}</p>
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Current address since:
+                        </div>
+                        <div class="slds-col">
+                            <ui:inputDate aura:id="current_address_since" class="field" format="dd/mm/yyyy" change="{!c.current_address_since}" value="{!v.client.current_address_since}" displayDatePicker="true"  updateOn="change"/>  
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Residential address country:<abbr class="slds-required" title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">
+                            <c:sales_DropDown pickListValues="{!v.client.residential_address_country_values}" 
+                                                  selectedValue="{!v.client.residential_address_country_value}"
+                                                  selectedLabel="{!v.client.residential_address_country_label}"/>                            
+                         	<aura:if isTrue="{!v.residential_address_country_condition}">
+                            	<div style="color:red;">{!v.client.residential_address_country_validation}</div>
+                            </aura:if>
+                        </div> 
+                    </div>    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Residential status: <abbr class="slds-required" title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">
+                           <c:sales_DropDown pickListValues="{!v.client.residential_status_values}" 
+                                                  selectedValue="{!v.client.residential_status_value}"
+                                                  selectedLabel="{!v.client.residential_status_label}"
+                                                  />
+     						<aura:if isTrue="{!v.residential_status_condition}">
+                            	<div style="color:red;">{!v.client.residential_status_validation}</div>
+                            </aura:if>
+                        </div> 
+                    </div>
+                    
+                    
+                    
+                    
+                    <!--<aura:if isTrue="{!v.client.residential_status_label  == 'TENANT'}" >-->                        
+                       <aura:if  isTrue="{!or(v.client.residential_status_label  != 'Owner', v.client.residential_status_label  == '')}" >
+                        <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                            <div class="slds-col" style="color:gray;">
+                                Outstanding bond:
+                            </div>
+                            <div class="slds-col slds-col-grey">
+                                <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                    
+                                    <ui:inputNumber label="" 
+                                                  class="slds-input" 
+                                                  aura:id="outstanding_bond"
+                                                  value="{!v.client.outstanding_bond}" 
+                                                    disabled="true"/>
+                                    
+                                </div>
+                            </div>
+                        </div>  
+                        <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                            <div class="slds-col" style="color:gray;">
+                                Realistic market value:
+                            </div>
+                            <div class="slds-col slds-col-grey">
+                                <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                  <ui:inputNumber label="" 
+                                                  class="slds-input" 
+                                                  aura:id="realistic_market_value"
+                                                  value="{!v.client.realistic_market_value}"
+                                                    disabled="true"/>
+                                    
+                                </div>
+                                <!--  <lightning:input type="currency" aura:id="realistic_market_value" value="{!v.client.realistic_market_value}"/> -->   
+                            </div>
+                        </div> 
+                        
+                        <aura:set attribute="else">                            
+                            <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                                <div class="slds-col">
+                                    Outstanding bond:
+                                </div>
+                                <div class="slds-col">
+                                    <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                        <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                              class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                              onclick="{!c.clear}" aura:id="clear_outstanding_bond"/>
+                                        <ui:inputNumber label="" 
+                                                      class="slds-input" 
+                                                      aura:id="outstanding_bond"
+                                        			value="{!v.client.outstanding_bond}"/>                                        
+                                    </div>  
+                                </div>
+                            </div>                  
+                            <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                                <div class="slds-col">
+                                    Realistic market value:
+                                </div>
+                                <div class="slds-col">
+                                    <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                        <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                              class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                              onclick="{!c.clear}" 
+                                                              aura:id="clear_realistic_market_value"/>
+                                        <ui:inputNumber label="" 
+                                                      class="slds-input" 
+                                                      aura:id="realistic_market_value"
+                                                      value="{!v.client.realistic_market_value}"/>
+                                        
+                                    </div>   
+                                </div>
+                            </div>                             
+                        </aura:set>                        
+                    </aura:if>
+                    
+                   
+                    
+                    
+                    
+                    
+                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Section 129 notice delivery address:<abbr class="slds-required" title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">
+                            <c:sales_DropDown pickListValues="{!v.client.section_129_notice_delivery_address_values}" 
+                                                  selectedValue="{!v.client.section_129_notice_delivery_address_value}"
+                                                  selectedLabel="{!v.client.section_129_notice_delivery_address_label}"/>                            
+                        	<aura:if isTrue="{!v.section_129_notice_condition}">
+                            	<div style="color:red;">{!v.client.section_129_notice_delivery_address_validation}</div>
+                            </aura:if>
+                        </div> 
+                    </div>      
+                    <!--<div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Postal address line 1-3: <abbr class="slds-required" 
+                                                           title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">
+                            <lightning:textarea aura:id="postal_address_line_1_3" value="{!v.client.postal_address_line_1_3}" />
+                        	<aura:if isTrue="{!v.postal_address_line_1_3_condition}">
+                            	<div style="color:red;">{!v.client.postal_address_line_1_3_validation}</div>
+                            </aura:if>
+                        </div>
+                    </div> --> 
+                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Postal address line 1: <abbr class="slds-required" 
+                                                           title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">
+                            <lightning:textarea maxlength="30" aura:id="postal_address_line_1" value="{!v.client.postal_address_line_1}" />
+                            <aura:if isTrue="{!v.postal_address_line_1_condition}">
+                            	<div style="color:red;">{!v.client.postal_address_line_1_validation}</div>
+                            </aura:if>
+                        </div>
+                    </div>
+                     <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Postal address line 2: 
+                        </div>
+                        <div class="slds-col">
+                            <lightning:textarea maxlength="30" aura:id="postal_address_line_2" value="{!v.client.postal_address_line_2}" />
+                            <aura:if isTrue="{!v.postal_address_line_2_condition}">
+                            	 <div style="color:red;">{!v.client.postal_address_line_2_validation}</div>
+                            </aura:if>
+                        </div>
+                         
+                    </div>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Town/city/foreign country:<abbr class="slds-required" title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                      class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                      onclick="{!c.clear}" aura:id="clear_town_city_foreign_country"/>
+                                <ui:inputText label="" 
+                                              class="slds-input" 
+                                              aura:id="town_city_foreign_country"
+                                              value="{!v.client.town_city_foreign_country}"/>
+                                 <aura:if isTrue="{!v.town_city_foreign_country_condition}">
+                               	 	<div style="color:red;">{!v.client.town_city_foreign_country_validation}</div>
+                                </aura:if>
+                            </div>             
+                        </div>
+                    </div> 
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Postal code: 
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                      class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                      onclick="{!c.clear}" aura:id="clear_postal_code"/>
+                                <ui:inputText label="" 
+                                              class="slds-input" 
+                                              aura:id="postal_code"
+                                              value="{!v.client.postal_code}"/>                                 
+                            </div>             
+                        </div>
+                        <!--<div class="slds-col slds-text-title_bold">
+                            {!v.client.postal_code}                
+                        </div>-->
+                    </div>    
+                </div>
+            </div>
+        </div>
+        <div class="slds-size_1-of-2 slds-p-left_xx-large">
+            <div class="slds-m-left_xx-large">
+                <div class="slds-p-left_x-large"> 
+                    <br/>
+                    <br/>
+                    <h1 class="header-class">Digital</h1>
+                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Work telephone number:  
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                      class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                      onclick="{!c.clear}" aura:id="clear_work_telephone_number"/>
+                                <ui:inputPhone label="" 
+                                              class="slds-input" 
+                                              aura:id="work_telephone_number"
+                                              value="{!v.client.work_telephone_number}"
+                                              change="{!c.checkLenght}"
+                                              maxlength="10" />
+                                <div style="color:red;">{!v.client.work_telephone_number_validation}</div>
+                            </div>                              
+                        </div>
+                    </div>  
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Home telephone number: 
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                      class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                      onclick="{!c.clear}" aura:id="clear_home_telephone_number"/>
+                                <ui:inputPhone label="" 
+                                              class="slds-input" 
+                                              aura:id="home_telephone_number"
+                                              value="{!v.client.home_telephone_number}"
+                                              change="{!c.checkLenght}"
+                                              maxlength="10"/>
+                                <div style="color:red;">{!v.client.home_telephone_number_validation}</div>
+                            </div>                 
+                        </div>
+                    </div>  
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Work fax number:
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                      class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                      onclick="{!c.clear}" aura:id="clear_work_fax_number"/>
+                                <ui:inputPhone label="" 
+                                              class="slds-input" 
+                                              aura:id="work_fax_number"
+                                              value="{!v.client.work_fax_number}"
+                                              change="{!c.checkLenght}"
+                                              maxlength="10"/>
+                                <div style="color:red;">{!v.client.work_fax_number_validation}</div>
+                            </div>                 
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Home fax number:
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                      class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                      onclick="{!c.clear}" aura:id="clear_home_fax_number"/>
+                                <ui:inputPhone label="" 
+                                              class="slds-input" 
+                                              aura:id="home_fax_number"
+                                              value="{!v.client.home_fax_number}"
+                                              change="{!c.checkLenght}"
+                                              maxlength="10"/>
+                                <div style="color:red;">{!v.client.home_fax_number_validation}</div>
+                            </div>                
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Cellphone number:
+                        </div>
+                        <div class="slds-col slds-text-title_bold">
+                            {!v.client.cellphone_number}              
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Email address:
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                      class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                      onclick="{!c.clear}" aura:id="clear_email_address"/> 
+                                <ui:inputText aura:id="email_address" value="{!v.client.email_address}" change="{!c.checkLenght}"  class="slds-input"/>
+                                <div style="color:red;">{!v.client.email_address_validation}</div>
+                            </div>                 
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Preferred communication channel:<abbr class="slds-required" title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">
+                            <c:sales_DropDown pickListValues="{!v.client.preffered_communication_channel_values}" 
+                                                  selectedValue="{!v.client.preffered_communication_channel_value}"
+                                                  selectedLabel="{!v.client.preffered_communication_channel_label}"/>                            
+                            
+                        	<aura:if isTrue="{!v.preffered_communication_condition}">
+                            	<div style="color:red;">{!v.client.preffered_communication_channel_validation}</div>
+                            </aura:if>                        
+                        </div> 
+                    </div>
+                    <br/>   
+                    <h1 class="header-class">Marketing consent</h1> 
+                    <br/>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">     
+                        <c:sales_CheckBox checked="{!v.client.credit_worthiness}" label="Credit worthiness" required="true"/>
+                    </div>
+                    <aura:if isTrue="{!v.credit_worthiness_condition}">
+                            	<div style="color:red;">{!v.client.credit_worthiness_validation}</div>
+                            </aura:if>  
+                    
+                    <br/>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">                        
+                        <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">     
+                            <c:sales_CheckBox checked="{!v.client.absa_group_electronic}" label="ABSA group electronic" required="true"/>
+                        </div>
+                        <aura:if isTrue="{!v.client.absa_group_electronic}">
+                            <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">     
+                                <c:sales_CheckBox checked="{!v.client.voice_recording}" label="Voice recording" required="false"/>
+                            </div>
+                            <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">     
+                                <c:sales_CheckBox checked="{!v.client.email}" label="Email" required="false"/>
+                            </div>
+                            <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">     
+                                <c:sales_CheckBox checked="{!v.client.sms}" label="SMS" required="false"/>
+                            </div>
+                            
+                            <div style="color:red;">{!v.client.electronic_marketing_validation}</div>
+                        </aura:if>
+                    </div>                    
+                    <aura:if isTrue="{!v.absa_group_electronic_condition}">
+                        <div style="color:red;">{!v.client.absa_group_electronic_validation}</div>
+                    </aura:if>  
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</aura:component>

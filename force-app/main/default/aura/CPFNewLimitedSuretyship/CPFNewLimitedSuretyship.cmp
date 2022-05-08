@@ -1,0 +1,104 @@
+<aura:component controller="CPFLimitedUnlimitedSuretyship" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="newLimitedGaurantee" type="Application_Security_CPF__c[]" />
+    <aura:attribute name="newUnLimitedGaurantee" type="Application_Security_CPF__c[]" />
+    <aura:attribute name="appPrdctCpfRec" type="Object" />
+    <aura:attribute name="isLimited" type="string" />
+    <aura:attribute name="isLimitedExisting" type="string" />
+    <aura:attribute name="isUnLimited" type="Boolean" />
+    <aura:attribute name="TobeReleasedvalue" type="string" />
+    <aura:attribute name="includeAddvalue" type="string" />
+    <aura:attribute name="tobereleasedoptn" type="String" /> 
+    <aura:attribute name="incaddoptn" type="String" />
+    <aura:attribute name="istheSecurityProvideratrust" type="String" />
+    <aura:attribute name="isModalOpen" type="Boolean" />
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Yes', 'value': 'Yes'},
+                                                        {'label': 'No', 'value': 'No'}
+                                                        ]"/>
+    <aura:attribute name="value" type="String" default=""/>
+    
+    <aura:attribute name="AppProductCPFId" type="Application_Product_CPF__c" default="{sobjectType:'Application_Product_CPF__c'}"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!--c:CPFLimitedandUnlimitedGauranteesevent-->
+    <aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleApplicationEvent}"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner />
+    </aura:if>
+    <!-- Loading spinner end-->
+    <div class="slds-m-around_xx-large">
+        <!--Use aura:if tag to display/hide popup based on isModalOpen value-->  
+        <aura:if isTrue="{!v.isModalOpen}">
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Note: Only trusts are permitted to add a new limited suretyship.</h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            
+                            <!-- <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                        picklistfieldName="Is_the_security_provider_a_trust__c" 
+                                                        objectName="Application_Product_CPF__c"
+                                                        picklistLabelName="Is the security provider a trust?"
+                                                        value="{!v.istheSecurityProvideratrust}"
+                                                        titleyes=""
+                                                        titleno=""
+                                                        onchange="{!c.handleChange}"
+                                                        />-->
+                            <lightning:radioGroup name="radioButtonGroup"
+                                                  label="Radio Button Group"
+                                                  options="{! v.options }"
+                                                  value="{! v.value }"
+                                                  type="button"
+                                                  onchange="{!c.handleChange}"
+                                                  />
+                            
+                        </span>
+                        
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeModel }"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </div>
+    
+    <aura:if isTrue="{!v.value =='Yes'}">
+        <lightning:accordion activeSectionName="Limited Suretyships" allowMultipleSectionsOpen="false"> 
+            <lightning:accordionSection name="LimitedSuretyships" label="Limited Suretyships" >
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <aura:iteration items="{!v.newLimitedGaurantee}" var="nLimitedGauranteeItem" indexVar="index">
+                        <c:CPFNewLimitedSuretyshipChild aura:id="newLimitedGaurId" accItem="{!nLimitedGauranteeItem}" rowindex="{!index}" newLimitedGaurantee="{!v.newLimitedGaurantee}" isLimited="{!v.isLimited}" />
+                    </aura:iteration>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button label="Add a Limited Suretyship" onclick="{!c.addNewLimitedGuarantee}" variant="brand" aura:id="ibtn" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleSubmit}" variant="brand" aura:id="ibtn1" />
+                        </span>
+                    </div>
+                </div>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </aura:if>
+    
+</aura:component>

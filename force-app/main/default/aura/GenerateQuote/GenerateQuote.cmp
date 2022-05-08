@@ -1,0 +1,309 @@
+<!--
+* Lightning Component for quote generation
+* @author  Almas Aleem: Absa
+* @version v1.0
+* @since   2020-11-09
+*
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global"
+                controller="GenerateQuoteController">
+
+    <!-- Attribute Decleration -->
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="appProdId" type="Id"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />
+
+    <aura:attribute name="quoteWrap" type="Object" />
+    <aura:attribute name="userRecord" type="User" />
+    <aura:attribute name="isActiveOnceOffOnly" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOnceOffRecurring" type="Boolean" default="false" />
+    <aura:attribute name="isActiveVariable" type="Boolean" default="false" />
+    <aura:attribute name="selLimitTypes" type="Object" />
+    <aura:attribute name="selRedFrequency" type="Object" />
+    <aura:attribute name="LimitTypeOptions" type="list" />
+ 	<aura:attribute name="minDate" type="Date" />
+    <aura:attribute name="maxDate" type="Date" />
+    <aura:attribute name="CMSACBOptions" type="list"  />
+
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+
+    <!-- <aura:iteration items="{!quoteWrap}" var="quoteItem" > -->
+
+    <!--<lightning:accordion aura:id="accordion">-->
+
+     <lightning:accordion allowMultipleSectionsOpen="true" aura:id="Accordion">
+         <lightning:accordionSection name="moreinfor" label="Overdraft - In NCA">
+        <lightning:accordionSection name="Quotes Section" label="Quote Details">
+            <lightning:layout multipleRows="true">
+                 <!-- <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;">Is this an CMS or ACB limit only</p>
+                    <lightning:select class="fontClass" aura:id="isGeneralFacilitySelected" name="SelectMethod" value="{!v.quoteWrap.ACBLimit}" onchange="" >
+                        <aura:iteration items="{!v.CMSACBOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Domicile Branch Code</p>
+                    <lightning:input class="fontClass" value="{!v.quoteWrap.domicilebranchCode}" />
+                </lightning:layoutItem>-->
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Credit limit (credit advanced or available)</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.creditLimit}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Monthly OD Ledger Fee (service fee) if you REMAIN WITHIN credit limit</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.ODLedgerFee}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Monthly OD Ledger Fee (service fee) if you EXCEED your credit limit</p>
+                    <lightning:input class="fontClass" value="{!v.quoteWrap.ExODLedgerFee}" step="0.01"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Contractual Annual Interest Rate (variable)</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.AnnualInterestRate}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Discount on the Contractual Annual Interest Rate</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.AnnualInterestRateDiscount}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Margin %</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.margin}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Discounted Annual Interest Rate (variable)</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.discountedIntersetRate}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Initiation fee to be charged upfront</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.UpfrontInitiationfees}" minimumFractionDigits="2"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+
+        <!--<lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Quotation number</p>
+                    <lightning:formattedText class="fontClass" value="{!v.quoteWrap.QuoteNumber}"/>
+                </lightning:layoutItem>> -->
+
+
+        <lightning:accordionSection name="Illustration section" label="Illustration">
+            <!--<lightning:layoutItem size="12" class="productHeader">
+                    <p class="fontClass">Illustration:</p> <lightning:formattedNumber value=""/>
+                </lightning:layoutItem>-->
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Monthly instalment including interest and fees</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.monthlyinstalment}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> * Total interest (assuming that the interest rate stays the same)</p>
+                    <lightning:formattedNumber  class="fontClass" value="{!v.quoteWrap.totalinterest}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> * Total interest and fees (assuming that the interest rate and fees stay the same)</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.totalinterestandfees}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> * Total to be repaid (credit advanced + interest + fees)</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.totaltoberepaid}" minimumFractionDigits="2"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+
+        <!--<lightning:accordionSection name="optional section" label="Optional Items">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Credit insurance - monthly premium (excluding commision and benefits)</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.creditinsurancemonthly}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Commision or benefit payable to the Credit Provider</p>
+                    <lightning:formattedText class="fontClass" value="{!v.quoteWrap.Commision}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Total credit insurance monthly premium</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.creditInsurMonth}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Additional charges in terms of S102(1)(b) to (f) of the NCA, e.g. Bond Registration fees where a mortgage bond is registered</p>
+                    <lightning:formattedText class="fontClass" value="{!v.quoteWrap.additionalCharges}"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>  -->
+
+        <lightning:accordionSection name="cost of credit section" label="Cost Of Credit">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12" class="productHeader">
+                    <p style="margin:10px !important"> Total cost of credit consisting of (if a credit facility based these amounts on you using the full facility and repay it over 12 (twelve) months</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.totalCreditCost}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Credit limit</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.creditLimit}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Intetrest (aggregated)</p><lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.IntetrestAggre}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Initiation fee</p><lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.Initiationfees}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Service fee (aggregated)</p><lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.ServicefeeAggre}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Credit insurance (aggregated)</p><lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.CreditInsurAggre}" maximumFractionDigits="2"/>
+
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Credit cost multiple (this means total cost of credit divided by the credit limit)</p><lightning:formattedNumber class="fontClass" value="{!v.quoteWrap.creditcostmultiple}" maximumFractionDigits="2"/>
+
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+
+        <lightning:accordionSection name="Limit Section" label="Limit Type" >
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" padding="horizontal-small">
+
+                    <!--<lightning:select aura:id="inputNewAcc" required="true" label="Limit Type"  name="SelectMethod" class="dynamic select" value="{!v.quoteWrap.LimitType}" onchange="{!c.onLimitSelectChange}">
+                        <aura:iteration items="{!v.LimitTypeOptions}" var="limit">
+                            <option class="{!limit.class}" text="{!limit.label}" value="{!limit.value}" selected="{!limit.selected}" />
+                        </aura:iteration>
+                    </lightning:select>-->
+
+                    <lightning:input aura:id="LimitType"  class="dynamic" disabled="true" value="{!v.quoteWrap.LimitType}" label="Limit Type" />
+                </lightning:layoutItem>
+
+                <aura:if isTrue="{!v.isActiveOnceOffOnly}">
+
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input type="date" aura:id="inputNewAcc" required="true" label="Once-Off Date" value="{!v.quoteWrap.OnceOffDate}" min="{!v.minDate}" max="{!v.maxDate}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Once-Off Amount" value="{!v.quoteWrap.OnceOffAmount}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Target Amount" value="{!v.quoteWrap.targetAmount}" />
+                    </lightning:layoutItem>
+                </aura:if>
+                <aura:if isTrue="{!v.isActiveOnceOffRecurring}">
+                     <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:select aura:id="inputNewAcc" required="true" label="Reduction Frequency" class="dynamic" value="{!v.quoteWrap.ReductionFrequency}" >
+                            <aura:iteration items="{!v.selRedFrequency}" var="red">
+                                <option class="{!red.class}" text="{!red.label}" value="{!red.value}" selected="{!red.selected}" />
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Reduction Amount" value="{!v.quoteWrap.ReductionAmount}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input type="date" aura:id="inputNewAcc" required="true" label="Reduction Date" value="{!v.quoteWrap.ReductionDate}" min="{!v.minDate}" max="{!v.maxDate}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Target Amount" value="{!v.quoteWrap.targetAmount}" />
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem size="6" padding="around-small">
+                    </lightning:layoutItem>
+                </aura:if>
+                <aura:if isTrue="{!v.isActiveVariable}">
+                    <lightning:layoutItem size="6" padding="around-small">
+                        <p>Variable Amounts Table</p>
+                        <table class="slds-table slds-table--cell-buffer">
+                            <thead>
+                                <tr class="slds-var-m-top_small">
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="AccountNameNumber">#</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="AccountNameNumber">Variable Amount</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="AccountType">Variable Date</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="AccountType">Target Amount</div>
+                                    </th>
+
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.quoteWrap.variablemap}" var="vData">
+                                    <tr>
+                                        <td>
+                                            {!vData.Id}
+                                        </td>
+                                        <td>
+                                            <lightning:input name="{!vData.Id}" type="number" value="{!vData.variableAmount}" max="{!v.quoteWrap.OverdraftLimitNewAmount}" formatter="currency" step="0.01"  onchange="{!c.onSetTargetAmount}"/>
+                                        </td>
+                                        <td>
+                                            <lightning:input name="{!vData.Id}" type="date" value="{!vData.variableDate}"/> <!--  min="{!vData.MinDate}" max="{!vData.MaxDate}"  onchange="{!c.onSetMinDate}" -->
+                                        </td>
+                                         <td>
+                                            <lightning:input name="{!vData.Id}" type="number" value="{!vData.targetAmount}" formatter="currency" step="0.01"/>
+                                        </td>
+
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="around-small">
+                    </lightning:layoutItem>
+                </aura:if>
+
+            </lightning:layout>
+
+        </lightning:accordionSection>
+
+        <lightning:accordionSection name="Additional Section" label="Additional Info">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Review Date</p>
+                    <lightning:input class="fontClass" type="date" value="{!v.quoteWrap.reviewDate}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Expiry Date</p>
+                    <lightning:input class="fontClass" type="date" value="{!v.quoteWrap.expiryDate}" />
+                </lightning:layoutItem>
+                <!--<lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Economic Empowerment Classification</p>
+                    <lightning:input class="fontClass" value="{!v.quoteWrap.EEClassification}" />
+                </lightning:layoutItem> -->
+
+                 <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important"> Additional charges in terms of S102(1)(b) to (f) of the NCA, e.g. Bond Registration fees where a mortgage bond is registered</p>
+                    <lightning:formattedText class="fontClass" value="{!v.quoteWrap.additionalCharges}"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+
+        <!-- </lightning:layout> -->
+
+        <lightning:button variant="brand" type="submit" name="save" label="Save" aura:id="decisionbutton" onclick="{!c.saveQuote}"/>
+        <br/><br/>
+        <lightning:accordionSection name="document section" label="Documents ">
+            <div class="slds-grid">
+                <div class="slds-col slds-size_1-of-3">
+                    <c:documentStub documenttemplate= "Credit Onboarding Quote" recordId="{!v.appProdId}"/> <!-- Added by Tinashe-->
+                </div>
+            </div>
+        </lightning:accordionSection>
+
+        </lightning:accordionSection>
+    </lightning:accordion>
+
+    <!--</aura:iteration> -->
+
+    <!-- Document Section -->
+</aura:component>

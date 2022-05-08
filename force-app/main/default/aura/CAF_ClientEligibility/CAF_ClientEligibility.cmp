@@ -1,0 +1,211 @@
+<aura:component controller="ApplicationValidatorLightning" implements="flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="oppList" type="List"/>
+    <!--"{!v.recordId}"-->
+    
+    <aura:attribute name="agreeType" type="String" />
+    <aura:attribute name="agreeSize" type="Decimal" />
+    <aura:attribute name="annualTurnover" type="Decimal" />
+    <aura:attribute name="netAssetval" type="Decimal" />
+    <aura:attribute name="secureMortgage" type="String" />
+    <aura:attribute name="trustNumber" type="String" />
+    
+    <!--Client type check-->
+    <aura:attribute name="cType" type="String" default="{!v.oppList[0].Client_type__c}"/>
+                 
+    <!--NCA Outcome-->
+    <aura:attribute name="ncaOutcome" type="Boolean" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.getOpp}" />
+    <aura:handler event="force:refreshView" action="{!c.getOpp}" />
+    
+     <aura:attribute name="opportunityRecord2" type="Object" />
+    <aura:attribute name="errorMessage" type="String" />
+
+    <force:recordData
+        aura:id="recordLoader"
+        recordId="{!v.recordId}"
+        fields="CAF_Sanctioning_Status__c"
+        targetFields="{!v.opportunityRecord2}"
+        targetError="{!v.errorMessage}"
+    />
+    
+
+    <lightning:recordViewForm aura:id="clienteligibility" recordId="{!v.recordId}" objectApiName="Opportunity">        
+        <lightning:accordion aura:id="accordianId" allowMultipleSectionsOpen="true">
+            
+            <!--Client Details section-->
+            <lightning:accordionSection label="Client Details">
+                <div>               
+                    <p><b>Identity Information</b></p>
+                </div>
+                <br/>
+                <p class="slds-p-horizontal_small">
+                    <!-- Aura iteration to iterate oppList-->
+            		<aura:iteration items="{!v.oppList}" var="opp">
+                        <!-- recordViewForm to view the record -->                
+                		<lightning:recordViewForm recordId="{!opp.Id}" objectApiName="Opportunity">
+                            
+                           <div class="slds-grid slds-wrap slds-gutters_medium">
+                                <div class="slds-col slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="form-element-01">Full Name</label>   
+                                    <lightning:outputField variant="label-hidden" fieldName="Name" />  
+                                </div> 
+							    <div class="slds-col slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="form-element-01">Registration Number</label>   
+                                    <lightning:outputField variant="label-hidden" fieldName="Registration_Number__c" />  
+                                </div>
+                            </div>
+                        </lightning:recordViewForm>
+                        
+                        <lightning:recordViewForm recordId="{!opp.AccountId}" objectApiName="Account">  
+                		  <br/>
+                          <div class="slds-grid slds-wrap slds-gutters_medium">
+                                <div class="slds-col slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="form-element-01">Entity type</label>   
+                                    <lightning:outputField variant="label-hidden" fieldName="Entity_Type__c" />  
+                                </div>                       
+                                <div class="slds-col slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="form-element-01">Client code</label>   
+                                    <lightning:outputField variant="label-hidden" fieldName="CIF__c" />  
+                                </div>   
+                		  </div>
+                          <br/>  
+                          <div class="slds-grid slds-wrap slds-gutters_medium">
+                                <div class="slds-col slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="form-element-01">Segment</label>   
+                                    <lightning:outputField variant="label-hidden" fieldName="SBU_Segment__c" />  
+                                </div>                       
+                                <div class="slds-col slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="form-element-01">SIC code</label>   
+                                    <lightning:outputField variant="label-hidden" fieldName="Standard_Industry_SIC_Code__c" />  
+                                </div>   
+                		  </div>
+                          <br/> 
+                          <div class="slds-grid slds-wrap slds-gutters_medium">
+                                <div class="slds-col slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="form-element-01">Date Established</label>   
+                                    <lightning:outputField variant="label-hidden" fieldName="Date_Established__c" />  
+                                </div>                       
+                                <div class="slds-col slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="form-element-01">Country of Incorporation</label>   
+                                    <lightning:outputField variant="label-hidden" fieldName="Country_of_Incorporation__c" />  
+                                </div>   
+                		  </div>
+                          <br/> 
+                          <!--<div class="slds-grid slds-wrap slds-gutters_medium">
+                                <div class="slds-col slds-size_1-of-3">
+                                    <label class="slds-form-element__label" for="form-element-01">Trust / pension / provident / other fund number</label>   
+                                    	<lightning:outputField variant="label-hidden" fieldName="Trust_Number__c" />
+                                      <aura:if isTrue="{!not(empty(Trust_Number__c))}">
+                                             <lightning:outputField variant="label-hidden" fieldName="Trust_Number__c" />
+                                          <aura:set attribute="else">
+                                           	 <lightning:outputField variant="label-hidden" fieldName="Trust_Number_New_format__c" />
+                                          </aura:set>
+                                      </aura:if>     
+                                </div> 
+                          </div>-->
+                          <br/>
+                         </lightning:recordViewForm> 
+                         <lightning:recordEditForm aura:id="trustNo" objectApiName="Account" recordId="{!opp.AccountId}">            
+                             <div class="slds-grid slds-wrap slds-gutters_medium">
+                                         <div class="slds-col slds-size_1-of-3">
+                                             <label class="slds-form-element__label" for="form-element-01">Trust / pension / provident / other fund number</label>   
+                                            <lightning:inputField aura:id="trustnumber" variant="label-hidden" fieldName="Trust_Number__c" onchange="{!c.trust}"/>  
+                                        </div>                         
+                			  </div> 
+                        </lightning:recordEditForm>
+                        
+                                                
+                    </aura:iteration>
+                </p>               
+            </lightning:accordionSection>
+            
+            <!--Opportunity Information section-->
+            <lightning:accordionSection label="Opportunity Information">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-8">
+                        <label class="slds-form-element__label" for="form-element-01">Region</label>   
+                        <lightning:outputField variant="label-hidden" fieldName="Region__c" />  
+                    </div>
+                </div>
+                <br/>
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-3">
+                       	<label class="slds-form-element__label" for="form-element-01">Date Created</label>   
+                       	<lightning:outputField variant="label-hidden" fieldName="CreatedDate" />  
+                    </div>                       
+                    <div class="slds-col slds-size_1-of-3">
+                       	<label class="slds-form-element__label" for="form-element-01">Created by</label>   
+                       	<lightning:outputField variant="label-hidden" fieldName="CreatedById" />  
+                    </div>   
+                </div>   
+                <br/>
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                     <div class="slds-col slds-size_1-of-3">
+                       	<label class="slds-form-element__label" for="form-element-01">Date Last Updated</label>   
+                       	<lightning:outputField variant="label-hidden" fieldName="LastModifiedDate" />  
+                    </div>                       
+                    <div class="slds-col slds-size_1-of-3">
+                       	<label class="slds-form-element__label" for="form-element-01">Last Updated by</label>   
+                       	<lightning:outputField variant="label-hidden" fieldName="LastModifiedById" />  
+                    </div>   
+                </div>                
+            </lightning:accordionSection>
+            
+            <!--National Credit Act (NCA) Info section-->
+            <lightning:recordEditForm aura:id="ncaCheck" objectApiName="Opportunity" recordId="{!v.recordId}" >            
+                    <lightning:accordionSection label="National Credit Act (NCA) Info">                              
+                        <lightning:layout multipleRows="true" >
+                            <lightning:layoutItem size="7"  class="slds-p-top_large">                                                                
+                                <div class="slds-grid slds-wrap slds-gutters_medium">
+                                         <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField aura:id="agreementsize" fieldName="Agreement_size__c" onchange="{!c.agreementSize}"/>  
+                                        </div>                       
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField aura:id="agreementtype" fieldName="Agreement_type__c" onchange="{!c.agreementType}"/>  
+                                        </div>   
+                				</div>                             
+                                <div class="slds-grid slds-wrap slds-gutters_medium">
+                                         <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField aura:id="securedbymortgage" fieldName="Secured_by_mortgage__c" onchange="{!c.securedbyMortgage}"/>  
+                                        </div> 
+                                    	<div class="slds-col slds-size_1-of-2">
+                                            <lightning:outputField  fieldName="Client_type__c" />   
+                                    	</div>                                		
+                				</div>                                
+                                <div class="slds-grid slds-wrap slds-gutters_medium">                     
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField aura:id="annualturnover" fieldName="Annual_turnover__c" onchange="{!c.annualTurnOver}"/>  
+                                        </div>                           
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField aura:id="netassetval" fieldName="Net_Asset_Value__c" onchange="{!c.netAssetValue}"/>  
+                                        </div>   
+                				</div>
+                                
+                                <div> 
+                                    <lightning:button variant="destructive" class="slds-float_right slds-m-top_xx-large" label="Calculate client NCA status" type="submit" onclick="{!c.calcNCA}"/>
+                                    <lightning:spinner aura:id="mySpinner" alternativeText="Processing...please wait" title="Processing...please wait" variant="brand" size="large" class="slds-hide"/>                                                                                
+    							</div>
+
+                                <aura:if isTrue="{!v.ncaOutcome}">
+                                    
+                                   <aura:iteration items="{!v.oppList}" var="opp">
+                                       <lightning:recordViewForm recordId="{!opp.AccountId}" objectApiName="Account">
+                                           <div style="font-weight: bold;" class="slds-col slds-size_1-of-2">
+                                               <lightning:outputField  fieldName="Client_NCA_Status__c" />
+                                           </div>
+                                               
+                                       </lightning:recordViewForm>                                       
+                                   </aura:iteration>
+                                                             
+                                </aura:if>
+                            </lightning:layoutItem>
+                        </lightning:layout>                                                                       
+                    </lightning:accordionSection>
+                
+            </lightning:recordEditForm>          
+        </lightning:accordion>   
+    </lightning:recordViewForm>	
+</aura:component>

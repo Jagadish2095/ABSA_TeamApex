@@ -1,0 +1,93 @@
+<!--
+* Allow a user to close a case and provide the out-of-SLA reason
+* and comments
+*
+* @author  Rudolf Niehaus : CloudSmiths
+* @version v1.0
+* @since   2018-06-14
+-->
+<aura:component implements="force:lightningQuickAction,force:hasRecordId" controller="CaseCloseActionExt">
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="closeStatuses" type="String[]" />
+    <aura:attribute name="selectedStatus" type="String" />
+    <aura:attribute name="isOutOfSla" type="Boolean" />
+    <aura:attribute name="isCaseClosed" type="Boolean" />
+    <aura:attribute name="isNotClassified" type="Boolean" />
+    <aura:attribute name="isNotLinkedToAccount" type="Boolean" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}"/>
+    
+    <aura:attribute name="serviceRequestRecordTypeName" type="String" />
+    <aura:attribute name="developerName" type="String" default="Service_Request"/>
+    <aura:attribute name="sObjectName" type="String" default="Case"/>
+    
+    <center style="z-index:99"> 
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    
+    <aura:renderIf isTrue="{!v.isCaseClosed}">
+        
+        <ui:message title="Case Resolved" severity="info" closable="false">
+            This Case is already Resolved
+        </ui:message>
+        
+        <aura:set attribute="else">
+            
+            <aura:renderIf isTrue="{!and(v.isNotClassified, v.isNotLinkedToAccount)}">
+                <ui:message title="Outstanding Actions" severity="info" closable="false">
+                    You need to classify this Case and link it to an Account before you can resolve it.
+                </ui:message>
+                <aura:set attribute="else">
+                    <aura:renderIf isTrue="{!v.isNotClassified}">
+                        <ui:message title="Outstanding Action" severity="info" closable="false">
+                            You need to classify this Case before you can resolve it.
+                        </ui:message>    
+                    </aura:renderIf>
+                    <aura:renderIf isTrue="{!v.isNotLinkedToAccount}">
+                        <ui:message title="Outstanding Action" severity="info" closable="false">
+                            You need to associate this Case to an Account using the find client action before you can resolve it.
+                        </ui:message>    
+                    </aura:renderIf>
+                </aura:set>   
+            </aura:renderIf>
+            
+            <aura:renderIf isTrue="{!or(v.isNotClassified, v.isNotLinkedToAccount)}">
+                
+                <aura:set attribute="else">   
+                    
+                    <lightning:recordEditForm aura:id="iUpdateCase" objectApiName="Case" recordId="{!v.recordId}" >
+                        
+                        <lightning:outputField fieldName="External_SLA_Status__c" aura:id="islasta" />
+                        
+                        <aura:renderIf isTrue="{!v.isOutOfSla}">
+                            <lightning:inputField fieldName="Out_Of_SLA_Reason__c" aura:id="ireason"  />
+                            <lightning:inputField fieldName="Out_Of_SLA_Comments__c" aura:id="icomm"  />
+                        </aura:renderIf>     
+                        
+                        <lightning:select aura:id="stselect" label="Available Resolve Statuses" onchange="{!c.onSelectChange}" disabled="{!v.isCaseClosed}">
+                            <aura:renderIf isTrue="{!v.closeStatuses.length == 1}">
+                                    <option value="{!v.closeStatuses[0]}" text="{!v.closeStatuses[0]}"></option>
+                            <aura:set attribute="else">
+                                    <option value="--None--" text="--None--"></option>
+                                    <aura:iteration items="{!v.closeStatuses}" var="s" indexVar="index" >
+                                        <option value="{!s}" text="{!s}"></option>
+                                    </aura:iteration>
+                            </aura:set>
+                            </aura:renderIf>
+                        </lightning:select>
+                        <lightning:inputField fieldName="Resolved_in_Favour_of__c" aura:id="iResolvedInFavour" disabled="{!v.isCaseClosed}" class="slds-hide"/>
+                        <lightning:inputField fieldName="Unresolved_Reason__c" aura:id="ureason" disabled="{!v.isCaseClosed}" class="slds-hide"/>
+                        <br/>
+                        <lightning:button label="Resolve" onclick="{!c.updateCase}" variant="brand" aura:id="ibtn" disabled="{!v.isCaseClosed}" />
+                    </lightning:recordEditForm>
+                    
+                </aura:set>
+                
+            </aura:renderIf>
+        </aura:set> 
+        
+    </aura:renderIf> 
+    
+</aura:component>

@@ -1,0 +1,182 @@
+<!--
+* Allow a user to Override standard file upload when record type is NBFS
+*
+* @author  Chenna
+* @version v1.0
+* @since   2020-09-11
+-->
+
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global"
+                controller="CaseFilesViewCtrl">
+    <!--aura doInit handler--> 
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <!--aura attributes--> 
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="caseNumber" type="String" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="nameEditMode" type="boolean" default="false" />
+    <aura:attribute name="showSaveCancelBtn" type="boolean"/>
+    <aura:attribute name="noOfFiles" type="Integer" default="0"/>
+    <aura:attribute name="selectedDocumentId" type="string"/>
+    <aura:attribute name="lstContentDoc" type="List"/>
+    <aura:attribute name="hasModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="uploadFormats" type="List" default="['.jpg','.jpeg','.png','.pdf','.msg','.xls','.doc','.Ppt','.xlsx','.docx','.Pptx','.zip','.txt','.wav','.aac','.m4a','.mp3','.wma','.csv']"/>
+    <div class="slds-page-header">
+        <div class="slds-page-header__row">
+            <div class="slds-page-header__col-title">
+                <div class="slds-media">
+                    <div class="slds-media__body">
+                        <div class="slds-page-header__name">
+                            <div class="slds-page-header__name-title">
+                                <h1>
+                                    <span class="slds-page-header__title slds-truncate" title="Files">Files</span>
+                                </h1>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-page-header__col-actions">
+                <div class="slds-page-header__controls">
+                    <div class="slds-page-header__control">
+                        <ul class="slds-button-group-list">
+                            <li>
+                                <lightning:button variant="brand" class="slds-button slds-button_neutral"
+                                                  label="Add Files"
+                                                  title="Add Files"
+                                                  onclick="{! c.openUploadModel }" />
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-page-header__row">
+            <div class="slds-page-header__col-meta">
+                <p class="slds-page-header__meta-text">&nbsp;{!v.noOfFiles} items • Updated Few Seconds ago</p>
+            </div>
+        </div>
+    </div>
+    <aura:if isTrue="{!v.isOpen}">
+        <!--###### MODAL BOX Start######--> 
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                
+                
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeUploadModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add File</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-col slds-size-of-12">            
+                        <lightning:fileUpload label="" 
+                                              multiple="True" 
+                                              accept="{!v.uploadFormats}" 
+                                              recordId="{!v.recordId}" 
+                                              onuploadfinished="{!c.UploadFinished}" />          
+                    </div>
+                </div>
+                
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+        
+    </aura:if>
+    
+    <!-- Custom DataTable to Display List Of Available ContentDocuments Start-->  
+    <div class="slds-scrollable">
+        <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+            <thead>
+                <tr class="slds-line-height_reset">
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="Title">Title</div>
+                    </th>
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="File Type">Owner</div>
+                    </th>
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="Created By">Last Modified</div>
+                    </th>
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="size">Size</div>
+                    </th>
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="size">Source</div>
+                    </th>
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="Document Type">Document Type</div>
+                    </th>
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="Document Type">Description</div>
+                    </th>
+                    
+                    <th class="slds-text-title_caps" scope="col">
+                        <div class="slds-truncate" title="size"></div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <aura:iteration items="{!v.lstContentDoc}" var="CD">
+                    
+                    <tr>
+                        <th scope="row">
+                            <div class="slds-truncate" title="{!CD.ContentDocument.Title}">
+                                <a onclick="{!c.getSelected}" data-Id="{!CD.ContentDocumentId}">{!CD.Title}</a>
+                            </div>
+                        </th>
+                        <th scope="row">
+                            <div class="slds-truncate" title="{!CD.Owner.Name}">{!CD.Owner.Name}</div>
+                        </th>
+                        <th scope="row">
+                            <div class="slds-truncate" title="{!CD.LastModifiedDate}">{!CD.LastModifiedDate}</div>
+                        </th>
+                        <th scope="row">
+                            <div class="slds-truncate" title="{!CD.ContentSize}">{!CD.ContentSize}</div>
+                        </th>
+                        <th scope="row">
+                            <div class="slds-truncate" title="{!v.caseNumber}">{!v.caseNumber}</div>
+                        </th>
+                        <th scope="row">
+                            <div class="slds-truncate" title="{!CD.Description}">{!CD.Description}</div>
+                        </th> 
+                        <c:CaseFilesInlineEditRow singleRec="{!CD}"/>
+                        <th scope="row">
+                            <lightning:button onclick="{!c.handleDelete}" value = "{!CD.ContentDocumentId}" variant="base" class="slds-button" title="Delete">
+                                <lightning:icon iconName="utility:delete" size="xx-small" alternativeText="delete"  class="slds-button"/>
+                            </lightning:button>
+                        </th>
+                    </tr> 
+                    
+                </aura:iteration>
+            </tbody>
+        </table>
+    </div>
+    
+    
+    <!--###### FILE PREVIEW MODAL BOX START ######--> 
+    <aura:if isTrue="{!v.hasModalOpen}">
+        <section onclick="{!c.closeModel}"
+                 role="dialog"
+                 aria-modal="true"
+                 class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_medium slds-text-align_center"
+                     style="background: transparent;">
+                    <div style="width: 50%; margin: 0 auto; text-align: left">
+                        <lightning:fileCard fileId="{!v.selectedDocumentId}"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <!--###### FILE PREVIEW MODAL BOX END ######-->
+</aura:component>

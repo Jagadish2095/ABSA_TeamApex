@@ -1,0 +1,213 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes,force:appHostable,force:lightningQuickAction" controller="EmailViewerController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <aura:attribute name="emailBody" type="String"></aura:attribute>
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="dataAtt" type="Object"/>
+    <aura:attribute name="columnsAtt" type="List"/>
+    <aura:attribute name="email" type="EmailMessage" default="{sobjectType:'EmailMessage'}"/>
+    <aura:attribute name="showEmailList" type="boolean" default="true"/>
+    <aura:attribute name="showAttachements" type="boolean" default="false"/>
+    <aura:attribute name="emailsExist" type="boolean" default="false"/>
+   
+    <!-- Email send attributes -->
+    <aura:attribute name="toAddress" type="string"/>
+    <aura:attribute name="fromAddress" type="string"/>
+    <aura:attribute name="subject" type="string"/>
+    <aura:attribute name="body" type="string"/>
+    <aura:attribute name="emailLeadId" type="string"/>
+    <aura:attribute name="mailStatus" type="boolean" default="false"/>
+    <aura:attribute name="showReply" type="boolean" default="false"/>
+     
+    <!-- Attachment attributes -->
+    <aura:attribute name="files" type="ContentDocument[]" default="{sobjectType:'ContentDocument'}"/>  
+    <aura:attribute name="cdIds" type="String[]"/>  
+    <aura:attribute name="multiple" type="Boolean" default="true"/>      
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    
+    <lightning:card>
+        <aura:set attribute="title">
+            <lightning:icon iconName="action:email" size="small"/>
+            Related Emails
+            
+            <aura:if isTrue="{!v.showReply == false}">
+                <lightning:button aura:id="newEmail" class="slds-m-top_small slds-float--right" variant="brand" label="New Email" onclick="{!c.newEmailSend}"/>
+            </aura:if>
+        </aura:set>
+        <br/>
+        <aura:if isTrue="{!v.showReply == false}">
+            <aura:if isTrue="{!v.emailsExist == false}">
+                <b><p style="text-align: center;">There are currently no related emails linked to this record...</p></b>
+                <aura:set attribute="else">
+                    <lightning:layout multipleRows="true">
+                        <aura:if isTrue="{!v.showEmailList}">
+                            <lightning:layoutItem size="12">
+                                <lightning:datatable
+                                                     columns="{!v.columns}"
+                                                     data="{!v.data}"
+                                                     keyField="id"
+                                                     hideCheckboxColumn="true"
+                                                     onrowaction="{!c.handleRowAction}"
+                                                     resizeColumnDisabled="true"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+                        
+                        <aura:if isTrue="{!v.showEmailList == false}">
+                            <lightning:layoutItem size="6" class="slds-p-left_small">
+                                <b>From: </b><ui:outputEmail value="{!v.email.FromAddress}"/>
+                                <br/>
+                                <b>Subject: </b><ui:outputText value="{!v.email.Subject}"/>
+                                <br/>
+                                <b>Date: </b><ui:outputDate value="{!v.email.MessageDate}"/>
+                                <br/>
+                            </lightning:layoutItem>
+                            
+                            <lightning:layoutItem size="6" class="slds-p-right_small">
+                                <lightning:button aura:id="backButton" class="slds-m-top_small slds-float--right" variant="brand" label="Back" onclick="{!c.backPressed}"/>
+                            </lightning:layoutItem>
+                            
+                            <lightning:layoutItem size="12" class="slds-p-top_small">
+                                <textarea rows="20" style="width:100%; height:200px">{!v.emailBody}</textarea>
+                            </lightning:layoutItem>
+                            
+                            <br/>
+                            <br/>
+                            
+                            <lightning:layoutItem size="12" class="slds-p-top_small">
+                                <h2>Attachments</h2>
+                            </lightning:layoutItem>
+                            
+                            <br/>
+                            
+                            <aura:if isTrue="{!v.showAttachements}">
+                                <lightning:layoutItem size="12">
+                                    <lightning:datatable
+                                                         columns="{!v.columnsAtt}"
+                                                         data="{!v.dataAtt}"
+                                                         keyField="id"
+                                                         hideCheckboxColumn="true"
+                                                         minColumnWidth="100" />
+                                </lightning:layoutItem>
+                                
+                                <aura:set attribute="else">
+                                    <p>There are no attachments linked to this email</p>
+                                </aura:set>
+                            </aura:if>
+                            
+                        </aura:if>
+                    </lightning:layout>
+                </aura:set>
+            </aura:if> 
+        </aura:if>
+        
+        <aura:if isTrue="{!v.showReply}">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12">
+                    <!---Part 1 [header part] -->  
+                    <div class="slds-page-header" role="banner">
+                        <h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate" title="this should match">
+                            Send Email 
+                        </h1>
+                    </div>
+                    
+                    <!---Part 2 [mail fourm part]-->   
+                    <div class="slds-m-around--large">
+                        <div class="slds-container--large">
+                            <div class="slds-form--stacked">
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label" for="CC">From Address</label>
+                                    <div class="slds-form-element__control">
+                                        <ui:inputEmail class="slds-input" aura:id="fromAddress"  value="{!v.fromAddress}" required="true" />
+                                    </div>
+                                </div>
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label" for="CC">To Address</label>
+                                    <div class="slds-form-element__control">
+                                        <ui:inputEmail class="slds-input" aura:id="toAddress"  value="{!v.toAddress}" required="true" />
+                                    </div>
+                                </div>
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label" for="CC">Subject</label>
+                                    <div class="slds-form-element__control">
+                                        <ui:inputText class="slds-input" aura:id="subject"  value="{!v.subject}" placeholder="Subject"/>
+                                    </div>
+                                </div>
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label" for="textareaSample2">Mail Body</label>
+                                    <div class="slds-form-element__control">
+                                        <lightning:inputRichText aura:id="body" value="{!v.body}" />
+                                    </div>
+                                </div>
+                                <br/>
+                                
+                                <div class="slds">  
+                                    <lightning:notificationsLibrary aura:id="notifLib"/>
+                                    <div class="contentbox">  
+                                        <div class="slds-page-header header">Attachments</div>  
+                                        <div class="slds-grid">  
+                                            <div style="width:100%">  
+                                                <center>
+                                                    <lightning:fileUpload label="" 
+                                                                          multiple="{!v.multiple}"   
+                                                                          recordId="{!v.recordId}"   
+                                                                          onuploadfinished="{!c.UploadFinished}" />  
+                                                </center>
+                                            </div>  
+                                        </div><br/>
+                                        <aura:if isTrue="{!v.files.length >= 1}">
+                                            <div class="slds-form--compound" style="position:relative">
+                                                <table class="slds-table slds-table--bordered">  
+                                                    <thead>  
+                                                        <tr>  
+                                                            <!-- <th></th> -->
+                                                            <th>Title</th>  
+                                                        </tr>  
+                                                    </thead>  
+                                                    <tbody>
+                                                        <aura:iteration items="{!v.files}" var="f">  
+                                                            <tr>  
+                                                                <!-- <td><a href="javascript:void(0)" id="{!f.documentId}" onclick="{!c.delFiles}">Delete</a></td> -->
+                                                                <td><a href="" id="{!f.documentId}" onclick="{!c.previewFile}">{!f.name}</a></td>  
+                                                            </tr>  
+                                                        </aura:iteration>  
+                                                    </tbody>  
+                                                </table>  
+                                                <aura:if isTrue="{!v.Spinner}">
+                                                    <div class="slds-spinner_container">
+                                                        <div class="slds-spinner slds-spinner--medium" aria-hidden="false" role="alert">
+                                                            <div class="slds-spinner__dot-a"></div>
+                                                            <div class="slds-spinner__dot-b"></div>
+                                                        </div>
+                                                    </div>
+                                                </aura:if>
+                                            </div>
+                                        </aura:if>
+                                    </div>  
+                                </div>  
+                                
+                                <br/>
+                                
+                                <div class="slds-form-element">    
+                                    <lightning:button aura:id="cancelSend" class="slds-m-top_small slds-float--left" variant="brand" label="Cancel" onclick="{!c.cancelEmailSend}"/>
+                                    <lightning:button aura:id="send" class="slds-m-top_small slds-float--right" variant="brand" label="Send" onclick="{!c.sendMail}"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:if>
+        <br/>
+    </lightning:card>
+   
+</aura:component>

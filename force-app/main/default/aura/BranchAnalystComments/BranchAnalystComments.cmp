@@ -1,0 +1,191 @@
+<!--
+  @description       :
+  @author            : Thomas Dry : ABSA (IQ Business)
+  @created   2021-03-02
+  @last modified on  : 2021-08-04
+  @last modified by  : PaulJohn.duRand@absa.africa
+  Modifications Log
+  Ver   Date         Author                        Modification
+  1.0   2021-06-25   PaulJohn.duRand@absa.africa   Analyst comments for Non-Individual Entities
+  1.0   2021-06-25   PaulJohn.duRand@absa.africa   Analyst comments for Non-Individual Entities
+  1.0   2021-07-22   PaulJohn.duRand@absa.africa   Return error on invalid CASA status
+-->
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+	access="global"
+	controller="BranchCasaController"
+>
+	<aura:attribute name="primaryCasa" type="Object" />
+	<aura:attribute name="CasaReference" type="String" />
+	<aura:attribute name="FirstName" type="String" />
+	<aura:attribute name="Surname" type="String" />
+	<aura:attribute name="IDNumber" type="String" />
+	<aura:attribute name="ScreeningDate" type="String" />
+	<aura:attribute name="ScreeningStatus" type="String" />
+	<aura:attribute name="canRefresh" type="boolean" />
+	<aura:attribute name="displayComment" type="boolean" default="false" />
+	<aura:attribute name="updating" type="boolean" default="false" />
+	<aura:attribute name="comment" type="String" />
+	<aura:attribute name="isIndividual" type="boolean" default="true" />
+	<aura:attribute name="EntityName" type="String" />
+	<aura:attribute name="isSuccessful" type="boolean" default="false" />
+	<aura:attribute name="isCalledFromFlow" type="boolean" default="true" />
+    <aura:attribute name="showCmp" type="boolean" default="false" />
+    <aura:attribute name="errorDisplay" type="boolean" default="false" />
+	<aura:attribute name="showError" type="boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" default="" />
+    <aura:attribute name="showSuccess" type="boolean" default="false" />
+	<aura:attribute name="enablePause" type="boolean" default="false" />
+
+	<aura:handler name="init" value="{!this}" action="{!c.init}" />
+	<aura:if isTrue="{!v.errorDisplay == true}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+	<aura:if isTrue="{v.isCalledFromFlow }">
+	<lightning:layout>
+		<lightning:layoutItem padding="around-medium" size="6">
+			<legend class="slds-text-heading--small slds-p-vertical--medium">
+				<b>CASA Customer Status</b>
+			</legend>
+		</lightning:layoutItem>
+	</lightning:layout>
+</aura:if>
+	<lightning:layout>
+        
+		<aura:if isTrue="{! v.isIndividual }">
+			<lightning:layoutItem padding="around-small">
+				<table class="slds-table slds-table--bordered slds-table--cell-buffer slds-table_fixed-layout">
+					<thead>
+						<tr class="slds-text-heading--label">
+							<th scope="col"><div class="slds-truncate">CASA Reference</div></th>
+							<th scope="col"><div class="slds-truncate">First name</div></th>
+							<th scope="col"><div class="slds-truncate">Surname</div></th>
+							<th scope="col"><div class="slds-truncate">ID Number</div></th>
+							<th scope="col"><div class="slds-truncate">Screening date</div></th>
+							<th scope="col"><div class="slds-truncate">Screening status</div></th>
+							<th scope="col"><div class="slds-truncate"></div></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td role="gridcell">
+								<div class="slds-truncate" title="{!v.CasaReference}">{!v.CasaReference}</div>
+							</td>
+							<td role="gridcell">
+								<div class="slds-truncate" title="{!v.FirstName}">{!v.FirstName}</div>
+							</td>
+							<td role="gridcell">
+								<div class="slds-truncate" title="{!v.Surname}">{!v.Surname}</div>
+							</td>
+							<td role="gridcell">
+								<div class="slds-truncate" title="{!v.IDNumber}">{!v.IDNumber}</div>
+							</td>
+							<td role="gridcell">
+								<div class="slds-truncate" title="{!v.ScreeningDate}">{!v.ScreeningDate}</div>
+							</td>
+							<td role="gridcell">
+								<div class="slds-truncate" title="{!v.ScreeningStatus}">{!v.ScreeningStatus}</div>
+							</td>
+							<td role="gridcell">
+							<div class="slds-shrink-none">
+								<lightning:button label="Refresh" variant="brand" onclick="{!c.refresh}" disabled="{!v.canRefresh}"/>
+							</div>
+						</td>
+						</tr>
+					</tbody>
+				</table>
+			</lightning:layoutItem>
+
+			<aura:set attribute="else">
+				<lightning:layoutItem padding="around-small">
+					<table class="slds-table slds-table--bordered slds-table--cell-buffer slds-table_fixed-layout">
+						<thead>
+							<tr class="slds-text-heading--label">
+								<th scope="col"><div class="slds-truncate">Entity Name</div></th>
+								<th scope="col"><div class="slds-truncate">CASA Reference</div></th>
+								<th scope="col"><div class="slds-truncate">Screening date</div></th>
+								<th scope="col"><div class="slds-truncate">Screening status</div></th>
+								<th scope="col"><div class="slds-truncate">Screening status</div></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td role="gridcell">
+									<div class="slds-truncate" title="{!v.EntityName}">{!v.EntityName}</div>
+								</td>
+								<td role="gridcell">
+									<div class="slds-truncate" title="{!v.CasaReference}">{!v.CasaReference}</div>
+								</td>
+								<td role="gridcell">
+									<div class="slds-truncate" title="{!v.ScreeningDate}">{!v.ScreeningDate}</div>
+								</td>
+								<td role="gridcell">
+									<div class="slds-truncate" title="{!v.ScreeningStatus}">{!v.ScreeningStatus}</div>
+								</td>
+								<td role="gridcell">
+									<div class="slds-shrink-none">
+										<lightning:button label="Refresh" variant="brand" onclick="{!c.refresh}" disabled="{!v.canRefresh}"/>
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</lightning:layoutItem>
+			</aura:set>
+		</aura:if>
+	</lightning:layout>
+
+	<lightning:layoutItem padding="around-small">
+	<lightning:button label="View Analyst Comments" variant="brand" onclick="{!c.viewComments}" />
+</lightning:layoutItem>
+	<aura:if isTrue="{v.isCalledFromFlow }">
+		<lightning:layoutItem padding="horizontal-small" size="12">
+			<div>
+				<c:BranchFlowFooter aura:id="branchFlowFooter" availableActions="{! v.availableActions }" navigateFlowEvent="{! c.handleNavigate }" />
+			</div>
+		</lightning:layoutItem>
+	</aura:if>
+	<aura:if isTrue="{! v.updating }">
+		<div class="slds-spinner_container">
+			<div role="status" aria-hidden="false" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+				<span class="slds-assistive-text">Loading</span>
+				<div class="slds-spinner__dot-a" />
+				<div class="slds-spinner__dot-b" />
+			</div>
+		</div>
+	</aura:if>
+	<aura:if isTrue="{! v.displayComment }">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeComments }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Analyst Comments</h2>
+				</header>
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>{!v.comment}</p>
+				</div>
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Close" title="Close" onclick="{! c.closeComments }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+	</aura:if>
+</aura:component>

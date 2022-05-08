@@ -1,0 +1,287 @@
+<!--
+  @description       : 
+  @author            : poulami.banerjee@absa.africa
+  @last modified on  : 2021-06-23
+  @last modified by  : poulami.banerjee@absa.africa
+  Modifications Log 
+  Ver   Date         Author                         Modification
+  1.0   2021-06-23   poulami.banerjee@absa.africa   Initial Version
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:hasRecordId,flexipage:availableForAllPageTypes,force:appHostable" access="global" controller="QuotingProcessController">
+   <!--quoteeditattrib-->
+    <aura:attribute name="showQuoteEdit" type="boolean" default="true"/>
+    <aura:attribute name="updateQuoteScreenClose" type="boolean" default="false"/>
+    
+    <aura:attribute name="quoteStatus" type="String" />
+    <aura:attribute name="isQuoteDone" type="boolean" default="false"/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="quote" type="Quote" default="{sobjectType:'Quote'}"/>
+    <aura:attribute name="quoteLineItems" type="QuoteLineItem[]"/>
+    <aura:attribute name="pricingMatrix" type="EPP_Pricing_Matrix__c" default="{sobjectType:'EPP_Pricing_Matrix__c'}"/>
+    <aura:attribute name="opptyRecordType" type="String"/>
+    <aura:attribute name="objTypes" type="Opportunity" />
+    <aura:attribute name="totalPremiumLbl" type="String" default="Total Premium: R0.00"/>
+    <aura:attribute name="CoverPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="GroceryBenefitPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="AfterFuneralBenefitPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="UnveilingBenefitPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="CarHireBenefitPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="PremiumPaymnetBenefitPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="totalPremium" type="Double" default="0.00"/>
+    <aura:attribute name="CoverPremium" type="Double" default="0.00"/>
+    <aura:attribute name="GroceryBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="AfterFuneralBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="UnveilingBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="CarHireBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="PremiumPaymnetBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="firstYearPremiumMonthly" type="Double" default="0.00"/>
+    <aura:attribute name="secondYearPremiumMonthly" type="Double" default="0.00"/>
+    <aura:attribute name="isSpouseAdded" type="boolean" default="false"/>
+    <aura:attribute name="isChildAdded" type="boolean" default="false"/>
+    <aura:attribute name="isExtendedFamilyAdded" type="boolean" default="false"/>
+    <aura:attribute name="quoteTotal" type="String"/>
+    <aura:attribute name="secondYearPremium" type="String"/>
+    <aura:attribute name="CoverOptions" type="List"/>
+    <aura:attribute name="GroceryBenefitCoverOptions" type="List"/>
+    <aura:attribute name="FuneralBenefitCoverOptions" type="List"/>
+    <aura:attribute name="UnveilingBenefitCoverOptions" type="List"/>
+    <aura:attribute name="selectedCoverValue" type="String"/>
+    <aura:attribute name="selectedGroceryBenefitCoverValue" type="String"/>
+    <aura:attribute name="selectedUnveilingBenefitCoverValue" type="String"/>
+    <aura:attribute name="selectedFuneralBenefitCoverValue" type="String"/>
+    <aura:attribute name="selectedCarTypeValue" type="String"/>
+    <aura:attribute name="mainLifeUnveiling" type="String"/>
+    <aura:attribute name="mainLifeGrocery" type="String"/>
+    <aura:attribute name="mainLifeFuneral" type="String"/>
+    <aura:attribute name="mainLifePremium" type="String"/>
+    <aura:attribute name="opptyProductInt" type="String"/>
+    <aura:attribute name="MainMemberPremiumRate" type="Double"/>
+    <aura:attribute name="MainMemberGroceryRate" type="Double"/>
+    <aura:attribute name="MainMemberUnveilingRate" type="Double"/>
+    <aura:attribute name="MainMemberFuneralRate" type="Double"/>
+    <aura:attribute name="MainMemberDiscountRate" type="Double"/>
+    <aura:attribute name="MainMemberGroceryDiscountRate" type="Double"/>
+    <aura:attribute name="showQuoteScreen" type="boolean" default="true"/>
+    <aura:attribute name="showCommissionScreen" type="boolean" default="false"/>
+    <aura:attribute name="isGroceryBenefitSelected" type="boolean" default="false"/>
+    <aura:attribute name="isFuneralBenefitSelected" type="boolean" default="false"/>
+    <aura:attribute name="isUnveilingBenefitSelected" type="boolean" default="false"/>
+    <aura:attribute name="isCarHireSelected" type="boolean" default="false"/>
+    <aura:attribute name="isPremiumPaymentSelected" type="boolean" default="false"/>
+    <aura:attribute name ="disabled1" type="boolean" default ="true"/>
+    <aura:attribute name ="disabled2" type="boolean" default ="true"/>
+    <aura:attribute name ="disabled3" type="boolean" default ="true"/>
+    <aura:attribute name ="disabled4" type="boolean" default ="true"/>
+	<!--Added by pranv on 22-06-2021 for PPR changes-->
+    <aura:attribute name ="hideBenifits" type="boolean" default ="true"/>
+
+    <aura:attribute name="benefitMap" type="List"/>
+    <aura:attribute name="response" type="Object"/>
+    <aura:attribute name="MainMemberCoverAvailable" type="Double" default="0.00"/>
+
+    <!-- Help Text (tool Tips) for Direct Delivery benefits-->
+    <!-- These attributes get set from labels-->
+    <aura:attribute name="carHireBenefitHelpText" type="String"/>
+    <aura:attribute name="groceryBenefitHelpText" type="String"/>
+    <aura:attribute name="afterFuneralBenefitHelpText" type="String"/>
+    <aura:attribute name="unveilingBenefitHelpText" type="String"/>
+    <aura:attribute name="waiverBenefitHelpText" type="String"/>
+
+    <!-- Added for Flexi Funeral Product -->
+	<!--# Flow Attribute  -->
+    <aura:attribute name="selectedSpouseToFlow" type="String" access="global"/>
+    <aura:attribute name="selectedChildToFlow" type="String" access="global"  />
+    <aura:attribute name="selectedExtendedFamilyToFlow" type="String" access="global"  />
+    <aura:attribute name="selectedOppIdFromFlow" type="String" access="global"  />
+    <aura:attribute name="selectedCoverAmountToFlow" type="String" access="global"  />
+    <aura:attribute name="selectedProductNameFromFlow" type="String" access="global"  />
+    <aura:attribute name="OutcomeToFlow" type="String" access="global"/>
+    <!-- Pass the value of the selected option back to the flow -->
+    <aura:attribute name="value" type="String" />
+    <!--# Flow Attribute -->
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+
+    <aura:attribute name="showSpinner2" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner2}">
+        <lightning:spinner aura:id="spin" variant="brand" size="small"/>
+    </aura:if>
+
+    <center style="z-index:99">
+       <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+   	</center>
+
+    <aura:if isTrue="{!v.showQuoteScreen}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <h2 class="slds-section__title">Main Member Quote</h2>
+            </lightning:layoutItem>
+			<aura:if isTrue="{!v.opptyRecordType == 'Direct Delivery Sales Opportunity'}">
+        		<lightning:layoutItem padding="around-small" size="12">
+					<b><ui:outputText value="{!v.totalPremiumLbl}"/></b>
+        		</lightning:layoutItem>
+			
+            <lightning:layoutItem padding="around-small" size="6">
+				<b><lightning:select aura:id="flexiFuneralCover" name="flexiFuneralCover" label="Cover" value="{!v.selectedCoverValue}" onchange="{!c.onPicklistCoverChange}" required="true">
+                    <aura:iteration items="{!v.CoverOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select></b>
+                <ui:outputText value="{!v.CoverPremiumLbl}"/>
+        	</lightning:layoutItem>
+                
+            <lightning:layoutItem padding="around-small" size="6">
+				<b><lightning:input aura:id="availableCover" value="{!v.MainMemberCoverAvailable}" label="Current Available Cover" disabled= "true"/></b>
+            </lightning:layoutItem>
+                <aura:if isTrue="{!v.hideBenifits}"><!--Added by pranv on 22-06-2021 for PPR changes-->
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:helptext content="{!v.groceryBenefitHelpText}"/>
+                <b><ui:inputCheckbox aura:id="GroceryBenefitCheckbox" label="Grocery Benefit" value="{!v.isGroceryBenefitSelected}" change="{!c.onBenefitCheck}"/></b>
+                <lightning:select aura:id="GroceryBenefitSelect" name="GroceryBenefitCover" label="Sum Assured" value="{!v.selectedGroceryBenefitCoverValue}" disabled= "{v.disabled4}" onchange="{!c.onPicklistCoverChange}">
+                    <aura:iteration items="{!v.GroceryBenefitCoverOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+                <ui:outputText value="{!v.GroceryBenefitPremiumLbl}"/>
+                </lightning:layoutItem>
+     
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:helptext content="{!v.afterFuneralBenefitHelpText}"/>
+                <b><ui:inputCheckbox aura:id="AfterfuneralBenefitCheckbox" label="After Funeral Benefit" value="{!v.isFuneralBenefitSelected}" change="{!c.onBenefitCheck}"/></b>
+                <lightning:select aura:id="afterfuneralSelect" name="funeralBenefit" label="Sum Assured" value="{!v.selectedFuneralBenefitCoverValue}" disabled= "{v.disabled3}" onchange="{!c.onPicklistCoverChange}">
+                    <aura:iteration items="{!v.FuneralBenefitCoverOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+                <ui:outputText value="{!v.AfterFuneralBenefitPremiumLbl}"/>
+            </lightning:layoutItem>
+             <br></br> 
+        	 <lightning:layoutItem padding="around-small" size="6">
+             </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:helptext content="{!v.unveilingBenefitHelpText}"/>
+                <b><ui:inputCheckbox aura:id="UnveilingBenefitCheckbox" label="Unveiling Benefit" value="{!v.isUnveilingBenefitSelected}" change="{!c.onBenefitCheck}"/></b>
+                <lightning:select aura:id="unveilingSelect" name="funeralBenefit" label="Sum Assured" value="{!v.selectedUnveilingBenefitCoverValue}" disabled= "{!v.disabled2}" onchange="{!c.onPicklistCoverChange}">
+                    <aura:iteration items="{!v.UnveilingBenefitCoverOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+                <ui:outputText value="{!v.UnveilingBenefitPremiumLbl}"/>
+            </lightning:layoutItem>
+
+            <!--<lightning:layoutItem padding="around-small" size="6">
+                <lightning:helptext content="{!v.carHireBenefitHelpText}"/>
+                <b><ui:inputCheckbox aura:id="CarHireBenefitCheckbox" label="Car Hire Benefit" value="{!v.isCarHireSelected}" change="{!c.onBenefitCheck}"/></b>
+                <lightning:select aura:id="carTypeSelect" name="carType" label="Car Type" disabled= "{!v.disabled1}" value="{!v.selectedCarTypeValue}" onchange="{!c.onPicklistCoverChange}">
+                    <option value="">None</option>
+                    <option value="Standard">Standard Vehicle</option>
+                    <option value="Luxury">Luxury Vehicle</option>
+                </lightning:select>
+                <ui:outputText value="{!v.CarHireBenefitPremiumLbl}"/>
+        	</lightning:layoutItem>-->
+          </aura:if><!--Added by pranv on 22-06-2021 for PPR changes-->
+            <!--<lightning:layoutItem padding="around-small" size="3">
+                <b><ui:inputCheckbox aura:id="PremiumPaymentBenefitCheckbox" value="{!v.isPremiumPaymentSelected}" label="Premium Payment Benefit" change="{!c.onBenefitCheck}"/></b>
+            </lightning:layoutItem>-->
+            <lightning:layoutItem padding="around-small" size="3">
+               <b> <ui:inputCheckbox aura:id="SpouseCheckbox" label="Quote on Spouse?" value="{!v.isSpouseAdded}" change="{!c.onBenefitCheck}"/></b>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="3">
+                <b><ui:inputCheckbox aura:id="ChildCheckbox" label="Quote on Child?" value="{!v.isChildAdded}" change="{!c.onBenefitCheck}"/></b>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="3">  
+                <b><ui:inputCheckbox aura:id="ExtendedFamilyCheckbox" label="Quote on Extended Family?" value="{!v.isExtendedFamilyAdded}" change="{!c.onBenefitCheck}"/></b>
+            </lightning:layoutItem>
+       </aura:if> 
+
+       <!--Added newly outcome nd reason by pranav20022021-->
+<lightning:recordEditForm aura:id="iCreateOpportunity" objectApiName="Opportunity" recordId="{!v.OpportunityFromFlow}">
+    <lightning:layout>
+       <lightning:layoutItem padding="around-small" size="12">
+             <lightning:inputField class="magnifyLabel" fieldName="Quote_Outcome__c" aura:id="Quote_Outcome__c" value="{!v.objTypes.Quote_Outcome__c}" disabled="{!v.readOnlyFields}" required="true"/>
+           <aura:if isTrue="{!v.isQuoteDone}">
+               <lightning:input  class="magnifyLabel"  label="Quote Outcome Reason" aura:id="Last_Name__c" value="{!v.objTypes.Quote_Outcome_Reason__c}" disabled="{!v.readOnlyFields}" required="true" /> 
+           <aura:set attribute="else">
+             <lightning:inputField class="magnifyLabel" fieldName="Quote_Outcome_Reason__c" aura:id="Quote_Outcome_Reason__c" value="{!v.objTypes.Quote_Outcome_Reason__c}" disabled="{!v.readOnlyFields}" />
+           </aura:set>
+           </aura:if>
+       </lightning:layoutItem>
+</lightning:layout>
+</lightning:recordEditForm>
+<!--end-->
+
+			<lightning:layoutItem size="12">
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Quote" onclick="{!c.handleChange}"/>
+                <lightning:button class="slds-m-top_small slds-float--left" label="Cancel" onclick="{!c.cancelAndCloseTab}" variant="brand" aura:id="ibtnCancel" />
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+
+    <aura:if isTrue="{!v.showCommissionScreen}">
+    <lightning:layout multipleRows="true">
+    <lightning:layoutItem size="12">
+                <h2 class="slds-section__title"><b>New Quote</b></h2>
+    </lightning:layoutItem>
+    <lightning:layoutItem size="12">
+                <h3>Finished Main Member Quotation</h3>
+    </lightning:layoutItem>
+    <lightning:layoutItem size="12">
+                <h2 class="slds-section__title"><b>Quote Details</b></h2>
+    </lightning:layoutItem>
+            <lightning:layoutItem size="12">
+  
+ 	<table style="width:100%" class="slds-table slds-table_cell-buffer slds-table_bordered">
+            <thead>
+                <tr class="slds-line-height_reset">
+                
+                <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Executor">Benefit</div></th>
+                <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Bridging">Sum Assured</div></th>
+                <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Funeral">Premium</div></th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <aura:iteration items="{!v.response}" var="quoteSummary">
+                     <tr class="slds-hint-parent">
+                       <td data-label="Product"><div class="slds-truncate" title="Product">{!quoteSummary.Benefit__c}</div></td>
+                       <td data-label="Sum Assured"><div class="slds-truncate" title="Sum Assured">R<lightning:formattedNumber value="{!quoteSummary.Policy_Cover__c}" style="decimal" maximumFractionDigits="2"/></div></td>
+                       <td data-label="Premium"><div class="slds-truncate" title="Premium">R<lightning:formattedNumber value="{!quoteSummary.Premium__c}" style="decimal" maximumFractionDigits="2"/></div></td>
+                     </tr>
+                </aura:iteration>
+                <tr class="slds-hint-parent">
+                            <td data-label=""><div class="slds-truncate" title="Total"><b>Total</b></div></td>
+                            <td data-label="Sum Assured"><div class="slds-truncate" title="Sum Assured"></div></td>
+                            <td data-label="Premium"><div class="slds-truncate" title="Premium"><b>R<lightning:formattedNumber value="{!v.quoteTotal}" style="decimal" maximumFractionDigits="2"/></b></div></td>
+                </tr>
+                </tbody>
+                </table>
+        </lightning:layoutItem>
+          <lightning:layoutItem class="slds-p-top_small slds-p-bottom_small" size="12">
+                <p>Based on the options selected, the following premiums will be applicable:</p>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem size="12">
+				<ui:outputText value="{!'First year Monthly Premium: R' + v.quoteTotal}"/>
+        	</lightning:layoutItem>
+        <lightning:layoutItem size="12">
+                <aura:if isTrue="{!v.showQuoteEdit}">
+                <lightning:button class="slds-m-top_small slds-float--left" variant="brand" label="Previous" aura:id="BACK" onclick="{!c.handleNext}"/>
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Next" aura:id="NEXT" onclick="{!c.handleNext}"/>  
+               </aura:if>
+                <lightning:button class="slds-m-top_small slds-float--left" variant="brand" label="Edit Quote" onclick="{!c.newQuoteProcess}"/>
+            </lightning:layoutItem>
+            
+			
+            <lightning:layoutItem size="12">
+                <hr/>
+            </lightning:layoutItem>
+        
+        </lightning:layout>
+    </aura:if>
+</aura:component>

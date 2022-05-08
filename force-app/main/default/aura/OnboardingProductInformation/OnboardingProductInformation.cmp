@@ -1,0 +1,122 @@
+<!--
+* Lightning Component for Selecting Product (OnboardingProductInformation)
+*
+* @author  Diksha : Absa
+* @version v1.0
+* @since   2020-02-12
+*
+-->
+<aura:component access="global"
+                controller="OnboardingProductInformationController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!-- Register Application Events -->
+    <aura:registerEvent name="onboardingOpportunityIdsCreated" type="c:onboardingOpportunityIdsCreated"/>
+
+    <!-- Attribute Decleration -->
+    <aura:attribute name="isButtonVisible" type="Boolean" default="true" />
+    <aura:attribute name="activeSections" type="List" default="['ProductInfo']" />
+    <aura:attribute name="selectedProductRecord" type="sObject"/>
+    <aura:attribute name="searchKeyWord" type="String"/>
+    <aura:attribute name="SelectedProduct"  type="String"/>
+    <aura:attribute name="opportunityProductId" type="String" />
+    <aura:attribute name="applicationId" type="String" />
+    <aura:attribute name="userSite" type="String" />
+    <aura:attribute name="illustrativeDecision" type="Boolean" />
+
+   <!--  <aura:handler event="force:refreshView" action="{!c.SaveProduct}" />-->
+    <lightning:messages />
+    <!-- Read Opportunity Record Type -->
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"
+                alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    <aura:attribute name="OppRecord" type="Object"/>
+    <aura:attribute name="showDisabled" type="Boolean" default="true" />
+     <force:recordData aura:id="recordLoader"
+                      fields="Id,AccountId,RecordTypeName__c,Security_Type_Offered__c"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.OppRecord}"
+                       
+
+                      />
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="ProductInfo" label="Product &amp; Absa Branch information " >
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <div class="slds-col slds-size_1-of-2 slds-p-vertical_medium">
+                    <span>
+                        <c:SiteLookup aura:id="siteLookupChild"
+                                      placeholder="{!$Label.c.Add_Absa_Product}"
+                                      objectAPIName="Product2"
+                                      selectedRecord="{!v.selectedProductRecord}"
+                                      SearchKeyWord="{!v.searchKeyWord}" />
+
+                    </span>
+                </div >
+                <div class="slds-col slds-size_1-of-2 slds-p-vertical_medium">
+                    <span>
+                        <lightning:recordEditForm aura:id="appCreditForm"
+                                                  objectApiName="Opportunity"
+                                                  recordId="{!v.recordId}"
+                                                  onload="{!c.doInit}" >
+
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <aura:if isTrue="{!v.OppRecord.RecordTypeName__c == 'Credit_Maintenance'}">
+                                    <p>  </p> <!--<lightning:inputField  fieldName="Security_Type_Offered__c" variant="label-hidden"
+                                                                                      required="true" disabled="true"
+                                                                                      value="Security Offered with Bond Security"
+                                                                                      />-->
+
+                                 <aura:set attribute="else">
+                                <ui:inputCheckbox class="slds-float--left" label="&nbsp; This application is for an Illustrative Decision" aura:id="illustrativeDecision"
+                                                  value="{!v.illustrativeDecision}" change="{!c.updateIllustrative}"/>
+                                    </aura:set>
+                                 </aura:if>
+                                    </lightning:layoutItem>
+
+                        </lightning:recordEditForm>
+                    </span>
+                </div>
+
+                <div class="slds-col slds-size_1-of-2 slds-p-vertical_medium">
+                    <span>
+                        <aura:if isTrue="{!v.isButtonVisible}">
+                            <lightning:button variant="brand"
+                                              aura:id="saveProductBtn"
+                                              label="Save"
+                                              title="Save"
+                                              class="slds-button slds-button_brand slds-m-top--medium "
+                                              onclick="{!c.SaveProduct}" />
+                        </aura:if>
+                    </span>
+                </div>
+
+
+            </div>
+            <div>
+                <div class="slds-col slds-size_1-of-2 slds-p-vertical_medium">
+                    <span>
+                        <h2 class="slds-section__title">Selected Product : </h2>
+                        <b><ui:outputText value="{!v.SelectedProduct}"/></b>
+                    </span>
+                </div>
+                <aura:if isTrue="{!not(v.OppRecord.RecordTypeName__c == 'Credit_Maintenance')}">
+                <div class="slds-col slds-size_1-of-2 slds-p-vertical_medium">
+                    <span>
+                        <h2 class="slds-section__title">ABSA Site : </h2>
+                        <b><ui:outputText value="{!v.userSite}"/></b>
+                    </span>
+                </div>
+             </aura:if>
+            </div>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

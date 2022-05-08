@@ -1,0 +1,388 @@
+<!--
+* Lightning Component for view and capture Client Details (ClientDetailsSectionCredit)
+*
+* @author  Thulani : Absa
+* @version v1.0
+* @since   2020-06-12
+*
+-->
+
+<aura:component access="global" controller="clientDetailsSectionCredit"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" >
+
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <!-- Attribute Decleration -->
+    <aura:attribute name="data" type="Object"/>
+	<aura:attribute name="activeSections" type="List" default="['ClientDetails']" />
+    <aura:attribute name="account" type="Object"/>
+    <aura:attribute name="addOptions" type="Object"/>
+    <aura:attribute name="borOptions" type="Object"/>
+    <aura:attribute name="isSoleProprietorVisible" type="Boolean" default="false"/>
+    <aura:attribute name="isPrivateCompanyVisible" type="Boolean" default="false"/>
+    <aura:attribute name="isSAResident" type="Boolean" default="false"/>
+	<aura:attribute name="businessStartDate" type="Date" />
+
+    <!-- Register Application Events  Thulani : Added handler for App Event-->
+    <aura:registerEvent name="updateAccount" type="c:clientDetailsSectionCreditEvent"/>
+
+    <!-- Added by Almas Aleem For W-007397 -->
+    <!-- Read Opportunity Record Type -->
+
+    <aura:attribute name="OppRecord" type="Object"/>
+     <force:recordData aura:id="recordLoader"
+                      fields="Id,AccountId,RecordTypeName__c"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.OppRecord}"
+
+                      />
+
+    <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections }" >
+        <lightning:accordionSection name="ClientDetails" label="Client Details">
+            <aura:if isTrue="{!v.isPrivateCompanyVisible}">
+                <lightning:recordEditForm aura:id="iAccountPrivate" objectApiName="Account" recordId="{!v.recordId}">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem size="12" class="identificationHeader">
+                            <h2 class="slds-section__title"><b>Identification Info</b></h2>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <p>Full Name </p><ui:outputText value="{!v.data.FullName}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <p>Registration Number</p><ui:outputText value="{!v.data.RegistrationNumber}"/>
+                        </lightning:layoutItem>
+
+                        <aura:if isTrue="{! v.OppRecord.RecordTypeName__c == 'Credit_Maintenance'}">
+                        	<lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Entity type</p><ui:outputText value="{!v.data.ClientType}"/>
+                        	</lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Client code</p><ui:outputText value="{!v.data.CIF}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Segment</p><ui:outputText value="{!v.data.Segment}"/>
+                        	</lightning:layoutItem>
+                        </aura:if>
+
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <p>Date Established </p><ui:outputText value="{!v.data.DateEstablished}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="inputFields">
+                            <p>Country of incorporation </p><ui:outputText value="{!v.data.CountryOfIncorporation}"/>
+                        </lightning:layoutItem>
+
+                       <!-- <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <div style="width:50%">
+                            <lightning:input type="date" name="input2" label="Business Start Date" value="{!v.data.BusinessStartDate}" onchange="{!c.clickCheckBox}"/>
+                        </div></lightning:layoutItem>-->
+
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <p>Standard Industry Code(SIC) </p><ui:outputText value="{!v.data.StandardIndustryCodeSIC}"/>
+                        </lightning:layoutItem>
+
+                        <!--aura:if isTrue="{!not(v.OppRecord.RecordTypeName__c == 'Credit_Maintenance')}">
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <p>Business Start Date </p><ui:inputDate displayDatePicker="true" value="{!v.data.BusinessStartDate}" />
+                                <lightning:input type="date" label="Business Start Date" value="{!v.data.BusinessStartDate}" onchange="{!c.clickCheckBox}" />
+                            </lightning:layoutItem>
+                        </aura:if-->
+
+                        <lightning:layoutItem size="6" class="inputFields">
+                            <p>Client In Business Rescue</p><ui:outputText value="{!v.data.IsClientInBusinessRescue}" />
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="inputFields">
+                            <p>Business Rescue Affected Party</p><ui:outputText value="{!v.data.BusinessRescueAffectedParty}" />
+                        </lightning:layoutItem>
+
+						<aura:if isTrue="{!not(v.OppRecord.RecordTypeName__c == 'Credit_Maintenance')}">
+                            <lightning:layoutItem size="6" class="leftCheckBox">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client Intends To Go Into Business Rescue" aura:id="iClientIntendsToGoIntoBusinessRescue" value="{!v.data.IsClientIntendsToGoIntoBusinessRescue}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" class="leftCheckBox">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client has declared insolvency/liquidation in the past" aura:id="iClientDeclaredInsolvencyLiquidationPast" value="{!v.data.IsClientIntendsInsolvencyLiquidation}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" class="rightCheckBox">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client intends to declare insolvency/liquidation" aura:id="iClientIntendsInsolvencyLiquidation" value="{!v.data.IsClientDeclaredInsolvencyLiquidationPast}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" class="clientStokvel">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client is a stokvel" aura:id="iClientIsStokvel" value="{!v.data.IsClientIsStokvel}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" class="clientIsMunicipality">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client is a municipality" aura:id="iClientIsAMunicipality" value="{!v.data.IsClientIsAMunicipality}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <p>Fin crime hold </p><ui:outputText value="{!v.data.FinCrimeHold}"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Trading indicator" aura:id="iTradingIndicator" value="{!v.data.IsTradingIndicator}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+
+                        <aura:if isTrue="{!v.OppRecord.RecordTypeName__c == 'Credit_Maintenance'}">
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <p>Trust / pension / provident /other fund number </p>
+                                <lightning:input type ="text" value="{!v.data.fundNumber}" oncommit="{!c.saveHandler}"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+                        <!-- W:5585 : Saurabh : Removing the Marketing fields as per Story
+                        <lightning:layoutItem size="12" class="slds-var-p-top_large">
+                            <h2 class="slds-section__title"><b>Marketing Consent</b></h2>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large slds-var-m-bottom_small left-align">
+                            <p>Non-Credit Marketing Consent </p>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large right-align">
+                            <p>Credit Marketing Consent </p>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="inputFieldsWithChecBox">
+                            <ui:inputCheckbox class="slds-float_left" label="&nbsp; Email" aura:id="iEmailNonCredit" value="{!v.data.IsEmailNonCredit}" change="{!c.clickCheckBox}"/>
+                            <lightning:input type ="text" value="{!v.data.EmailNonCredit}" oncommit="{!c.saveHandler}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="inputFieldsWithChecBox">
+                            <ui:inputCheckbox class="slds-float_left" label="&nbsp; Email" aura:id="iEmailCredit" value="{!v.data.IsEmailCredit}" change="{!c.clickCheckBox}"/>
+                            <lightning:input type ="text" value="{!v.data.EmailCredit}" oncommit="{!c.saveHandler}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="inputFieldsWithChecBox">
+                            <ui:inputCheckbox class="slds-float_left" label="&nbsp; SMS" aura:id="iSMSNonCredit" value="{!v.data.IsSMSNonCredit}" change="{!c.clickCheckBox}"/>
+                            <lightning:input type ="text" value="{!v.data.SMSNonCredit}" oncommit="{!c.saveHandler}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="inputFieldsWithChecBox">
+                            <ui:inputCheckbox class="slds-float_left" label="&nbsp; SMS" aura:id="iSMSCredit" value="{!v.data.IsSMSCredit}" change="{!c.clickCheckBox}"/>
+                            <lightning:input type ="text" value="{!v.data.SMSCredit}" oncommit="{!c.saveHandler}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="inputFieldsWithChecBox">
+                            <ui:inputCheckbox class="slds-float_left" label="&nbsp; Phone" aura:id="iPhoneNonCredit" value="{!v.data.IsPhoneNonCredit}" change="{!c.clickCheckBox}"/>
+                            <lightning:input type ="text" value="{!v.data.PhoneNonCredit}" oncommit="{!c.saveHandler}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="inputFieldsWithChecBox">
+                            <ui:inputCheckbox class="slds-float_left" label="&nbsp; Phone" aura:id="iPhoneCredit" value="{!v.data.IsPhoneCredit}" change="{!c.clickCheckBox}"/>
+                            <lightning:input type ="text" value="{!v.data.PhoneCredit}" oncommit="{!c.saveHandler}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small">
+
+                        </lightning:layoutItem>
+                        -->
+
+                    </lightning:layout>
+                </lightning:recordEditForm>
+            </aura:if>
+
+            <aura:if isTrue="{!v.isSoleProprietorVisible}">
+                <lightning:recordEditForm aura:id="iAccountSole" objectApiName="Account" recordId="{!v.recordId}">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem size="12" class="identificationHeader">
+                            <h2 class="slds-section__title"><b>Identity Information</b></h2>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <p>Full Name </p><ui:outputText value="{!v.data.FullName}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <p>CIF</p><ui:outputText value="{!v.data.CIF}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <p>ID Number</p><ui:outputText value="{!v.data.IDNumber}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <p>ID Type</p><ui:outputText value="{!v.data.IDType}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <p>SDS ID</p><ui:outputText value="{!v.data.SDSID}" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                            <p>MDM CODE</p><ui:outputText value="{!v.data.MDMCODE}" />
+                        </lightning:layoutItem>
+
+                        <aura:if isTrue="{!not(v.OppRecord.RecordTypeName__c == 'Credit_Maintenance')}">
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>CASA Reference Number</p><ui:outputText value="{!v.data.CASAReferenceNumber}" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>CASA Risk Profiling Required</p><ui:outputText value="{!v.data.CASARiskProfilingRequired}" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>CASA Result</p><ui:outputText value="{!v.data.CASAResult}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>CASA Screening Date</p><ui:outputText value="{!v.data.CASAScreeningDate}" />
+                            </lightning:layoutItem>
+
+                            <aura:if isTrue="{!v.isSAResident}">
+                                <lightning:layoutItem size="6" class="inputFields">
+                                    <lightning:input type ="text" label="Temporary Resident Permit Number" value="{!v.data.TemporaryResidentPermitNumber}" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" class="inputFields">
+                                    <!--ui:inputDate label="Temporary Resident Permit Expiry Date" class="field" displayDatePicker="true" value="{!v.data.TemporaryResidentPermitExpiryDate}" /-->
+                                    <lightning:input type="date" label="Temporary Resident Permit Expiry Date" value="{!v.data.TemporaryResidentPermitExpiryDate}" onchange="{!c.clickCheckBox}" />
+                                </lightning:layoutItem>
+                            </aura:if>
+
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Date Of Birth</p><ui:outputText value="{!v.data.DateOfBirth}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Country Of Birth</p><ui:outputText value="{!v.data.CountryOfBirth}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Nationality</p><ui:outputText value="{!v.data.Nationality}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Country Passport Issued</p><ui:outputText value="{!v.data.CountryPassportIssued}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Gender</p><ui:outputText value="{!v.data.Gender}"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Client Type</p><ui:outputText value="{!v.data.ClientType}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Marital Status</p><ui:outputText value="{!v.data.MaritalStatus}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <p>Marital Contract Type</p><ui:outputText value="{!v.data.MaritalContractType}"/>
+                            </lightning:layoutItem>
+
+                                <!-- <aura:if isTrue="{!not(v.OppRecord.RecordTypeName__c == 'Credit_Maintenance')}">
+                            -->
+                            <lightning:layoutItem size="6" class="inputFieldsWithChecBox">
+                                <p>Resident Status</p>
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client is a non-resident" aura:id="iIsClientANonResident" value="{!v.data.IsClientANonResident}" change="{!c.clickCheckBox}"/>
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client is a temporary resident" aura:id="iIsClientATemporaryResident" value="{!v.data.IsClientATemporaryResident}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="inputFieldsWithChecBox">
+                                <lightning:select label="Residential Status Address" value="{!v.data.ResidentialStatusAddress}" onchange="{!c.clickCheckBox}">
+                                    <aura:iteration items="{!v.addOptions}" var="res">
+                                        <option class="{!res.class}" text="{!res.label}" value="{!res.value}" selected="{!res.selected}" />
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="inputFieldsWithChecBox">
+                                <lightning:select label="Residential Status" value="{!v.data.ResidentialStatusBorder}" onchange="{!c.clickCheckBox}">
+                                    <aura:iteration items="{!v.borOptions}" var="res">
+                                        <option class="{!res.class}" text="{!res.label}" value="{!res.value}" selected="{!res.selected}" />
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                                <!--p>Date Current Address Since</p><ui:outputText value="{!v.data.DateCurrentAddressSince}" />
+                                <ui:inputDate label="Date Current Address Since" class="field" displayDatePicker="true" value="{!v.data.DateCurrentAddressSince}" /-->
+                                <lightning:input type="date" label="Date Current Address Since" value="{!v.data.DateCurrentAddressSince}" onchange="{!c.clickCheckBox}" />
+                            </lightning:layoutItem>
+                            <!-- </aura:if> -->
+                            <lightning:layoutItem size="12" class="identificationHeader">
+                                <h2 class="slds-section__title"><b>Additional Information</b></h2>
+                            </lightning:layoutItem>
+                        </aura:if>
+
+                        <lightning:layoutItem size="6" class="inputFields">
+                            <p>Standard Industry Code (SIC)</p><ui:outputText value="{!v.data.StandardIndustryCodeSIC}" />
+                        </lightning:layoutItem>
+
+                        <aura:if isTrue="{!not(v.OppRecord.RecordTypeName__c == 'Credit_Maintenance')}">
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <!--ui:inputDate label="Business Start Date" class="field" displayDatePicker="true" value="{!v.data.BusinessStartDate}" />
+                                <lightning:input type="date" label="Business Start Date" value="{!v.data.DateEstablished}" onchange="{!c.clickCheckBox}" /-->
+                            </lightning:layoutItem>
+                            <!-- <aura:if isTrue="{!not(v.OppRecord.RecordTypeName__c == 'Credit_Maintenance')}">
+                            -->
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Trading indicator" aura:id="iTradingIndicator" value="{!v.data.IsTradingIndicator}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="inputFields">
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <p>Financial Year End</p><ui:outputText value="{!v.data.FinancialYearEnd}" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="inputFields">
+                            </lightning:layoutItem>
+
+                            <!--lightning:layoutItem size="12" class="leftCheckBox">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client is part of an Enterprise Development Fund" aura:id="iIsClientPartOfAnEnterpriseDevelopmentFund" value="{!v.data.IsClientPartOfAnEnterpriseDevelopmentFund}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+
+                            <aura:if isTrue="{!v.data.IsClientPartOfAnEnterpriseDevelopmentFund}">
+                                <lightning:layoutItem size="6" class="inputFields">
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" class="inputFields">
+                                    <lightning:input type ="text" label="Development Fund Partner Client Code" value="{!v.data.DevelopmentFundPartnerClientCode}" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" class="inputFields">
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" class="inputFields">
+                                    <lightning:input type ="text" label="Development Fund Name" value="{!v.data.DevelopmentFundName}" />
+                                </lightning:layoutItem>
+                            </aura:if>
+
+                            <lightning:layoutItem size="12" class="leftCheckBox">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client operates under an Existing Franchise contract agreement" aura:id="iClientOperatesUnderAnExistingFranchiseContractAgreement" value="{!v.data.ClientOperatesUnderAnExistingFranchiseContractAgreement}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+
+                            <aura:if isTrue="{!v.data.ClientOperatesUnderAnExistingFranchiseContractAgreement}">
+                                <lightning:layoutItem size="6" class="inputFields">
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" class="inputFields">
+                                    <lightning:input type ="text" label="Franchise Code" value="{!v.data.FranchiseCode}" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" class="inputFields">
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" class="inputFields">
+                                    <lightning:input type ="text" label="Franchise Name" value="{!v.data.FranchiseName}" />
+                                </lightning:layoutItem>
+                            </aura:if-->
+
+                            <lightning:layoutItem size="6" class="leftCheckBox">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client has declared insolvency/liquidation in the past" aura:id="iClientDeclaredInsolvencyLiquidationPast" value="{!v.data.IsClientIntendsInsolvencyLiquidation}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="rightCheckBox">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client intends to declare insolvency/liquidation" aura:id="iClientIntendsInsolvencyLiquidation" value="{!v.data.IsClientDeclaredInsolvencyLiquidationPast}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" class="clientStokvel">
+                                <ui:inputCheckbox class="slds-float_left" label="&nbsp; Client is a stokvel" aura:id="iClientIsStokvel" value="{!v.data.IsClientIsStokvel}" change="{!c.clickCheckBox}"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <p>Fin crime hold</p><ui:outputText value="{!v.data.FinCrimeHold}"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <p>Business Rescue Affected Party</p><ui:outputText value="{!v.data.BusinessRescueAffectedParty}" />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" class="inputFields">
+                            </lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!v.OppRecord.RecordTypeName__c == 'Credit_Maintenance'}">
+                            <lightning:layoutItem size="6" class="inputFields">
+                                <p>Trust / pension / provident /other fund number </p>
+                                <lightning:input type ="text" value="{!v.data.fundNumber}" oncommit="{!c.saveHandler}"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+                    </lightning:layout>
+
+                </lightning:recordEditForm>
+            </aura:if>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

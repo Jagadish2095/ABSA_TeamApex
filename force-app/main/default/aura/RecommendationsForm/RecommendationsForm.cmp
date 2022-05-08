@@ -1,0 +1,72 @@
+<!--
+* Lightning Component for Recommendation Section (OnboardingProductInformation)
+*
+* @author  Divya : Absa
+* @version v1.0
+* @since   2021-08-04
+*
+-->
+<aura:component  controller="RecommendationsFormController" implements="flexipage:availableForAllPageTypes,lightning:availableForFlowActions,force:hasRecordId" access="global" >
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="hasEditAccess" type="boolean" default="false"/>
+    <aura:attribute name="hasRecordAccess" type="boolean" default="false"/>
+    <aura:attribute name="isNotAdvisor" type="boolean" default="false"/>
+    <aura:attribute name="mode" type="String"/>
+    <aura:attribute name="isProductAdded" type="boolean" default="false"/>
+    <aura:attribute name="oppRecord" type="Object"/>
+    <aura:attribute name="selectedProductRecord" type="sObject"/>
+    <aura:attribute name="searchKeyWord" type="String"/>
+    <aura:attribute name="visibleField" type="String" default="slds-hide"/>
+    <aura:attribute name="oppLineItem" type="RecommendationsFormController.OppLineItems"/> 
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}"/>
+    <aura:handler name="cmpEvent" event="c:PickListEvent" action="{!c.handleComponentEvent}"/>
+    <aura:if isTrue="{!v.hasRecordAccess}" >
+        <force:recordData aura:id="recordLoader"
+                          recordId="{!v.recordId}"
+                          fields="STI_Id_Number__c,Sub_Status__c,StageName,Sys_BypassValidation__c"
+                          targetFields="{!v.oppRecord}"
+                          targetError="{!v.recordLoadError}"
+                          recordUpdated="{!c.onLoad}" 
+                          mode="{!v.mode}" />
+        <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/> 
+        </aura:if>
+        <aura:if isTrue="{!v.hasEditAccess}">
+            <c:SiteLookup aura:id="siteLookupChild"
+                          placeholder="{!$Label.c.Add_Absa_Product}"
+                          objectAPIName="Product2"
+                          ProductFamily="Investments"
+                          selectedRecord="{!v.selectedProductRecord}"
+                          SearchKeyWord="{!v.searchKeyWord}" />
+            <lightning:button variant="brand"
+                              aura:id="saveProductBtn"
+                              label="Save Product"
+                              title="Save Product"
+                              class="slds-button slds-button_brand slds-m-top--medium "
+                              onclick="{!c.SaveProduct}" /> 
+        </aura:if>
+        <aura:if isTrue="{!v.isProductAdded}">
+            <lightning:card>                
+                <aura:set attribute="footer">
+                    <lightning:button class="slds-align_absolute-center" variant="brand" name="save" label="Submit Recommendation" onclick="{!c.handleOnSubmit}" disabled="{!not(v.hasEditAccess)}"/>
+                </aura:set>
+                <lightning:input class="slds-hide" value="{!v.oppLineItem.lineItem.Product2Id}" label="productId" name="productId"/>
+                <lightning:input value="{!v.oppLineItem.lineItem.Product_Name__c}" label="Product Name" name="ProductName" required="true" disabled="true"/>
+                <lightning:input value="{!v.oppLineItem.lineItem.Product2.Primary_Service_Provider__r.Name}" label="Product House" name="Product_House" required="true" disabled="true"/>
+                <c:PickListComponent aura:id="selectField" ObjectType="Application_Product__c" FieldAPIName="Premium_Type__c" FieldLabel="Premium Type" isRequired="true" selectedValue="{!v.oppLineItem.appProduct.Premium_Type__c}" isDisabled="{!not(v.hasEditAccess)}"/>
+                <lightning:input aura:id="field" type="number" formatter="currency" value="{!v.oppLineItem.appProduct.Product_Amount__c}" label="Premium" name="Premium" required="true" disabled="{!not(v.hasEditAccess)}"/>                
+                <lightning:input aura:id="field" class="{!v.visibleField}" type="number" formatter="currency" value="{!v.oppLineItem.appProduct.Reduction_Amount__c}" label="Recurring Premium" name="RecurringPremium" required="true" disabled="{!not(v.hasEditAccess)}"/>
+                <c:PickListComponent aura:id="selectField" ObjectType="Application_Product__c" FieldAPIName="Discretionary_Money_Voluntary__c" FieldLabel="Discretionary Money (Voluntary)" isRequired="true" selectedValue="{!v.oppLineItem.appProduct.Discretionary_Money_Voluntary__c}" isDisabled="{!not(v.hasEditAccess)}"/>
+                <c:PickListComponent aura:id="selectField" ObjectType="Application_Product__c" FieldAPIName="Term_Of_Investment__c" FieldLabel="Term Of Investment" isRequired="true" selectedValue="{!v.oppLineItem.appProduct.Term_Of_Investment__c}" isDisabled="{!not(v.hasEditAccess)}"/>
+                <c:PickListComponent aura:id="selectField" ObjectType="Application_Product__c" FieldAPIName="Income_Source__c" FieldLabel="Source Of Income" isRequired="true" selectedValue="{!v.oppLineItem.appProduct.Income_Source__c}" isDisabled="{!not(v.hasEditAccess)}"/>
+                <c:PickListComponent aura:id="selectField" ObjectType="Regulatory_Financial_Account__c" FieldAPIName="Source_of_Funds__c" FieldLabel="Source Of Funds" isRequired="true" selectedValue="{!v.oppLineItem.financialProduct.Source_of_Funds__c}" isDisabled="{!not(v.hasEditAccess)}"/>
+                <lightning:input aura:id="field" type="number" min="0" max="100" value="{!v.oppLineItem.appProduct.Ongoing_Fee_Percent__c}" label="Ongoing Fee (%)" name="Ongoing_Fee_Precent" required="true" disabled="{!not(v.hasEditAccess)}"/>
+                <lightning:input aura:id="field" type="number" formatter="currency" step="0.01" value="{!v.oppLineItem.appProduct.Variable_Amount_1__c}" label="Commission - 1st Year(Including VAT)" name="Commission_1st_Year" required="true" disabled="{!not(v.hasEditAccess)}"/>
+                <lightning:input aura:id="field" type="number" min="0" max="100" value="{!v.oppLineItem.appProduct.Upfront_Fee_Percent__c}" label="Upfront Fee (%)" name="Upfront_Fee_Percent" required="true" disabled="{!not(v.hasEditAccess)}"/>
+            </lightning:card> 
+        </aura:if>
+    </aura:if>
+</aura:component>

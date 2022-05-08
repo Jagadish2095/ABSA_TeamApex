@@ -1,0 +1,283 @@
+<aura:component controller="generateCPFDocuments" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <aura:attribute name="filetype" type="List" default="['.png', '.jpg', '.jpeg','.pdf']" />
+    <aura:attribute name="multiple" type="Boolean" default="true" />
+    <aura:attribute name="disabled" type="Boolean" default="true" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="draftDocStatus" type="String" default="Need file, Incomplete"/>
+    <aura:attribute name="standardDocStatus" type="String" default="Need file, Incomplete"/>
+    <aura:attribute name="pendingCreditApprovalDocStatus" type="String" default="Need file, Incomplete"/>
+    <aura:attribute name="creditApprovalDocStatus" type="String" default="Need file, Incomplete"/>
+    <aura:attribute name="dataAudit" type="Object"/>
+    <aura:attribute name="columnsAudit" type="List"/>
+    <aura:attribute name="sortDirection" type="String" default="asc" />
+    <aura:attribute name="defaultSortDirection" type="String" default="asc" />
+    <aura:attribute name="sortedBy" type="String" />
+    <aura:attribute name="prodName" type="string" />
+    <aura:attribute name="singleOrMulti" type="string" />
+    <aura:attribute name="enableWordDocGen" type="Boolean" default="false" />
+
+    <!--Declare Spinner-->
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+
+    <lightning:accordion activeSectionName="Agreement" allowMultipleSectionsOpen="false">
+        <lightning:accordionSection name="Agreement" label="Agreement" >
+            <div class="slds-grid slds-gutters slds-p-around_small slds-wrap" >
+                <div class="slds-box slds-col slds-p-around_x-small slds-size_1-of-2">
+                    <!--span class="slds-m-top_medium; slds-align_absolute-Center"-->
+                    <lightning:card title="Document Type">
+                        <aura:set attribute="actions">
+                            <lightning:buttonMenu alternativeText="Show menu" onselect="{! c.handleMenuSelect }" iconSize="x-small">
+                                <lightning:menuItem value="MenuItemOne" label="View File Details" disabled="true"/>
+                                <lightning:menuItem value="MenuItemTwo" label="Add Document" disabled="true"/>
+                                <aura:if  isTrue="{!(v.prodName ==  'CPF Development Loan')}"  >
+                                    <aura:if isTrue="{!v.enableWordDocGen}">
+                                        <lightning:menuItem value="Draft 6096" label="Generate Word Document" />
+                                    </aura:if>
+                                    <aura:set attribute="else">
+                                        <aura:if  isTrue="{!(v.prodName ==  'CPF Above R5 Million')}"  >
+                                            <lightning:menuItem value="Draft 6172" label="Generate PDF Document" />
+                                            <aura:if isTrue="{!v.enableWordDocGen}">
+                                                <lightning:menuItem value="Draft 6172 Word" label="Generate Word Document" />
+                                            </aura:if>
+                                            <aura:set attribute="else">
+                                                <lightning:menuItem value="Draft" label="Generate PDF Document" />
+                                                <aura:if isTrue="{!v.enableWordDocGen}">
+                                                    <lightning:menuItem value="Draft Word" label="Generate Word Document" />
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                                <lightning:menuItem value="MenuItemFour" label="Write Document" disabled="true"/>
+                                <lightning:menuItem value="MenuItemfive" label="Sign Document" disabled="true"/>
+                                <lightning:menuItem value="MenuItemSix" label="Share Document" disabled="true"/>
+                            </lightning:buttonMenu>
+                        </aura:set>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                            <div class="slds-text-body_small">CPF Below R5 Million Template - Draft (Internal Only Term Sheet).<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Below R5 Million Template - Draft (Internal Only Term Sheet)" title="CPF Below R5 Million Template - Draft (Internal Only Term Sheet)" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                        <aura:if  isTrue="{!(v.prodName == 'CPF Above R5 Million')}"  >
+                            <div class="slds-text-body_small">CPF Above R5 Million - Draft (Indicative Term Sheet).<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Above R5 Million - Draft (Indicative Term Sheet)." title="CPF Above R5 Million - Draft (Indicative Term Sheet)" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                        <aura:if  isTrue="{!(v.prodName ==  'CPF Development Loan')}"  >
+                            <div class="slds-text-body_small">CPF Development Loan - Draft (Indicative Term Sheet).<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Development Loan - Draft (Indicative Term Sheet)" title="CPF Development Loan - Draft (Indicative Term Sheet)" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                    </lightning:card>
+                    <!--/span-->
+                </div>
+
+                <div class="slds-box slds-col slds-p-around_x-small slds-size_1-of-2">
+                    <!--span class="slds-m-top_medium; slds-align_absolute-Center"-->
+                    <lightning:card title="Document Type">
+                        <aura:set attribute="actions">
+                            <lightning:buttonMenu alternativeText="Show menu" onselect="{! c.handleMenuSelect }" iconSize="x-small">
+                                <lightning:menuItem value="MenuItemOne" label="View File Details" disabled="true"/>
+                                <lightning:menuItem value="MenuItemTwo" label="Add Document" disabled="true"/>
+                                <aura:if  isTrue="{!(v.prodName == 'CPF Development Loan')}"  >
+                                    <aura:if isTrue="{!v.enableWordDocGen}">
+                                        <lightning:menuItem value="Credit Approved 6096" label="Generate Word Document" />
+                                    </aura:if>
+                                    <aura:set attribute="else">
+                                        <aura:if  isTrue="{!(v.prodName ==  'CPF Above R5 Million')}"  >
+                                            <lightning:menuItem value="Credit Approved 6172" label="Generate PDF Document" />
+                                            <aura:if isTrue="{!v.enableWordDocGen}">
+                                                <lightning:menuItem value="Credit Approved 6172 Word" label="Generate Word Document" />
+                                            </aura:if>
+                                            <aura:set attribute="else">
+                                                <lightning:menuItem value="Credit Approved" label="Generate PDF Document" />
+                                                <aura:if isTrue="{!v.enableWordDocGen}">
+                                                    <lightning:menuItem value="Credit Approved Word" label="Generate Word Document" />
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                                <lightning:menuItem value="MenuItemFour" label="Write Document" disabled="true"/>
+                                <lightning:menuItem value="MenuItemfive" label="Sign Document" disabled="true"/>
+                                <lightning:menuItem value="MenuItemSix" label="Share Document" disabled="true"/>
+                            </lightning:buttonMenu>
+                        </aura:set>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                            <div class="slds-text-body_small">CPF Below R5 Million Standard Terms.<br/>
+                                <div class="slds-theme_shade">
+                                    <lightning:icon iconName="doctype:image" alternativeText="CPF Below R5 Million Standard Terms" title="CPF Below R5 Million Standard Terms" />
+                                    {!v.standardDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                        <aura:if  isTrue="{!(v.prodName == 'CPF Above R5 Million')}"  > 
+                            <div class="slds-text-body_small">CPF Above  R5 Million - Credit Approved (Term Sheet).<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Above  R5 Million - Credit Approved (Term Sheet)." title="CPF Above  R5 Million - Credit Approved (Term Sheet)" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                        <aura:if  isTrue="{!(v.prodName ==  'CPF Development Loan')}"  > 
+                            <div class="slds-text-body_small">CPF Development Loan - Credit Approved (Term Sheet).<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Development Loan - Credit Approved (Term Sheet)" title="CPF Development Loan - Credit Approved (Term Sheet)" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                    </lightning:card>
+                    <!--/span-->
+                </div>
+                <div class="slds-box slds-col slds-p-around_small slds-size_1-of-2">
+                    <!--span class="slds-m-top_medium; slds-align_absolute-Center"-->
+                    <lightning:card title="Document Type">
+                        <aura:set attribute="actions">
+                            <lightning:buttonMenu alternativeText="Show menu" onselect="{! c.handleMenuSelect }" iconSize="x-small">
+                                <lightning:menuItem value="MenuItemOne" label="View File Details" disabled="true"/>
+                                <lightning:menuItem value="MenuItemTwo" label="Add Document" disabled="true"/>
+                                <lightning:menuItem value="Pending Credit Approval" label="Generate PDF Document" />
+                                <aura:if isTrue="{!v.enableWordDocGen}">
+                                    <lightning:menuItem value="Pending Credit Approval Word" label="Generate Word Document" />
+                                </aura:if>
+                                <lightning:menuItem value="MenuItemFour" label="Write Document" disabled="true"/>
+                                <lightning:menuItem value="MenuItemfive" label="Sign Document" disabled="true"/>
+                                <lightning:menuItem value="MenuItemSix" label="Share Document" disabled="true"/>
+                            </lightning:buttonMenu>
+                        </aura:set>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                            <div class="slds-text-body_small">CPF Below R5 Million Template - Pending Credit Approval (Indicative Term Sheet).<br/>
+                                <div class="slds-theme_shade">
+                                    <lightning:icon iconName="doctype:image" alternativeText="CPF Below R5 Million Template - Pending Credit Approval (Indicative Term Sheet)" title="CPF Below R5 Million Template - Pending Credit Approval (Indicative Term Sheet)" />
+                                    {!v.pendingCreditApprovalDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                        <aura:if  isTrue="{!(v.prodName == 'CPF Above R5 Million')}"  >
+                            <div class="slds-text-body_small">CPF Above R5 Million - Draft (Indicative Commercial Terms).<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Above R5 Million - Draft (Indicative Commercial Terms)." title="CPF Above R5 Million - Draft (Indicative Commercial Terms)" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                        <aura:if  isTrue="{!(v.prodName ==  'CPF Development Loan')}"  >
+                            <div class="slds-text-body_small">CPF Development Loan - Draft (Indicative Commercial Terms).<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Development Loan - Draft (Indicative Commercial Terms)" title="CPF Development Loan - Draft (Indicative Commercial Terms)" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                    </lightning:card>
+                    <!--/span-->
+                </div>
+                <div class="slds-box slds-col slds-p-around_small slds-size_1-of-2">
+                    <lightning:card title="Document Type">
+                        <aura:set attribute="actions">
+                            <lightning:buttonMenu alternativeText="Show menu" onselect="{! c.handleMenuSelect }" iconSize="x-small">
+                                <lightning:menuItem value="MenuItemOne" label="View File Details"  disabled="true"/>
+                                <lightning:menuItem value="MenuItemTwo" label="Add Document" disabled="true" />
+                                <lightning:menuItem value="Credit Approved" label="Generate PDF Document" />
+                                <aura:if isTrue="{!v.enableWordDocGen}">
+                                    <lightning:menuItem value="Credit Approved Word" label="Generate Word Document" />
+                                </aura:if>
+                                <lightning:menuItem value="MenuItemFour" label="Write Document"  disabled="true"/>
+                                <lightning:menuItem value="MenuItemfive" label="Sign Document"  disabled="true"/>
+                                <lightning:menuItem value="MenuItemSix" label="Share Document"  disabled="true"/>
+                            </lightning:buttonMenu>
+                        </aura:set>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                            <div class="slds-text-body_small">CPF Below R5 Million Template - Credit Approved (Commercial Terms).<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Below R5 Million Template - Credit Approved" title="CPF Below R5 Million Template - Credit Approved" />
+                                    {!v.creditApprovalDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                        <aura:if  isTrue="{!(v.prodName == 'CPF Above R5 Million')}"  >
+                            <div class="slds-text-body_small">CPF Above R5 Million - Credit Approved (Commercial Terms).<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Above R5 Million - Credit Approved (Commercial Terms)." title="CPF Above R5 Million - Credit Approved (Commercial Terms)" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                        <aura:if  isTrue="{!(v.prodName ==  'CPF Development Loan')}"  >
+                            <div class="slds-text-body_small">CPF Development Loan - Credit Approved (Commercial Terms).<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Development Loan - Credit Approved (Commercial Terms)" title="CPF Development Loan - Credit Approved (Commercial Terms)" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                    </lightning:card>
+                </div>
+                <aura:if  isTrue="{!or(v.prodName == 'CPF Above R5 Million',v.prodName == 'CPF Development Loan')}"  >
+                <div class="slds-box slds-col slds-p-around_small slds-size_1-of-2">
+                    <lightning:card title="Document Type">
+                        <aura:set attribute="actions">
+                            <lightning:buttonMenu alternativeText="Show menu" onselect="{! c.handleMenuSelect }" iconSize="x-small">
+                                <lightning:menuItem value="MenuItemOne" label="View File Details"  disabled="true"/>
+                                <lightning:menuItem value="MenuItemTwo" label="Add Document" disabled="true" />
+                                <lightning:menuItem value="Standard Terms" label="Generate PDF Document" />
+                                <aura:if isTrue="{!v.enableWordDocGen}">
+                                    <lightning:menuItem value="Standard Terms" label="Generate Word Document" />
+                                </aura:if>
+                                <lightning:menuItem value="MenuItemFour" label="Write Document"  disabled="true"/>
+                                <lightning:menuItem value="MenuItemfive" label="Sign Document"  disabled="true"/>
+                                <lightning:menuItem value="MenuItemSix" label="Share Document"  disabled="true"/>
+                            </lightning:buttonMenu>
+                        </aura:set>
+                        <aura:if  isTrue="{!(v.prodName == 'CPF Above R5 Million')}"  >
+                            <div class="slds-text-body_small">CPF Above R5 Million Standard Terms.<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Above R5 Million Standard Terms." title="CPF Above R5 Million Standard Terms" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                        <aura:if  isTrue="{!(v.prodName ==  'CPF Development Loan')}"  >
+                            <div class="slds-text-body_small">CPF Development Loan Standard Terms.<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Development Loan Standard Terms" title="CPF Development Loan Standard Terms" />
+                                    {!v.draftDocStatus}
+                                </div>
+                            </div>
+                        </aura:if>
+                    </lightning:card>
+                </div>
+                </aura:if>
+            </div>
+        </lightning:accordionSection>
+    </lightning:accordion>
+    <lightning:accordion activeSectionName="Agreement History" allowMultipleSectionsOpen="false">
+        <lightning:accordionSection name="Agreement History" label="Agreement History" >
+            <!-- Document list -->
+            <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+                <lightning:card title="View Documents" iconName="standard:document" class="slds-m-left_small">
+                    <aura:set attribute="actions">
+                        <lightning:button label="Refresh" disabled="{!v.isRefresh}" onclick="{!c.refreshDocuments}" aura:id="refreshBtn"/>
+                    </aura:set>
+                    <lightning:datatable
+                                         columns="{! v.columnsAudit }"
+                                         data="{! v.dataAudit }"
+                                         keyField="id"
+                                         onrowaction="{!c.handleRowAction}"
+                                         hideCheckboxColumn="true"
+                                         minColumnWidth="100"
+                                         defaultSortDirection="{!v.defaultSortDirection}"
+                                         sortedDirection="{!v.sortDirection}"
+                                         sortedBy="{!v.sortedBy}"
+                                         onsort="{!c.handleSort}"/>
+                </lightning:card>
+            </article>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

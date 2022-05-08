@@ -1,0 +1,243 @@
+<aura:component controller="CaseOverrideController" implements="lightning:isUrlAddressable,lightning:hasPageReference,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName,lightning:availableForFlowScreens" access="global" >   
+    
+   <aura:attribute name="activeSections" type="List" default="['CaseInfo','VehicleDetails','ClaimDetails']" />
+   <aura:attribute name="isClaim" type="Boolean" default = "false"/>
+   <aura:attribute name="showSpinner" type="boolean" default="false" />
+   <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+   <aura:attribute name="selectedCaseIdFromFlow" type="String" access="global"/>
+   <aura:attribute name="selectedProcessNameFromFlow" type="String" access="global"  />
+   <aura:attribute name="myNewCase" type="Case" default="{'sobjectType': 'Case'}"/>
+   <aura:attribute name="StatusOptions" type="List"/>
+   <aura:attribute name="CategoryOptions" type="List"/>
+   <aura:attribute name="OutcomeOptions" type="List"/>
+   <aura:attribute name="areaOptions" type="List"/>
+   <aura:attribute name="caseMatrix" type="Case" default="{sobjectType:'Case'}"/>
+   <aura:attribute name="caseOwnership" type="String"/>
+   <aura:attribute name="caseStatus" type="String"/>
+   <aura:attribute name="aipcaseStatus" type="String"/>
+   <aura:attribute name="caseArea" type="String"/>
+   <aura:attribute name="caseOutcome" type="String"/>
+   <aura:attribute name="caseOwnerId" type="String"/>
+   <aura:attribute name="accountId" type="String"/>
+   <aura:attribute name ="disabled1" type="boolean" default ="false"/>
+   <aura:attribute name="refreshCaseRecord" type="Case"/>
+   <aura:attribute name="recordLoadError" type="String"/>
+    
+    <force:recordData aura:id="caseRecordLoader"
+    recordId="{!v.recordId}"
+    fields="OwnerId,AccountId"
+    targetFields="{!v.refreshCaseRecord}"
+    targetError="{!v.recordLoadError}"
+    />
+    
+    <lightning:recordEditForm recordId="{!v.recordId}" objectApiName="Case"
+                              aura:id="UpdateCase" onsubmit = "{!c.handleOnSubmit}" onsuccess = "{!c.handleOnSuccess}" 
+                              >
+        <center style="z-index:99">
+            <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" alternativeText="Loading..."/>
+        </center>
+        <div class="slds-show" style="margin-bottom: 40px;">
+            <br />
+            <aura:if isTrue="{!v.selectedProcessNameFromFlow == 'CaseInformation'}">
+                <div class="slds-grid slds-wrap slds-gutters">
+                    <lightning:layout multipleRows = "true">
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="12" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Category__c" style="font-weight: bold;">Category</label>
+                            <aura:if isTrue="{and(v.caseOwnership != 'Route',v.myNewCase.Category__c != 'Complaint')}">
+                            	<lightning:inputField aura:id="category" fieldName="Category__c" value="{!v.myNewCase.Category__c}" variant="label-hidden" onchange="{!c.getFieldValues}"/>
+                                <aura:set attribute="else">
+                                <lightning:outputField fieldName="Category__c" variant="label-hidden"/>
+                                </aura:set>
+                            </aura:if>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!v.caseOwnership != 'Route'}">
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="12" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="DD_Sub_Category__c" style="font-weight: bold;">Sub Category</label>
+                            <lightning:inputField fieldName="DD_Sub_Category__c" value="{!v.myNewCase.DD_Sub_Category__c}"  variant="label-hidden" onchange="{!c.getFieldValues}"/>
+                        </lightning:layoutItem>
+                        </aura:if>
+                         <aura:if isTrue="{!v.myNewCase.Category__c != 'Proof of insurance'}">
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_xx-small" size="12" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Origin" style="font-weight: bold;">Case Origin<span class="required">*</span></label>
+                            <lightning:inputField fieldName="Origin" value="{!v.myNewCase.Origin}" aura:id="fieldInput" required="true" messageWhenValueMissing="Complete this field"    variant="label-hidden" />
+                        </lightning:layoutItem>
+						</aura:if>
+						
+                        <aura:if isTrue="{!v.caseOwnership == 'Route'}">
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_xx-small" size="12" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Outcome__c" style="font-weight: bold;">Lead Outcome<span class="required"></span></label>
+                            <lightning:outputField fieldName="Outcome__c" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!and(v.myNewCase.Category__c != 'Claims',v.myNewCase.Category__c != 'Cancellation')}">
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="12" smallDeviceSize="12" mediumDeviceSize="6">
+                            <!--<label for="Status" style="font-weight: bold;">Status<span class="required">*</span></label>
+                            <lightning:inputField fieldName="Status" value="{!v.myNewCase.Status}" aura:id="fieldInput" required="true" messageWhenValueMissing="Complete this field"    variant="label-hidden" />-->
+                            <b><lightning:select aura:id="StatusCover" name="StatusCover" label="Status" value="{!v.caseStatus}">
+                    			<aura:iteration items="{!v.StatusOptions}" var="item">
+                        			<option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    			</aura:iteration>
+                            </lightning:select></b>
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!and(and(and(v.myNewCase.Category__c != 'Claims', v.myNewCase.Category__c != 'Proof of insurance'),v.myNewCase.Category__c != 'Cancellation'),v.myNewCase.Category__c != 'Complaint')}">
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="12" smallDeviceSize="12" mediumDeviceSize="6">
+                            <b><lightning:select aura:id="area" name="area" label="Area" value="{!v.caseArea}">
+                    			<aura:iteration items="{!v.areaOptions}" var="item">
+                        			<option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    			</aura:iteration>
+                            </lightning:select></b>
+                        </lightning:layoutItem>
+                        </aura:if>
+                        
+                        <aura:if isTrue="{!and(and(v.myNewCase.Category__c != 'Complaint',v.myNewCase.Category__c != 'Cancellation'),v.myNewCase.Category__c != 'Claims')}">
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <b><lightning:select aura:id="OutcomeCover" name="OutcomeCover" label="Response Outcome" value="{!v.caseOutcome}">
+                    			<aura:iteration items="{!v.OutcomeOptions}" var="item">
+                        			<option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    			</aura:iteration>
+                            </lightning:select></b>
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Policy_Number__c" style="font-weight: bold;">Policy Number</label>
+                            <lightning:inputField fieldName="Policy_Number__c" value="{!v.myNewCase.Policy_Number__c}" variant="label-hidden" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Policy_Status__c" style="font-weight: bold;">Policy Status</label>
+                            <lightning:inputField fieldName="Policy_Status__c" value="{!v.myNewCase.Policy_Status__c}"  variant="label-hidden" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Comments__c" style="font-weight: bold;">Comments</label>
+                            <lightning:inputField fieldName="Comments__c" value="{!v.myNewCase.Comments__c}"  variant="label-hidden" />
+                        </lightning:layoutItem>
+						
+						<aura:if isTrue="{!and(and(and(v.myNewCase.Category__c != 'Proof of insurance',v.myNewCase.Category__c != 'Complaint'),v.myNewCase.Category__c != 'Query'),v.myNewCase.Category__c != 'Claims')}">
+                        	<lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+								<label for="Inception_Date_of_the_Policy__c" style="font-weight: bold;">Inception Date of Policy<span class="required">*</span></label>
+								<lightning:inputField fieldName="Inception_Date_of_the_Policy__c" value="{!v.myNewCase.Inception_Date_of_the_Policy__c}" aura:id="fieldInput"  required="true" messageWhenValueMissing="Complete this field"    variant="label-hidden" />
+							</lightning:layoutItem>
+						</aura:if>
+                        <aura:if isTrue="{!v.myNewCase.Category__c != 'Complaint'}">
+                        	<lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            	<label for="Client_Absa_Account_Number__c" style="font-weight: bold;">AVAF Number<span class="required">*</span></label>
+                            	<lightning:inputField fieldName="Client_Absa_Account_Number__c" value="{!v.myNewCase.Client_Absa_Account_Number__c}" aura:id="fieldInput"  required="true" messageWhenValueMissing="Complete this field"    variant="label-hidden" />
+                        	</lightning:layoutItem>
+                        </aura:if>
+						
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_xx-small" size="12" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Product_Provider__c" style="font-weight: bold;">Product Provider</label>
+                            <lightning:inputField fieldName="Product_Provider__c" value="{!v.myNewCase.Product_Provider__c}" aura:id="fieldInput" variant="label-hidden"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+               </div>
+            </aura:if>
+            
+            <aura:if isTrue="{!v.selectedProcessNameFromFlow == 'VehicleInformation'}">
+                <div class="slds-grid slds-wrap slds-gutters">
+                    <lightning:layout multipleRows = "true">
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_xx-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="SequenceNumber__c" style="font-weight: bold;">Registration Number</label>
+                            <lightning:inputField fieldName="SequenceNumber__c" value="{!v.myNewCase.SequenceNumber__c}" aura:id="fieldInput" variant="label-hidden"  />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_xx-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Product_Number__c" style="font-weight: bold;">Make and Model<span class="required">*</span></label>
+                            <br/><br/>
+                            <lightning:inputField fieldName="Product_Number__c" value="{!v.myNewCase.Product_Number__c}" aura:id="fieldInput" required="true" variant="label-hidden" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Year/Model" style="font-weight: bold;">Year/Model<span class="required">*</span></label>
+                            <lightning:inputField fieldName="Number_of_Requests__c" value="{!v.myNewCase.Number_of_Requests__c}" aura:id="fieldInput" required="true" variant="label-hidden" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Amount" style="font-weight: bold;">Value in Rand</label>
+                            <lightning:inputField fieldName="Amount__c" value="{!v.myNewCase.Amount__c}" aura:id="fieldInput" variant="label-hidden" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="X3rd_Party_Payment_Processed__c" style="font-weight: bold;">Subject to HP</label>
+                            <lightning:inputField fieldName="X3rd_Party_Payment_Processed__c" value="{!v.myNewCase.X3rd_Party_Payment_Processed__c}" aura:id="fieldInput" disabled= "true" variant="label-hidden" />
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+            </aura:if>
+            <aura:if isTrue="{!v.selectedProcessNameFromFlow == 'ClaimInformation'}">
+                    <lightning:layout multipleRows = "true">
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_xx-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Indemnity_Verified__c" style="font-weight: bold;">Is the vehicle drivable?<span class="required">*</span></label>
+                            <lightning:inputField fieldName="Indemnity_Verified__c" value="{!v.myNewCase.Indemnity_Verified__c}" aura:id="fieldInput" required="true" variant="label-hidden" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_xx-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Where_Did_This_Happen__c" style="font-weight: bold;">Where can the vehicle be inspected?<span class="required">*</span></label>
+                            <lightning:inputField fieldName="Where_Did_This_Happen__c" value="{!v.myNewCase.Where_Did_This_Happen__c}" aura:id="fieldInput" required="true" variant="label-hidden" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Incident_Date__c" style="font-weight: bold;">Date of loss<span class="required">*</span></label>
+                            <lightning:inputField fieldName="Incident_Date__c" value="{!v.myNewCase.Incident_Date__c}" aura:id="fieldInput" required="true" variant="label-hidden" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Cause_of_problem__c" style="font-weight: bold;">Describe how loss occurred?<span class="required">*</span></label>
+                            <lightning:inputField fieldName="Cause_of_problem__c" value="{!v.myNewCase.Cause_of_problem__c}" aura:id="fieldInput" required="true" variant="label-hidden" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Postal_Address__c" style="font-weight: bold;">Address where loss occurred<span class="required">*</span></label>
+                            <lightning:inputField fieldName="Postal_Address__c" value="{!v.myNewCase.Postal_Address__c}" aura:id="fieldInput" required="true" variant="label-hidden" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="Financial_Advisor__c" style="font-weight: bold;">ABSA Insurance and Financial Advisors Department</label>
+                            <lightning:inputField fieldName="Financial_Advisor__c" value="{!v.myNewCase.Financial_Advisor__c}" aura:id="fieldInput" variant="label-hidden" disabled= "true"/>
+                        </lightning:layoutItem>
+                        
+                        <!--lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                            <label for="isConsentConfirmed__c" style="font-weight: bold;">Declaration Accepted<span class="required">*</span></label>
+                            <lightning:inputField fieldName="isConsentConfirmed__c" aura:id="isConsentConfirmed__c" required="true" variant="label-hidden"/>
+                        </lightning:layoutItem-->
+                        </lightning:layout>
+            </aura:if>
+            
+            <aura:if isTrue="{!v.selectedProcessNameFromFlow == 'declarationInfo'}">
+            <lightning:layout multipleRows = "true">
+                         <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                 <label for="isConsentConfirmed__c" style="font-weight: bold;">Declaration Accepted<span class="required">*</span></label>
+                 <lightning:inputField fieldName="isConsentConfirmed__c" checked="{!v.myNewCase.isConsentConfirmed__c}" aura:id="isConsentConfirmed__c" variant="label-hidden" />
+             </lightning:layoutItem>
+             <lightning:layoutItem class="slds-p-horizontal_x-small slds-p-top_x-small" size="12" smallDeviceSize="12" mediumDeviceSize="6">
+                          <b><lightning:select aura:id="StatusCover" name="StatusCover" label="Status" value="{!v.caseStatus}">
+                    			<aura:iteration items="{!v.StatusOptions}" var="item">
+                        			<option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    			</aura:iteration>
+                            </lightning:select></b>
+              </lightning:layoutItem>
+            </lightning:layout>
+            </aura:if>
+        </div>
+        <div>
+        <lightning:layout multipleRows = "true">
+        <lightning:layoutItem size="12">
+            
+            <aura:if isTrue="{!and(not(v.selectedProcessNameFromFlow == 'CaseInformation'))}">
+                <lightning:button class="slds-m-top_small slds-float--left" variant="brand" label="Previous" aura:id="BACK" onclick="{!c.handleNext}"/>
+            </aura:if> 
+            
+            <aura:if isTrue="{!and(v.isClaim,v.selectedProcessNameFromFlow != 'declarationInfo')}">
+            <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Next" aura:id="NEXT" onclick="{!c.handleNext}"/> 
+                 <aura:set attribute="else">
+                    <lightning:button class="slds-m-top_small" variant="brand" label="Update" aura:id="update" onclick="{!c.handleNext}"/>
+                </aura:set>
+            </aura:if>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </div>
+    </lightning:recordEditForm>
+</aura:component>

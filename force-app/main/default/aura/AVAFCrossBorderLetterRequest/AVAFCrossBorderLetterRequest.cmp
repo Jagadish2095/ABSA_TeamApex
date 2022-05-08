@@ -1,0 +1,125 @@
+<!--
+* Lightning Component for AVAF Cross Border Letter Request (AVAFCrossBorderLetterRequest)
+*
+* @author  Chandra Bhushan Singh : Absa
+* @version v1.0
+* @since   2020-11-17
+*
+-->
+<aura:component
+    controller="AVAFCrossBorderLetterController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForRecordHome,force:hasRecordId"
+    access="global"
+>
+    <!--Attribute Initializations-->
+    <aura:attribute name="caseAccountId" type="String" />
+    <aura:attribute name="SelectedAccNumberFromFlow" type="String" />
+    <aura:attribute name="isShowSendButton" type="Boolean" default="false" />
+    <aura:attribute name="isShowValidateButton" type="Boolean" default="true" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="driverName" type="String" />
+    <aura:attribute name="driverId" type="String" />
+    <aura:attribute name="travelStartDate" type="Date" />
+    <aura:attribute name="travelEndDate" type="Date" />
+    <aura:attribute name="emailAddress" type="String" />
+    <aura:attribute name="isCaseCloseShow" type="Boolean" />
+    <aura:attribute name="currentAccount" type="Account" />
+    <aura:attribute name="idNumber" type="String" />
+    <aura:attribute name="name" type="String" />
+    <aura:attribute name="surName" type="String" />
+    <aura:attribute name="errorMessage" type="String" />
+
+    <aura:if isTrue="{!not(empty(v.caseAccountId))}">
+        <force:recordData
+            aura:id="recordLoader"
+            recordId="{!v.caseAccountId}"
+            fields="ID_Number__pc,FirstName,LastName,PersonEmail"
+            targetFields="{!v.currentAccount}"
+            recordUpdated="{!c.recordUpdate}"
+        />
+    </aura:if>
+
+    <!--Body Start-->
+    <lightning:card>
+        <!-- Spinner -->
+        <aura:if isTrue="{!v.isSpinner}">
+            <lightning:spinner variant="brand" alternativeText="Busy" />
+        </aura:if>
+
+        <!-- Error Message -->
+        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+            <div class="recordError">
+                <br />
+                <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+                <br />
+            </div>
+        </aura:if>
+
+        <div class="slds-grid slds-wrap">
+            <div class="slds-col slds-size_6-of-12">
+                <span>
+                    <lightning:input name="driverName" label="Driver Name" value="{!v.driverName}" required="true" />
+                </span>
+            </div>
+            <div class="slds-col slds-size_1-of-12"></div>
+            <div class="slds-col slds-size_5-of-12">
+                <span>
+                    <lightning:input name="driverId" label="Driver ID" value="{!v.driverId}" required="true" />
+                </span>
+            </div>
+            <div class="slds-col slds-size_6-of-12">
+                <span>
+                    <lightning:input type="date" name="travelStartDate" label="Travel Duration Start" value="{!v.travelStartDate}" required="true" />
+                </span>
+            </div>
+            <div class="slds-col slds-size_1-of-12"></div>
+            <div class="slds-col slds-size_5-of-12">
+                <span>
+                    <lightning:input type="date" name="travelEndDate" label="Travel Duration End" value="{!v.travelEndDate}" required="true" />
+                </span>
+            </div>
+            <div class="slds-col slds-size_6-of-12">
+                <span>
+                    <lightning:input type="email" name="emailAddress" value="{!v.emailAddress}" label="Email Address" required="true" />
+                </span>
+            </div>
+            <div class="slds-col slds-size_1-of-12"></div>
+            <div class="slds-col slds-size_5-of-12">
+                <span>
+                    <lightning:input aura:id="idNumber" name="idNumber" label="Policy Holder ID Number" value="{!v.idNumber}" required="true" />
+                </span>
+            </div>
+            <div class="slds-col slds-size_6-of-12">
+                <span>
+                    <lightning:input aura:id="name" name="name" value="{!v.name}" label="Policy Holder First Name" required="true" />
+                </span>
+            </div>
+            <div class="slds-col slds-size_1-of-12"></div>
+            <div class="slds-col slds-size_5-of-12">
+                <span>
+                    <lightning:input aura:id="surName" name="surName" label="Policy Holder Surname" value="{!v.surName}" required="true" />
+                </span>
+            </div>
+        </div>
+
+        <aura:if isTrue="{!v.isShowValidateButton}">
+            <lightning:button
+                variant="brand"
+                label="Validate Form"
+                title="Validate Form"
+                onclick="{! c.handleInputValidation }"
+                class="slds-align_absolute-center slds-m-top_x-large"
+            />
+        </aura:if>
+
+        <aura:if isTrue="{!v.isShowSendButton}">
+            <lightning:button
+                aura:id="send"
+                onclick="{! c.handleSendCrossBorderLetter}"
+                label="Send Cross Border Letter"
+                variant="brand"
+                class="slds-align_absolute-center slds-m-top_x-large"
+            />
+        </aura:if>
+    </lightning:card>
+</aura:component>

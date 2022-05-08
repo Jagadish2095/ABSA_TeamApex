@@ -1,0 +1,300 @@
+<!--
+* Lightning Component for Debit Order Initiation
+*
+* @author  Clifford Willers : ABSA (IQ Business)
+* @version v1.0
+* @since   2020-11-24
+*
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+                access="global"
+                controller="BranchApplicationController">
+    <aura:attribute name="applicationId" type="String" />
+    <aura:attribute name="lockVersionId" type="String" default="" />
+    <aura:attribute name="ccApplicationNumber" type="String" default="" />
+    <aura:attribute name="instantAccountResult" type="String" default="" />
+    <aura:attribute name="initiateDebiCheckResult" type="String" default="" />
+    <aura:attribute name="debitAuthenticationTypeOptions" type="List" />
+    <aura:attribute name="debitAuthenticationType" type="string" />
+    <aura:attribute name="creditorShortName" type="string" />
+    <aura:attribute name="reference" type="string" default="" />
+    <aura:attribute name="amount" type="string" />
+    <aura:attribute name="amountValue" type="string" />
+    <aura:attribute name="collectionStartDate" type="string" />
+    <aura:attribute name="collectionDay" type="string" />
+    <aura:attribute name="debitOrderCommencementDay" type="string" />
+    <aura:attribute name="debitOrderDay" type="string" />
+    <aura:attribute name="accountNumber" type="string" />
+    <aura:attribute name="debitValueType" type="string" />
+    <aura:attribute name="adjustableDebitDate" type="string" />
+    <aura:attribute name="PinpadRequestJSON" type="String" default="" />
+    <aura:attribute name="pinPadResponse" type="String" default="" />
+    <aura:attribute name="pinpadComplete" type="Boolean" default="false" />
+    <aura:attribute name="macCode" type="String" default="" />
+    <aura:attribute name="accountActivationChecked" type="Boolean" default="false" />
+    <aura:attribute name="alternatePaymentChecked" type="Boolean" default="false" />
+    <aura:attribute name="insuficientFundsChecked" type="Boolean" default="false" />
+    <aura:attribute name="recordDataLoaded" type="Boolean" default="false" />
+    <aura:attribute name="doPinpad" type="Boolean" default="false" />
+    <aura:attribute name="updating" type="Boolean" default="true"/>
+    <aura:attribute name="actionClicked" type="string" default=""/>
+    <aura:handler name="change" value="{! v.recordDataLoaded }" action="{! c.dataLoaded }" />
+    <aura:handler name="change" value="{! v.pinPadResponse }" action="{! c.pinpadComplete }" />
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <div class="slds-is-relative" >
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="12">
+                <div>
+                    <lightning:recordEditForm aura:id = "DebitOrderInitiation"
+                                              recordId="{! v.recordId }"
+                                              objectApiName="Payment_Plan__c"
+                                              density="comfy"
+                                              onload="{! c.recordLoaded }"
+                                              onsubmit="{! c.recordSubmit }"
+                                              onerror="{! c.recordError }"
+                                              onsuccess="{! c.recordSuccess }">
+                        <!-- Needs one field on RecordEdit to fire onsubmit() -->
+                        <lightning:inputField fieldName="Debit_authentication_Type__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Creditor_Short_Name__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Reference__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Amount__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Debit_Order_Commencement_Date__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Debit_Order_Debit_Day__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Collection_Start_Date__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Collection_Day__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Account_Number__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Debit_Value_Type__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Adjustable_Debit_Date__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Account_Activation__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Alternate_Payment_Arrangements__c" class="hidden_field"/>
+                        <lightning:inputField fieldName="Insuficient_Funds_Charges__c" class="hidden_field"/>
+                        <!-- Submit button needed so that onsubmit is fired from flow to save attribute values -->
+                        <button id="{! globalId + '_debitOrder_submit' }" type="submit" class="hidden_field"/>
+                    </lightning:recordEditForm>
+                    <lightning:layout >
+                        <lightning:layoutItem padding="around-medium" size="6">
+                            <legend class="slds-text-heading_small slds-var-p-vertical_medium" >
+                                <b>Debit order initiation</b>
+                            </legend>
+                            <lightning:layout>
+                                <lightning:layoutitem size="6">
+                                    <div id="{! globalId + '_DebitAuthenticationType' }" class="slds-var-p-around_x-small">
+                                        <label for="DebitAuthenticationType" >Debit authentication type</label>
+                                        <lightning:select aura:id="DebitAuthenticationType"
+                                                          name="DebitAuthenticationType"
+                                                          label=""
+                                                          class="label-hidden"
+                                                          value="{! v.debitAuthenticationType }"
+                                                          required="true" >
+                                            <option value="">please select...</option>
+                                            <aura:iteration items="{! v.debitAuthenticationTypeOptions }" var="authValue">
+                                                <option value="{!authValue}" selected="{!authValue==v.debitAuthenticationType}">{!authValue}</option>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </div>
+                                </lightning:layoutitem>
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutitem size="12">
+                                    <div class="slds-var-p-around_x-small">
+                                        <div class="slds-box slds-theme_default">
+                                            <div class="slds-border_bottom slds-var-p-around_x-small">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem size="6">
+                                                        <label>Creditor shortened name</label>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem class="slds-text-align_right" size="6">
+                                                        <label><b>{!v.creditorShortName}</b></label>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                            <div class="slds-border_bottom slds-var-p-around_x-small">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem size="6">
+                                                        <label>Contract Reference</label>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem class="slds-text-align_right" size="6">
+                                                        <label><b>{!v.reference}</b></label>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                            <div class="slds-border_bottom slds-var-p-around_x-small">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem size="6">
+                                                        <label>Maximum collection amount</label>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem class="slds-text-align_right" size="6">
+                                                        <label><b>{!v.amount}</b></label>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                            <div class="slds-border_bottom slds-var-p-around_x-small">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem size="8">
+                                                        <label>Collection start date</label>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem class="slds-text-align_right" size="4">
+                                                        <label><b>{!v.collectionStartDate}</b></label>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                            <div class="slds-border_bottom slds-var-p-around_x-small">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem size="8">
+                                                        <label>Collection day</label>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem class="slds-text-align_right" size="4">
+                                                        <label><b>{!v.collectionDay}</b></label>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                            <div class="slds-border_bottom slds-var-p-around_x-small">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem size="8">
+                                                        <label>Payer/Debitor Account Number</label>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem class="slds-text-align_right" size="4">
+                                                        <label><b>{!v.accountNumber}</b></label>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                            <div class="slds-border_bottom slds-var-p-around_x-small">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem size="8">
+                                                        <label>Type of debit value</label>
+                                                        <p class="slds-text-body_small">This mandate is based on how much of it the customer uses</p>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem class="slds-text-align_right" size="4">
+                                                        <label><b>{!v.debitValueType}</b></label>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                            <div class="slds-var-p-around_x-small">
+                                                <lightning:layout >
+                                                    <lightning:layoutItem size="8">
+                                                        <label>Adjustment rule indicator</label>
+                                                        <p class="slds-text-body_small">Used to indicate that collection day can change </p>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem class="slds-text-align_right" size="4">
+                                                        <label><b>{!v.adjustableDebitDate}</b></label>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </lightning:layoutitem>
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutitem size="12">
+                                    <div class="slds-var-p-around_x-small">
+                                        <label><b>I confirm that the customer has been informed of the folowing:</b></label>
+                                    </div>
+                                </lightning:layoutitem>
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutItem size="12">
+                                    <div id="{! globalId + '_AccountActivationDiv' }" class="slds-form-element slds-var-p-around_x-small">
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-checkbox">
+                                                <input type="checkbox"
+                                                       aura:id="AccountActivation"
+                                                       name="AccountActivation"
+                                                       id="{! globalId + '_AccountActivation' }"
+                                                       checked="{!v.accountActivationChecked}"
+                                                       onchange="{!c.accountActivationChange}"/>
+                                                <label class="slds-checkbox__label" for="{! globalId + '_AccountActivation' }">
+                                                    <span class="slds-checkbox_faux"></span>
+                                                    <span class="slds-form-element__label">The transactional account will only be activated once funds have been deposited into the account.</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutItem size="12">
+                                    <div id="{! globalId + '_AlternatePaymentArrangementsDiv' }" class="slds-form-element slds-var-p-around_x-small">
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-checkbox">
+                                                <input type="checkbox"
+                                                       aura:id="AlternatePaymentArrangements"
+                                                       name="AlternatePaymentArrangements"
+                                                       id="{! globalId + '_AlternatePaymentArrangements' }"
+                                                       checked="{!v.alternatePaymentChecked}"
+                                                       onchange="{!c.alternatePaymentChange}"/>
+                                                <label class="slds-checkbox__label" for="{! globalId + '_AlternatePaymentArrangements' }">
+                                                    <span class="slds-checkbox_faux"></span>
+                                                    <span class="slds-form-element__label">Debit orders will be rejected if there are insufficient funds in the account to cover monthly instalment on the credit card account and fees and charges. This will result in additional fees being charged.</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutItem size="12">
+                                    <div id="{! globalId + '_InsuficientFundsChargesDiv' }" class="slds-form-element slds-var-p-around_x-small">
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-checkbox">
+                                                <input type="checkbox"
+                                                       aura:id="InsuficientFundsCharges"
+                                                       name="InsuficientFundsCharges"
+                                                       id="{! globalId + '_InsuficientFundsCharges' }"
+                                                       checked="{!v.insuficientFundsChecked}"
+                                                       onchange="{!c.insuficientFundsChange}"/>
+                                                <label class="slds-checkbox__label" for="{! globalId + '_InsuficientFundsCharges' }">
+                                                    <span class="slds-checkbox_faux"></span>
+                                                    <span class="slds-form-element__label">If there are insufficient funds, in the account the client will have to ensure that alternative arrangements are made to pay the instalment due and fees and charges.</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    <aura:if isTrue="{!v.doPinpad}">
+                        <section role="dialog"
+                                 tabindex="-1"
+                                 aria-labelledby="modal-heading-01"
+                                 aria-modal="true"
+                                 aria-describedby="modal-content-id-1"
+                                 class="slds-modal slds-fade-in-open">
+                            <div class="slds-modal__container">
+                                <header class="slds-modal__header">
+                                    <h2 id="modal-heading-01" class="customSectionButton"></h2>
+                                </header>
+                                <div class="content slds-theme_default" style="height: 500px" >
+                                    <c:ASPPinpadFuncIntegrationComponent PinPadFunction='ONUSandNOUS' recordId="{! v.recordId }" PinPadData="{! v.pinPadResponse}" />
+                                </div>
+                                <footer class="slds-modal__footer">
+                                    <lightning:button variant="neutral"
+                                                      label="Cancel"
+                                                      title="Cancel"
+                                                      onclick="{! c.closePinPad }"/>
+                                </footer>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </aura:if>
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div>
+                            <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                                availableActions="{! v.availableActions }"
+                                                navigateFlowEvent="{! c.handleNavigate }"/>
+                        </div>
+                    </lightning:layoutItem>
+                </div>
+            </lightning:layoutItem>
+            <aura:if isTrue="{! v.updating }">
+                <div class="slds-spinner_container" >
+                    <div role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand" >
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a" />
+                        <div class="slds-spinner__dot-b" />
+                    </div>
+                </div>
+            </aura:if>
+        </lightning:layout>
+    </div>
+</aura:component>

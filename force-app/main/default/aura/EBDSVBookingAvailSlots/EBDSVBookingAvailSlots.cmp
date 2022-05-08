@@ -1,0 +1,129 @@
+<!--Lightning component for EB DSV Booking Availability Slots (EBDSVBookingAvailSlots)
+    Author: Bhanumurty Rayala
+    Date : 2021/03/28
+-->
+<aura:component
+	controller="EBDSVCardDeliveryDetailsController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForRecordHome,force:hasRecordId"
+	access="global"
+>
+	<!-- Component Attributes Declaration-->
+	<aura:attribute name="optionsDates" type="List" />
+	<aura:attribute name="selectedDateValue" type="String" />
+	<aura:attribute name="optionSlots" type="List" />
+	<aura:attribute name="isFaceToFaceBooking" type="Boolean" default="false" />
+	<aura:attribute name="tripSheet" type="String" />
+	<aura:attribute name="townCode" type="String" />
+	<aura:attribute name="suburbSelected" type="String" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="successMessage" type="String" />
+	<aura:attribute name="isCloseCase" type="Boolean" default="false" />
+	<aura:attribute name="isBookingConfirmation" type="Boolean" default="false" />
+	<aura:attribute name="city" type="String" />
+	<aura:attribute name="prodCode" type="String" />
+	<aura:attribute name="deliveryCountry" type="String" />
+	<aura:attribute name="timeSlotValuesMap" type="map" description="map to store time slot values with date value" />
+	<aura:attribute name="dateValues" type="list" default="[]" description="to store controller field values" />
+	<aura:attribute name="timeSlotValueList" type="list" default="['--- None ---']" description="to store dependent field values" />
+	<aura:attribute name="showSpinner" type="Boolean" default="false" />
+	<aura:attribute name="cardDeliveryConfirmationMessage" type="String" />
+	<aura:attribute name="deliveryAddressLine1" type="String" />
+	<aura:attribute name="deliveryAddressLine2" type="String" />
+	<aura:attribute name="selectedTimeSlot" type="String" />
+
+	<!--Global Attribute Declaration-->
+	<aura:attribute name="postalCode" type="String" access="global" />
+	<aura:attribute name="personName" type="String" access="global" />
+	<aura:attribute name="regNumber" type="String" access="global" />
+	<aura:attribute name="iDNumber" type="String" access="global" />
+	<aura:attribute name="contactNumber" type="String" access="global" />
+	<aura:attribute name="deliveryType" type="String" access="global" />
+	<aura:attribute name="CaseAccountId" type="String" access="global" />
+	<aura:attribute name="bookAvailSlots" type="String" access="global" />
+	<aura:attribute name="altNumber" type="String" access="global" />
+	<aura:attribute name="splInstruction" type="String" access="global" />
+	<aura:attribute name="addressData" type="String" access="global" />
+	<aura:attribute name="addProvince" type="String" access="global" />
+	<aura:attribute name="issueType" type="String" access="global" />
+	<aura:attribute name="cardNumber" type="String" access="global" />
+	<aura:attribute name="numberOfCards" type="Integer" access="global" />
+	<aura:attribute name="caseId" type="String" access="global" />
+	<aura:attribute name="branchCode" type="String" access="global" />
+	<aura:attribute name="isLastCard" type="Boolean" access="global" />
+	<aura:attribute name="processedCards" type="String" access="global" />
+	<aura:attribute name="addressDataTableList" type="String" access="global" />
+
+	<!--Component Handler declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<!--Display error message-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<!--Display success message-->
+	<aura:if isTrue="{!not(empty(v.successMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: green">{!v.successMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+	<article class="slds-card slds-p-around_xx-large">
+		<!-- Spinner -->
+		<aura:if isTrue="{!v.showSpinner}">
+			<center style="z-index: 99">
+				<lightning:spinner variant="brand" alternativeText="Busy" size="large" />
+			</center>
+		</aura:if>
+		<!-- Face to face dates and time slots -->
+		<aura:if isTrue="{!v.isFaceToFaceBooking}">
+			<lightning:layout multipleRows="true">
+				<lightning:layoutItem padding="around-small" size="6">
+					<lightning:select name="controllerFld" label="Booking Available Date" onchange="{!c.onDeliveryDateChange}">
+						<aura:iteration items="{!v.dateValues}" var="date">
+							<option value="{!date}">{!date}</option>
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<lightning:select name="dependentFld" label="Booking Time Slots" value="{!v.selectedTimeSlot}">
+						<aura:iteration items="{!v.timeSlotValueList}" var="time">
+							<option value="{!time}">{!time}</option>
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small" size="12">
+					<lightning:button variant="brand" label="Next" title="Next" class="slds-float_right" onclick="{! c.bookFaceToFace }" />
+				</lightning:layoutItem>
+			</lightning:layout>
+		</aura:if>
+
+		<aura:if isTrue="{!v.isBookingConfirmation}">
+			<lightning:layout multipleRows="true">
+				<!--Display Card Information-->
+
+				<lightning:layoutItem padding="around-small" size="12">
+					<h2>{!v.cardDeliveryConfirmationMessage}</h2>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small" size="12">
+					<lightning:button variant="brand" label="Confirm Booking" class="slds-float_right" onclick="{! c.confirmBookingRequest }" />
+					<lightning:button variant="neutral" label="Previous" class="slds-float_left" onclick="{! c.backToAddressSection }" />
+				</lightning:layoutItem>
+			</lightning:layout>
+		</aura:if>
+
+		<aura:if isTrue="{!v.isCloseCase}">
+			<lightning:layout multipleRows="true">
+				<lightning:layoutItem>
+					<c:CloseCaseScreen aura:id="CloseCaseScreen" caseIdFromFlow="{!v.caseId}" sendEmailFromFlow="false" closeCaseFromFlow="true" />
+				</lightning:layoutItem>
+			</lightning:layout>
+		</aura:if>
+	</article>
+</aura:component>

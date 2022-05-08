@@ -1,0 +1,557 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="client" type="Map" />
+    
+    <aura:handler name="change" value="{!v.client.occupational_status_value}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.monthly_income_value}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.source_of_income_value}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.frequency_of_income_value}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.client_banks_with_absa}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.empl_postal_address_line_1}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.empl_postal_address_line_1_3}" action="{!c.check_validation}"/>
+   
+    <aura:handler name="change" value="{!v.client.client_registered_for_foreign_income_tax}" action="{!c.check_validation_foreign_tax}"/>
+    <aura:handler name="change" value="{!v.client.client_registed_for_income_tax}" action="{!c.check_validation_sa_tax}"/>
+    <aura:handler name="change" value="{!v.client.reason_foreign_income_tax_num_not_given}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.reason_sa_income_tax_number_not_given}" action="{!c.check_validation}"/>
+    <aura:handler name="change" value="{!v.client.reason_foreign_income_tax_num_not_given_value}" action="{!c.checkLenght_foreign_tax}"/>
+    <aura:handler name="change" value="{!v.client.reason_sa_income_tax_number_not_given_value}" action="{!c.checkLenght_sa_tax}"/>
+    <aura:handler name="change" value="{!v.client.sa_income_tax_number}" action="{!c.checkLenght_sa_tax}"/>
+	<aura:handler name="change" value="{!v.client.foreign_income_tax_number}" action="{!c.checkLenght_foreign_tax}"/>
+    
+    
+                                    
+    <aura:attribute name="occupational_status_condition" type="Boolean" default="true"/>
+    <aura:attribute name="monthly_income_condition" type="Boolean" default="true"/>
+    <aura:attribute name="source_of_income_condition" type="Boolean" default="true"/>
+    <aura:attribute name="frequency_of_income_condition" type="Boolean" default="true"/>
+    <aura:attribute name="empl_postal_address_line_1_condition" type="Boolean" default="true"/>
+    <aura:attribute name="empl_postal_address_line_1_3_condition" type="Boolean" default="true"/>   
+    <aura:attribute name="empl_town_city_foreign_country_condition" type="Boolean" default="true"/>
+    <aura:attribute name="reason_sa_income_tax_number_not_given_condition" type="Boolean" default="true"/>
+    <aura:attribute name="client_banks_with_absa_condition" type="Boolean" default="true"/>
+    
+    <aura:attribute name="sa_income_tax_grayout" type="Boolean" default="false"/>
+    <aura:attribute name="sa_income_tax_reason_grayout" type="Boolean" default="false"/>
+    
+    <aura:attribute name="foreign_income_tax_grayout" type="Boolean" default="false"/>
+    <aura:attribute name="foreign_income_tax_reason_grayout" type="Boolean" default="false"/>
+
+    
+    <div class="slds-grid slds-wrap ">
+        <div class="slds-size_1-of-2 slds-p-right_xx-large">
+            <div class="slds-m-right_x-large">
+                <div  class="slds-p-right_xx-large">
+                    <h1 class="header-class">Employment details</h1>
+                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Occupational status: <abbr class="slds-required" title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">                                            
+                        	<c:sales_DropDown pickListValues="{!v.client.occupational_status_values}" 
+                                                  selectedValue="{!v.client.occupational_status_value}"
+                                                  selectedLabel="{!v.client.occupational_status_label}"/> 
+                            
+                            <aura:if isTrue="{!v.occupational_status_condition}">
+                            	<div style="color:red;">{!v.client.occupational_status_validation}</div>
+                            </aura:if>
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Employment sector:
+                        </div>
+                        <div class="slds-col">                                           
+                        	<c:sales_DropDown pickListValues="{!v.client.employment_sector_values}" 
+                                                  selectedValue="{!v.client.employment_sector_value}"
+                                                  selectedLabel="{!v.client.employment_sector_label}"/> 
+                        </div>
+                    </div>
+                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Occupation:
+                        </div>
+                        <div class="slds-col">                                           
+                        	<c:sales_DropDown pickListValues="{!v.client.occupation_values}" 
+                                                  selectedValue="{!v.client.occupation_value}"
+                                                  selectedLabel="{!v.client.occupation_label}"
+                                              	  grayout="true"    
+                                                  activeDropdown = "true"/> 
+                        </div>
+                    </div>  
+                    <aura:if  isTrue="{!or( or(or(or(v.client.occupational_status_label  == 'Housewife', v.client.occupational_status_label  == 'Student'), v.client.occupational_status_label  == 'Unemployed'), v.client.occupational_status_label  == 'Pensioner'), v.client.occupational_status_label  == 'Pre-school/scholar')}">
+                        <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                            <div class="slds-col" style="color:gray;">
+                                Occupation code:
+                            </div>
+                            <div class="slds-col">                            
+                                <c:sales_DropDown pickListValues="{!v.client.occupation_code_values}" 
+                                                  selectedValue="{!v.client.occupation_code_value}"
+                                                  selectedLabel="{!v.client.occupation_code_label}"
+                                                  grayout="true"    
+                                                  activeDropdown = "true"/>  
+                            </div>
+                        </div>    
+                        <aura:set attribute="else"> 
+                            <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                                <div class="slds-col">
+                                    Occupation code: 
+                                </div>                        
+                                <div class="slds-col">                            
+                                    <c:sales_DropDown pickListValues="{!v.client.occupation_code_values}" 
+                                                  selectedValue="{!v.client.occupation_code_value}"
+                                                  selectedLabel="{!v.client.occupation_code_label}"                                                      
+                                                      />  
+                                </div>
+                            </div> 
+                   </aura:set>
+                     </aura:if>       
+                    
+                     
+                     <aura:if  isTrue="{!or( or(or(or(v.client.occupational_status_label  == 'Housewife', v.client.occupational_status_label  == 'Student'), v.client.occupational_status_label  == 'Unemployed'), v.client.occupational_status_label  == 'Pensioner'), v.client.occupational_status_label  == 'Pre-school/scholar')}">
+                         <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                            <div class="slds-col">
+                                Occupation level:
+                            </div>
+                            <div class="slds-col" style="color:gray;">                            
+                                <c:sales_DropDown pickListValues="{!v.client.occupation_level_values}" 
+                                                  selectedValue="{!v.client.occupation_level_value}"
+                                                  selectedLabel="{!v.client.occupation_level_label}"
+                                                  grayout="true"    
+                                                  activeDropdown = "true"/>  
+                            </div>
+                        </div>    
+                        <aura:set attribute="else"> 
+                            <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                                <div class="slds-col">
+                                    Occupation level: 
+                                </div>                        
+                                <div class="slds-col">                            
+                                    <c:sales_DropDown pickListValues="{!v.client.occupation_level_values}" 
+                                                      selectedValue="{!v.client.occupation_level_value}"
+                                                      selectedLabel="{!v.client.occupation_level_label}"                                                      
+                                                      />  
+                                </div>
+                            </div> 
+                   </aura:set>
+                     </aura:if>   
+                        
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Monthly income: <abbr class="slds-required" title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">                                             
+                        	<c:sales_DropDown pickListValues="{!v.client.monthly_income_values}" 
+                                                  selectedValue="{!v.client.monthly_income_value}"
+                                                  selectedLabel="{!v.client.monthly_income_label}"/>
+                           
+                             <aura:if isTrue="{!v.monthly_income_condition}">
+                            	 <div style="color:red;">{!v.client.monthly_income_validation}</div>
+                            </aura:if>
+                        </div>
+                    </div>    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Source of income: <abbr class="slds-required" title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">                                             
+                        	<c:sales_DropDown pickListValues="{!v.client.source_of_income_values}" 
+                                                  selectedValue="{!v.client.source_of_income_value}"
+                                                  selectedLabel="{!v.client.source_of_income_label}"/>
+                            
+                            <aura:if isTrue="{!v.source_of_income_condition}">
+                            	 <div style="color:red;">{!v.client.source_of_income_validation}</div>
+                            </aura:if>
+                        </div>
+                    </div>      
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Frequency of income: <abbr class="slds-required" 
+                                                       title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">                                              
+                        	<c:sales_DropDown pickListValues="{!v.client.frequency_of_income_values}" 
+                                                  selectedValue="{!v.client.frequency_of_income_value}"
+                                                  selectedLabel="{!v.client.frequency_of_income_label}"/>
+                            
+                       <aura:if isTrue="{!v.frequency_of_income_condition}">
+                            	 <div style="color:red;">{!v.client.frequency_of_income_validation}</div>
+                            </aura:if>
+                        </div>
+                    </div>   
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Current employment since: 
+                        </div>
+                        <div class="slds-col">
+                            <ui:inputDate aura:id="current_employment_since" class="field" change="{!c.current_employment_since}" value="{!v.client.current_employment_since}" displayDatePicker="true"  updateOn="change"/>  
+                            
+                        </div>
+                    </div> 
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Client banks with ABSA? <abbr class="slds-required" 
+                                                          title="required">* </abbr>
+                        </div>
+                        <div class="slds-col radio-btn">                    
+                            <c:sales_RadioButton radioValues="{!v.client.client_banks_with_absa_values}" radioSelValue="{!v.client.client_banks_with_absa}"/>                              
+                        	
+                            <aura:if isTrue="{!v.client_banks_with_absa_condition}">
+                            	 <div style="color:red; padding-left:90px;">{!v.client.client_banks_with_absa_validation}</div>
+                            </aura:if>
+                        </div>
+                    </div>                        
+                </div>
+            </div>
+        </div>
+        <div class="slds-size_1-of-2 slds-p-left_xx-large">
+            <div class="slds-m-left_xx-large">
+                <div class="slds-p-left_x-large"> 
+                    <h1 class="header-class">Employers details</h1>
+                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Employer's name:  <abbr class="slds-required" 
+                                                    title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                      class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                      onclick="{!c.clear}" aura:id="clear_empl_postal_address_line_1"/>
+                                <ui:inputText label="" 
+                                              maxlength="30"
+                                              class="slds-input"
+                                              aura:id="empl_postal_address_line_1"
+                                              value="{!v.client.empl_postal_address_line_1}"
+                                              />
+                                
+                                <aura:if isTrue="{!v.empl_postal_address_line_1_condition}">
+                            	 <div style="color:red;">{!v.client.employers_name_validation}</div>
+                            </aura:if>
+                            </div>                         
+                        </div>
+                    </div>  
+                   
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Postal address line 1-3: <abbr class="slds-required" 
+                                                           title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">
+                            <lightning:textarea maxlength="30"  aura:id="empl_postal_address_line_1_3" 
+                                                value="{!v.client.empl_postal_address_line_1_3}"
+                                                />                 
+                        	
+                       <aura:if isTrue="{!v.empl_postal_address_line_1_condition}">
+                            	 <div style="color:red;">{!v.client.empl_postal_address_line_1_3_validation}</div>
+                            </aura:if>
+                        </div>
+                    </div>                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Town/city/foreign country: <abbr class="slds-required" title="required">* </abbr>
+                        </div>
+                        <div class="slds-col">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                      class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                      onclick="{!c.clear}" aura:id="clear_empl_town_city_foreign_country"/>
+                                <ui:inputText label="" 
+                                              class="slds-input"
+                                              aura:id="empl_town_city_foreign_country"
+                                              value="{!v.client.empl_town_city_foreign_country}"
+                                              />
+                                
+                            <aura:if isTrue="{!v.empl_town_city_foreign_country_condition}">
+                            	 <div style="color:red;">{!v.client.empl_town_city_foreign_country_validation}</div>
+                            </aura:if>
+                            </div>                
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Postal code: 
+                        </div>
+                       <!-- <div class="slds-col slds-text-title_bold">
+                            {!v.client.empl_postal_code}                 
+                        </div>-->
+                        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                      class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                      onclick="{!c.clear}" aura:id="clear_empl_postal_code"/>
+                                <ui:inputText label="" 
+                                              class="slds-input" 
+                                              aura:id="empl_postal_code"
+                                              value="{!v.client.empl_postal_code}"/>                                 
+                            </div>    
+                        
+                    </div> 
+                    <br/>   
+                   <h1 class="header-class">Tax details</h1>    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            is the client registered <br/> for income tax? <abbr class="slds-required" 
+                                                                                 title="required">* </abbr>
+                        </div>
+                        <div class="slds-col radio-btn">                    
+                            <c:sales_RadioButton radioValues="{!v.client.client_registed_for_income_tax_values}" radioSelValue="{!v.client.client_registed_for_income_tax}"/>                              
+                            <div style="color:red;float:right;">{!v.client.client_registed_for_income_tax_validation}</div>
+                        </div>
+                    </div>   
+                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <aura:if isTrue="{!v.client.client_registed_for_income_tax == 'Y'}">
+                            
+                                        <aura:if isTrue="{!v.sa_income_tax_grayout}">
+                                                    <div class="slds-col" style="color:gray;" >
+                                                        SA income tax number:
+                                                    </div>
+                                                    
+                                                    <div class="slds-col" style="color:gray;">
+                                                        <ui:inputText label="" 
+                                                                      class="slds-input"
+                                                                      disabled="true" 
+                                                                      aura:id="sa_income_tax_number"
+                                                                      value="{!v.client.sa_income_tax_number}"/>
+                                            </div>
+                                            <aura:set attribute="else">
+                                                    
+                                                    <div class="slds-col">
+                                                        SA income tax number: 
+                                                    </div>
+                                                    <div class="slds-col">
+                                                        <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                                            <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                                                  class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                                                  onclick="{!c.clear}" aura:id="clear_sa_income_tax_number"/>
+                                                            <ui:inputText label="" 
+                                                                          class="slds-input"
+                                                                          aura:id="sa_income_tax_number"
+                                                                          value="{!v.client.sa_income_tax_number}"
+                                                                          change="{!c.checkLenght_sa_tax}"
+                                                                          maxlength="10"/>
+                                                            <div style="color:red;">{!v.client.sa_income_tax_number_validation}</div>
+                                                            
+                                                        </div>                 
+                                                    </div>
+                                            </aura:set>
+                                
+                            </aura:if>
+                            
+                            <aura:set attribute="else"> 
+                                <div class="slds-col" style="color:gray;" >
+                                    SA income tax number:
+                                </div>
+                                
+                                <div class="slds-col" style="color:gray;">
+                                    <ui:inputText label="" 
+                                                    class="slds-input"
+                                                    disabled="true" 
+                                                    aura:id="sa_income_tax_number"
+                                                    value="{!v.client.sa_income_tax_number}"/>
+                                </div>
+                                
+                            </aura:set>
+                            
+                        </aura:if>
+                    </div>   
+                    
+                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        
+                        <aura:if isTrue="{!v.client.client_registed_for_income_tax == 'Y'}">
+                            
+                            
+                                        <aura:if isTrue="{!v.sa_income_tax_reason_grayout}">
+                                            
+                                                        <div class="slds-col" style="color:grey">
+                                                            Reason SA income tax number not given: <abbr class="slds-required" 
+                                                                                                         title="required">* </abbr>
+                                                        </div>
+                                                        <div class="slds-col slds-col-grey">   
+                                                            <c:sales_DropDown pickListValues="{!v.client.reason_sa_income_tax_num_not_given_values}" 
+                                                                              selectedValue="{!v.client.reason_sa_income_tax_number_not_given_value}"
+                                                                              selectedLabel="{!v.client.reason_sa_income_tax_number_not_given_label}"
+                                                                              grayout="true"
+                                                                              activeDropdown = "true"/>                                    
+                                                            
+                                                        </div>
+                                            
+                                            <aura:set attribute="else">
+                                                        <div class="slds-col">
+                                                            Reason SA income tax number not given: <abbr class="slds-required" 
+                                                                                                         title="required">* </abbr>
+                                                        </div>
+                                                        <div class="slds-col">                                              
+                                                            <c:sales_DropDown pickListValues="{!v.client.reason_sa_income_tax_num_not_given_values}" 
+                                                                              selectedValue="{!v.client.reason_sa_income_tax_number_not_given_value}"
+                                                                              selectedLabel="{!v.client.reason_sa_income_tax_number_not_given_label}"
+                                                                              />                                    
+                                                            <div style="color:red;">{!v.client.sa_tax_dropdown_validation}</div>
+                                                        </div>  
+                                                        
+                                            </aura:set>
+                                        
+                                        </aura:if>
+                            
+                            
+                            
+                            <aura:set attribute="else">
+                                
+                                <div class="slds-col" style="color:grey">
+                                    Reason SA income tax number not given: <abbr class="slds-required" 
+                                                                                 title="required">* </abbr>
+                                </div>
+                                <div class="slds-col slds-col-grey">   
+                                    <c:sales_DropDown pickListValues="{!v.client.reason_sa_income_tax_num_not_given_values}" 
+                                                      selectedValue="{!v.client.reason_sa_income_tax_number_not_given_value}"
+                                                      selectedLabel="{!v.client.reason_sa_income_tax_number_not_given_label}"
+                                                      grayout="true"
+                                                      activeDropdown = "true"/>                                    
+                                </div>
+                                
+                            </aura:set>
+                            
+                        </aura:if>
+                        
+                    </div>                   
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <div class="slds-col">
+                            Is the client registered <br/> for foreign income tax? <abbr class="slds-required" 
+                                                                                         title="required">* </abbr>
+                        </div>
+                        <div class="slds-col radio-btn">                    
+                            <c:sales_RadioButton radioValues="{!v.client.client_registered_for_foreign_income_tax_values}" radioSelValue="{!v.client.client_registered_for_foreign_income_tax}"/>                              
+                            <div style="color:red;float:right;">{!v.client.client_registered_for_foreign_income_tax_validation}</div>
+                        </div>
+                    </div>                   
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        <aura:if isTrue="{!v.client.client_registered_for_foreign_income_tax == 'Y'}">
+                            
+                            <aura:if isTrue="{!v.foreign_income_tax_grayout}">
+                                
+                                <div class="slds-col" style="color:gray;" >
+                                    Foreign income tax number:
+                                </div>
+                                
+                                <div class="slds-col" style="color:gray;">
+                                    <ui:inputText label="" 
+                                                  class="slds-input"
+                                                  disabled="true" 
+                                                  aura:id="foreign_income_tax_number"
+                                                  value="{!v.client.foreign_income_tax_number}"/>
+                                </div>
+                                
+                                <aura:set attribute="else"> 
+                                    
+                                    <div class="slds-col" >
+                                    Foreign income tax number:
+                                   </div>
+                                    
+                                    <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                        <lightning:buttonIcon iconName="utility:close" size = "large"
+                                                              class="front slds-input__icon slds-input__icon_right align-close-icon"  
+                                                              onclick="{!c.clear}" aura:id="clear_foreign_income_tax_number"/>
+                                        <ui:inputText label="" 
+                                                      class="slds-input" 
+                                                      aura:id="foreign_income_tax_number"
+                                                      value="{!v.client.foreign_income_tax_number}"
+                                                      change="{!c.checkLenght}"
+                                                      />
+                                        <div style="color:red;">{!v.client.foreign_income_tax_number_validation}</div>
+                                        
+                                    </div>      
+                                    
+                                </aura:set>    
+                                
+                            </aura:if>
+                            
+                            <aura:set attribute="else"> 
+                                <div class="slds-col" style="color:gray;" >
+                                    Foreign income tax number:
+                                </div>
+                                
+                                <div class="slds-col" style="color:gray;">
+                                    <ui:inputText label="" 
+                                                  class="slds-input"
+                                                  disabled="true" 
+                                                  aura:id="foreign_income_tax_number"
+                                                  value="{!v.client.foreign_income_tax_number}"/>
+                                </div>
+                            </aura:set>
+                            
+                        </aura:if>
+                        
+                    </div>
+                    
+                    
+                    <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                        
+                        <aura:if isTrue="{!v.client.client_registered_for_foreign_income_tax == 'Y'}">
+                            
+                            
+                            <aura:if isTrue="{!v.foreign_income_tax_reason_grayout}">
+                                
+                                
+                                <div class="slds-col">
+                                    Reason foreign income tax number not given: <abbr class="slds-required" 
+                                                                                      title="required">* </abbr>
+                                </div>
+                                
+                                <div class="slds-col">                                              
+                                    <c:sales_DropDown pickListValues="{!v.client.reason_foreign_income_tax_num_not_given_values}" 
+                                                      selectedValue="{!v.client.reason_foreign_income_tax_num_not_given_value}"
+                                                      selectedLabel="{!v.client.reason_foreign_income_tax_num_not_given_label}"
+                                                      grayout="true"
+                                                      activeDropdown = "true"/>                                    
+                                    
+                                </div>
+                                
+                                <aura:set attribute="else">
+                                    
+                                    <div class="slds-col" style="grey">
+                                        Reason foreign income tax number not given: <abbr class="slds-required" 
+                                                                                          title="required">* </abbr>
+                                    </div>
+                                    
+                                    <div class="slds-col slds-col-grey">                                            
+                                        <c:sales_DropDown pickListValues="{!v.client.reason_foreign_income_tax_num_not_given_values}" 
+                                                          selectedValue="{!v.client.reason_foreign_income_tax_num_not_given_value}"
+                                                          selectedLabel="{!v.client.reason_foreign_income_tax_num_not_given_label}"/>                                    
+                                        <div style="color:red;">{!v.client.foreign_tax_dropdown_validation}</div>
+                                        
+                                    </div>
+                                    
+                                </aura:set>
+                                
+                                
+                            </aura:if>
+                            
+                            <aura:set attribute="else">
+                                
+                                <div class="slds-col">
+                                    Reason foreign income tax number not given: <abbr class="slds-required" 
+                                                                                      title="required">* </abbr>
+                                </div>
+                                
+                                <div class="slds-col">                                              
+                                    <c:sales_DropDown pickListValues="{!v.client.reason_foreign_income_tax_num_not_given_values}" 
+                                                      selectedValue="{!v.client.reason_foreign_income_tax_num_not_given_value}"
+                                                      selectedLabel="{!v.client.reason_foreign_income_tax_num_not_given_label}"
+                                                      grayout="true"
+                                                      activeDropdown = "true"/>                                    
+                                    
+                                </div>
+                                
+                            </aura:set>
+                            
+                        </aura:if>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</aura:component>

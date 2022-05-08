@@ -1,0 +1,338 @@
+<!--
+  @description       : 
+  @author            : 
+  @last modified on  : 2021-06-30
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-06-30      Initial Version
+-->
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="accItem" type="Application_Security_CPF__c" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="isunLimited" type="string" />
+    <aura:attribute name="newUnLimitedGaurantee" type="Application_Security_CPF__c[]" />
+    <aura:attribute name="isActiveRemoveAccount" type="Boolean" default="false" />
+    <aura:attribute name="unlimrowindex" type="String" />
+    <aura:attribute name="showTobeReleasedOptions" type="String" />
+    <aura:attribute name="showIncAddOptions" type="String" />
+    <aura:attribute name="productName" type="String" />
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading..." />
+        </div>
+    </aura:if>
+    <!-- Register Application Events -->
+    <aura:registerEvent name="CPFLimitedandUnlimitedGauranteesevent" type="c:CPFLimitedandUnlimitedGauranteesevent"/>
+    <!--<lightning:accordion activeSectionName="UnLimited Guarantees" allowMultipleSectionsOpen="false"> 
+<lightning:accordionSection name="UnLimitedGuarantees" label="UnLimited Guarantees" >-->
+    <aura:if isTrue="{!v.isunLimited =='New'}">
+        <lightning:recordEditForm aura:id="isecurityOfferedCpfRecord" objectApiName="Application_Security_CPF__c"  >
+            
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <p>Mortgage bond number</p>
+                        <ui:outputText aura:id="unlimuniqueID" value="{!v.unlimrowindex + 1}"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove This Account" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+                        <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                            <lightning:button class="slds-float_right" label="Remove Account" variant="brand" onclick="{!c.removeUnlimitedAccount}" />
+                        </aura:if>                                   
+                    </span>
+                </div>
+                <aura:if isTrue="{!v.productName =='CPF Below R5 Million'}">
+                    <div class="slds-col slds-size_1-of-2 ; slds-hide">
+                        <span >
+                            <lightning:inputField fieldName="CPF_Product_Name__c" aura:id="prodname" value="CPF Below R5 Million"/>
+                        </span>
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.productName =='CPF Above R5 Million'}">
+                    <div class="slds-col slds-size_1-of-2 ; slds-hide">
+                        <span >
+                            <lightning:inputField fieldName="CPF_Product_Name__c" aura:id="prodname" value="CPF Above R5 Million"/>
+                        </span>
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.productName =='CPF Development Loan'}">
+                    <div class="slds-col slds-size_1-of-2 ; slds-hide">
+                        <span >
+                            <lightning:inputField fieldName="CPF_Product_Name__c" aura:id="prodname" value="CPF Development Loan"/>
+                        </span>
+                    </div>
+                </aura:if>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Mortgage bond type</span>
+                        </label>
+                        <lightning:inputField fieldName="Mortgage_bond_type__c" aura:id="inputunlimiGuarName" value="{!v.accItem.Mortgage_bond_type__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                <aura:if isTrue="{!or(or(v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by borrower' ,v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by third party'),v.accItem.Mortgage_bond_type__c =='Registration over notarial lease')}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="CPA_document_version__c" aura:id="InputDatereg" value="{!v.accItem.CPA_document_version__c}" required="true"/>
+                        </span>
+                    </div> 
+                    <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration over notarial lease'}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="required">* </span>
+                                    <span class="slds-m-right_small">Notarial lease Property description</span>
+                                    <lightning:helptext icon-name="utility:like" content="Capture the notarial lease Property description" />
+                                </label>
+                                <lightning:inputField fieldName="Property_description__c" variant="label-hidden" aura:id="notarialleaseproperty" value="{!v.accItem.Property_description__c}" required="true"/>
+                            </span>
+                        </div> 
+                    </aura:if>
+                    <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c !='Registration over notarial lease'}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="required">* </span>
+                                    <span class="slds-m-right_small">Property description</span>
+                                    <lightning:helptext icon-name="utility:like" content="The registration of a Mortgage Bond by [INSERT BORROWER NAME] (Registration Number: [INSERT BORROWER REGISTRATION NUMBER)] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount.). (Option: [STANDARD/LIMITED CPA/FULL CPA])Option: [REPEATER]" />
+                                </label>
+                                <lightning:inputField fieldName="Property_description__c" variant="label-hidden" aura:id="InputPropertyDes" value="{!v.accItem.Property_description__c	}" required="true"/>
+                            </span>
+                        </div> 
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Property ranking</span>
+                                <lightning:helptext icon-name="utility:like" content="The registration of a Mortgage Bond over the notarial lease entered into between [INSERT BORROWER NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] and [INSERT LESSOR NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount)." />
+                            </label>
+                            <lightning:inputField fieldName="Property_ranking__c" variant="label-hidden" aura:id="InputPropertyRank" value="{!v.accItem.Property_ranking__c}" required="true"/>
+                        </span>
+                    </div> 
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Mortgage bond amount</span>
+                                <lightning:helptext icon-name="utility:like" content="The registration of a Mortgage Bond over the notarial lease entered into between [INSERT BORROWER NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] and [INSERT LESSOR NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount)." />
+                            </label>
+                            <lightning:inputField fieldName="Mortgage_bond_amount__c"  variant="label-hidden" aura:id="InputBondAmount" value="{!v.accItem.Mortgage_bond_amount__c}" required="true"/>
+                        </span>
+                    </div>
+                    <aura:if isTrue="{!or(v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by third party',v.accItem.Mortgage_bond_type__c =='Registration over notarial lease')}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="required">* </span>
+                                    <span class="slds-m-right_small">Third party name</span>
+                                    <lightning:helptext icon-name="utility:like" content="Capture the third party name" />
+                                </label>
+                                <lightning:inputField fieldName="Third_party_name__c"  variant="label-hidden" aura:id="thirdpartyname" value="{!v.accItem.Third_party_name__c}" required="true"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="required">* </span>
+                                    <span class="slds-m-right_small">Third party registration/ ID number</span>
+                                    <lightning:helptext icon-name="utility:like" content="Capture the third party registration/ ID number" />
+                                </label>
+                                <lightning:inputField fieldName="Third_party_registration_ID_number__c"  variant="label-hidden" aura:id="thirdpartyregIdnumber" value="{!v.accItem.Third_party_registration_ID_number__c}" required="true"/>
+                            </span>
+                        </div>
+                    </aura:if>
+                </aura:if>
+                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Additional bond'}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Additional bond</span>
+                                <lightning:helptext icon-name="utility:like" content="Capture the additional bond details" />
+                            </label>
+                            <lightning:inputField fieldName="Additional_bond__c" variant="label-hidden" aura:id="additionalbond" value="{!v.accItem.Additional_bond__c}" required="true"/>
+                        </span>
+                    </div> 
+                </aura:if>
+            </div>
+        </lightning:recordEditForm>
+    </aura:if>
+    <aura:if isTrue="{!v.isunLimited =='Existing'}">
+        <lightning:recordEditForm aura:id="isecurityOfferedCpfRecord" objectApiName="Application_Security_CPF__c"  >
+            
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <p>Mortgage bond number</p>
+                        <ui:outputText aura:id="unlimuniqueID" value="{!v.unlimrowindex + 1}"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove This Account" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+                        <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                            <lightning:button class="slds-float_right" label="Remove Account" variant="brand" onclick="{!c.removeUnlimitedAccount}" />
+                        </aura:if>                                   
+                    </span>
+                </div>
+                <aura:if isTrue="{!v.productName =='CPF Below R5 Million'}">
+                    <div class="slds-col slds-size_1-of-2 ; slds-hide">
+                        <span >
+                            <lightning:inputField fieldName="CPF_Product_Name__c" aura:id="prodname" value="CPF Below R5 Million"/>
+                        </span>
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.productName =='CPF Above R5 Million'}">
+                    <div class="slds-col slds-size_1-of-2 ; slds-hide">
+                        <span >
+                            <lightning:inputField fieldName="CPF_Product_Name__c" aura:id="prodname" value="CPF Above R5 Million"/>
+                        </span>
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.productName =='CPF Development Loan'}">
+                    <div class="slds-col slds-size_1-of-2 ; slds-hide">
+                        <span >
+                            <lightning:inputField fieldName="CPF_Product_Name__c" aura:id="prodname" value="CPF Development Loan"/>
+                        </span>
+                    </div>
+                </aura:if>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Mortgage bond type</span>
+                            <lightning:helptext icon-name="utility:like" content="A Mortgage Bond by [INSERT BORROWER NAME] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] and for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount.)." />
+                        </label>
+                        <lightning:inputField fieldName="Mortgage_bond_type__c" aura:id="inputunlimiGuarName" value="{!v.accItem.Mortgage_bond_type__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                <aura:if isTrue="{!or(or(v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by borrower' ,v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by third party'),v.accItem.Mortgage_bond_type__c =='Registration over notarial lease')}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Date registered</span>
+                                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by borrower'}">
+                                    <lightning:helptext icon-name="utility:like" content="A Mortgage Bond by [INSERT BORROWER NAME] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] and for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount.)." />
+                                </aura:if>
+                                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by third party'}">
+                                    <lightning:helptext icon-name="utility:like" content="A Mortgage Bond by [INSERT THIRD PARTY NAME] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount.)." />
+                                </aura:if>
+                                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration over notarial lease'}">
+                                    <lightning:helptext icon-name="utility:like" content="A Mortgage Bond over the notarial lease entered into between [INSERT BORROWER NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] and [INSERT LESSOR NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] and for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid of the aforesaid amount)." />
+                                </aura:if>
+                            </label>
+                            <lightning:inputField fieldName="Date_registered__c" aura:id="InputDatereg" value="{!v.accItem.Date_registered__c}" variant="label-hidden" required="true"/>
+                        </span>
+                    </div>
+                    <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c !='Registration over notarial lease'}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="required">* </span>
+                                    <span class="slds-m-right_small">Property description</span>
+                                    <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by borrower'}">
+                                        <lightning:helptext icon-name="utility:like" content="A Mortgage Bond by [INSERT BORROWER NAME] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] and for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount.)." />
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by third party'}">
+                                        <lightning:helptext icon-name="utility:like" content="A Mortgage Bond by [INSERT THIRD PARTY NAME] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount.)." />
+                                    </aura:if>
+                                </label>
+                                <lightning:inputField fieldName="Property_description__c" variant="label-hidden" aura:id="InputPropertyDes" value="{!v.accItem.Property_description__c	}" required="true"/>
+                            </span>
+                        </div>
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Property ranking</span>
+                                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by borrower'}">
+                                    <lightning:helptext icon-name="utility:like" content="A Mortgage Bond by [INSERT BORROWER NAME] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] and for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount.)." />
+                                </aura:if>
+                                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by third party'}">
+                                    <lightning:helptext icon-name="utility:like" content="A Mortgage Bond by [INSERT THIRD PARTY NAME] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount.)." />
+                                </aura:if>
+                                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration over notarial lease'}">
+                                    <lightning:helptext icon-name="utility:like" content="A Mortgage Bond over the notarial lease entered into between [INSERT BORROWER NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] and [INSERT LESSOR NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] and for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid of the aforesaid amount)." />
+                                </aura:if>
+                            </label>
+                            <lightning:inputField fieldName="Property_ranking__c" variant="label-hidden" aura:id="InputPropertyRank" value="{!v.accItem.Property_ranking__c}" required="true"/>
+                        </span>
+                    </div> 
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Mortgage bond amount</span>
+                                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by borrower'}">
+                                    <lightning:helptext icon-name="utility:like" content="The registration of a Mortgage Bond by [INSERT BORROWER NAME] (Registration Number: [INSERT BORROWER REGISTRATION NUMBER)] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount.). (Option: [STANDARD/LIMITED CPA/FULL CPA])Option: [REPEATER]" />
+                                </aura:if>
+                                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by third party'}">
+                                    <lightning:helptext icon-name="utility:like" content="A Mortgage Bond by [INSERT THIRD PARTY NAME] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid amount.)." />
+                                </aura:if>
+                                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration over notarial lease'}">
+                                    <lightning:helptext icon-name="utility:like" content="A Mortgage Bond over the notarial lease entered into between [INSERT BORROWER NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] and [INSERT LESSOR NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] over [INSERT PROPERTY DESCRIPTION] ranking [NUMBER] and registered on [INSERT BOND REGISTRATION DATE] and for an amount of R[AMOUNT] and an additional amount to secure interest and costs, charges and disbursements due to the Bank if it exercises any right under the Mortgage Bond (limited to 20% of the aforesaid of the aforesaid amount)." />
+                                </aura:if>
+                            </label>
+                            <lightning:inputField fieldName="Mortgage_bond_amount__c"  variant="label-hidden" aura:id="InputBondAmount" value="{!v.accItem.Mortgage_bond_amount__c}" required="true"/>
+                        </span>
+                    </div>
+                    <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Registration over notarial lease'}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="required">* </span>
+                                    <span class="slds-m-right_small">Notarial lease Property description</span>
+                                    <lightning:helptext icon-name="utility:like" content="Capture the notarial lease Property description" />
+                                </label>
+                                <lightning:inputField fieldName="Property_description__c" variant="label-hidden" aura:id="notarialleaseproperty" value="{!v.accItem.Property_description__c}" required="true"/>
+                            </span>
+                        </div> 
+                    </aura:if>
+                </aura:if>
+                <aura:if isTrue="{!or(v.accItem.Mortgage_bond_type__c =='Registration of mortgage bond by third party',v.accItem.Mortgage_bond_type__c =='Registration over notarial lease')}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Third party name</span>
+                                <lightning:helptext icon-name="utility:like" content="Capture the third party name" />
+                            </label>
+                            <lightning:inputField fieldName="Third_party_name__c"  variant="label-hidden" aura:id="thirdpartyname" value="{!v.accItem.Third_party_name__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Third party registration/ ID number</span>
+                                <lightning:helptext icon-name="utility:like" content="Capture the third party registration/ ID number" />
+                            </label>
+                            <lightning:inputField fieldName="Third_party_registration_ID_number__c"  variant="label-hidden" aura:id="thirdpartyregIdnumber" value="{!v.accItem.Third_party_registration_ID_number__c}" required="true"/>
+                        </span>
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.accItem.Mortgage_bond_type__c =='Additional bond'}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Additional bond</span>
+                                <lightning:helptext icon-name="utility:like" content="Capture the additional bond details" />
+                            </label>
+                            <lightning:inputField fieldName="Additional_bond__c" variant="label-hidden" aura:id="additionalbond" value="{!v.accItem.Additional_bond__c}" required="true"/>
+                        </span>
+                    </div> 
+                </aura:if>
+            </div>
+        </lightning:recordEditForm>
+    </aura:if>
+</aura:component>

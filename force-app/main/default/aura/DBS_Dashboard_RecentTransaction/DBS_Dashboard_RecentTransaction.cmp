@@ -1,0 +1,89 @@
+<aura:component access="global" implements="force:appHostable">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <aura:attribute name="loadTransText" type="String" default="slds-hide"/>
+    <aura:attribute name="transactionsList" type="Object[]" default="" />
+	<aura:attribute name="clickedTransactions" type="String[]" default=""/> 
+    <aura:attribute name="showSpinner" type="String" default="slds-hide" />
+
+    <div class="slds-p-left_xx-small slds-p-top_x-small">
+        <div class="slds-grid">
+            <div class="slds-size--1-of-1 slds-large-size--1-of-1">
+
+                <table class="slds-table--cell-buffer slds-max-medium-table--stacked-horizontal">
+                  <thead>                     
+                     <tr class="slds-grid slds-wrap apply-text-color slds-p-bottom_medium" style="color: #942b49;">    
+                        <th scope="col" class="slds-size_1-of-7">
+                            <div>Date</div>
+                        </th>
+                        <th scope="col" class="slds-size_1-of-7">
+                            <div>Time</div>
+                        </th>
+                        <th scope="col" class="slds-size_1-of-7">
+                            <div>Amount</div>
+                        </th>
+                        <th scope="col" class="slds-size_1-of-7">
+                            <div>Channel</div>
+                        </th>
+                         <th scope="col" class="slds-size_1-of-7">
+                            <div>Reference</div>
+                        </th>
+                         <th scope="col" class="slds-size_2-of-7">
+                            <div>Description</div>
+                        </th>						
+                     </tr>
+                  </thead>
+                    <tbody >
+                        <div style="max-height: 450px;overflow-y: auto;overflow-x:hidden;">
+                        <!-- ************************* PARENT ROW******************************* -->
+                        <aura:iteration items="{!v.transactionsList}" var="row">
+                            <aura:if isTrue="{!row.relationship == 'parent'}">
+                                <tr data-relationship="{!row.relationship}" data-id="{!row.index}" onclick="{!c.expandRowsHandler}" class="{!row.row_class+' slds-grid slds-wrap row-hover-class slds-p-top_x-small slds-p-bottom_x-small parent-class slds-m-top_small'}">
+                                    <td class="slds-size_1-of-7">
+                                        <div class="slds-grid">
+                                            <div class="{!row.icon_class}" style="margin-left:6px;" />
+                                            <div style="padding-left:7px;">{!row.trans_date}</div>
+                                        </div>
+                                    </td>
+                                    <td class="slds-size_1-of-7">{!row.trans_time}</td>
+                                    <td class="slds-size_1-of-7">{!row.trans_amount}</td>
+                                    <td class="slds-size_1-of-7">{!row.trans_channel}</td>
+                                    <td class="slds-size_1-of-7">{!row.trans_reference}</td>
+                                    <td class="slds-size_2-of-7"><lightning:formattedRichText value="{!row.trans_description}"/></td>                                                           
+                                </tr>
+                                <aura:set attribute="else">
+                                    <!-- ************************* CHILD ROW******************************* -->
+                                    <tr data-relationship="{!row.relationship}" data-id="{!row.index}" onclick="{!c.expandRowsHandler}" class="{!row.row_class+' slds-grid slds-wrap row-hover-class slds-p-top_xx-small'}">
+                                        <td colspan="2" style="padding-left:30px;border: 1px solid transparent; " class="slds-size_2-of-6">
+                                            <div class="slds-grid slds-grid_align-spread" style="background-color:white;border-radius:5px;padding-top:5px;padding-bottom:5px;padding-left:10px;padding-right:10px;">
+                                                <div>
+                                                    {!row.label}
+                                                </div>
+                                                <div>
+                                                    <b>{!row.value}</b>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="slds-size_4-of-6"></td>
+                                    </tr>
+
+                                </aura:set>
+                            </aura:if>
+                        </aura:iteration>
+                        </div>
+                    </tbody>
+                </table>
+                <div class="slds-grid slds-gutters">
+                    <div class="{!v.loadTransText+' slds-col slds-size_11-of-12 slds-p-top_x-large'}">
+                        <p class="loading">Loading more transactions</p>
+                    </div>
+                </div>
+                <aura:if isTrue="{!(v.transactionsList.length == 0)}">
+                    <div class="slds-align_absolute-center slds-p-around_xx-small slds-size--1-of-1">No transactions found</div>
+                </aura:if>
+            </div>
+        </div>
+    </div>
+    <c:DBS_Dashboard_Spinner showSpinner="{!v.showSpinner}" spinnerMsg="Recent transactions loading ..." />
+</aura:component>

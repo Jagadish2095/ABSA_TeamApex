@@ -1,0 +1,109 @@
+<!-- @description Lightning Component is based upon Early Risk Detection CaseOutcomeScreen
+        @author Manideep kenche
+        @created 2021/09/28
+  @work W-012127 -->
+<aura:component controller="CaseOutcomeScreenController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,lightning:availableForFlowScreens,force:hasRecordId" access="global" >
+    
+    <aura:attribute name="closeCase" type="Boolean" Default="false" />
+    <aura:attribute name="Fraudoutcome" type="Boolean" Default="false" />
+    <aura:attribute name="newComment" type="String"/>
+    <aura:attribute name="selectDate" type="DateTime" />
+    <aura:attribute name="storeBoolean" type="Boolean" default = "false"/>
+   
+    <aura:attribute name="showCommentSection" type="Boolean" Default="false" />
+    
+    <aura:attribute name="showReminder" type="Boolean" Default="false" />
+    <aura:attribute name="showReminderButton" type="Boolean" Default="false" />
+    <aura:attribute name="targetQueue" type="String"/>
+    <aura:attribute name="fraudType" type="String"/>
+    <aura:attribute name="BacktoCollectionsButton" type="Boolean" Default="false" />
+    <aura:attribute name="caseIdFromFlow" type="String" access="global" />
+    <aura:attribute name="errorMessage" type="String" />
+    
+    <!-- close case -->
+    <aura:attribute name="caseRecord" type="Case" />
+    <force:recordData aura:id="recordLoader" recordId="{!v.caseIdFromFlow}" fields="Client_Email_Address__c,Status,Out_Of_SLA_Comments__c,Out_Of_SLA_Reason__c"
+                      targetFields="{!v.caseRecord}" />
+    <lightning:recordEditForm aura:id="caseCloseEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}">
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+        <lightning:inputField aura:id="outOfSLA" fieldName="Out_Of_SLA_Comments__c" class="slds-hide" />
+        <lightning:inputField aura:id="outOfSLAReason" fieldName="Out_Of_SLA_Reason__c" class="slds-hide"/>
+        <lightning:inputField aura:id="type" fieldName="Type__c" class="slds-hide"/>
+        <lightning:inputField aura:id="originalServiceGroupId" fieldName="sd_Original_Service_Group__c"
+                              class="slds-hide"/>
+    </lightning:recordEditForm>
+    
+    <!-- select fraud outcome  -->
+    <lightning:layout >
+        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+            <ui:message title="Error" severity="error" closable="false">
+                {!v.errorMessage}
+            </ui:message>
+        </aura:if>
+        <lightning:layoutItem>
+            <lightning:select aura:id="outCome" name="Fraudoutcome" label="select outcome" required="true" onchange="{!c.onChangeValue}">
+                <option value="">choose one</option>
+                <option value="Application Fraud">Application Fraud</option>
+                <option value="Transactional Fraud">Transactional Fraud</option>
+                <option value="No Fraud">No Fraud</option>
+            </lightning:select>
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+    <aura:if isTrue="{!v.Fraudoutcome=='Application Fraud'}">
+        <lightning:layout>
+            <lightning:layoutItem padding="around-small" size="6">
+                <b>Select Type of Fraud</b>
+                <br></br>
+                <ui:inputRadio aura:id="1stparty"  label="1st party fraud" name="Fraud" change="{!c.onRadioButtonChange}"/><br/>
+                <ui:inputRadio aura:id="3rdparty"  label="3rd party fraud" name="Fraud" change="{!c.onRadioButtonChange}"/><br/>
+                
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showReminder}">
+        <lightning:input aura:id="field"
+                         type="DateTime" 
+                         name="MyDatefield" 
+                         label="Set Follow Up Reminder" 
+                         value="{!v.selectDate}"
+                         dateStyle="short"
+                         onchange ="{!c.getDateFromInput}"/>
+        
+       
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showCommentSection}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="6" padding="around-small">
+                <lightning:textarea aura:id="commentField" name="CommentBody" label="EnterCaseComments"
+                                    value="{!v.newComment}" required="true"/>
+            </lightning:layoutItem>    
+        </lightning:layout>
+    </aura:if>
+    
+    <footer class="slds-card__footer" style="height:4rem">
+        <a class="slds-card__footer-action" >
+            <aura:if isTrue="{!or(v.closeCase,v.Fraudoutcome=='No Fraud')}">
+                <lightning:button
+                                  aura:id="closecase"
+                                  variant="brand"
+                                  name="CloseCase"
+                                  label="CloseCase"
+                                  onclick="{!c.getcloseCase}"/>    
+            </aura:if>
+            <aura:if isTrue="{!v.showReminderButton}">
+                <lightning:button aura:id="getDate"
+                                  variant="brand"
+                                  name="CreateReminder"
+                                  label="CreateReminder"
+                                  onclick="{!c.sendReminder}"/>
+            </aura:if>
+            <aura:if isTrue="{!or(v.Fraudoutcome == 'Transactional Fraud', v.fraudType == '1st party fraud')}">
+                <lightning:button label=" Assign to collections" onclick="{!c.BacktoCollections}" variant="brand"/>
+            </aura:if>
+        </a>
+    </footer>
+    
+</aura:component>

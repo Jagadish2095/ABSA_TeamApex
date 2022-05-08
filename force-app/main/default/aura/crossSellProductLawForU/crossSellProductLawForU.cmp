@@ -1,0 +1,183 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" controller="CrossSellProductsController" access="global" >
+    
+    <!--quoteeditattrib-->
+    <aura:attribute name="showQuoteEdit" type="boolean" default="false"/>
+    <aura:attribute name="updateQuoteScreenClose" type="boolean" default="false"/>
+    
+    <aura:attribute name="opportunityDetails" type="object" />
+     <aura:attribute name="oppPartyDetails" type="object"/>
+    <aura:attribute name="oppPartyDetailsList" type="object[]"/>
+    <aura:attribute name= "planOptions" type="List"/>
+    <aura:attribute name= "selectedPlan" type="String"/>
+    <aura:attribute name="premium" type = "String"/>
+    <aura:attribute name="coverage" type = "String"/>
+    
+    <aura:attribute name="planpremiumMap" type = "object"/>
+    <aura:attribute name="planCovergeMap" type = "object"/>
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    
+    <aura:attribute name= "showViewPanelModal" type="Boolean" default="false"/>
+    <aura:attribute name="isQuoteDone" type="Boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="quoteStatus" type="String" />
+    <!--# Flow Attribute -->
+    <aura:attribute name="selectedProductFromFlow" type="String" />
+    <aura:attribute name="QuoteFromFlow" type="String"  />
+    <aura:attribute name="OpportunityFromFlow" type="String"  default="0067Z00000JYdgVQAT"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:registerEvent name="navigateFlowEvent" type="c:navigateFlowEvt"/>
+    <aura:attribute name="availableActions" type="String[]" />
+    
+    <!--aded on 11032021 by pranav for sti requ-->
+    <aura:attribute name="accountNotValid" type="boolean" default="true"/>
+    <aura:attribute name="accountInValidReason" type="String"/>
+    
+     <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <!--casa check-->
+    <aura:if isTrue="{!v.accountNotValid}">
+        <lightning:layout multipleRows="true" class="slds-notify slds-notify_toast slds-theme_error">
+            <div class="slds-notify__content">
+                <h6 class="slds-text-heading_small">Error Message </h6>
+                <br/>
+                <p class="slds-align_absolute-center">{!v.accountInValidReason}</p>
+            </div>
+            <lightning:layoutItem size="12">
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Refresh" onclick="{!c.doInit}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+        <aura:set attribute="else">
+        <h1 class="slds-section__title"><b>Law 4U Product</b></h1>
+        <div></div>
+        <lightning:layout multipleRows="true">
+            
+            <lightning:layoutItem padding="around-small" size="4">
+                <lightning:select aura:id="lawForYouPick"  name="LawforUplan" class="magnifyLabel" label="Law for U plan" value="{!v.selectedPlan}" onchange="{!c.onPicklistselectedPlanChange}"  required="true">
+                    <aura:iteration items="{!v.planOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>
+        </lightning:layout>  
+    
+    <div style="padding-top: 10px;">
+        <lightning:datatable
+            columns="{! v.columns }"
+            data="{! v.data}"
+            keyField="id"
+            hideCheckboxColumn="true"
+            onrowaction="{! c.handleRowAction }"
+            minColumnWidth="100"/>
+    </div><br/>
+         <lightning:recordEditForm aura:id="iCreateOpportunity" objectApiName="Opportunity" recordId="{!v.OpportunityFromFlow}">
+            <lightning:layout>
+               <lightning:layoutItem padding="around-small" size="12">
+                     <lightning:inputField class="magnifyLabel" fieldName="Quote_Outcome__c" aura:id="Quote_Outcome__c" value="{!v.opportunityDetails.Quote_Outcome__c}" disabled="{!v.readOnlyFields}" required="true" onchange="{!c.onOutcomeChange}"/>
+                     
+                   <aura:if isTrue="{!v.isQuoteDone}">
+                       <lightning:input  class="magnifyLabel"  label="Quote Outcome Reason" aura:id="Last_Name__c" value="{!v.opportunityDetails.Quote_Outcome_Reason__c}" disabled="{!v.readOnlyFields}" /> 
+                   <aura:set attribute="else">
+                     <lightning:inputField class="magnifyLabel" fieldName="Quote_Outcome_Reason__c" aura:id="Quote_Outcome_Reason__c" value="{!v.opportunityDetails.Quote_Outcome_Reason__c}" disabled="{!v.readOnlyFields}" />
+                   </aura:set>
+                   </aura:if>
+               </lightning:layoutItem>
+        </lightning:layout>
+        </lightning:recordEditForm>
+    <div class="slds-float_right"> 
+        <lightning:layout multipleRows="true">
+        <aura:if isTrue="{!v.showQuoteEdit}">
+                <lightning:button variant="brand" label="Quote" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+                <aura:set attribute="else"> 
+        <!--<lightning:button  variant="brand" label="Previous" aura:id="BACK" onclick="{!c.handleChangePrev}"/>-->
+        <aura:if isTrue="{!v.isQuoteDone}">
+             <lightning:button variant="brand" label="Next" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+        <aura:set attribute="else">
+             <lightning:button variant="brand" label="Quote" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+        </aura:set>
+         </aura:if>
+                </aura:set>
+            </aura:if>
+        </lightning:layout>
+    </div>
+    <br/>
+    <br/>
+        </aura:set>
+    </aura:if>
+       <!-- <p style="margin-top:5px">* Only Main Memeber will be covered.</p> -->
+    
+        
+    <aura:if isTrue="{!v.showViewPanelModal}">
+        <!--###### MODAL BOX Start######--> 
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeConfirmation}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Close Confirmation</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem size="12">
+                            <h2 class="slds-section__title">Main Member Details</h2>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Account_First_Name__c}" label="First Name" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Account_First_Name__c}" label="Last Name" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Account_Gender__c}" label="Gender" disabled="true"/>
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Id_Type__c}" label="ID Type"  disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.ID_Number__c}" label="Id Number" disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.CIF_Number__c}" label="CIF Number"  disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_BirthDate__c}" label="Date of Birth" type="date" disabled="true" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Account_Age__c}" label="Age" disabled="true" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Email__c}" label="Email" disabled="true" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Phone__c}" label="Phone" disabled="true" />
+                        </lightning:layoutItem>
+                        
+                    </lightning:layout>
+                </div>
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Close"
+                                      title="Close"
+                                      onclick="{!c.closeConfirmation}"/>
+                    
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+    </aura:if>
+
+</aura:component>

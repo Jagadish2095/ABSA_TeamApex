@@ -1,0 +1,396 @@
+<aura:component implements="lightning:availableForFlowScreens,force:hasRecordId,flexipage:availableForAllPageTypes" controller="SpouseManagementController">
+    
+    <!--quoteeditattrib-->
+    <aura:attribute name="showQuoteEdit" type="boolean" default="false"/>
+    <aura:attribute name="updateQuoteScreenClose" type="boolean" default="false"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <aura:attribute name="spouse" type="Opportunity_Party__c" default="{sobjectType:'Opportunity_Party__c'}"/>
+    <aura:attribute name="allBeneficiaries" type="Opportunity_Party__c[]"/>
+    <aura:attribute name="totalBeneficiarySplit" type="Integer"/>
+    <aura:attribute name="currentSplit" type="Integer"/>
+    
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    
+    <aura:attribute name="updateRecordId" type="String"/>
+    <aura:attribute name="showUpdatePanel" type="boolean" default="false"/>
+    <aura:attribute name="showNewPanel" type="boolean" default="false"/>
+    
+    <aura:attribute name="isAlsoBeneficiary" type="boolean" default="false"/>
+    <aura:attribute name="isAlsoBeneficiaryUpdate" type="boolean" default="false"/>
+    
+    <aura:attribute name="recordId" type="Integer"/>
+    <aura:attribute name="showCommissionScreen" type="boolean" default="false"/>
+    <aura:attribute name="opptyRecordType" type="String"/>
+    <aura:attribute name="CoverOptions" type="List"/>
+    <aura:attribute name="GroceryBenefitCoverOptions" type="List"/>
+    <aura:attribute name="FuneralBenefitCoverOptions" type="List"/>
+    <aura:attribute name="UnveilingBenefitCoverOptions" type="List"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="pricingMatrix" type="EPP_Pricing_Matrix__c" default="{sobjectType:'EPP_Pricing_Matrix__c'}"/>
+    <aura:attribute name="selectedOppIdFromFlow" type="String" access="global"/>
+    <aura:attribute name="selectedMainMemberCoverFromFlow" type="String" access="global"/>
+    <aura:attribute name="selectedProductNameFromFlow" type="String" access="global"  />
+    <aura:attribute name="selectedGenderValue" type="String" />
+    <aura:attribute name="selectedCoverValue" type="String"/>
+    <aura:attribute name="selectedGroceryBenefitCoverValue" type="String"/>
+    <aura:attribute name="selectedUnveilingBenefitCoverValue" type="String"/>
+    <aura:attribute name="selectedFuneralBenefitCoverValue" type="String"/>
+    <aura:attribute name="opptyProductInt" type="String"/>
+    <aura:attribute name="totalPremiumLbl" type="String" default="Total Premium: R0.00"/>
+    <aura:attribute name="CoverPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="GroceryBenefitPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="AfterFuneralBenefitPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="UnveilingBenefitPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="CarHireBenefitPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="PremiumPaymnetBenefitPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="totalPremium" type="Double" default="0.00"/>
+    <aura:attribute name="CoverPremium" type="Double" default="0.00"/>
+    <aura:attribute name="AfterFuneralBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="GroceryBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="UnveilingBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="CarHireBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="PremiumPaymnetBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="firstYearPremiumMonthly" type="Double" default="0.00"/>
+    <aura:attribute name="secondYearPremiumMonthly" type="Double" default="0.00"/>
+    <aura:attribute name="MainMemberPremiumRate" type="Double"/>
+    <aura:attribute name="MainMemberGroceryRate" type="Double"/>
+    <aura:attribute name="MainMemberUnveilingRate" type="Double"/>
+    <aura:attribute name="MainMemberFuneralRate" type="Double"/>
+    <aura:attribute name="MainMemberDiscountRate" type="Double"/>
+    <aura:attribute name="MainMemberGroceryDiscountRate" type="Double"/>
+    <aura:attribute name="benefitMap" type="List"/>
+    <aura:attribute name="lineItemMap" type="List"/>
+    <aura:attribute name="response" type="Object"/>
+    <aura:attribute name="quoteTotal" type="String"/>
+    <aura:attribute name="spouseAge" type="Double"/>
+    <aura:attribute name="quoteLineItems" type="QuoteLineItem[]"/>
+    <aura:attribute name="isGroceryBenefitSelected" type="boolean" default="false"/>
+    <aura:attribute name="isFuneralBenefitSelected" type="boolean" default="false"/>
+    <aura:attribute name="isUnveilingBenefitSelected" type="boolean" default="false"/>
+    <aura:attribute name="showQuoteScreen" type="boolean" default="false"/>
+    <aura:attribute name="isEditQuote" type="boolean" default="false"/>
+    <aura:attribute name="isQuoteDone" type="boolean" default="true"/>
+    <aura:attribute name="dateOfBirth" type="Date"/>
+    <aura:attribute name="MainMemberGroceryBenefitValue" type="String"/>
+    <aura:attribute name="showSpouseScreen" type="boolean" default="false"/>
+    <aura:attribute name="UpdateSpouse" type="Opportunity_Party__c"/>
+    <aura:attribute name="showBenifits" type="boolean" default="true"/><!--Added by pranav on 23-06-2021 for ppr changes-->
+
+    <!-- Help Text (tool Tips) for Direct Delivery benefits-->
+    <!-- These attributes get set from labels-->
+    <aura:attribute name="groceryBenefitHelpText" type="String"/>
+    <aura:attribute name="afterFuneralBenefitHelpText" type="String"/>
+    <aura:attribute name="unveilingBenefitHelpText" type="String"/>
+    
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem size="6">
+            <h2 class="slds-section__title">New Spouse Capture</h2>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="6">
+            <aura:if isTrue="{!v.showNewPanel}">
+                <aura:set attribute="else">
+                    <lightning:button class="slds-m-top_small slds-float--right" aura:id="newSpouseButton" variant="brand" iconName="utility:add" iconPosition="left" label="New Spouse" onclick="{!c.newSpouse}"/>
+                </aura:set>
+            </aura:if> 
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+    <aura:if isTrue="{!v.showNewPanel}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:input aura:id="spouseForm" value="{!v.spouse.First_Name__c}" label="First Name" required="true"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:input aura:id="spouseForm" value="{!v.spouse.Last_Name__c}" label="Last Name" required="true"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:input aura:id="spouseForm" value="{!v.spouse.RSA_ID_Number__c}" label="RSA ID Number" maxlength="13" messageWhenTooLong="ID Number can only be 13 Digits long" minlength="8" messageWhenTooShort="ID Number must be 13 Digits long"/>
+            </lightning:layoutItem>
+            <!--<aura:if isTrue="{!v.opptyRecordType == 'Direct Delivery Sales Opportunity'}">
+                <lightning:layoutItem padding="around-small" size="4">
+                	<lightning:input aura:id="spouseForm"  value="{!v.spouse.Age_As_Number__c}" label="Age" onchange="{!c.calculateDOB }" type= "number" min= "0" required="true"/>
+            	</lightning:layoutItem>
+                <aura:set attribute="else">-->
+            		<lightning:layoutItem padding="around-small" size="4">
+                		<lightning:input aura:id="spouseForm" value="{!v.spouse.Date_of_Birth__c}" label="Date of Birth" type="date" onchange="{!c.calculateDOB }" required="true"/>
+            		</lightning:layoutItem>
+               <!-- </aura:set>
+            </aura:if>-->
+            <aura:if isTrue="{!v.opptyRecordType != 'Direct Delivery Sales Opportunity'}">
+                <lightning:layoutItem padding="around-small" size="2">
+                    <ui:inputCheckbox aura:id="checkbox" label="Also a Beneficiary?" change="{!c.onCheck}"/>
+                </lightning:layoutItem>
+            </aura:if>
+             <aura:if isTrue="{!v.opptyRecordType == 'Direct Delivery Sales Opportunity'}">
+                <lightning:layoutItem padding="around-small" size="2">
+                    <lightning:select aura:id="spouseForm" name="Gender" label="Gender" value="{!v.spouse.Gender__c}" required="true">
+                        <option value="">---None---</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </lightning:select>
+                </lightning:layoutItem>
+            </aura:if>
+            <lightning:layoutItem padding="around-small" size="6">
+                <aura:if isTrue="{!v.isAlsoBeneficiary}">
+                    <lightning:input aura:id="spouseForm" value="{!v.spouse.Benefit_Split__c}" label="Benefit Split" type="number" min="1" messageWhenRangeUnderflow="Value cannot be less than 1" required="true"/>
+                </aura:if>
+            </lightning:layoutItem>
+        </lightning:layout>
+    	</aura:if>
+    	<aura:if isTrue="{!v.showQuoteScreen}">
+            <aura:if isTrue="{!v.opptyRecordType == 'Direct Delivery Sales Opportunity'}">
+           		<aura:if isTrue="{!v.showSpouseScreen}">
+                      <lightning:layout multipleRows="true">
+            			<lightning:layoutItem padding="around-small" size="6">
+                			<lightning:input aura:id="updateForm" value="{!v.spouse.First_Name__c}" label="First Name" required="true"/>
+            			</lightning:layoutItem>
+            			<lightning:layoutItem padding="around-small" size="6">
+                			<lightning:input aura:id="updateForm" value="{!v.spouse.Last_Name__c}" label="Last Name" required="true"/>
+            			</lightning:layoutItem>
+            			<lightning:layoutItem padding="around-small" size="6">
+                			<lightning:input aura:id="updateForm" value="{!v.spouse.RSA_ID_Number__c}" label="RSA ID Number" maxlength="13" messageWhenTooLong="ID Number can only be 13 Digits long" minlength="8" messageWhenTooShort="ID Number must be 13 Digits long"/>
+            			</lightning:layoutItem>
+            		    <lightning:layoutItem padding="around-small" size="4">
+                			<lightning:input aura:id="updateForm" value="{!v.spouse.Date_of_Birth__c}" label="Date of Birth" onchange="{!c.calculateDOB }" type="date" required="true"/>
+            			</lightning:layoutItem>
+                		<lightning:layoutItem padding="around-small" size="2">
+                    		<lightning:select aura:id="updateForm" name="Gender" label="Gender" value="{!v.spouse.Gender__c}" required="true">
+                        		<option value="">---None---</option>
+                        		<option value="Male">Male</option>
+                        		<option value="Female">Female</option>
+                    		</lightning:select>
+                		</lightning:layoutItem>
+        			 </lightning:layout>
+                </aura:if>
+               <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12">
+                    <b><ui:outputText value="{!v.totalPremiumLbl}"/></b>
+                </lightning:layoutItem>
+                 <lightning:layoutItem padding="around-small" size="6">
+				<b><lightning:select aura:id="flexiFuneralCover" name="flexiFuneralCover" label="Cover" value="{!v.selectedCoverValue}" onchange="{!c.onPicklistCoverChange}" required="true">
+                    <aura:iteration items="{!v.CoverOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select></b>
+                <ui:outputText value="{!v.CoverPremiumLbl}"/>
+        	</lightning:layoutItem>
+     <aura:if isTrue="{!v.showBenifits}"><!--Addedd by pranav on 23-06-2021 for PPR changes-->
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:helptext content="{!v.groceryBenefitHelpText}"/>
+                <b><ui:inputCheckbox aura:id="GroceryBenefitCheckbox" label="Grocery Benefit" value="{!v.isGroceryBenefitSelected}" disabled='true' change="{!c.onBenefitCheck}"/></b>
+                <lightning:select aura:id="GroceryBenefitSelect" name="GroceryBenefitCover" label="Sum Assured" value="{!v.selectedGroceryBenefitCoverValue}" disabled= 'true' onchange="{!c.onPicklistCoverChange}">
+                    <aura:iteration items="{!v.GroceryBenefitCoverOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+                <ui:outputText value="{!v.GroceryBenefitPremiumLbl}"/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:helptext content="{!v.afterFuneralBenefitHelpText}"/>
+                    <b><ui:inputCheckbox aura:id="AfterfuneralBenefitCheckbox" label="After Funeral Benefit" value="{!v.isFuneralBenefitSelected}" disabled='true' change="{!c.onBenefitCheck}"/></b>
+                    <lightning:select aura:id="afterfuneralSelect" name="funeralBenefit" label="Sum Assured" value="{!v.selectedFuneralBenefitCoverValue}" disabled= 'true' onchange="{!c.onPicklistCoverChange}">
+                        <aura:iteration items="{!v.FuneralBenefitCoverOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                    <ui:outputText value="{!v.AfterFuneralBenefitPremiumLbl}"/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:helptext content="{!v.unveilingBenefitHelpText}"/>
+                    <b><ui:inputCheckbox aura:id="UnveilingBenefitCheckbox" label="Unveiling Benefit" value="{!v.isUnveilingBenefitSelected}" disabled='true' change="{!c.onBenefitCheck}"/></b>
+                    <lightning:select aura:id="unveilingSelect" name="unveilingBenefit" label="Sum Assured" value="{!v.selectedUnveilingBenefitCoverValue}" disabled= 'true' onchange="{!c.onPicklistCoverChange}">
+                        <aura:iteration items="{!v.UnveilingBenefitCoverOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                    <ui:outputText value="{!v.UnveilingBenefitPremiumLbl}"/>
+                </lightning:layoutItem>
+                  </aura:if>
+                   <aura:if isTrue="{!v.isEditQuote}">
+                		<lightning:layoutItem size="12">
+                            <aura:if isTrue="{!v.showQuoteEdit}">
+                                    <lightning:button variant="brand" class="slds-m-top_small slds-float--right" label="Quote" aura:id="NEXT" onclick="{!c.handleChange}"/>
+                                    <aura:set attribute="else">
+                            <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Next" aura:id="NEXT" onclick="{!c.handleChange}"/>
+                            <lightning:button class="slds-m-top_small slds-float--left" label="Cancel" onclick="{!c.cancelAndCloseTab}" variant="brand" aura:id="ibtnCancel" />
+                        </aura:set>    
+                    </aura:if>
+            			</lightning:layoutItem>
+                   </aura:if>
+                </lightning:layout>
+            </aura:if>     
+      </aura:if>
+    	<aura:if isTrue="{!v.showNewPanel}">
+            <lightning:layout multipleRows="true">
+             <lightning:layoutItem size="12">
+                <lightning:button class="slds-m-top_small slds-float--right" aura:id="addSpouse" variant="brand" type="submit" name="add" label="Add Spouse" onclick="{!c.addSpouse}"/>
+            </lightning:layoutItem>
+            </lightning:layout>
+    	</aura:if>
+     <aura:if isTrue="{!v.showCommissionScreen}">
+    		<lightning:layout multipleRows="true">
+    		<lightning:layoutItem size="12">
+                <h2 class="slds-section__title"><b>New Quote</b></h2>
+    		</lightning:layoutItem>
+    				<lightning:layoutItem size="12">
+                		<h3>Finished Spouse Quotation</h3>
+    				</lightning:layoutItem>
+    				<lightning:layoutItem size="12">
+                		<h2 class="slds-section__title"><b>Quote Details</b></h2>
+    				</lightning:layoutItem>
+                
+            		<lightning:layoutItem class="slds-p-top_small slds-p-bottom_small" size="12">
+                		<p>Based on the options selected, the following premiums will be applicable:</p>
+            		</lightning:layoutItem>
+
+            		<lightning:layoutItem size="12">
+  
+ 					<table style="width:100%" class="slds-table slds-table_cell-buffer slds-table_bordered">
+            		<thead>
+                	<tr class="slds-line-height_reset">
+                
+                	<th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Executor">Benefit</div></th>
+                	<th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Bridging">Sum Assured</div></th>
+                	<th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Funeral">Premium</div></th>
+                	</tr>
+            		</thead>
+            		<tbody>
+                
+                		<aura:iteration items="{!v.response}" var="quoteSummary">
+                     		<tr class="slds-hint-parent">
+                       		<td data-label="Product"><div class="slds-truncate" title="Product">{!quoteSummary.Benefit__c}</div></td>
+                       		<td data-label="Sum Assured"><div class="slds-truncate" title="Sum Assured">R<lightning:formattedNumber value="{!quoteSummary.Policy_Cover__c}" style="decimal" maximumFractionDigits="2"/></div></td>
+                       		<td data-label="Premium"><div class="slds-truncate" title="Premium">R<lightning:formattedNumber value="{!quoteSummary.Premium__c}" style="decimal" maximumFractionDigits="2"/></div></td>
+                     		</tr>
+                		</aura:iteration>
+                		<tr class="slds-hint-parent">
+                            <td data-label=""><div class="slds-truncate" title="Total"><b>Total</b></div></td>
+                            <td data-label="Sum Assured"><div class="slds-truncate" title="Sum Assured"></div></td>
+                            <td data-label="Premium"><div class="slds-truncate" title="Premium"><b>R<lightning:formattedNumber value="{!v.totalPremium}" style="decimal" maximumFractionDigits="2"/></b></div></td>
+                		</tr>
+                	</tbody>
+                	</table>
+        		</lightning:layoutItem>
+					<lightning:layoutItem size="10">
+                		<lightning:button class="slds-m-top_small slds-float--left" variant="brand" label="Edit Quote" aura:id="EditQuote" onclick="{!c.newQuoteProcess}"/>
+            		</lightning:layoutItem>
+       	    <lightning:layoutItem size="12">
+                <hr/>
+            </lightning:layoutItem>      
+        </lightning:layout>
+    </aura:if>
+    
+    <div style="padding-top: 10px;">
+        <lightning:datatable
+                  columns="{! v.columns }"
+                  data="{! v.data }"
+                  keyField="id"
+                  hideCheckboxColumn="true"
+                  onrowaction="{! c.handleRowAction }"/>
+    </div>
+    <aura:if isTrue="{!v.showQuoteScreen == false}">
+    	<lightning:layout multipleRows="true"> 
+            <aura:if isTrue="{!v.showQuoteEdit}">
+                <aura:set attribute="else">
+        	<lightning:layoutItem size="6">
+                	<lightning:button class="slds-m-top_small slds-float--left" variant="brand" label="Previous" aura:id="BACK" onclick="{!c.handleNext}"/>
+        	</lightning:layoutItem>
+            <lightning:layoutItem size="6">
+			<aura:if isTrue="{!v.isQuoteDone}">
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Next" aura:id="NEXT" onclick="{!c.handleNext}"/>
+                <aura:set attribute="else">
+                	<lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Quote" aura:id="Quote" onclick="{!c.handleNext}"/>
+                </aura:set>
+            </aura:if>
+            </lightning:layoutItem>
+                </aura:set>
+            </aura:if>
+    	</lightning:layout>
+    </aura:if>
+
+    <aura:if isTrue="{!v.showUpdatePanel}">
+        <!--###### MODAL BOX Start######--> 
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeConfirmation}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Close Confirmation</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem size="12">
+                            <h2 class="slds-section__title">Update Spouse</h2>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:input aura:id="updateForm" value="{!v.spouse.First_Name__c}" label="First Name" required="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:input aura:id="updateForm" value="{!v.spouse.Last_Name__c}" label="Last Name" required="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:input aura:id="updateForm" value="{!v.spouse.RSA_ID_Number__c}" label="RSA ID Number" maxlength="13" messageWhenTooLong="ID Number can only be 13 Digits long" minlength="13" messageWhenTooShort="ID Number must be 13 Digits long"/>
+                        </lightning:layoutItem>
+            			<!--<aura:if isTrue="{!v.opptyRecordType == 'Direct Delivery Sales Opportunity'}">
+                			<lightning:layoutItem padding="around-small" size="4">
+                				<lightning:input aura:id="updateForm" value="{!v.spouse.Age_As_Number__c}" label="Age" onchange="{!c.calculateDOB }" type="number" min= "0" required="true" />
+            				</lightning:layoutItem>
+                		<aura:set attribute="else">-->
+            				<lightning:layoutItem padding="around-small" size="4">
+                				<lightning:input aura:id="updateForm" value="{!v.spouse.Date_of_Birth__c}" label="Date of Birth" type="date" required="true"/>
+            				</lightning:layoutItem>
+                		<!--</aura:set>
+            			</aura:if>-->
+						<aura:if isTrue="{!v.opptyRecordType != 'Direct Delivery Sales Opportunity'}">
+                			<lightning:layoutItem padding="around-small" size="2">
+                    			<ui:inputCheckbox aura:id="checkbox" label="Also a Beneficiary?" change="{!c.onCheck}"/>
+                			</lightning:layoutItem>
+            			</aura:if>
+             			<aura:if isTrue="{!v.opptyRecordType == 'Direct Delivery Sales Opportunity'}">
+                			<lightning:layoutItem padding="around-small" size="2">
+                    			<lightning:select aura:id="updateForm" name="Gender" label="Gender" value="{!v.spouse.Gender__c}" required="true">
+                        			<option value="">---None---</option>
+                        			<option value="Male">Male</option>
+                        			<option value="Female">Female</option>
+                    			</lightning:select>
+                			</lightning:layoutItem>
+            			</aura:if>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <aura:if isTrue="{!v.isAlsoBeneficiaryUpdate}">
+                                <lightning:input aura:id="updateForm" value="{!v.spouse.Benefit_Split__c}" label="Benefit Split" type="number" min="1" messageWhenRangeUnderflow="Value cannot be less than 1" required="true"/>
+                            </aura:if>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{!c.closeConfirmation}"/>
+                    <lightning:button variant="brand" 
+                                      label="Confirm"
+                                      title="Confirm"
+                                      onclick="{!c.confrimAndClose }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+    </aura:if>
+    
+</aura:component>

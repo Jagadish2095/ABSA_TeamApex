@@ -1,0 +1,165 @@
+<!--Lightning cmp for VAPS Insurance Cancellation (VAPSInsuranceCancellation)
+    Author: Jason Q
+    Date : 2020/11/05
+-->
+<aura:component controller="VAPSInsuranceCancellationController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+    access="global">
+
+    <!--Handler Declaration-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <!--Global Attribute Declaration-->
+    <aura:attribute name="selectedAccountNumberFromFlow" type="string" access="global" />
+    <aura:attribute name="caseIdFromFlow" type="string" access="global" />
+    <aura:attribute name="isEscalatedFromFlow" type="Boolean" access="global" />
+    <aura:attribute name="closeCurrentCase" type="Boolean" access="global" />
+    <aura:attribute name="emailTemplateName" type="string" access="global" />
+    <!--Attribute Declaration-->
+    <aura:attribute name="isSpinner" type="Boolean" default="false" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="data" type="Object[]" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="selectedRow" type="Object" />
+    <aura:attribute name="tempSelectedRow" type="Object" />
+    <aura:attribute name="radioOptions" type="List"
+        default="[{'label': 'Authorized', 'value': 'authorized'},{'label': 'Not Authorized', 'value': 'notAuthorized'}]" />
+    <aura:attribute name="radioValue" type="String" />
+    <aura:attribute name="confirmCheckboxOptions" type="List"
+        default="[{'label': 'I have attached the Confirmation email to this Case', 'value': 'confirmed'}]" />
+    <aura:attribute name="confirmCheckboxValue" type="List" />
+    <aura:attribute name="isConfirmed" type="Boolean" default="false" />
+    <aura:attribute name="toastMessage" type="String" />
+
+
+    <!-- changes made for Ford/Avaf Indicator by Mradul  W-016021 for Insurance Cancellation-->
+    <c:FordAvafIndicator accountNumber="{!v.selectedAccountNumberFromFlow}" caseId="{!v.caseIdFromFlow}" />
+
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError"><br />
+            <h2 class="slds-section__title" style="color:red">{!v.errorMessage}</h2><br />
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!not(empty(v.caseIdFromFlow))}">
+        <!-- record Edit Form -->
+        <lightning:recordEditForm aura:id="caseEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}"
+            onload="{!c.handleLoad}" onsubmit="{!c.handleSubmit}" onsuccess="{!c.handleSuccess}"
+            onerror="{!c.handleError}">
+            <!-- Hidden Fields -->
+            <lightning:inputField aura:id="addAttributes" fieldName="Additional_Attributes__c" class="slds-hide" />
+            <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+
+            <lightning:layout multipleRows="true">
+                <aura:if isTrue="{!not(empty(v.selectedRow))}">
+                    <!-- Has Selected Row -->
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input aura:id="VapInsuranceCompany" label="Insurance Company" readonly="true"
+                            value="{!v.selectedRow.ZZINSCOMP}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input aura:id="VapInsuranceCode" label="Insurance Code" readonly="true"
+                            value="{!v.selectedRow.ZZINSCODE}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input aura:id="VapProductDesc" label="VAP Product Description" readonly="true"
+                            value="{!v.selectedRow.ZZPRDDESC}" />
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input aura:id="VapProductCode" label="VAP Product Code" readonly="true"
+                            value="{!v.selectedRow.ZZPRDCODE}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input aura:id="VapUniqueId" label="Unique Id" readonly="true"
+                            value="{!v.selectedRow.ZZUNIQUE_ID}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input aura:id="VapInsuranceTerm" label="Insurance Term" readonly="true"
+                            value="{!v.selectedRow.ZZINSTRM}" />
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input aura:id="VapPolicyAmount" label="Policy Amount" readonly="true"
+                            value="{!v.selectedRow.ZZINSAMT}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input aura:id="VapPolicyStartDate" label="Policy Start Date" readonly="true"
+                            value="{!v.selectedRow.ZZPOLIDATE}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input aura:id="VapAuthRequired" label="Insurance Authorization Required"
+                            readonly="true" value="{!v.selectedRow.INS_AUTH_REQ}" />
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:inputField aura:id="commentsField" fieldName="Comments__c" required="true" />
+                    </lightning:layoutItem>
+
+                    <aura:if isTrue="{!v.isEscalatedFromFlow}">
+                        <!-- Is Escalated (Outbound Consultant / Back Office) -->
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <lightning:radioGroup aura:id="authRadioGroup" label="Authorization result"
+                                options="{! v.radioOptions }" value="{! v.radioValue }"
+                                onchange="{! c.handleRadioBtnChange }" />
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="12" aura:id="confirmCheckbox"
+                            class="slds-hide">
+                            <lightning:checkboxGroup aura:id="confirmCheckboxGroup" name="Confirmation"
+                                options="{!v.confirmCheckboxOptions}" value="{! v.confirmCheckboxValue }"
+                                onchange="{! c.handleConfirmation }" />
+                        </lightning:layoutItem>
+                        <!-- Cancel Insurance Button -->
+                        <lightning:layoutItem padding="around-small" size="12" aura:id="backOfficeActionBtns"
+                            class="slds-hide">
+                            <lightning:button variant="brand" name='Cancel Insurance'
+                                label='Override and Cancel Insurance' onclick='{!c.handleInsuranceCancellation}'
+                                disabled="{!v.isFormReadOnly}" class="slds-float_right" />
+                        </lightning:layoutItem>
+
+                        <aura:set attribute="else">
+                            <!-- Is Not Escalated (Inbound Consultant / Front Office) -->
+                            <lightning:layoutItem padding="around-small" size="12" aura:id="frontOfficeActionBtns">
+                                <div class="slds-float_right">
+                                    <lightning:button label='Previous' onclick='{!c.goBackToAvafVapsList}'
+                                        disabled="{!v.isFormReadOnly}" />
+                                    <lightning:button aura:id="inboundActionBtn" variant="brand" label="Cancel VAP"
+                                        onclick='{!c.handleInsuranceCancellation}' disabled="{!v.isFormReadOnly}" />
+                                </div>
+                            </lightning:layoutItem>
+                        </aura:set>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        <!-- No Selected Row -->
+                        <!-- DataTable of Members -->
+                        <lightning:datatable keyField="id" data="{! v.data }" columns="{! v.columns }"
+                            maxRowSelection="1" onrowselection="{!c.handleRowSelection}" />
+                        <!-- Back Button -->
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <div class="slds-float_right">
+                                <lightning:button aura:id="backCmpBtn" label="Previous"
+                                    onclick="{!c.navigateBackScreen}" />
+                                <lightning:button aura:id="openSelectedRowBtn" label="Next"
+                                    onclick="{!c.openSelectedRow}" variant="brand" disabled="true" />
+                            </div>
+                        </lightning:layoutItem>
+                    </aura:set>
+                </aura:if>
+                <!-- Next Button -->
+                <lightning:layoutItem padding="around-small" size="12">
+                    <lightning:button aura:id="nextCmpBtn" label="Next" onclick="{!c.navigateNextScreen}"
+                        variant="brand" class="slds-float_right slds-hide" />
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:recordEditForm>
+    </aura:if>
+</aura:component>

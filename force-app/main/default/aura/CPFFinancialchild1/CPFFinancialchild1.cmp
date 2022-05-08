@@ -1,0 +1,134 @@
+<aura:component
+    implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+    access="global"
+>
+    <aura:attribute name="isActiveRemoveRecord" type="Boolean" default="false" />
+    <aura:attribute name="rowindex" type="String" />
+    <aura:attribute name="currentLeaseRecord" type="Application_Lease_CPF__c" />
+    <aura:attribute name="leaseRecordList" type="Application_Lease_CPF__c[]" />
+    <aura:attribute name="deletedLeaseRecordList" type="Application_Lease_CPF__c[]" />
+
+    <aura:if isTrue="{!v.currentLeaseRecord != Null}">
+        <lightning:recordEditForm objectApiName="Application_Lease_CPF__c">
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <p>Lease as per Schedule 4 number</p>
+                        <ui:outputText aura:id="uniqueID" value="{!v.rowindex + 1}" />
+                    </span>
+                </div>
+
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <ui:inputCheckbox
+                            class="slds-float_left"
+                            label="&nbsp; Remove these as per schedule 4 details(This action is not reversible)"
+                            aura:id="chkRemoveThisLease"
+                            value="{!v.isActiveRemoveRecord}"
+                        />
+                        <br />
+                        <aura:if isTrue="{!v.isActiveRemoveRecord}">
+                            <lightning:button
+                                class="slds-float_right"
+                                aura:id="{!v.currentLeaseRecord.Id}"
+                                label="Remove Details"
+                                variant="brand"
+                                onclick="{!c.handleRemoveLeaseBtn}"
+                            />
+                        </aura:if>
+                    </span>
+                </div>
+            </div>
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Tenant Name</span>
+                                <lightning:helptext icon-name="utility:like" content="Capture tenant name" />
+                            </label>
+                        <lightning:inputField fieldName="Tenant_Name__c" value="{!v.currentLeaseRecord.Tenant_Name__c}" required="true" variant="label-hidden" />
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Lease Area</span>
+                                <lightning:helptext icon-name="utility:like" content="Capture lease area for tenant in square meters" />
+                            </label>
+                        <lightning:inputField fieldName="Lease_Area__c" value="{!v.currentLeaseRecord.Lease_Area__c}" required="true" variant="label-hidden" />
+                    </span>
+                </div>
+                
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Tenant From</span>
+                                <lightning:helptext icon-name="utility:like" content="Select lease start date" />
+                            </label>
+                        <lightning:inputField fieldName="Tenant_from_Date__c" value="{!v.currentLeaseRecord.Tenant_from_Date__c}" required="true" variant="label-hidden" />
+                    </span>
+                </div>
+
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Tenant Until</span>
+                                <lightning:helptext icon-name="utility:like" content="Select lease end date" />
+                            </label>
+                        <lightning:inputField fieldName="Tenant_until_Date__c" value="{!v.currentLeaseRecord.Tenant_until_Date__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+
+
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Tenant Escalations</span>
+                                <lightning:helptext icon-name="utility:like" content="Capture escalation %" />
+                            </label>
+                        <lightning:inputField fieldName="Tenant_Escalations__c" value="{!v.currentLeaseRecord.Tenant_Escalations__c}" required="true" variant="label-hidden" />
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Rent per Month</span>
+                                <lightning:helptext icon-name="utility:like" content="Capture monthly rental amount" />
+                            </label>
+                        <lightning:inputField fieldName="Rent_per_Month__c" value="{!v.currentLeaseRecord.Rent_per_Month__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <label class="slds-form-element__label">
+                                <span class="required">* </span>
+                                <span class="slds-m-right_small">Rent Type</span>
+                                <lightning:helptext icon-name="utility:like" content="Select Gross or Net rental" />
+                            </label>
+                        <lightning:inputField fieldName="Rent_Type__c" value="{!v.currentLeaseRecord.Rent_Type__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+
+                <!-- <div class="slds-col slds-size_1-of-2">
+             <span >
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                        picklistfieldName="Rent_Type__c"
+                                                        objectName="Application_Lease_CPF__c"
+                                                        picklistLabelName="Rent Type"
+
+
+                                                        />
+                    </span>
+            </div>  -->
+
+                <!--<lightning:button class="slds-m-top_small" variant="brand" type="submit" name="save" label="save" />-->
+            </div>
+        </lightning:recordEditForm>
+    </aura:if>
+</aura:component>

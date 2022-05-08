@@ -1,0 +1,149 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" access="global" 
+                 controller="CAF_Sanctioning_Controller">
+    
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+    <aura:attribute name="applicationApprovalOptions" type="List" default="[
+                                                                          {'label': 'Approved', 'value': 'Approved'},
+                                                                          {'label': 'Rejected', 'value': 'Rejected'},
+                                                                          {'label': 'Declined', 'value': 'Declined'}
+                                                                          ]"/>
+
+    <aura:attribute name="recordId" type="Id" /> 
+    <aura:attribute name="isAcknowledgedRejection" type="Boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="true"/>
+    <aura:attribute name="isAcknowledgedApproval" type="Boolean" default="false"/>
+    <aura:attribute name="isCheckedApprovalDecision" type="Boolean" default="false"/>
+    <aura:attribute name="applicationApproval" type="String"/>
+    <aura:attribute name="currentUser" type="String"/>
+    <aura:attribute name="approvalStatus" type="String"/>
+    <aura:attribute name="approvalDecisionComment" type="String"/>
+    <aura:attribute name="isApplicationRejected" type="Boolean" default="false"/>
+    <aura:attribute name="isApplicationDeclined" type="Boolean" default="false"/>
+    <aura:attribute name="isApplicationApproved" type="Boolean" default="false"/>
+    <aura:attribute name="isSubmitRejection" type="Boolean" default="false"/>
+    <aura:attribute name="openRejDeclineComments" type="Boolean" default="false"/>
+    <aura:attribute name="activeSections" type="List" default="['sanctioningHistory','decision']" />
+    <aura:attribute name="isSubmitApproval" type="Boolean" default="false"/>
+    <aura:attribute name="openApprovalComments" type="Boolean" default="false"/>
+    <aura:attribute name="gridData" type="Object" access="public" />
+    <aura:attribute name="gridColumns" type="List" access="PRIVATE" />
+    
+    <div class="exampleHolder">
+        <lightning:spinner aura:id="mySpinner" class="slds-hide" alternativeText="Loading..." variant="brand" size="large"/>
+    </div>
+
+         <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+          
+                 <lightning:recordEditForm aura:id="securitiesValidationForm" objectApiName="Opportunity" recordId="{!v.recordId}"
+                              onload="" onsuccess="" onerror="">
+              <lightning:accordionSection name="decision" label="Decision"> 
+            
+                  <div class="slds-grid slds-wrap slds-gutters_medium">
+                      <div class="slds-col slds-size_1-of-2">
+                          <span>
+                              <ul class="decision-btn">
+                                  <li>
+                                      <lightning:button name="GrantButton" label="Approve" aura:id="approveClicked"  class="grantbuttonbackground" onclick="{!c.setStatusApproved}">
+                                          <lightning:icon iconName="action:approval" alternativeText="Approved" title="Approval" size="large" label="Grant"/>  
+                                      </lightning:button>
+                                      <p>Approve</p>
+                                  </li>
+                                  <li>
+                                      <lightning:button type="RequestInfo" name="Decline" label="Decline" aura:id="declineId"  class="decline" onclick="{!c.setStatusDeclined}">
+                                          <lightning:icon iconName="action:close" alternativeText="Decline" title="Decline" size="large" />
+                                      </lightning:button>
+                                      <p>Decline</p>
+                                  </li>
+                                  <li>
+                                      <lightning:button type="RequestInfo" name="Reject" label="Reject" aura:id="rejectId"  class="rejectId" onclick="{!c.setStatusRejected}">
+                                          <lightning:icon iconName="action:close" alternativeText="Reject" title="Reject" size="large"/>
+                                      </lightning:button> 
+                                      <p>Reject</p>
+                                  </li>  
+                     <!--             
+                                  <li>
+                                      <lightning:button type="changeApprover" name="Change Approver" label="Change Approver" aura:id="changeApproverId"  class="approverId" onclick="{!c.setStatusReassign}">
+                                          <lightning:icon iconName="action:edit" alternativeText="Change Approver" title="Change Approver" size="large"/>
+                                      </lightning:button> 
+                                      <p>Re-Assign Approver</p>
+                                  </li> 
+-->    
+                              </ul>
+                              <lightning:inputField aura:id="qaApprover" fieldName="QA_Approver__c" label="Sanctioner" class = "slds-hide" />
+                          </span>
+                      </div>
+          <aura:if isTrue="{!v.approvalStatus != Null}"> 
+           <div class="slds-col slds-size_1-of-2">
+            <span>
+                <lightning:textarea variant="bottom-toolbar" label = "Comments" aura:id="decisionComments" onchange="{!c.onCommentChange}"/>
+            </span>
+        </div>  
+         <aura:if isTrue="{!v.approvalStatus == 'Approve'}">      
+        <div class="slds-col slds-size_1-of-2">
+            <span>   
+               
+                  </span>
+        </div> 
+              </aura:if>      
+         <aura:if isTrue="{!v.approvalStatus == 'Reject'}">      
+        <div class="slds-col slds-size_1-of-2">
+            <span>   
+               <lightning:inputField aura:id="rejectedReasons" fieldName="Sanctioning_Rejection_Reasons__c" /> 
+                  </span>
+        </div> 
+              </aura:if>   
+              <aura:if isTrue="{!v.approvalStatus == 'Decline'}"> 
+              <div class="slds-col slds-size_1-of-2">
+            <span>   
+                <lightning:inputField aura:id="declReasons" fieldName="Sanctioning_Decline_Reasons__c" />  
+                  </span>
+        </div> 
+          </aura:if>   
+                          <aura:if isTrue="{!v.approvalStatus == 'Reassign'}"> 
+              <div class="slds-col slds-size_1-of-2">
+            <span>   
+                <lightning:inputField aura:id="qaApprover" fieldName="QA_Approver__c" label="Sanctioner"/>  
+                </span>
+        </div> 
+          </aura:if> 
+        <div class="slds-col slds-size_1-of-2">
+            <span>
+            <lightning:input type="checkbox" label="I understand that this decision will be recorded and the Flight Center Consultant notified."
+                                aura:id="decisionSubmitAttest" default="unchecked" onchange="{! c.onCheckApprovalDecision}"/> 
+          
+                
+                <aura:if isTrue="{!v.isCheckedApprovalDecision}"> 
+                <lightning:button variant="brand"
+                                              aura:id="submitDecision"
+                                              label="Submit"
+                                              title="Submit"
+                                              type="submit"
+                                              class="slds-button slds-button_brand slds-m-top--medium"
+                                              onclick="{!c.handleApprovalDecision}"/> 
+                    
+                 </aura:if>     
+            </span>
+            
+        </div>
+          </aura:if>     
+    </div>
+         
+      </lightning:accordionSection>
+        </lightning:recordEditForm>    
+             
+           
+            
+               <lightning:accordionSection name="sanctioningHistory" label="Sanctioning Approval History"> 
+             
+        <lightning:datatable data="{! v.gridData }"
+        columns="{! v.gridColumns }"
+        keyField="Id"
+        hideCheckboxColumn="true"/>    
+          
+          </lightning:accordionSection>
+             
+	</lightning:accordion>
+    
+  
+        
+</aura:component>

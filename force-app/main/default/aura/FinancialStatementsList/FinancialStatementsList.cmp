@@ -1,0 +1,149 @@
+<aura:component controller="ApplicationFinancialInformation" access="global"
+    implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <aura:attribute name="listOfRec" type="Financial_Information__c[]" />
+    <aura:attribute name="fromAccnt" type="Account" />
+    <aura:attribute name="fileCount" type="Integer" />
+    <aura:attribute name="recordId" type="String" description="Record to which the files should be attached" />
+    <aura:attribute name="filetype" type="List" default="['.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx', '.docm','.xlsx']" />
+    <aura:attribute name="showFinancialUploadModal" type="Boolean" default="false" />
+    <aura:attribute name="showSaveBtn" type="Boolean" default="false" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+
+    <lightning:workspaceAPI aura:id="workspace" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    <lightning:card aura:id="lightCard"
+            class="slds-card_boundary slds-card__header-link slds-tabs_card slds-page-header slds-theme_shade"
+            title="{! 'Financial Statements (' + v.listOfRec.length+')'}" iconName="standard:case">
+        <aura:set attribute="actions">
+            <lightning:button label="New" variant="brand" title="Create New Financial Statement"
+                onclick="{!c.createFinancialStatement}" />
+            <lightning:button variant="brand" label="Request Financials" title="Request Financials"
+                onclick="{! c.openFinancialUploadModal}" />
+
+        </aura:set>
+        <!--Upload File-->
+        <aura:if isTrue="{!v.showFinancialUploadModal}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeFinancialUploadModal }"
+                            alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Request for Financials
+                            Statement Capture</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                            <div class="slds-col slds-size_4-of-12 slds-text-align_left slds-p-around_large">
+                                Client Name: <br />
+                                <ui:outputText value="{!v.fromAccnt.Name}" />
+                            </div>
+                            <div class="slds-col slds-size_4-of-12 slds-text-align_center slds-p-around_large">
+                                Client Code: <br />
+                                <ui:outputText value="{!v.fromAccnt.CIF__c}" />
+                            </div>
+                        </div>
+                        <p>
+                            <lightning:fileUpload label="Attchment Upload" name="Attchment Upload" multiple="true"
+                                accept="{!v.filetype}" recordId="{!v.recordId}"
+                                onuploadfinished="{!c.handleUploadFinished}" />
+                        </p>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <div class="slds-grid slds-wrap slds-gutters_medium">
+                            <div class="slds-text-align_center  slds-col slds-size_8-of-12">
+                                <lightning:input aura:id="consentCheck" type="checkbox"
+                                    label="I attest that the information captured is accurate."
+                                    checked="{!v.showSaveBtn}" />
+                            </div>
+                            <aura:if isTrue="{!v.showSaveBtn}">
+                                <div class="slds-text-align_right  slds-col slds-size_4-of-12 slds-button_stretch">
+                                    <lightning:button variant="brand" label="Save" title="Save Financials Statement"
+                                        onclick="{!c.submitCapture}" />
+                                </div>
+                            </aura:if>
+                        </div>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        <!--Upload File End-->
+        <div style="overflow-x: auto;">
+            <table class="slds-table slds-table--bordered slds-cell-wrap slds-table--cell-buffer" width="151px">
+                <thead>
+                    <tr class="slds-text-title--caps">
+                        <th class="slds-is-sortable slds-text-title--caps" scope="col">
+                            <span class="slds-truncate" style="width:101px;" title="Sortorder">Year</span>
+                        </th>
+                        <th class="slds-is-sortable slds-text-title--caps" scope="col">
+                            <span class="slds-truncate" style="width:101px;" title="Sortorder">Year Selection</span>
+                        </th>
+                        <th class="slds-is-sortable slds-text-title--caps" scope="col">
+                            <span class="slds-truncate" style="width:51px;" title="Subject">Information Type</span>
+                        </th>
+                        <th class="slds-is-sortable slds-text-title--caps" scope="col">
+                            <span class="slds-truncate" style="width:101px;" title="Description">Statement Type</span>
+                        </th>
+                        <th class="slds-is-sortable slds-text-title--caps" scope="col">
+                            <span class="slds-truncate" style="width:51px;" title="Status">Status</span>
+                        </th>
+                        <th class="slds-is-sortable slds-text-title--caps" scope="col">
+                            <span class="slds-truncate" style="width:51px;" title="ActivityDate">Last Updated</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.listOfRec}" var="afs">
+                        <tr>
+                            <th scope="row">
+                                <div class="slds-truncate">
+                                    <a onclick="{!c.navigateFinancialStatement}" data-value="{!afs.Id}"
+                                        title="{!afs.Name}" Id="{!afs.Id}">
+                                        <lightning:formattedDateTime value="{!afs.Statement_Date_Year_end__c}"
+                                            year="numeric" />
+                                    </a>
+                                </div>
+                            </th>
+                            <th scope="row">
+                                <div class="slds-truncate">
+                                    {!afs.Year_Selection__c}
+                                </div>
+                            </th>
+                            <th scope="row">
+                                <div class="slds-truncate">
+                                    {!afs.Financial_Type__c}
+                                </div>
+                            </th>
+                            <th scope="row">
+                                <div class="slds-truncate">
+                                    {!afs.Financial_Statement_Type__c}
+                                </div>
+                            </th>
+                            <th scope="row">
+                                <div class="slds-truncate">
+                                    {!afs.Status__c}
+                                </div>
+                            </th>
+                            <th scope="row">
+                                <div class="slds-truncate">
+                                    <lightning:formattedDateTime value="{!afs.LastModifiedDate}" year="numeric"
+                                        month="numeric" day="numeric" hour="2-digit" minute="2-digit"
+                                        timeZoneName="short" />
+                                </div>
+                            </th>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </div>
+    </lightning:card>
+</aura:component>

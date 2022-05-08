@@ -1,0 +1,189 @@
+<aura:component implements="lightning:availableForFlowScreens,lightning:availableForFlowActions,force:hasRecordId" controller="getDocumentsVA" access="global">
+     
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="selectedValue" type="String" />
+    <aura:attribute name="htmlData" type="String" default=""/>
+    <aura:attribute name="fileName" type="String" default=""/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="isLoading" type="boolean" default="false"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:attribute name="FileReferenceKey" type="String" default="false"/>      
+    <aura:attribute name="selectedDocumentId" type="string"/>
+    <aura:attribute name="PhoneNumber" type="string"/>
+    <aura:attribute name="showNewPanel" type="boolean" default="false"/>
+    
+        <aura:attribute name="isAIMSPDF" type="boolean" default="false"/>
+     <aura:attribute name="isMomentumPDF" type="boolean" default="false"/>
+     <aura:attribute name="isLibertyPDF" type="boolean" default="false"/>
+     <aura:attribute name="isSanlamPDF" type="boolean" default="false"/>
+    <aura:attribute name="isAbsaLife" type="boolean" default="false"/>
+     <aura:attribute name="isWills" type="boolean" default="false"/>
+    
+    
+     <aura:attribute name="AIMSPDFName" type="string"/>
+     <aura:attribute name="MomentumPDFName" type="string"/>
+     <aura:attribute name="LibertyPDFName" type="string"/>
+     <aura:attribute name="SanlamPDFName" type="string"/>
+    <aura:attribute name="WillsPDFName" type="string"/> 
+    <aura:attribute name="AbsaLifePDFName" type="string"/>
+    
+     <aura:attribute name="AIMSPDFID" type="string"/>
+     <aura:attribute name="MomentumPDFID" type="string"/>
+     <aura:attribute name="LibertyPDFID" type="string"/>
+     <aura:attribute name="SanlamPDFID" type="string"/>
+     <aura:attribute name="WillsPDFID" type="string"/>
+     <aura:attribute name="AbsaLifePDFID" type="string"/>
+    
+     
+     
+      <div class="exampleHolder">
+    
+    <lightning:accordion  aura:id="accordion" >
+        <lightning:accordionSection  label="Broker Note">
+            <div class="slds-box slds-m-around_medium ">
+                <!--p>Document Type</p><br></br>
+                <p><strong>{!v.fileName}</strong></p-->
+                 <lightning:button variant="brand"
+                                   label="Generate"
+                                   title="Generate"
+                                   onclick="{! c.GenerateBrokerNotePDF}"/> 
+                <!--lightning:button variant="brand" label="Download"  onclick="{! c.downloadBrokerNote }"/-->
+                <lightning:button variant="brand" label="Send Email To Policy Providers"  onclick="{! c.sendEmails }"/>
+                <lightning:button variant="brand" label="Send SMS"  onclick="{!c.sendSMS}"/>
+                <br></br>
+                <p><b>Broker Notes File</b></p> 
+                <aura:if  isTrue="{!v.isAIMSPDF}">
+                 <p><strong><a href="javascript:void(0)" onclick="{!c.downloadBrokerNoteAIMS}"> {!v.AIMSPDFName}</a></strong></p>
+                 </aura:if>
+                  <aura:if  isTrue="{!v.isMomentumPDF}">
+                <p><strong><a href="javascript:void(0)" onclick="{!c.downloadBrokerNotMomentum}"> {!v.MomentumPDFName}</a></strong></p>
+                </aura:if>
+                 <aura:if  isTrue="{!v.isLibertyPDF}">
+                      <p><strong><a href="javascript:void(0)" onclick="{!c.downloadBrokerNoteLiberty}"> {!v.LibertyPDFName}</a></strong></p>
+                  </aura:if>
+                <aura:if  isTrue="{!v.isSanlamPDF}">
+                     <p><strong><a href="javascript:void(0)" onclick="{!c.downloadBrokerNoteSANLAM}"> {!v.SanlamPDFName}</a></strong></p>
+               </aura:if>
+                 <!--aura:if  isTrue="{!v.isWills}">
+                     <p><strong><a href="javascript:void(0)" onclick="{!c.downloadBrokerNoteWills}"> {!v.WillsPDFName}</a></strong></p>
+               </aura:if-->
+                 <aura:if  isTrue="{!v.isAbsaLife}">
+                     <p><strong><a href="javascript:void(0)" onclick="{!c.downloadBrokerNoteAbsaLife}"> {!v.AbsaLifePDFName}</a></strong></p>
+               </aura:if>
+                </div>
+                
+            <div class="slds-m-around_xx-large ">        
+                <!--Use aura:if tag to display/hide popup based on isModalOpen value-->  
+                <aura:if isTrue="{!v.isModalOpen}">
+                    
+                    <!-- Modal/Popup Box starts here-->
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <!-- Modal/Popup Box Header Starts here-->
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.closeModel }"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"/>
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Broker Note</h2>
+                            </header>
+                            <!--Modal/Popup Box Body Starts here-->
+                            <div class="slds-modal__content slds-p-around_medium " id="modal-content-id-1">
+                                
+                                <aura:unescapedHtml value="{!v.htmlData}" /> 
+                            </div>
+                            <!--Modal/Popup Box Footer Starts here-->
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral"
+                                                  label="Confirm"
+                                                  title="Confirm"
+                                                  onclick="{! c.closeModel }"/>  
+                                <lightning:button variant="neutral"
+                                                  label="Close"
+                                                  title="Close"
+                                                  onclick="{! c.closeModel }"/>   
+                                
+                            </footer>
+                        </div>
+                        
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>            
+                </aura:if>
+                
+                 <!--###### FILE PREVIEW MODAL BOX START ######--> 
+    <aura:if isTrue="{!v.hasModalOpen}">
+        <section onclick="{!c.closeModel}"
+                 role="dialog"
+                 aria-modal="true"
+                 class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_medium slds-text-align_center"
+                     style="background: transparent;">
+                    <div style="width: 50%; margin: 0 auto; text-align: left">
+                        <lightning:fileCard fileId="{!v.selectedDocumentId}"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <!--###### FILE PREVIEW MODAL BOX END ######-->
+            </div>
+        </lightning:accordionSection>
+    </lightning:accordion>
+         <aura:if isTrue="{!v.isLoading }">
+                <!--aura:set attribute="else"-->
+                <lightning:spinner alternativeText="Loading" size="large" variant="brand" />
+            <!--/aura:set-->
+        </aura:if>
+    </div>
+    
+    
+    <aura:if isTrue="{!v.showNewPanel}">
+        <!--###### MODAL BOX Start######--> 
+ <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+    <div class="slds-modal__container">
+        <!-- ###### MODAL BOX HEADER Start ######-->
+        <header class="slds-modal__header">
+            <lightning:buttonIcon iconName="utility:close"
+                                  onclick="{!c.cancel}"
+                                  alternativeText="close"
+                                  variant="bare-inverse"
+                                  class="slds-modal__close"/>           
+            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Enter Your Mobile Number</h2>
+        </header>
+        <!--###### MODAL BOX BODY Part Start######-->
+        
+        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+           <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="6">
+                   <!-- <lightning:input type="tel" aura:id="smsForm" value="{!v.PhoneNumber}" label="PhoneNumber"  required="true"/>
+                    <I style="color:red">EX: +270(Mobile Number)</I> -->
+                    <lightning:select name="contactNumbers" label="PhoneNumber" aura:id="onjId" value="{!v.PhoneNumber}">
+   					 <aura:iteration items="{!v.options}" var="conNum">
+       					 <option value="{!conNum}" text="{!conNum}" />  
+    				 </aura:iteration>
+					</lightning:select>
+                </lightning:layoutItem>
+                
+            </lightning:layout>
+        </div>
+        <!--###### MODAL BOX FOOTER Part Start ######-->
+        <footer class="slds-modal__footer">
+            <lightning:button variant="neutral" 
+                              label="Cancel"
+                              title="Cancel"
+                              onclick="{!c.cancel}"/>
+            <lightning:button variant="brand" 
+                              label="Send"
+                              title="Confirm"
+                              onclick="{!c.Send}"/>
+        </footer>
+    </div>
+</section>
+<div class="slds-backdrop slds-backdrop_open"></div>
+<!--###### MODAL BOX Part END Here ######-->
+    </aura:if><br/>   
+</aura:component>

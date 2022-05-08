@@ -1,0 +1,90 @@
+<!--
+* Lightning Component for Claim Registration Policy Account Section
+*
+* @author  Simangaliso Mathenjwa : Absa
+* @version v1.0
+* @since   02 Feb 2021
+*
+-->
+<aura:component
+    controller="InsurancePolicyFinancialDetailsCtrl"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+    access="global"
+>
+    <aura:attribute name="financialDetailsData" type="Object" />
+    <aura:attribute name="columnList" type="List" />
+    <aura:attribute name="minDateValue" type="String" />
+    <aura:attribute name="maxDateValue" type="String" />
+    <aura:attribute name="policyRecordId" type="String"/>
+    <aura:attribute name="showLoadingSpinner" type="boolean" default="false" />
+    <aura:attribute name="pageNumber" type="Integer" default="1" />
+    <aura:attribute name="pageSize" type="Integer" default="15" />
+    <aura:attribute name="totalRows" type="Integer" default="0" />
+    <aura:attribute name="isLastPage" type="Boolean" default="false" />
+    <aura:attribute name="searchFilterString" type="String" default="" />
+    <aura:attribute name="queryFieldsString" type="String" />
+    <aura:attribute name="errorMessage" type="String" />
+    <lightning:notificationsLibrary aura:id="notifLib" />
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <!--Display errors-->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title slds-align_absolute-center" style="color: red">{!v.errorMessage}</h2>
+        </div>
+    </aura:if>
+
+    <!--Search Fields-->
+    <lightning:layout horizontalAlign="end" verticalAlign="start">
+        <lightning:layoutItem padding="around-small" size="5">
+            <lightning:input
+                type="date"
+                name="minDate"
+                label="Policy Financial Date From"
+                aura:id="minDate"
+                max="{!v.maxDateValue}"
+                value="{!v.minDateValue}"
+            />
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="5">
+            <lightning:input type="date" aura:id="maxDate" name="maxDate" label="Policy Financial Date To" min="{!v.minDateValue}" value="{!v.maxDateValue}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="2"
+            ><br />
+            <div class="slds-float_left">
+                <lightning:button
+                    iconName="utility:search"
+                    label="Search"
+                    variant="brand"
+                    onclick="{!c.handleSearch}"
+                    disabled="{!and(v.minDateValue==null,v.maxDateValue == null)}"
+                />
+            </div>
+        </lightning:layoutItem>
+    </lightning:layout>
+    <!--Data table-->
+    <aura:if isTrue="{!v.financialDetailsData.length>0}">
+        <div aura:id="actionButtonBar" class="slds-clearfix slds-p-top_medium">
+            <aura:if isTrue="{!v.showLoadingSpinner}">
+                <lightning:spinner alternative-text="Loading" size="small" variant="brand" alternativeText="Processing" />
+            </aura:if>
+            <lightning:datatable data="{!v.financialDetailsData}" columns="{!v.columnList }" keyField="Id" hideCheckboxColumn="true" /><br />
+
+            <!-- Next/Previous pagination action buttons -->
+            <div class="slds-float_left">
+                <aura:if isTrue="true">
+                    Page {!v.pageNumber} | Showing records from {! ((v.pageNumber-1)*(v.pageSize)+1)+' to '+((v.pageNumber-1)*v.pageSize+v.totalRows)}
+                </aura:if>
+            </div>
+            <div class="slds-float_right">
+                <lightning:button aura:id="Previous" label="Previous" variant="neutral" onclick="{!c.handlePrev}" disabled="{! v.pageNumber == 1}" />
+                <lightning:button aura:id="Next" label="Next" variant="neutral" onclick="{!c.handleNext}" disabled="{! v.isLastPage}" />
+            </div>
+        </div>
+        <aura:set attribute="else">
+            <!--In Case the is no data on the table-->
+            <ui:message title="No records" severity="info" closable="false"> There are no Insurance Policy Financial records </ui:message>
+        </aura:set>
+    </aura:if>
+</aura:component>

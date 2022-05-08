@@ -1,0 +1,163 @@
+<!--**
+* @description       : Credit Group View Application Component On opportunity
+* @author            : Himanshu.Nimje@absa.africa
+* @last modified on  : 12-03-2021
+* @last modified by  : Tawanda M.
+* Modifications Log
+* Ver   Date         Author                       Modification
+* 1.0   2021-08-02   Himanshu.Nimje@absa.africa   Initial Version
+**-->
+<aura:component
+  Controller="CreditGroupViewApplicationController"
+  implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+  access="global"
+>
+  <!-- Handlers-->
+  <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+  <aura:handler event="c:setClientInfo" action="{!c.handleClientSelectionEvent}" />
+
+  <aura:attribute name="recordId" type="Id" default="" />
+  <aura:attribute name="accountDataFrmCltFinder" type="Account" />
+  <aura:attribute name="application" type="Application__c" default="{sobjectType:'Application__c'}" />
+  <aura:attribute name="opportunity" type="Opportunity" default="{sobjectType:'Opportunity'}" />
+  <aura:attribute name="CreditGrpViewWrapper" type="Object" />
+  <aura:attribute type="Boolean" name="disableSubmitBtn" default="false" />
+
+  <!--Grid Attributes -->
+  <aura:attribute name="gridData" type="Object" access="public" />
+  <aura:attribute name="gridColumns" type="List" access="public" />
+  <aura:attribute name="showData" type="Boolean" default="false" />
+  <aura:attribute name="noData" type="Boolean" default="false" />
+  <aura:attribute name="ultimateClient" type="string" access="public" />
+
+  <!-- Expand/Collapse -->
+  <aura:attribute name="gridExpandedRows" type="Object" access="public" />
+
+  <!-- Show Group/Member Page (Client Finder)-->
+  <aura:attribute name="showModal" type="boolean" default="false" />
+  <aura:attribute name="showSelectedAccount" type="boolean" default="false" />
+  <aura:attribute name="searchValue" type="String" />
+  <aura:attribute name="isGroupSel" type="boolean" default="false" />
+  <aura:attribute name="grpMemberKey" type="String" />
+  <aura:attribute name="rowGrpClientCode" type="String" />
+
+  <aura:attribute name="showSpinner" type="boolean" default="false" />
+  <!--Spinner-->
+  <aura:if isTrue="{!v.showSpinner}">
+    <div class="slds-spinner_container">
+      <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+    </div>
+  </aura:if>
+
+  <lightning:card variant="Narrow" title="Shareholder Structure" iconName="standard:account">
+    <p class="slds-p-horizontal_small">
+      <h1><b> Ultimate Client: {!v.ultimateClient} </b></h1>
+    </p>
+
+    <lightning:layout multipleRows="true">
+      <lightning:layoutItem size="12" padding="around-small">
+        <p>
+          <lightning:button variant="Brand" label="Expand All" title="Expand All" onclick="{! c.expandAllRows }" />
+          <lightning:button
+            variant="Brand"
+            label="Collapse All"
+            title="Collapse All"
+            onclick="{! c.collapseAllRows }"
+          />
+        </p>
+
+        <p>
+          <lightning:button
+            class="slds-m-top_small slds-float--right"
+            variant="success"
+            label="Refresh Data"
+            title="Refresh Data"
+            onclick="{! c.handleClick }"
+          />
+        </p>
+      </lightning:layoutItem>
+
+      <lightning:layoutItem padding="around-small">
+        <aura:if isTrue="{!v.showData}">
+          <lightning:treeGrid
+            columns="{! v.gridColumns }"
+            data="{! v.gridData }"
+            keyField="Key"
+            aura:id="mytree"
+            hideCheckboxColumn="true"
+            onrowaction="{! c.handleRowAction }"
+          />
+        </aura:if>
+
+        <aura:if isTrue="{!v.noData}">
+          <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+              <p style="font-size: 16px">
+                <lightning:icon size="xx-small" iconName="action:close" alternativeText="Data Not Available" />
+                <strong> Data Not Available !!! </strong>
+              </p>
+            </lightning:layoutItem>
+          </lightning:layout>
+        </aura:if>
+      </lightning:layoutItem>
+    </lightning:layout>
+  </lightning:card>
+
+  <lightning:layout multipleRows="true">
+    <lightning:layoutItem size="6" padding="around-small">
+      <aura:if isTrue="{!v.disableSubmitBtn}">
+          <p><strong>Note: Entity Hierarchy has already been created in Credit Lens.</strong></p>
+      </aura:if>
+    </lightning:layoutItem>
+    <lightning:layoutItem size="6" padding="around-small">
+      <p>
+        <lightning:button
+          class="slds-m-top_small slds-float--right"
+          variant="brand"
+          label="Submit to Credit Lens"
+          title="Submit to Credit Lens"
+          disabled="{!v.disableSubmitBtn}"
+          onclick="{!c.submitToCreditLens}"
+        />
+      </p>
+    </lightning:layoutItem>
+  </lightning:layout>
+
+  <!-- Adding Group/Member to credit Group Modal-->
+  <aura:if isTrue="{!v.showModal}">
+    <section
+      role="dialog"
+      tabindex="-1"
+      aria-labelledby="modal-heading-01"
+      aria-modal="true"
+      aria-describedby="modal-content-id-1"
+      class="slds-modal slds-fade-in-open"
+    >
+      <div class="slds-modal__container">
+        <header class="slds-modal__header">
+          <lightning:buttonIcon
+            iconName="utility:close"
+            onclick="{! c.closeClientFinderModal }"
+            alternativeText="close"
+            variant="bare-inverse"
+            class="slds-modal__close"
+          />
+          <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Credit Group/Member</h2>
+        </header>
+        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+          <p>
+            <!-- Need to Change showCreateRelatedParty to true once lite onboading done for Credit Grp-->
+            <c:ClientFinder
+              showCreateIndividualProspect="false"
+              showCreateBusinessProspect="false"
+              showCreateRelatedParty="false"
+              showParticipantSelection="true"
+              aura:id="clientFinderComponent"
+            />
+          </p>
+        </div>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+  </aura:if>
+</aura:component>

@@ -1,0 +1,70 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="CloseScreenController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="allClauses" type="Clause__c[]"/>
+    
+    <aura:attribute name="clause" type="Clause__c[]"/>
+    
+    <aura:attribute name="isCompleted" type="boolean" default="false"/>
+    
+    <aura:attribute name="showCloseScreen" type="boolean" default="true"/>
+    <aura:attribute name="showFinishedScreen" type="boolean" default="false"/>
+    <aura:attribute name="showInvalidScreen" type="boolean" default="false"/>
+    <aura:attribute name="invalidMessages" type="String" default=""/>
+    <aura:attribute name="quoterecords" type="List" />
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.showCloseScreen}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <div>
+                    <lightning:datatable
+                        aura:id="dataTableCmp"
+                        columns="{!v.columns}"
+                        data="{!v.data}"
+                        keyField="id"
+                        hideCheckboxColumn="true"               
+                        showRowNumberColumn="true"
+                        maxColumnWidth="2000"
+                        onrowselection="{!c.updateSelectedData}"/>
+                </div> 
+            </lightning:layoutItem>
+            <lightning:layoutItem class="slds-p-top_large" size="6">
+                <b><ui:inputCheckbox class="slds-float--left" aura:id="completedCheckbox" label="&nbsp; I agree to all of the above?" change="{!c.onCompletedCheck}"/></b>
+            </lightning:layoutItem>
+            <lightning:layoutItem class="slds-p-top_large" size="6">
+                <lightning:button class="slds-float--right" aura:id="validateButton" variant="brand" type="submit" name="add" label="Submit" onclick="{!c.submitDisclosures}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showFinishedScreen}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> Declaration Accepted.</p>            
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showInvalidScreen}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:close" alternativeText="Not Done" /> Not all previous sections have been completed, please review them.</p>
+                <br/>
+                <div class="outputTextArea">
+                    <ui:outputTextArea aura:id="oTextarea" value="{!v.invalidMessages}"/>
+                </div>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+</aura:component>

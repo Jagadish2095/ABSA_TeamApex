@@ -1,0 +1,1037 @@
+<aura:component description="CaptureRefundDetails"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global"
+                controller="CaptureRefundDetailsCtrl">
+
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}"/>
+    <aura:attribute name="selectedAccountNumberFromFlow" type="String" access="global"/>
+    <aura:attribute name="caseIdFromFlow" type="String" access="global"/>
+    <aura:attribute name="clientAccountId" type="String" access="global"/>
+    <aura:attribute name="errorMessage" type="String"/>
+    <aura:attribute name="accountFromFlow" type="String"/>
+    <aura:attribute name="accountFromFlowSelected" type="String"/>
+    <aura:attribute name="accountTo" type="List" default="[]"/>
+    <aura:attribute name="sourceBalance" type="String"/>
+    <aura:attribute name="accountsFromResponse" type="List"/>
+    <aura:attribute name="showVerificationSector" type="Boolean" default="false"/>
+    <aura:attribute name="isManuallyChecked" type="Boolean" default="false"/>
+    <aura:attribute name="showSectionAfterVerificationFailed" type="Boolean" default="false"/>
+    <aura:attribute name="showBankSector" type="Boolean" default="true"/>
+    <aura:attribute name="showVerificationAccountButton" type="Boolean" default="true"/>
+    <aura:attribute name="sourceBalanceValue" type="String"/>
+    <aura:attribute name="debitFrom" type="String"/>
+    <aura:attribute name="amountValue" type="String"/>
+    <aura:attribute name="accountNumberDebit" type="String"/>
+    <aura:attribute name="accountNumberTo" type="String"/>
+    <aura:attribute name="refundTypeValue" type="String"/>
+    <aura:attribute name="reasonForDebitValue" type="String"/>
+    <aura:attribute name="other" type="String" default="Other"/>
+    <aura:attribute name="beneficiaryName" type="String"/>
+    <aura:attribute name="effectiveDate" type="String"/>
+    <aura:attribute name="product" type="String"/>
+    <aura:attribute name="verifyAccountSecondTime" type="Boolean" default="false"/>
+    <aura:attribute name="showOtherReason" type="Boolean" default="false"/>
+    <aura:attribute name="isFailedQueue" type="Boolean" default="false"/>
+    <aura:attribute name="showPauseOrClose" type="Boolean" default="false"/>
+    <aura:attribute name="isReadOnly" type="Boolean" default="false"/>
+    <aura:attribute name="showProofOfbanking" type="Boolean" default="false"/>
+    <aura:attribute name="proofOfbanking" type="Boolean" default="false"/>
+    <aura:attribute name="wasSuccessfullVerified" type="Boolean" default="false"/>
+    <aura:attribute name="proofOfbankingChecked" type="Boolean" default="false"/>
+    <aura:attribute name="extendedJson" type="List"/>
+    <aura:attribute name="approvalMandateQueues" type="String"/>
+    <aura:attribute name="collectionPhase" type="String"/>
+    <aura:attribute name="accountNumberForSummary" type="String"/>
+    <aura:attribute name="targetAccountType" type="Object"/>
+    <aura:attribute name="sourceAccountType" type="String"/>
+    <aura:attribute name="sourceAccType" type="Object"/>
+    <aura:attribute name="navigateFlow" type="Object"/>
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent"
+                  action="{!c.handleBranchCodeEvent}"/>
+    <!-- <aura:handler event="c:collectionPhaseEvent" action="{!c.handleEvent}" />-->
+
+    <aura:attribute name="optionsRefundReason" type="List" default="
+                                                       Account in advance,
+                                                        Account in Credit, Double-debited,Pension Fund,SARS,Debit order Dispute,Arrangement made,Cash payment done,Regular payer,Salary refund,
+                    Debit order went of,Salary deductio,Incorrect deduction,Incorrect credit,Other"
+    />
+    <aura:attribute name="optionsRefundType" type="List" default="Partial refund, Full refund"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="showRefundsSummary" type="Boolean" default="false"/>
+    <aura:attribute name="showSummaryButtom" type="Boolean" default="true"/>
+    <aura:attribute name="showAwaitingBankingDetailsButtom" type="Boolean" default="false"/>
+    <aura:attribute name="accountNumber" type="String"/>
+    <aura:attribute name="branchCode" type="String"/>
+    <aura:attribute name="branchName" type="String"/>
+
+    <aura:attribute name="branchCodeFrom" type="String"/>
+    <aura:attribute name="bankName" type="String"/>
+    <aura:attribute name="bankNameFrom" type="String"/>
+    <aura:attribute name="accountType" type="String"/>
+    <aura:attribute name="textForSummaryDebit" type="String"/>
+    <aura:attribute name="textForSummaryCredit" type="String"/>
+    <aura:attribute name="accountTypes" type="List" default="--None--,Cheque,Savings"/>
+    <aura:attribute name="caseRecordFields" type="Object"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="newAccountError" type="String"/>
+    <aura:attribute name="transactionId" type="String"/>
+    <aura:attribute name="newCaseTransactionFields" type="Object"/>
+    <aura:attribute name="caseTransaction" type="Object"/>
+    <aura:attribute name="simpleRecord" type="Object"/>
+    <aura:attribute name="newCaseTransactionError" type="String"/>
+    <aura:attribute name="caseIsOnHold" type="Boolean" default="false"/>
+    <aura:handler name="change" value="{!v.bankName}" action="{!c.handleBankChange}"/>
+
+    <force:recordData aura:id="recordLoader" recordId="{!v.caseIdFromFlow}"
+                      fields="Client_Email_Address__c, Status,Extended_Request_Data__c, sd_Service_Group__c, Type__c, sd_Original_Service_Group__c"
+                      targetFields="{!v.caseRecordFields}" targetRecord="{!v.simpleRecord}" mode="EDIT"/>
+
+
+    <lightning:recordEditForm aura:id="caseCloseEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}"
+                              onsuccess="{!c.refreshView}" onerror="{!c.handleError}" onload="{!c.handleCaseLoad}">
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide"/>
+        <lightning:inputField aura:id="extendedRequestData" fieldName="Extended_Request_Data__c" class="slds-hide"/>
+        <lightning:inputField aura:id="serviceGroupField" fieldName="sd_Service_Group__c" class="slds-hide"/>
+        <lightning:inputField aura:id="type" fieldName="Type__c" class="slds-hide"/>
+        <lightning:inputField aura:id="originalServiceGroupId" fieldName="sd_Original_Service_Group__c"
+                              class="slds-hide"/>
+    </lightning:recordEditForm>
+
+    <force:recordData aura:id="accountRecordCreator"
+
+                      targetRecord="{!v.caseTransaction}"
+                      targetFields="{!v.newCaseTransactionFields}"
+                      fields="Reference__c,Amount__c,Reason_Comments__c,Reason__c,Amount__c,Source_Account__c,Source_Account_Type__c,Status__c,Target_Account__c,Target_Account_Type__c,jobType__c,Case__c,Service_Group__c"
+                      mode="EDIT"
+
+    />
+
+    <article class="slds-card">
+        <aura:if isTrue="{!v.showSpinner}">
+            <div class="exampleHolder">
+                <lightning:spinner alternativeText="Loading" size="medium"/>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+            <lightning:layout>
+                <lightning:layoutItem padding="around-small" size="12">
+                    <p style="color: red">
+                        <ui:outputText aura:id="iCustomErrorMessage" value="{!v.errorMessage}"/>
+                    </p>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:if>
+        <aura:if isTrue="{! !v.isFailedQueue}">
+            <aura:renderIf isTrue="{!v.showRefundsSummary}">
+
+                <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large"
+                         aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                    <div class="slds-modal__container">
+                        <aura:if isTrue="{!v.showSpinner}">
+                            <div class="exampleHolder">
+                                <lightning:spinner alternativeText="Loading" size="medium"/>
+                            </div>
+                        </aura:if>
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{! c.closeSummary }"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Refunds details
+                                summary</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <h3 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Debit From</h3>
+                            <div class="slds-grid slds-wrap">
+
+
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Product Details
+                                    </label>
+
+                                    <ui:outputText value="{!v.textForSummaryDebit}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Bank name
+                                    </label>
+                                    <ui:outputText value="{!v.bankNameFrom}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Branch code
+                                    </label>
+                                    <ui:outputText value="632005" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Amount to debit
+                                    </label>
+                                    <ui:outputText value="{!v.amountValue}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Refund type
+                                    </label>
+                                    <ui:outputText value="{!v.refundTypeValue}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Reason for debit
+                                    </label>
+                                    <ui:outputText value="{!v.reasonForDebitValue}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Effective date
+                                    </label>
+                                    <ui:outputText value="{!v.effectiveDate}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+
+                            </div>
+                            <h3 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Credit to</h3>
+                            <div class="slds-grid slds-wrap">
+
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Product Details
+                                    </label>
+                                    <ui:outputText value="{!v.textForSummaryCredit}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Bank Name
+                                    </label>
+                                    <ui:outputText value="{!v.bankName}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Branch code
+                                    </label>
+                                    <ui:outputText value="{!v.branchCode}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Amount to credit
+                                    </label>
+                                    <ui:outputText value="{!v.amountValue}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Refund type
+                                    </label>
+                                    <ui:outputText value="{!v.refundTypeValue}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Reason for Credit
+                                    </label>
+                                    <ui:outputText value="{!v.reasonForDebitValue}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                    <label class="slds-form-element__label" for="colphase">
+                                        Effective date
+                                    </label>
+                                    <ui:outputText value="{!v.effectiveDate}" aura:id="initialPaymentAmount"
+                                                   class="slds-input slds-output"/>
+                                </lightning:layoutItem>
+                            </div>
+
+
+                        </div>
+                        <footer class="slds-modal__footer slds-modal__footer_directional">
+                            <lightning:button variant="brand"
+                                              label="Previous"
+                                              title="Previous"
+                                              onclick="{!c.closeSummary}"/>
+                            <button class="slds-button slds-button_brand" onclick="{!c.createTransactionRecord}">Request
+                                Approval
+                            </button>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </aura:renderIf>
+        </aura:if>
+
+        <aura:if isTrue="{!v.isFailedQueue}">
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large"
+                     aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                <div class="slds-modal__container">
+                    <aura:if isTrue="{!v.showSpinner}">
+                        <div class="exampleHolder">
+                            <lightning:spinner alternativeText="Loading" size="medium"/>
+                        </div>
+                    </aura:if>
+                    <header class="slds-modal__header">
+
+                        <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Refunds details summary</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <h3 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Debit From</h3>
+                        <div class="slds-grid slds-wrap">
+
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Product Details
+                                </label>
+
+                                <ui:outputText value="{!v.textForSummaryDebit}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Bank name
+                                </label>
+                                <ui:outputText value="{!v.bankNameFrom}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Branch code
+                                </label>
+                                <ui:outputText value="{!v.branchCodeFrom}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Amount to debit
+                                </label>
+                                <ui:outputText value="{!v.amountValue}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Refund type
+                                </label>
+                                <ui:outputText value="{!v.refundTypeValue}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Reason for debit
+                                </label>
+                                <ui:outputText value="{!v.reasonForDebitValue}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Effective date
+                                </label>
+                                <ui:outputText value="{!v.effectiveDate}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+
+                        </div>
+                        <h3 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Credit to</h3>
+                        <div class="slds-grid slds-wrap">
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Product Details
+                                </label>
+                                <ui:outputText value="{!v.textForSummaryCredit}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+
+                            </lightning:layoutItem>
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Bank name
+                                </label>
+                                <ui:outputText value="{!v.bankName}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Branch code
+                                </label>
+                                <ui:outputText value="{!v.branchCode}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Amount to credit
+                                </label>
+                                <ui:outputText value="{!v.amountValue}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Refund type
+                                </label>
+                                <ui:outputText value="{!v.refundTypeValue}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Reason for Credit
+                                </label>
+                                <ui:outputText value="{!v.reasonForDebitValue}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="3">
+                                <label class="slds-form-element__label" for="colphase">
+                                    Effective date
+                                </label>
+                                <ui:outputText value="{!v.effectiveDate}" aura:id="initialPaymentAmount"
+                                               class="slds-input slds-output"/>
+                            </lightning:layoutItem>
+                        </div>
+
+
+                    </div>
+                    <footer class="slds-modal__footer slds-modal__footer_directional">
+
+                        <lightning:button variant="brand"
+                                          label="Close"
+                                          title="Close"
+                                          onclick="{!c.closeSummary}" class="slds-hide"/>
+                        <button class="slds-button slds-button_brand" onclick="{!c.createTransactionRecord}">Request
+                            Approval
+                        </button>
+                    </footer>
+                </div>
+            </section>
+        </aura:if>
+
+
+        <lightning:card title="">
+            <aura:if isTrue="{! !v.isReadOnly}">
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Capture refund details">Capture refund details</span>
+                </h3>
+
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <lightning:select
+                                    value="{!v.debitFrom}"
+                                    class="select-auto-width"
+                                    aura:id="tbSourceAcc"
+                                    onchange="{!c.onChange}"
+                                    label="Debit from"
+                                    required="true"
+                            >
+                                <option value="{!v.selectedAccountNumberFromFlow}">{!v.selectedAccountNumberFromFlow}</option>
+                                <!-- <aura:iteration items="{!v.accountTo}" var="combiLinkedToAccount" indexVar="key">
+                                     <option value="{!combiLinkedToAccount}">{!combiLinkedToAccount}</option>
+                                 </aura:iteration>-->
+                            </lightning:select>
+                        </lightning:layoutItem>
+
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <lightning:select
+                                    value="{!v.accountFromFlow}"
+                                    class="select-auto-width"
+                                    aura:id="sourceBalance"
+                                    onchange="{!c.handleSourceBalanceChange}"
+                                    label="Credit to"
+                                    required="true"
+                            >
+                                <option value="--Choose--">--Choose--</option>
+                                <aura:iteration items="{!v.accountTo}" var="item">
+                                    <option value="{!item.number}">{!item.number}</option>
+                                </aura:iteration>
+                                <option value="--Other--">--Other--</option>
+
+                            </lightning:select>
+                            <aura:if isTrue="{!and(v.accountFromFlow !='--Other--', v.accountFromFlow !='--Choose--')}">
+
+                                <span> <b>Account type {!v.targetAccountType.productType} </b> </span>
+                            </aura:if>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!v.caseIsOnHold}">
+                            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                                     aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                                <div class="slds-modal__container">
+                                    <header class="slds-modal__header">
+                                        <lightning:buttonIcon iconName="utility:close"
+                                                              onclick="{! c.closeCaseOnHold }"
+                                                              alternativeText="close"
+                                                              variant="bare-inverse"
+                                                              class="slds-modal__close"/>
+                                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Case
+                                            is on hold</h2>
+                                    </header>
+                                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                        <p>Transaction cannot be performed on this account. Do you want to close this
+                                            Case?</p>
+
+                                    </div>
+                                    <footer class="slds-modal__footer slds-modal__footer_directional">
+                                        <lightning:button class="slds-button slds-button_neutral"
+                                                          onclick="{!c.closeCaseOnHold}">Close
+                                        </lightning:button>
+                                        <lightning:button variant="brand"
+                                                          label="Close case"
+                                                          title="Close case"
+                                                          onclick="{!c.closeCase}"/>
+                                    </footer>
+                                </div>
+                            </section>
+                            <div class="slds-backdrop slds-backdrop_open"></div>
+                        </aura:if>
+                    </lightning:layoutItem>
+                    <aura:if isTrue="{!v.showVerificationSector}">
+                        <div class="slds-col slds-size_12-of-12" padding="around-small">
+                            <lightning:layoutItem padding="around-small">
+                        <div class="slds-box">
+                            <div class="slds-inline_icon_text slds-grid">
+                                <div class="slds-col">
+                                    <lightning:icon iconName="utility:info_alt" size="medium" alternativeText="info"/>
+                                </div>
+                                <div class="slds-col slds-align-middle">
+                                    <p> Refunds to none absa accounts can take up to 48 hours to reflect.</p>
+                                </div>
+                            </div>
+                        </div>
+                            </lightning:layoutItem>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12" padding="around-small">
+                            <lightning:layoutItem padding="around-small">
+                                <lightning:input
+                                        type="text"
+                                        aura:id="beneficiaryName"
+                                        label="Beneficiary Name"
+                                        value="{!v.beneficiaryName}"
+                                        required="true"
+
+                                />
+                            </lightning:layoutItem>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12" padding="around-small">
+                            <lightning:layoutItem padding="around-small">
+                                <lightning:input label="Amount" aura:id="Amount" value="{!v.amountValue}"/>
+                            </lightning:layoutItem>
+                        </div>
+
+                        <div class="slds-col slds-size_6-of-12" padding="around-small">
+                            <lightning:layoutItem padding="around-small">
+                                <fieldset class="slds-form-element_compound">
+                                    <div class="form-element__group">
+                                        <div class="slds-form-element__row">
+                                            <c:customLookUp aura:id="fSearchBank" IconName="custom:custom17"
+                                                            selectedRecord="{!v.bankName}" label="Search Bank"/>
+
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </lightning:layoutItem>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12" padding="around-small">
+                            <lightning:layoutItem  padding="around-small">
+                                <fieldset class="slds-form-element_compound">
+                                    <div class="form-element__group">
+                                        <div class="slds-form-element__row">
+
+                                            <c:dependentCutomLookup
+                                                    label="Search Branch"
+                                                    aura:id="fSearchBranch"
+                                                    dselectedBankName="{!v.bankName}"
+                                                    IconName="custom:custom16"
+                                                    selectedRecord="{!v.branchName}"
+                                            />
+
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </lightning:layoutItem>
+                        </div>
+
+                        <div class="slds-col slds-size_6-of-12" padding="around-small">
+                            <lightning:layoutItem padding="around-small">
+                                <lightning:input
+                                        type="text"
+                                        disabled="true"
+                                        aura:id="fBranchCode"
+                                        value="{!v.branchCode}"
+                                        label="Bank Branch Code"
+                                        required="true"
+                                />
+                            </lightning:layoutItem>
+                        </div>
+
+                        <div class="slds-col slds-size_6-of-12" padding="around-small">
+                            <lightning:layoutItem  padding="around-small">
+                                <lightning:input
+                                        type="text"
+                                        aura:id="accountNumberField"
+                                        label="Account Number"
+                                        value="{!v.accountNumberForSummary}"
+                                        required="true"
+
+                                />
+                                <p>
+                                    <lightning:formattedText aura:id="fteError" class="error-text"
+                                                             value="Please ensure you've entered the correct account number"/>
+                                </p>
+                            </lightning:layoutItem>
+                        </div>
+
+
+                        <!-- Account Type -->
+                        <div class="slds-col slds-size_12-of-12" padding="around-small">
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:select
+                                        aura:id="accountTypePicklist"
+                                        name="Account Type"
+                                        label="Account Type"
+                                        value="{!v.accountType}"
+                                        onchange="{!c.changeAccountType}"
+                                        required="true"
+
+                                >
+                                    <aura:iteration items="{!v.accountTypes}" var="item">
+                                        <option text="{!item}" value="{!item}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                            <div class="slds-p-right_large" style="padding-bottom : 20px">
+                                <div class="slds-p-bottom_x-large">
+                                    <aura:if isTrue="{!v.showVerificationAccountButton}">
+                                        <lightning:button variant="brand"
+                                                          class="slds-float_right "
+                                                          label="Verify account"
+                                                          title="Verify account"
+                                                          onclick="{!c.handleVerifyAccount}"/>
+                                    </aura:if>
+                                </div>
+                            </div>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{! v.showBankSector}">
+                        <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+
+                            <lightning:input label="Amount" aura:id="Amount" value="{!v.amountValue}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+
+                            <lightning:select
+                                    value="{!v.refundTypeValue}"
+                                    class="select-auto-width"
+                                    aura:id="tbSourceAcc"
+
+                                    label="Refund type"
+                                    required="true"
+                            >
+                                <option value="">--None--</option>
+                                <aura:iteration items="{!v.optionsRefundType}" var="combiLinkedToAccount"
+                                                indexVar="key">
+                                    <option value="{!combiLinkedToAccount}">{!combiLinkedToAccount}</option>
+                                </aura:iteration>
+                            </lightning:select>
+
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                            <lightning:select
+                                    value="{!v.reasonForDebitValue}"
+                                    class="select-auto-width"
+                                    aura:id="tbSourceAcc"
+                                    onchange="{!c.checkIfOther}"
+                                    label="Reason"
+                                    required="true"
+                            >
+                                <option value="">--None--</option>
+                                <aura:iteration items="{!v.optionsRefundReason}" var="combiLinkedToAccount"
+                                                indexVar="key">
+                                    <option value="{!combiLinkedToAccount}">{!combiLinkedToAccount}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!v.showOtherReason}">
+
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input
+                                        type="text"
+                                        aura:id="Other Reason"
+                                        label="Other Reason"
+                                        value="{!v.reasonForDebitValue}"
+                                        required="true"
+
+                                />
+                            </lightning:layoutItem>
+
+                        </aura:if>
+                        <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                            <label class="slds-form-element__label" for="Credit to">
+                                Reference</label>
+                            <ui:outputText value="{!v.selectedAccountNumberFromFlow}" aura:id="Reference"
+                                           class="slds-input slds-output"/>
+
+                        </lightning:layoutItem>
+
+
+                    </aura:if>
+                    <aura:if isTrue="{!v.showSectionAfterVerificationFailed}">
+
+                        <div class="slds-inline_icon_text slds-grid">
+                            <div class="slds-col">
+                                <lightning:icon iconName="utility:error" size="medium" alternativeText="error"/>
+                            </div>
+                            <div class="slds-col slds-align-middle">
+                                <p style="text-indent:20px;"> Account verification failed.</p>
+                            </div>
+                        </div>
+                        <div class="slds-inline_icon_text slds-grid" style="padding-bottom : 20px"><br></br><br></br>Client
+                            needs to send proof of banking details or three months bank statement for manual
+                            verification
+                        </div>
+
+                    </aura:if>
+
+                </lightning:layout>
+
+                <aura:if isTrue="{!v.showPauseOrClose}">
+
+
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                             aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.closePauseCase }"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"/>
+                                <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Pause case and
+                                    wait for proof of banking details?</h2>
+
+                            </header>
+
+                            <footer class="slds-modal__footer slds-modal__footer_directional">
+                                <lightning:button variant="brand"
+                                                  label="Close case"
+                                                  title="Close case"
+                                                  onclick="{!c.closeCase}"/>
+                                <lightning:button variant="brand"
+                                                  label="Yes"
+                                                  title="Yes"
+                                                  onclick="{!c.pauseCase}"/>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+
+
+                </aura:if>
+            </aura:if>
+            <aura:if isTrue="{!v.isReadOnly}">
+
+                <lightning:card title="">
+                    <aura:if isTrue="{!v.showSpinner}">
+                        <div class="exampleHolder">
+                            <lightning:spinner alternativeText="Loading" size="medium"/>
+                        </div>
+                    </aura:if>
+                    <h3 class="slds-section__title">
+                        <span class="slds-truncate slds-button slds-section__title-action"
+                              title="Capture refund details">Capture refund details</span>
+                    </h3>
+                    <lightning:layout multipleRows="true">
+
+                        <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <lightning:input label="Debit From" aura:id="DebitFrom" value="{!v.debitFrom}"
+                                                 readonly="true"/>
+                            </lightning:layoutItem>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <lightning:input label="Credit to" aura:id="Creditto" value="Other"
+                                                 readonly="true"/>
+                            </lightning:layoutItem>
+                        </lightning:layoutItem>
+                        <div class="slds-box">
+                            <div class="slds-inline_icon_text slds-grid">
+                                <div class="slds-col">
+                                    <lightning:icon iconName="utility:info_alt" size="medium" alternativeText="info"/>
+                                </div>
+                                <div class="slds-col slds-align-middle">
+                                    <p style="text-indent:20px;"> Refunds to none absa accounts can take up to 48 hours
+                                        to reflect.</p>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="slds-col slds-size_12-of-12" padding="around-small">
+                            <lightning:layoutItem padding="around-small">
+                                <lightning:input
+                                        type="text"
+                                        aura:id="beneficiaryName"
+                                        label="Beneficiary Name"
+                                        value="{!v.beneficiaryName}"
+                                        required="true"
+
+                                />
+                            </lightning:layoutItem>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12" padding="around-small">
+                            <lightning:layoutItem padding="around-small">
+                                <fieldset class="slds-form-element_compound">
+                                    <div class="form-element__group">
+                                        <div class="slds-form-element__row">
+                                            <c:customLookUp aura:id="fSearchBank" IconName="custom:custom17"
+                                                            selectedRecord="{!v.bankName}" label="Search Bank"/>
+
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </lightning:layoutItem>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12" padding="around-small">
+                            <lightning:layoutItem  padding="around-small">
+                                <fieldset class="slds-form-element_compound">
+                                    <div class="form-element__group">
+                                        <div class="slds-form-element__row">
+
+                                            <c:dependentCutomLookup
+                                                    label="Search Branch"
+                                                    aura:id="fSearchBranch"
+                                                    dselectedBankName="{!v.bankName}"
+                                                    IconName="custom:custom16"
+                                                    selectedRecord="{!v.branchName}"
+                                            />
+
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </lightning:layoutItem>
+                        </div>
+
+                        <div class="slds-col slds-size_6-of-12" padding="around-small">
+                            <lightning:layoutItem padding="around-small">
+                                <lightning:input
+                                        type="text"
+                                        disabled="true"
+                                        aura:id="fBranchCode"
+                                        value="{!v.branchCode}"
+                                        label="Bank Branch Code"
+                                        required="true"
+                                />
+                            </lightning:layoutItem>
+                        </div>
+
+                        <div class="slds-col slds-size_6-of-12" padding="around-small">
+                            <lightning:layoutItem  padding="around-small">
+                                <lightning:input
+                                        type="text"
+                                        aura:id="accountNumberField"
+                                        label="Account Number"
+                                        value="{!v.accountNumberForSummary}"
+                                        required="true"
+
+                                />
+                                <p>
+                                    <lightning:formattedText aura:id="fteError" class="error-text"
+                                                             value="Please ensure you've entered the correct account number"/>
+                                </p>
+                            </lightning:layoutItem>
+                        </div>
+
+
+
+
+                        <div class="slds-col slds-size_12-of-12" padding="around-small">
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:select
+                                        aura:id="accountTypePicklist"
+                                        name="Account Type"
+                                        label="Account Type"
+                                        value="{!v.accountType}"
+                                        onchange="{!c.changeAccountType}"
+                                        required="true"
+
+                                >
+                                    <aura:iteration items="{!v.accountTypes}" var="item">
+                                        <option text="{!item}" value="{!item}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                        </div>
+
+
+                        <aura:if isTrue="{! ! v.wasSuccessfullVerified}">
+                            <div class="slds-inline_icon_text slds-grid">
+                                <div class="slds-col">
+                                    <lightning:icon iconName="utility:error" size="medium" alternativeText="error"/>
+                                </div>
+                                <div class="slds-col slds-align-middle">
+                                    <p style="text-indent:30px;"> Account verification failed.</p>
+                                </div>
+                            </div>
+
+                            <div class="slds-p-right_large" style="padding-left : 400px">
+                                <div class="slds-p-bottom_x-large">
+                                    <aura:if isTrue="{!v.showVerificationAccountButton}">
+                                        <lightning:button variant="brand"
+                                                          class="slds-float_right "
+                                                          label="Manually verify account"
+                                                          title="Manually verify account"
+                                                          onclick="{!c.handleManuallyVerifyAccount}"/>
+                                    </aura:if>
+                                </div>
+                            </div>
+
+                        </aura:if>
+                        <aura:if isTrue="{!v.wasSuccessfullVerified}">
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="12">
+                                <div class="slds-inline_icon_text slds-grid">
+                                    <div class="slds-col">
+                                        <lightning:icon iconName="utility:success" size="medium"
+                                                        alternativeText="success"/>
+                                    </div>
+                                    <div class="slds-col slds-align-middle">
+                                        <p style="text-indent:30px;"> Account was manually verify successfully.</p>
+                                    </div>
+                                </div>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+
+                                <lightning:input label="Amount" aura:id="Amount" value="{!v.amountValue}"
+                                                 readonly="true"/>
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+
+                                <lightning:select
+                                        value="{!v.refundTypeValue}"
+                                        class="select-auto-width"
+                                        aura:id="tbSourceAcc"
+
+                                        label="Refund type"
+                                        required="true"
+                                >
+                                    <option value="">None</option>
+                                    <aura:iteration items="{!v.optionsRefundType}" var="combiLinkedToAccount"
+                                                    indexVar="key">
+                                        <option value="{!combiLinkedToAccount}">{!combiLinkedToAccount}</option>
+                                    </aura:iteration>
+                                </lightning:select>
+
+                            </lightning:layoutItem>
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                <lightning:select
+                                        value="{!v.reasonForDebitValue}"
+                                        class="select-auto-width"
+                                        aura:id="tbSourceAcc"
+                                        onchange="{!c.checkIfOther}"
+                                        label="Reason"
+                                        required="true"
+                                >
+                                    <option value="">None</option>
+                                    <aura:iteration items="{!v.optionsRefundReason}" var="combiLinkedToAccount"
+                                                    indexVar="key">
+                                        <option value="{!combiLinkedToAccount}">{!combiLinkedToAccount}</option>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </lightning:layoutItem>
+
+
+                            <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                <label class="slds-form-element__label" for="Credit to">
+                                    Reference</label>
+                                <ui:outputText value="{!v.selectedAccountNumberFromFlow}" aura:id="Reference"
+                                               class="slds-input slds-output"/>
+
+                            </lightning:layoutItem>
+
+
+                        </aura:if>
+
+                    </lightning:layout>
+                    <aura:if isTrue="{!v.showProofOfbanking}">
+                        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                            <div class="slds-modal__container">
+                                <header class="slds-modal__header">
+
+                                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Proof of banking
+                                        details</h2>
+                                </header>
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                    <ui:inputCheckbox aura:id="checkbox" class="myCheckbox"
+                                                      change="{!c.onCheckProofOfBanking}"/>
+                                    <p style="text-indent:20px;">I have received the customer's proof of banking
+                                        details/three months bank statement</p>
+
+                                </div>
+                                <footer class="slds-modal__footer slds-modal__footer_directional">
+                                    <lightning:button variant="brand"
+                                                      label="Cancel"
+                                                      title="Cancel"
+                                                      onclick="{!c.cancelShowProofOfbanking}"/>
+                                    <aura:if isTrue="{!v.proofOfbankingChecked}">
+                                        <lightning:button variant="brand"
+                                                          label="Manually verify account"
+                                                          title="Manually verify account"
+                                                          onclick="{!c.manuallyVerifyAccount}"/>
+                                    </aura:if>
+                                </footer>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </aura:if>
+
+                </lightning:card>
+            </aura:if>
+            <footer class="slds-modal__footer">
+                <aura:if isTrue="{!v.wasSuccessfullVerified}">
+                    <lightning:button variant="brand"
+                                      label="Show Summary"
+                                      title="Show Summary"
+                                      onclick="{!c.showSummary}"/>
+                </aura:if>
+                <aura:if isTrue="{!v.showSummaryButtom}">
+                    <lightning:button variant="brand"
+                                      label="Show Summary"
+                                      title="Show Summary"
+                                      onclick="{!c.showSummary}"/>
+                </aura:if>
+                <aura:if isTrue="{!v.showAwaitingBankingDetailsButtom}">
+                    <lightning:button variant="brand"
+                                      label="Awaiting Banking Details"
+                                      title="Awaiting Banking Details"
+                                      onclick="{!c.showPauseOrClose}"/>
+                </aura:if>
+            </footer>
+        </lightning:card>
+    </article>
+</aura:component>

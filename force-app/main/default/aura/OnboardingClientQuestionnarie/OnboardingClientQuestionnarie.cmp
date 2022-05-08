@@ -1,0 +1,79 @@
+<aura:component controller="OnboardingClientQuestionnarieController"
+               implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.initData}"/>
+    <aura:attribute name="QuestionWrapper" type="Object"/>
+    <aura:attribute name="objectApiName" type="Object"/>
+    <aura:attribute name="opportunityRec" type="Opportunity"/> 
+    <aura:attribute name="RecordTypeName" type="String"/>
+    <aura:attribute name="questionwithsectionlist" type="List"/>
+    <aura:attribute name="accId" type="String"/>
+    <aura:attribute name="picklistval" type="String"/>
+    <aura:attribute name="textval" type="String"/>
+    <aura:attribute name="showSpinner" type="boolean" default ="false"/>
+    
+    <aura:method name="savandValidate" action="{!c.validateandSave}" access="PUBLIC"> </aura:method>
+
+   <aura:attribute name="AnswerMap" type="Map"  default="{}"/>
+      <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="TheSpinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    <lightning:accordion activeSectionName="Banker attestation" allowMultipleSectionsOpen="true">
+  <aura:iteration items="{!v.questionwithsectionlist}" var="questionval">
+  <lightning:accordionSection name="{!questionval.key}" label="{!questionval.key}">
+    <div class="slds-grid slds-wrap slds-gutters_medium">
+       <aura:iteration items="{!questionval.value}" var="question">
+             	 <div class="slds-col slds-size_1-of-2">
+
+             <aura:if isTrue ="{!question.AnswerType =='Picklist'}">
+                 <lightning:select
+							label="{!question.questionLabel}"
+							value="{!question.userAnswer}"
+							required="{!question.isRequired}"
+						>
+                      <option label="{!question.defaultAnswer}" value="{!question.defaultAnswer}" />
+                     <aura:iteration items="{!question.listofAnswerOptions}" var="item">
+                         <option value="{!item}" >{!item}</option>
+							</aura:iteration>
+						</lightning:select>
+                 <aura:set attribute ="else">
+                     <aura:if isTrue ="{!question.AnswerType =='Integer'}">
+                         <lightning:input type="text" name="{!question.questionLabel}" label="{!question.questionLabel}" value="{!question.userAnswer}" pattern="[0-9]*" required="{!question.isRequired}"/>
+                         <aura:set attribute ="else">
+                              <aura:if isTrue ="{!question.questionLabel =='Medical Practitioner Telephone Number'}">
+                     				        <lightning:input type="tel" label="{!question.questionLabel}" name="{!question.questionLabel}"  pattern="[0-9]{10}" value="{!question.userAnswer}"/>
+										
+                             </aura:if>
+                                  </aura:set>
+                         </aura:if>
+                     
+                      <aura:if isTrue ="{!question.answerControltype =='Checkbox'}">
+                         <!-- <ui:inputCheckbox class="slds-float_left" label="{!question.questionLabel}" aura:id="qqSuccessionPlanning" name="{!question.questionLabel}" change="{!c.onCheckedChange}" value="{!question.userAnswer}" /> --> <!-- change="{!c.onCheckedChange}" -->
+							
+                          	<lightning:input type="checkbox" label="{!question.questionLabel}" name="{!question.questionLabel}" onchange="{!c.onCheckedChange}"  checked="{!question.isChecked}"  /> 
+                      
+                     		<aura:set attribute ="else">
+                                  <lightning:input type="{!question.AnswerType}" name="{!question.questionLabel}" label="{!question.questionLabel}" value="{!question.userAnswer}" required="{!question.isRequired}"/>
+                                  </aura:set>
+                     </aura:if>
+                     </aura:set>
+             </aura:if>
+             </div>
+		</aura:iteration>
+         
+    </div>
+        </lightning:accordionSection> 
+        </aura:iteration>
+          <div class="slds-m-top_medium slds-align_absolute-center">
+                            <lightning:button disabled="false"
+                                              variant="brand" onclick ="{!c.validateandSave}"
+                                              name="save" 
+                                              label="Validate and Save"
+                                              class="slds-align_absolute-center slds-m-top_xx-large" />
+            </div>
+</lightning:accordion> 
+</aura:component>

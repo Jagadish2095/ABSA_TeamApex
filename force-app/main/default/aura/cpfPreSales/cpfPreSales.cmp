@@ -1,0 +1,257 @@
+<!--
+  @description       : 
+  @author            : 
+  @last modified on  : 2021-06-30
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-06-30      Initial Version
+-->
+<aura:component controller="CPFPresalescntrlr" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+	<aura:attribute name="appPrdctCpfRec" type="Object" />
+    <aura:attribute name="presalesvalue" type="String" default="No"/>
+    <aura:attribute name="nonrefundabledepositvalue" type="String" default="Amount"/>
+    <aura:attribute name="multiplepurchasesvalue" type="String" default="Amount"/>
+    <aura:attribute name="proofofprevalue" type="String" default="No"/>
+    <aura:attribute name="schedulenetsalevalue" type="String" default="No"/>
+    <aura:attribute name="scheduleofsalevalue" type="String" default="No"/>
+    <aura:attribute name="copyofstandardsalesvalue" type="String" default="No"/>
+    <aura:attribute name="copiesofallsalesaggrementsvalue" type="String" default="No"/>
+    <aura:attribute name="newperphase" type="Application_Phase_CPF__c[]" />
+    <aura:attribute name="newOtherPreLodgmentConditions" type="Application_Contract_Clause__c[]" />
+    <aura:attribute name="newOtherpredisbursementConditions" type="Application_Contract_Clause__c[]" />
+    <aura:attribute name="isPrephase" type="Boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+<aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleperphaseApplicationEvent}"/>
+<aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleotherprelodgmentApplicationEvent}"/>
+<aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleotherpredisbursementApplicationEvent}"/>
+<aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner />
+    </aura:if>
+    <!-- Loading spinner end-->
+<lightning:accordion activeSectionName="Pre Sales" allowMultipleSectionsOpen="false">
+<lightning:accordionSection name="Pre Sales" label="Pre Sales" >
+<lightning:recordEditForm aura:id="appProdcpf" objectApiName="Application_Product_CPF__c"  recordId="{!v.appPrdctCpfRec.Id}">
+<div class="slds-grid slds-wrap slds-gutters_medium">
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Pre-Sales</span>
+<lightning:helptext icon-name="utility:like" content="Select Yes if Pre-sales are applicable" />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" onchange="{!c.hadlepresaleschange}"
+picklistfieldName="Pre_sales__c" objectName="Application_Product_CPF__c" value="{!v.presalesvalue}" />
+</span>
+</div>
+</div>
+    <aura:if isTrue="{!v.presalesvalue =='Yes'}">
+<div class="slds-grid slds-wrap slds-gutters_medium">
+
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Non-refundable deposit</span>
+<lightning:helptext icon-name="utility:like" content="Select the applicable Non-refundable deposit option" />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+picklistfieldName="Non_refundable_deposit__c" objectName="Application_Product_CPF__c" value="{!v.nonrefundabledepositvalue}" />
+</span>
+</div>
+<aura:if isTrue="{!v.nonrefundabledepositvalue =='Amount'}">
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="required">* </span>
+<span class="slds-m-right_small">Non-refundable deposit amount</span>
+<lightning:helptext icon-name="utility:like" content="Pre-sale means a duly executed valid, enforceable sale (evidenced by a duly executed sale agreement in respect of a Sale Property) at a market related price to a bona fide, arm’s length purchaser who has paid at least a non-refundable deposit of at least Option: [R[AMOUNT] of the purchase price into the transferring attorney’s trust account in respect of the purchase price and who has complied with one of the options referred to in (i) to (iii) below. The sale must be unconditional, except for suspensive conditions relating to the proclamation of the proposed township or the opening of the sectional title register." />
+</label>
+<lightning:inputField fieldName="Non_refundable_deposit_amount__c" aura:id="nonrefundabledepositamountId" value="{!v.appPrdctCpfRec.Non_refundable_deposit_amount__c}" variant="label-hidden"/>
+ </span>
+</div>
+</aura:if>
+<aura:if isTrue="{!v.nonrefundabledepositvalue =='Percentage'}">
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="required">* </span>
+<span class="slds-m-right_small">Non-refundable deposit Percentage</span>
+<lightning:helptext icon-name="utility:like" content="Pre-sale means a duly executed valid, enforceable sale (evidenced by a duly executed sale agreement in respect of a Sale Property) at a market related price to a bona fide, arm’s length purchaser who has paid at least a non-refundable deposit of at least Option: [[NUMBER]%] of the purchase price into the transferring attorney’s trust account in respect of the purchase price and who has complied with one of the options referred to in (i) to (iii) below. The sale must be unconditional, except for suspensive conditions relating to the proclamation of the proposed township or the opening of the sectional title register." />
+</label>
+<lightning:inputField fieldName="Non_refundable_deposit_percentage__c" aura:id="nonrefundabledepositpercentageId" value="{!v.appPrdctCpfRec.Non_refundable_deposit_percentage__c}" variant="label-hidden"/>
+ </span>
+</div>
+</aura:if>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Multiple purchase</span>
+<lightning:helptext icon-name="utility:like" content="Select the applicable multiple purchase option" />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+picklistfieldName="Multiple_purchase__c" objectName="Application_Product_CPF__c" value="{!v.multiplepurchasesvalue}" />
+</span>
+</div>
+<aura:if isTrue="{!v.multiplepurchasesvalue =='Amount'}">
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="required">* </span>
+<span class="slds-m-right_small">Multiple purchase amount</span>
+<lightning:helptext icon-name="utility:like" content="Provided that where more than two Sale Properties are being purchased by the same purchaser, an increased deposit of at least Option: [R[Amount]] of the purchase price, must be paid on all the Sale Properties on the same terms as those set out in relation to Pre-sales." />
+</label>
+<lightning:inputField fieldName="Multiple_purchase_deposit_amount__c" aura:id="multiplepurchaseamountId" value="{!v.appPrdctCpfRec.Multiple_purchase_deposit_amount__c}" variant="label-hidden"/>
+ </span>
+</div>
+</aura:if>
+<aura:if isTrue="{!v.multiplepurchasesvalue =='Percentage'}">
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="required">* </span>
+<span class="slds-m-right_small">Multiple purchase Percentage</span>
+<lightning:helptext icon-name="utility:like" content="Provided that where more than two Sale Properties are being purchased by the same purchaser, an increased deposit of at least Option: [[NUMBER]%] of the purchase price, must be paid on all the Sale Properties on the same terms as those set out in relation to Pre-sales." />
+</label>
+<lightning:inputField fieldName="Multiple_purchase_Deposit_percentage__c" aura:id="multipurposepercentageId" value="{!v.appPrdctCpfRec.Multiple_purchase_Deposit_percentage__c}" variant="label-hidden"/>
+ </span>
+</div>
+</aura:if>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Proof of Pre-sales</span>
+<lightning:helptext icon-name="utility:like" content="Proof that at least [NUMBER] Pre-sales with an aggregate selling price of at least R[AMOUNT] (excluding estate agents’ commission, VAT and transfer fees), have been entered into." />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+picklistfieldName="Proof_of_Pre_sales__c" objectName="Application_Product_CPF__c" value="{!v.proofofprevalue}" />
+</span>
+</div>
+<aura:if isTrue="{!v.proofofprevalue =='Yes'}">
+<div class="slds-col slds-size_1-of-2">
+<span>
+<label class="slds-form-element__label">
+<span class="required">* </span>
+<span class="slds-m-right_small">Number of pre-sales</span>
+<lightning:helptext icon-name="utility:like" content="Proof that at least [NUMBER] Pre-sales with an aggregate selling price of at least R[AMOUNT] (excluding estate agents’ commission, VAT and transfer fees), have been entered into." />
+</label>
+<lightning:inputField fieldName="Number_of_pre_sales__c" aura:id="numberofpresalesId" value="{!v.appPrdctCpfRec.Number_of_pre_sales__c}" variant="label-hidden"/>
+ </span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="required">* </span>
+<span class="slds-m-right_small">Aggregate price</span>
+<lightning:helptext icon-name="utility:like" content="Proof that at least [NUMBER] Pre-sales with an aggregate selling price of at least R[AMOUNT] (excluding estate agents’ commission, VAT and transfer fees), have been entered into." />
+</label>
+<lightning:inputField fieldName="Aggregate_price__c" aura:id="aggregatepriceId" value="{!v.appPrdctCpfRec.Aggregate_price__c}" variant="label-hidden"/>
+ </span>
+</div>
+</aura:if>
+ <aura:if isTrue="{!v.proofofprevalue =='Per Phase'}">
+  <aura:iteration items="{!v.newperphase}" var="nprephaseItem" indexVar="index">
+  <c:CPFPresalechildcmp isPrephase="{!v.isPrephase}" aura:id="newprephaseId" prephaseItem="{!nprephaseItem}" rowindex="{!index}" newperphase="{!v.newperphase}" OppRecId="{!v.recordId}"/>
+  </aura:iteration>
+<div class="slds-col slds-size_1-of-2">
+<span class="slds-m-top_medium; slds-align_absolute-center">
+</span>
+</div>
+     <div class="slds-col slds-size_1-of-2">
+<span class="slds-m-top_medium; slds-align_absolute-center">
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span class="slds-m-top_medium; slds-align_absolute-center">
+<lightning:button label="Add Per Phase" onclick="{!c.addNewPerPhase}" variant="brand" aura:id="ibtn" />
+</span>
+</div>
+</aura:if>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Schedule of net sale</span>
+<lightning:helptext icon-name="utility:like" content="A schedule of net sale prices in relation to the Development approved by the Bank." />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+picklistfieldName="Schedule_of_net_sale__c" objectName="Application_Product_CPF__c" value="{!v.schedulenetsalevalue}" />
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Schedule of sales</span>
+<lightning:helptext icon-name="utility:like" content="A schedule of sales with any other documents and information as the Bank may request from time to time; which must be acceptable to the Bank." />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+picklistfieldName="Schedule_of_sales__c" objectName="Application_Product_CPF__c" value="{!v.scheduleofsalevalue}" />
+</span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small"> Max % by single investor</span>
+<lightning:helptext icon-name="utility:like" content="Confirmation that not more than [NUMBER]% of the Pre-sales required pursuant to the Pre-sales Condition have been purchased by a single investor." />
+</label>
+<lightning:inputField fieldName="Max_by_single_investor__c" aura:id="maxbysingleinvestorId" value="{!v.appPrdctCpfRec.Max_by_single_investor__c}" variant="label-hidden"/>
+ </span>
+</div>
+<div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Copy of standard sales agreement</span>
+<lightning:helptext icon-name="utility:like" content="A copy of the standard sale agreement to be utilised for all Pre-sales." />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+picklistfieldName="Copy_of_standard_sales_agreement__c" objectName="Application_Product_CPF__c" value="{!v.copyofstandardsalesvalue}" />
+</span>
+</div>
+ <div class="slds-col slds-size_1-of-2">
+<span >
+<label class="slds-form-element__label">
+<span class="slds-m-right_small">Copies of all sale agreements </span>
+<lightning:helptext icon-name="utility:like" content="Copies of all sale agreements to purchasers under the Pre-sales contracts and written confirmations and undertakings together with a schedule of sales and any other documents and information as the Bank may request on terms acceptable to the Bank." />
+</label>
+<c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+picklistfieldName="Copies_of_all_sale_agreements__c" objectName="Application_Product_CPF__c" value="{!v.copiesofallsalesaggrementsvalue}" />
+</span>
+</div>
+</div>
+</aura:if>
+    <br/>
+<div class="slds-col slds-size_1-of-1">
+<span class="slds-m-top_medium; slds-align_absolute-center">
+<lightning:button label="Save &amp; Validate" onclick="{!c.handlePresaleSubmit}" variant="brand" aura:id="ibtn2" />
+</span>
+</div>
+</lightning:recordEditForm>
+</lightning:accordionSection>
+</lightning:accordion>
+     <lightning:accordion activeSectionName ="Other Pre-Lodgment Conditions" allowMultipleSectionsOpen="false">
+                        <lightning:accordionSection name="Other Pre-Lodgment Conditions" label="Other Pre-Lodgment Conditions" >
+                            <aura:iteration items="{!v.newOtherPreLodgmentConditions}" var="nOtherPreLodgmentConditionsItem" indexVar="index">
+                                <c:CPFPresalechildcmp aura:id="newOtherPreLodgmentId" otherprelodgmentItem="{!nOtherPreLodgmentConditionsItem}" rowindex="{!index}" OtherPreLodgmentConditions="{!v.newOtherPreLodgmentConditions}" OppRecId="{!v.recordId}" />
+                            </aura:iteration>
+                                    <lightning:button label="Add Other Pre-Lodgement Conditions" onclick="{!c.addOtherprelodgmentbtn}" variant="brand" aura:id="ibtn1" />
+                        </lightning:accordionSection>
+                        </lightning:accordion>
+
+                    <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                    <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherprelodgmentSubmit}" variant="brand" aura:id="ibtn2" />
+                                </span>
+                    </div>
+     <lightning:accordion activeSectionName ="Other Pre-Disbursement Conditions" allowMultipleSectionsOpen="false">
+                        <lightning:accordionSection name="Other Pre-Disbursement Conditions" label="Other Pre-Disbursement Conditions" >
+                            <aura:iteration items="{!v.newOtherpredisbursementConditions}" var="nOtherpredisbursementConditionsItem" indexVar="index">
+                                <c:CPFPresalechildcmp aura:id="newOtherPredisbursementId" otherpredisbursementItem="{!nOtherpredisbursementConditionsItem}" rowindex="{!index}" OtherpredisbursementConditions="{!v.newOtherpredisbursementConditions}" OppRecId="{!v.recordId}" />
+                            </aura:iteration>
+                                    <lightning:button label="Add Other Pre-Disbursement Conditions" onclick="{!c.addOtherpredisbursementbtn}" variant="brand" aura:id="ibtn3" />
+                        </lightning:accordionSection>
+                        </lightning:accordion>
+
+                    <div class="slds-col slds-size_1-of-1">
+                            <span class="slds-m-top_medium; slds-align_absolute-center">
+                                    <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherpredisbursementSubmit}" variant="brand" aura:id="ibtn4" />
+                                </span>
+                    </div>
+</aura:component>

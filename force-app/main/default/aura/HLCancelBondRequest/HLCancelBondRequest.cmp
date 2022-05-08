@@ -1,0 +1,157 @@
+<!--This is the Home Loans Request to Cancel Bond Component-->
+<!--@author: Koketso Mpshane -->
+<!--@Created Date: 2021-06-01-->
+<!--@WorkID: W-005583-->
+<aura:component controller="HLBondCancellationRequestController" implements="flexipage:availableForRecordHome,force:hasRecordId,lightning:availableForFlowScreens" access="global" >
+    <!--Attribute Declaration-->
+    <aura:attribute name="selectedAccountNumberFromFlow" type="String" access="global" />
+    <aura:attribute name="caseIdFromFlow" type="String" access="global" />
+    <aura:attribute name="accountIdFromFlow" type="String" />
+    <aura:attribute name="cancellationReasons" type="List" default="['Selling Not Refinancing', 'Selling Refinancing','Sec 45', 'Sec 57','Paid Up/Settling', 'Switching']"/>
+    <aura:attribute name="selectedCancelReason" type="String" />
+    <aura:attribute name="showConfirmSubmission" type="Boolean" default="false" />
+    <aura:attribute name="showTermsAndConditions" type="Boolean" default="false" />
+    <aura:attribute name="termsAndConditionsAccepted" type="Boolean" default="false" />
+    <aura:attribute name="primaryAccountId" type="String" />
+	<aura:attribute name="refNumber" type="Integer" />
+	<aura:attribute name="schemaCode" type="Integer" />
+    <aura:attribute name="errorMessage" type="String" default="" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+
+    <!--Handler Declaration-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <!--Error Message-->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <ui:message title="Error" severity="error" closable="true"> {!v.errorMessage} </ui:message>
+    </aura:if>
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+    </aura:if>
+
+    <div class="slds-card__body slds-card__body_inner">
+        <article class="slds-card slds-card_boundary">
+            <div class="slds-card__body slds-card__body_inner">
+                <b><ui:outputText value="Home Loans Request to Cancel Bond" /></b>
+                <br />
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <label class="slds-form-element__control slds-size--1-of-2">
+                            <span class="slds-form-element__helper"><b>Account Number</b></span>
+                            <ui:outputText value="{!v.selectedAccountNumberFromFlow}" />
+                        </label>
+                        <br/>
+                        <lightning:select label="Cancellation reasons"
+                                          aura:id="fCancelReasons"
+                                          value="{!v.selectedCancelReason}"
+                                          required="true"
+                                          disabled="false"
+                                          >
+                            <option text="Select an Option" value="" />
+                            <aura:iteration items="{!v.cancellationReasons}" var="reason">
+                                <option text="{!reason}" value="{!reason}" />
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <label class="slds-form-element__control slds-size--1-of-2">
+                            <span class="slds-form-element__helper"></span>
+                            <ui:outputText value="" />
+                        </label>
+                        <br/><br/><br/>
+                        <aura:if isTrue="{!v.termsAndConditionsAccepted}">
+                            <lightning:input type="checkbox" name="AcceptTerms" label="Client Accept Terms &amp; Conditions" disabled="true" checked="true"/>
+                            <aura:set attribute="else">
+                                <lightning:button variant="brand-outline"
+                                                  label="View Terms &amp; Conditions"
+                                                  title="View Terms &amp; Conditions"
+                                                  aura:id="btnViewTerms"
+                                                  onclick="{!c.viewTermsAndConditions}"
+                                                  />
+                            </aura:set>
+                        </aura:if>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <!-- Custom Buttons -->
+                <lightning:layout>
+                    <lightning:layoutItem class="right-align" padding="around-small" size="12">
+                        <footer class="slds-float_right">
+                            <lightning:button variant="brand" label="Submit" title="Submit" aura:id="btnSubmit" onclick="{!c.handleSubmit}" />
+                        </footer>
+                    </lightning:layoutItem>
+                </lightning:layout>
+
+                <aura:if isTrue="{!v.showTermsAndConditions}">
+                    <!--Terms and Conditions MODAL BOX Start-->
+                    <section
+                             role="dialog"
+                             tabindex="-1"
+                             aria-labelledby="modal-heading-01"
+                             aria-modal="true"
+                             aria-describedby="modal-content-id-1"
+                             class="slds-modal slds-fade-in-open"
+                             >
+                        <div class="slds-modal__container container-terms">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.closeTermsAndConditions}"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"
+                                                      />
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Request to Cancel Bond Terms</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <c:HLCancellationTermsAndConditions />
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="Reject" title="Reject" aura:id="btnCancel" onclick="{!c.closeTermsAndConditions}" />
+                                <lightning:button variant="brand" label="Accept" title="Accept" aura:id="btnAccept" onclick="{!c.acceptTermsAndConditions}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                    <!-- Terms and Conditions MODAL BOX END-->
+                </aura:if>
+
+                <aura:if isTrue="{!v.showConfirmSubmission}">
+                    <!--CONFIRMATION MODAL BOX Start-->
+                    <section
+                             role="dialog"
+                             tabindex="-1"
+                             aria-labelledby="modal-heading-01"
+                             aria-modal="true"
+                             aria-describedby="modal-content-id-1"
+                             class="slds-modal slds-fade-in-open"
+                             >
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.closeNoticeConfirmation}"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"
+                                                      />
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Request to Cancel Bond</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p><b>Are you sure you want to continue with the request?</b></p>
+								<br />
+								<label class="slds-form-element__control slds-size--1-of-2">
+									<span class="slds-form-element__helper"> <b>Cancellation reason: </b><ui:outputText value="{!v.selectedCancelReason}" /> </span>
+								</label>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="Cancel" title="Cancel" aura:id="btnCancel" onclick="{!c.closeCancellationConfirmation}" />
+                                <lightning:button variant="brand" label="Confirm" title="Confirm" aura:id="btnConfirm" onclick="{!c.confirmCancellationSubmission}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                    <!-- CONFIRMATION MODAL BOX END-->
+                </aura:if>
+            </div>
+        </article>
+    </div>
+</aura:component>

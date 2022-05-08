@@ -1,0 +1,230 @@
+<!--
+Thabo K Senkomane
+2020 04 20
+This component renders a dynamic UI based on a JSON structure.
+-->
+<aura:component controller="DynamicResponseComponentController"
+                implements="lightning:availableForFlowScreens,force:hasSOBjectName,force:hasRecordId,forceCommunity:availableForAllPageTypes,flexipage:availableForRecordHome">
+    <aura:attribute name="cars" type="List" />
+    <aura:attribute name="columns" type="List" />
+        <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="caseRecord" type="Case" default="{ 'sobjectType': 'Case' }"/>
+    
+       <aura:attribute name="jsonStaticResourceName" type="String" />
+    <aura:attribute name="recordsList" type="list"/>
+    <aura:attribute name="responseList" type="list"/>
+    <aura:attribute name="recordBeforeEdit" type="Object" />
+    <aura:attribute name="appletTitle" type="String" default="Review Case Details"/>
+    
+   <aura:handler name="init" action="{!c.doInit}" value="{!this}"/>
+    
+    <div class="slds-box">
+        <lightning:card iconName="standard:product" title="{!v.appletTitle}">
+            <div class="slds-p-left_large slds-p-right_medium" aura:id="container">
+                <lightning:accordion aura:id="accordion" allowMultipleSectionsOpen="true">
+                    <aura:iteration items="{!v.recordsList}" var="record" indexVar="indexRecord">
+                        <lightning:accordionSection name="{!record.recordLabel}" label="{!record.recordLabel}">
+                                <div class="slds-box1">
+                                    <lightning:layout horizontalAlign="spread" multipleRows="true">
+                                        <aura:iteration items="{!record.attributes}" var="attribute" indexVar="indexAttribute">
+                                            <lightning:layoutItem padding="around-small">
+                                                <aura:if isTrue="{!attribute.attrType == 'Text'}">
+                                                    <lightning:input name="{!attribute.attrApiName}"
+                                                                     label="{!attribute.attrLabel}"
+                                                                     readonly="{!record.readonly}"
+                                                                     value="{!attribute.attrValue}"
+                                                                     />
+                                               </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Textarea'}">
+                                                <lightning:textarea name="{!attribute.attrApiName}"
+                                                                    required="{!attribute.required}"
+                                                                    value="{!attribute.attrValue}"
+                                                                    label="{!attribute.attrLabel}"
+                                                                    maxlength="60"
+                                                                    disabled="{record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Integer'}">
+                                                <lightning:input name="{!attribute.attrApiName}"
+                                                                 label="{!attribute.attrLabel}"
+                                                                 required="{!attribute.required}"
+                                                                 type="number"
+                                                                 value="{!attribute.attrValue}"
+                                                                 readonly="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Date'}">
+                                                <lightning:input name="{!attribute.attrApiName}"
+                                                                 label="{!attribute.attrLabel}"
+                                                                 required="{!attribute.required}"
+                                                                 type="date"
+                                                                 value="{!attribute.attrValue}"
+                                                                 readonly="{!record.readonly}"/>
+                                            </aura:if> 
+                                            <aura:if isTrue="{!attribute.attrType == 'Checkbox'}">
+                                                <lightning:input name="{!attribute.attrApiName}"
+                                                                 label="{!attribute.attrLabel}"
+                                                                 required="{!attribute.required}"
+                                                                 type="checkbox"
+                                                                 checked="{!attribute.attrValue}"
+                                                                 disabled="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Picklist'}">
+                                                <lightning:combobox name="{!attribute.attrApiName}"
+                                                                    label="{!attribute.attrLabel}"
+                                                                    required="{!attribute.required}"
+                                                                    value ="{!attribute.attrValue}"
+                                                                    options="{!attribute.selectableOptions}"
+                                                                    readonly="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Multi-Select Picklist'}">
+                                                <lightning:dualListbox name="{!attribute.attrApiName}"
+                                                                       label= "{!attribute.attrLabel}"
+                                                                       sourceLabel="Available"
+                                                                       selectedLabel="Selected"
+                                                                       value="{!attribute.multiPicklistValues}"
+                                                                       required="{!attribute.required}"
+                                                                       size="3"
+                                                                       options="{!attribute.selectableOptions}"
+                                                                       disabled="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Radio'}">
+                                                <lightning:radioGroup name="{!attribute.attrApiName}"
+                                                                      label="{!attribute.attrLabel}"
+                                                                      options="{!attribute.selectableOptions}"
+                                                                      value="{!attribute.attrValue}"
+                                                                      required="{!attribute.required}"
+                                                                      type="radio"
+                                                                      disabled="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'File Upload'}">
+                                                <lightning:fileUpload name="{!attribute.attrApiName}"
+                                                                      label="{!attribute.attrLabel}"
+                                                                      recordId="{!record.recordId}"
+                                                                      disabled="{!record.readonly}"/>
+                                            </aura:if>
+                                        </lightning:layoutItem>
+                                        <aura:if isTrue="{!attribute.attrType == 'Section'}">
+                                            <lightning:layoutItem padding="around-small" size="12">
+                                                <div class="slds-section slds-is-open">
+                                                    <h3 class="slds-section__title slds-theme_shade">
+                                                        <span class="slds-truncate slds-p-horizontal_small"
+                                                              title="Section Title">{!attribute.attrLabel}</span>
+                                                    </h3>
+                                                </div>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                    </aura:iteration>
+                                </lightning:layout>
+                            </div>
+                        </lightning:accordionSection>
+                    </aura:iteration>
+                    <aura:iteration items="{!v.responseList}" var="record" indexVar="indexRecord">
+                        <lightning:accordionSection name="{!record.recordLabel}" label="{!record.recordLabel}">
+                                <div class="slds-box1">
+                                    <lightning:layout horizontalAlign="spread" multipleRows="true">
+                                        <aura:iteration items="{!record.attributes}" var="attribute" indexVar="indexAttribute">
+                                            <lightning:layoutItem padding="around-small">
+                                                <aura:if isTrue="{!attribute.attrType == 'Text'}">
+                                                    <lightning:input name="{!attribute.attrApiName}"
+                                                                     label="{!attribute.attrLabel}"
+                                                                     
+                                                                     value="{!attribute.attrValue}"
+                                                                     readonly="{record.readonly}"/>
+                                               </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Textarea'}">
+                                                <lightning:textarea name="{!attribute.attrApiName}"
+                                                                    required="{!attribute.required}"
+                                                                    value="{!attribute.attrValue}"
+                                                                    label="{!attribute.attrLabel}"
+                                                                    maxlength="60"
+                                                                    disabled="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Integer'}">
+                                                <lightning:input name="{!attribute.attrApiName}"
+                                                                 label="{!attribute.attrLabel}"
+                                                                 required="{!attribute.required}"
+                                                                 type="number"
+                                                                 value="{!attribute.attrValue}"
+                                                                 readonly="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Date'}">
+                                                <lightning:input name="{!attribute.attrApiName}"
+                                                                 label="{!attribute.attrLabel}"
+                                                                 required="{!attribute.required}"
+                                                                 type="date"
+                                                                 value="{!attribute.attrValue}"
+                                                                 readonly="{!record.readonly}"/>
+                                            </aura:if> 
+                                            <aura:if isTrue="{!attribute.attrType == 'Checkbox'}">
+                                                <lightning:input name="{!attribute.attrApiName}"
+                                                                 label="{!attribute.attrLabel}"
+                                                                 required="{!attribute.required}"
+                                                                 type="checkbox"
+                                                                 checked="{!attribute.attrValue}"
+                                                                 disabled="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Picklist'}">
+                                                <lightning:combobox name="{!attribute.attrApiName}"
+                                                                    label="{!attribute.attrLabel}"
+                                                                    required="{!attribute.required}"
+                                                                    value ="{!attribute.attrValue}"
+                                                                    options="{!attribute.selectableOptions}"
+                                                                    readonly="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Multi-Select Picklist'}">
+                                                <lightning:dualListbox name="{!attribute.attrApiName}"
+                                                                       label= "{!attribute.attrLabel}"
+                                                                       sourceLabel="Available"
+                                                                       selectedLabel="Selected"
+                                                                       value="{!attribute.multiPicklistValues}"
+                                                                       required="{!attribute.required}"
+                                                                       size="3"
+                                                                       options="{!attribute.selectableOptions}"
+                                                                       disabled="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'Radio'}">
+                                                <lightning:radioGroup name="{!attribute.attrApiName}"
+                                                                      label="{!attribute.attrLabel}"
+                                                                      options="{!attribute.selectableOptions}"
+                                                                      value="{!attribute.attrValue}"
+                                                                      required="{!attribute.required}"
+                                                                      type="radio"
+                                                                      disabled="{!record.readonly}"/>
+                                            </aura:if>
+                                            <aura:if isTrue="{!attribute.attrType == 'File Upload'}">
+                                                <lightning:fileUpload name="{!attribute.attrApiName}"
+                                                                      label="{!attribute.attrLabel}"
+                                                                      recordId="{!record.recordId}"
+                                                                      disabled="{!record.readonly}"/>
+                                            </aura:if>
+                                        </lightning:layoutItem>
+                                        <aura:if isTrue="{!attribute.attrType == 'Section'}">
+                                            <lightning:layoutItem padding="around-small" size="12">
+                                                <div class="slds-section slds-is-open">
+                                                    <h3 class="slds-section__title slds-theme_shade">
+                                                        <span class="slds-truncate slds-p-horizontal_small"
+                                                              title="Section Title">{!attribute.attrLabel}</span>
+                                                    </h3>
+                                                </div>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                    </aura:iteration>
+                                </lightning:layout>
+
+                            </div>
+                        </lightning:accordionSection>
+                    </aura:iteration>
+   
+                </lightning:accordion>
+            </div>
+        </lightning:card>
+    </div>
+    
+    
+    
+    
+</aura:component>
+    <!--    <div class="slds-col slds-size_1-of-2">
+                         <span>
+                            <lightning:outputField fieldName="Response_Body__c" aura:id="caseExtendedData" value="{!v.case.Response_Body__c}" />
+                        </span>
+                    </div>-->

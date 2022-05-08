@@ -1,0 +1,104 @@
+<!--
+  @description       : Branch Customer Foreign Tax DataTable View (DO NOT EDIT!)
+  @author            : clifford.willers@absa.africa
+  @last modified on  : 2021-11-01
+  @last modified by  : clifford.willers@absa.africa
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                extends="c:ComponentBase"
+                controller="ForeignTaxDataTableController">
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="tableData" type="Object"/>
+    <aura:attribute name="deleteData" type="Object"/>
+    <aura:attribute name="isLoading" type="Boolean" default="false"/>
+    <aura:attribute name="addForeignTaxDisabled" type="Boolean" default="false"/>
+    <aura:method name="verityTaxData" action="{! c.verityTaxData }" access="PUBLIC" />
+    <aura:handler name="change" value="{! v.data }" action="{! c.dataChanged }" />
+    <aura:handler name="change" value="{! v.columns }" action="{! c.dataChanged }" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <div class="slds-table_edit_container slds-is-relative">
+        <aura:if isTrue="{!v.isLoading}">
+            <lightning:spinner alternativeText="Loading" />
+        </aura:if>
+        <table id="{! globalId + '_foreignTaxDataTableView' }"
+               class="slds-table slds-no-row-hover slds-table--bordered slds-table--cell-buffer slds-table_edit slds-table_fixed-layout" 
+               role="grid">
+            <thead>
+                <tr class="slds-line-height_reset">
+                    <th scope="col" style="width:2rem;text-align:center;">#</th>
+                    <th scope="col" style="width:20%"><div class="slds-truncate slds-var-p-horizontal_x-small">Country</div></th>
+                    <th scope="col" style="width:20%"><div class="slds-truncate slds-var-p-horizontal_x-small">Tax number</div></th>
+                    <th scope="col"><div class="slds-truncate slds-var-p-horizontal_x-small">Reason not given</div></th>
+                    <th scope="col" style="width:3rem;text-align:center;">
+                        <div class="slds-truncate slds-var-p-horizontal_x-small">
+                            <lightning:buttonIcon iconName="utility:new"
+                                                  size="medium"
+                                                  variant="bare"
+                                                  alternativeText="New foreign tax entry"
+                                                  title=""
+                                                  disabled="{! v.addForeignTaxDisabled }"
+                                                  onclick="{! c.addForeignTaxData }"/>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <aura:iteration items="{!v.tableData}" var="row" indexVar="rowIndex">
+                    <tr aria-selected="false" class="slds-hint-parent">
+                        <td scope="col" style="width:2rem;text-align:center;">
+                            {!rowIndex + 1}
+                        </td>
+                        <aura:iteration items="{!row.fields}"
+                                        var="field"
+                                        indexVar="fieldIndex">
+                            <td class="{!field.tdClassName}" role="gridcell">
+                                <span class="slds-grid slds-grid_align-spread">
+                                    <aura:if isTrue="{!field.mode == 'edit'}">
+                                        <aura:if isTrue="{!field.isEditSpecialType}">
+                                            <aura:if isTrue="{!field.type == 'picklist'}">
+                                                <lightning:select label="Hidden"
+                                                                  variant="label-hidden"
+                                                                  class="slds-truncate ctInput"
+                                                                  name="{! rowIndex + '~' + fieldIndex + '~' + field.name }"
+                                                                  value="{! field.value }"
+                                                                  disabled="{! field.disabled }"
+                                                                  onchange="{! c.onInputChange }">
+                                                            <option value=""></option>
+                                                    <aura:iteration items="{! field.selectOptions }" var="selectItem">
+                                                        <option value="{! selectItem.value }">{!selectItem.label}</option>
+                                                    </aura:iteration>
+                                                </lightning:select>
+                                            </aura:if>
+                                            <aura:set attribute="else">
+                                                <lightning:input name="{! rowIndex + '~' + fieldIndex + '~' + field.name }"
+                                                                 type="{! field.type }"
+                                                                 value="{! field.value }"
+                                                                 disabled="{! field.disabled }"
+                                                                 variant="label-hidden"
+                                                                 onchange="{! c.onInputChange }"
+                                                                 class="ctInput"
+                                                                 formatter="{! field.formatter }"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:if>
+                                </span>
+                            </td>
+                        </aura:iteration>
+                        <td role="gridcell">
+                            <lightning:buttonIcon name="{!rowIndex}"
+                                                  iconName="utility:delete"
+                                                  value="{!rowIndex}"
+                                                  size="medium"
+                                                  variant="bare"
+                                                  alternativeText="Delete foreign tax entry"
+                                                  title=""
+                                                  onclick="{! c.removeForeignTaxData }"/>
+                        </td>
+                    </tr>
+                </aura:iteration>
+            </tbody>
+        </table>
+    </div>
+</aura:component>

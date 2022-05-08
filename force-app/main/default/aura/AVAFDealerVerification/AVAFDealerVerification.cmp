@@ -1,0 +1,158 @@
+<!-- Lightning Component is based upon Dealer Authentication
+        @author: Manideep kenche
+        @created 2021/11/22
+  @work W-014039 -->
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,lightning:availableForFlowScreens,flexipage:availableForRecordHome,force:hasRecordId" controller = "EBDealerAuthenticationCntr" access="global" >
+	<!-- Dealer details -->
+    <aura:attribute name = "DealershipName"  type = "String"/>
+    <aura:attribute name = "DealerAddress"  type = "String"/>
+    <aura:attribute name = "DealerTelephoneNumber"  type = "String"/>
+    <aura:attribute name = "ApprovedDealer"  type = "String"/>
+    <aura:attribute name = "CommentsFromtheMarketer"  type = "String"/>
+    <aura:attribute name = "dealerCode"  type = "String"/>
+    
+     <aura:attribute name = "showDetails" type = "boolean" default = "False"/>
+      <aura:attribute name = "showSpinner" type = "boolean" default = "False"/>
+     <aura:attribute name = "errorMessage" type = "String"/>
+     <aura:attribute name = "Reason"  type = "String"/>
+     <aura:attribute name = "isShowReason" type = "boolean" default = "False"/>
+     <aura:attribute name = "closeCase" type = "boolean" default = "False"/>
+    <aura:attribute name="showNextButton" type="Boolean" Default="false" />
+    <aura:attribute name="showPrevious" type="Boolean" Default="true" />
+      <aura:attribute name = "CaseIdfromFlow"  type = "String" access="global" />
+    <aura:attribute name="options" type="List" default="[{'label': 'Yes', 'value': 'true'},
+                                                        {'label': 'No', 'value': 'false'}]"/>
+    
+    <!-- close case -->
+    <lightning:recordEditForm aura:id="caseCloseEditForm" objectApiName="Case" recordId="{!v.CaseIdfromFlow}"
+                              onsuccess="{!c.refreshView}" >
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+        <lightning:inputField aura:id="descriptionField" fieldName="Description" class="slds-hide" />
+    </lightning:recordEditForm>
+    
+    <!-- user details -->
+    <aura:attribute name="currentUser" type="User"/>
+    <force:recordData aura:id="recordLoader" recordId="{!$SObjectType.CurrentUser.Id}"  
+                      fields="AB_Number__c,SiteCode__c" targetFields="{!v.currentUser}"/>
+    <article>
+            <div class="slds-col slds-size_1-of-3">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <lightning:input aura:id ="inputCode" name="EnterCode" label="Enter Code" value="{!v.dealerCode}" placeholder="Enter Code" required = "true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="8">
+                        <lightning:button variant="brand" label="Search" title="Brand action" onclick="{!c.handleSearch }" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </div>
+        <aura:if isTrue = "{!v.showDetails}">
+        <lightning:card title="">
+                    <h3 class="slds-section__title">
+                        <span class="slds-truncate slds-button slds-section__title-action" title="Dealer Details">Dealer details</span>
+                    </h3>
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem>
+                            
+                            <!--Declare Spinner-->
+                            <aura:if isTrue="{!v.showSpinner}">
+                                <div class="slds-spinner_container">
+                                    <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading"/>
+                                </div>
+                            </aura:if>
+                            <lightning:layout>
+                                 <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                                    <p style="color: red">
+                                        
+                                        <ui:message title="Error" aura:id = "id1" severity="error" closable="false">
+                                            {!v.errorMessage}
+                                        </ui:message>
+                                    </p>
+                                </aura:if>
+                            </lightning:layout>
+                            <div class="slds-p-horizontal--small">
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1"> </div>
+                                <lightning:layout multipleRows="true">
+                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                        <label class="slds-form-element__label" for="DealerName">
+                                            Dealership Name
+                                        </label>
+                                        <ui:outputText value="{!v.DealershipName}"  aura:id="DealershipName" class="slds-input slds-output" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                        <lightning:textarea  aura:id="DealerAddress" readonly="true" value="{!v.DealerAddress}" label="Dealer Address" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                        <label class="slds-form-element__label" for="Dealerphone">
+                                            Dealer TelephoneNumber
+                                        </label>
+                                        <ui:outputText value="{!v.DealerTelephoneNumber}"  aura:id="DealerTelephoneNumber" class="slds-input slds-output" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                        <label class="slds-form-element__label" for="ApprovedDealer">
+                                            Approved Dealer
+                                        </label>
+                                        <ui:outputText value="{!v.ApprovedDealer}"  aura:id="ApprovedDealer" class="slds-input slds-output" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                        <lightning:textarea  aura:id="CommentsFromtheMarketer" readonly="true" value="{!v.CommentsFromtheMarketer}" label="Comments From the Marketer" />
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </div>
+                            
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    <div class="slds-col slds-size_1-of-3">
+                        <lightning:radioGroup aura:id="radios"
+                                              label="Did the dealer pass the authentication?"
+                                              options="{! v.options }"
+                                              value="{! v.value }"
+                                              type="radio"
+                                              onchange="{! c.handleChange }"
+                                              required="true"
+                                              class="customRadioCls"/>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <aura:if isTrue = "{!v.isShowReason}">
+                            <lightning:textarea aura:id="Reason" name="Reason" label="Reason"
+                                                value="{!v.Reason}" required="true"/>
+                        </aura:if>
+                    </div>
+                </lightning:card>
+        </aura:if>
+         <footer class="slds-card__footer" style="height:4rem">
+            <a class="slds-card__footer-action" >
+                <aura:if isTrue="{!v.showPrevious}">
+                    <lightning:button
+                                      class="slds-float_left"
+                                      aura:id="closecase"
+                                      variant="brand"
+                                      name="Close Case"
+                                      label="Previous"
+                                      onclick="{!c.onPrevious}"/>
+                   
+                </aura:if>
+                <aura:if isTrue="{!v.closeCase}">
+                    <lightning:button
+                                      aura:id="closecase"
+                                      variant="brand"
+                                      name="CloseCase"
+                                      label="CloseCase"
+                                      onclick="{!c.closeCase}"/> 
+                    
+                </aura:if>
+                 <aura:if isTrue="{!(empty(v.errorMessage))}">
+                <aura:if isTrue = "{!v.showNextButton}">
+                    <lightning:button
+                                      class="slds-float_right"
+                                      aura:id="closecase"
+                                      variant="brand"
+                                      name="Close Case"
+                                      label="Next"
+                                      onclick="{!c.onNext}"/>
+                    
+                </aura:if>
+                </aura:if>
+            </a>
+        </footer>
+    </article>
+</aura:component>

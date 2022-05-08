@@ -1,0 +1,122 @@
+<aura:component controller="generateCPFDocuments" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:attribute name="filetype" type="List" default="['.png', '.jpg', '.jpeg','.pdf']" />
+    <aura:attribute name="multiple" type="Boolean" default="true" />
+    <aura:attribute name="disabled" type="Boolean" default="true" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="creditApproved" type="String" />
+    <aura:attribute name="standardDocStatus" type="String" default="Need file, Incomplete"/>
+    <aura:attribute name="creditApprovalDocStatus" type="String" default="Need file, Incomplete"/>
+    <aura:attribute name="dataAudit" type="Object"/>
+    <aura:attribute name="columnsAudit" type="List"/>
+    <!--Declare Spinner-->
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <lightning:recordEditForm aura:id="wasTheCreditRequestApprovedForm"
+    objectApiName="Opportunity"
+    recordId="{!v.recordId}"
+    onload="{!c.onload}">
+    <lightning:inputField aura:id="wasTheCreditRequestApproved" class="slds-hide" fieldName="Was_the_credit_request_approved__c" disabled="true"/>
+    </lightning:recordEditForm>
+    <lightning:accordion activeSectionName="Final Agreement" allowMultipleSectionsOpen="false">
+        <lightning:accordionSection name="Final Agreement" label="Final Agreement" >
+            <aura:if isTrue="{!v.creditApproved == 'YES'}">
+                <div class="slds-grid slds-gutters slds-p-around_small">
+                    <div class="slds-box slds-col slds-p-around_x-small slds-size_1-of-2">
+                        <lightning:card title="Document Type">
+                            <aura:set attribute="actions">
+                                <lightning:buttonMenu alternativeText="Show menu" onselect="{! c.handleMenuSelect }" iconSize="x-small">
+                                    <lightning:menuItem value="MenuItemOne" label="View File Details"  disabled="true"/>
+                                    <lightning:menuItem value="MenuItemTwo" label="Add Document" disabled="true" />
+                                    <lightning:menuItem value="Credit Approved" label="Generate Document" />
+                                    <lightning:menuItem value="MenuItemFour" label="Write Document"  disabled="true"/>
+                                    <lightning:menuItem value="MenuItemfive" label="Sign Document"  disabled="true"/>
+                                    <lightning:menuItem value="MenuItemSix" label="Share Document"  disabled="true"/>
+                                </lightning:buttonMenu>
+                            </aura:set>
+                            <div class="slds-text-body_small">CPF Below R5 Million Template - Credit Approved.<br/>
+                                <div class="slds-theme_shade"><lightning:icon iconName="doctype:image" alternativeText="CPF Below R5 Million Template - Credit Approved" title="CPF Below R5 Million Template - Credit Approved" />
+                                    {!v.creditApprovalDocStatus}
+                                </div>
+                            </div>
+                        </lightning:card>
+                    </div>
+                    <div class="slds-box slds-col slds-p-around_x-small slds-size_1-of-2">
+                        <lightning:card title="Document Type">
+                            <aura:set attribute="actions">
+                                <lightning:buttonMenu alternativeText="Show menu" onselect="{! c.handleMenuSelect }" iconSize="x-small">
+                                    <lightning:menuItem value="MenuItemOne" label="View File Details"  disabled="true"/>
+                                    <lightning:menuItem value="MenuItemTwo" label="Add Document"  disabled="true"/>
+                                    <lightning:menuItem value="ABSA 6184 - CPF Investment Loan / MBBL Standard Terms" label="Generate Document" />
+                                    <lightning:menuItem value="MenuItemFour" label="Write Document"  disabled="true"/>
+                                    <lightning:menuItem value="MenuItemfive" label="Sign Document"  disabled="true"/>
+                                    <lightning:menuItem value="MenuItemSix" label="Share Document"  disabled="true"/>
+                                </lightning:buttonMenu>
+                            </aura:set>
+                            <div class="slds-text-body_small">CPF Below R5 Million Standard Terms.<br/>
+                                <div class="slds-theme_shade">
+                                    <lightning:icon iconName="doctype:image" alternativeText="CPF Below R5 Million Standard Terms" title="CPF Below R5 Million Standard Terms" />
+                                    {!v.standardDocStatus}
+                                </div>
+                            </div>
+                        </lightning:card>
+                    </div>
+                </div>
+                <aura:set attribute="else">
+                    Upload the Credit approval to access your final documentation.
+                </aura:set>
+            </aura:if>
+        </lightning:accordionSection>
+    </lightning:accordion>
+    <aura:if isTrue="{!v.creditApproved == 'YES'}">
+        <lightning:accordion activeSectionName="Agreement History" allowMultipleSectionsOpen="false">
+            <lightning:accordionSection name="Agreement History" label="Agreement History" >
+                        <!-- Document list -->
+                        <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+                            <lightning:card title="View Documents" iconName="standard:document" class="slds-m-left_small">
+                                <aura:set attribute="actions">
+                                    <lightning:button label="Refresh" disabled="{!v.isRefresh}" onclick="{!c.refreshDocuments}" aura:id="refreshBtn"/>
+                                </aura:set>
+                                <lightning:datatable
+                                                    columns="{! v.columnsAudit }"
+                                                    data="{! v.dataAudit }"
+                                                    keyField="id"
+                                                    onrowaction="{!c.handleRowAction}"
+                                                    hideCheckboxColumn="true"
+                                                    minColumnWidth="100"/>
+                            </lightning:card>
+                        </article>
+
+                <!--table class="slds-table slds-tablebordered slds-tablecell-buffer">
+                    <thead>
+                        <tr class="slds-text-title">
+                            <th scope="col">
+                                <div class="slds-truncate" title="Number">Number</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="Document Type">Document Type</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="Version">Version</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="Approver">Approver</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="Date">Date</div>
+                            </th>
+                        </tr>
+                    </thead>
+                </table-->
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </aura:if>
+</aura:component>

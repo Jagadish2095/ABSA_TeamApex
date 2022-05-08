@@ -1,0 +1,112 @@
+<aura:component
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+    controller="cafApplicationController"
+    access="global"
+>
+    <!-- BEGAN ATTRIBUTE -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    <aura:attribute name="onclick" type="Aura.Action" />
+    <aura:method name="callChildExtras" action="{!c.callChildMethodExtras}">
+        <aura:attribute name="appId" type="String" />
+    </aura:method>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="openNewExtraBlockValue" type="String" default="No" />
+    <aura:attribute name="removeExtraDetailsValue" type="String" default="agree" />
+    <aura:attribute name="recId" type="String" default="{!v.recId}" />
+    <aura:attribute name="typeExtra" type="String" />
+    <aura:attribute name="typeExtraOptions" type="List" />
+    <aura:attribute name="extrasValId" type="String" default="" />
+    <aura:attribute name="oppId" type="String" default="{!v.oppId}" />
+    <aura:attribute name="extraslength" type="String" />
+    <aura:attribute name="Contract_Extras__c" type="String" />
+    <aura:attribute name="additionalFeeAmount" type="String" />
+    <aura:attribute name="dataList" type="Object" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="showConfirmDialog" type="boolean" default="false" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="extraOtherDescriptionField" type="boolean" default="false" />
+    <aura:attribute name="otherExtraDescription" type="String" />
+    <aura:attribute name="isEditable" type="boolean" default="false" />
+    <aura:attribute name="opportunityRecord2" type="Object" />
+    <aura:attribute name="recordLoadError" type="String" />
+    <!-- END ATTRIBUTE -->
+
+    <force:recordData
+        aura:id="recordLoader"
+        recordId="{!v.oppId}"
+        fields="CAF_Sanctioning_Status__c"
+        targetFields="{!v.opportunityRecord2}"
+        targetError="{!v.recordLoadError}"
+    />
+    <lightning:accordionSection name="CAF_ContractExtras" label="{!'Contract Extras ('+v.extraslength+')'}">
+        <!-- BASIC GRID EXAMPLE -->
+        <div class="slds-grid slds-wrap p-lr-20">
+            <div class="slds-col slds-size_5-of-12">
+                <lightning:button label="Add New Extra" variant="brand" aura:id="btnaddNewExtra" onclick="{!c.addNewExtra}" disabled="{!v.isEditable}"/>
+
+                <aura:if isTrue="{!v.openNewExtraBlockValue == 'Yes'}">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <form aura:id="contractExtrasForm">
+                            <div class="slds-col slds-size_1-of-1">
+                                <label class="slds-form-element__label slds-no-flex">Extra number</label>
+                                <div class="text">
+                                    <p><span>{!v.extrasValId}</span></p>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1">
+                                <lightning:select label="Type Extra" value="{!v.typeExtra}" onchange="{!c.onPickListTypeExtraChange}" required="true" >
+                                    <option text="--None--" value="--None--" />
+                                    <aura:iteration items="{!v.typeExtraOptions}" var="item">
+                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.typeExtra}" />
+                                    </aura:iteration>
+                                </lightning:select>
+                            </div>
+                            <aura:if isTrue="{! v.extraOtherDescriptionField }">
+                                <div class="slds-col slds-size_1-of-1">
+                                    <lightning:input type="text" name="otherExtraDescription" label="Other Extra Description" value="{!v.otherExtraDescription}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-size_1-of-1">
+                                <lightning:input
+                                    type="number"
+                                    aura:id="additionalFeeAmount"
+                                    name="additionalFeeAmount"
+                                    label="Additional fee amount"
+                                    value="{!v.additionalFeeAmount}"
+                                    step="0.01"
+                                />
+                            </div>
+                            <!--
+                            <div class="slds-col slds-size_1-of-1">
+                                <ui:inputCheckbox name="removeExtraDetails" aura:id="removeExtraDetails"
+                                                  label="Remove this extra details. (This action is not reversible)"
+                                                  value="{! v.removeExtraDetailsValue }"/>
+                            </div>
+                            -->
+                            <div class="slds-col slds-size_1-of-1">
+                                <lightning:button label="Cancel" aura:id="btnCancelApplication" onclick="{!c.btncancel}" />
+                                <lightning:button label="Save" variant="brand" aura:id="btnSaveExtras" onclick="{!c.btnSaveExtras}" />
+                            </div>
+                        </form>
+                    </div>
+                </aura:if>
+
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-1 p-t-15">
+                        <lightning:datatable
+                            keyField="id"
+                            data="{! v.dataList }"
+                            columns="{! v.columns }"
+                            hideCheckboxColumn="true"
+                            onrowaction="{!c.handleRowAction}"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <c:confirmDelete showConfirmDialog="{!v.showConfirmDialog}" recordId="{!v.recordId}" onclick="{!c.doInit}" />
+        <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner alternativeText="Loading" size="medium" />
+        </aura:if>
+    </lightning:accordionSection>
+</aura:component>

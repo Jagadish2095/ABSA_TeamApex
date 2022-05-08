@@ -1,0 +1,111 @@
+<!--
+  @description       : 
+  @author            : Sourabh Yadav
+  @last modified on  : 2021-11-15
+  @last modified by  : Sourabh Yadav
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global"
+                controller="EarlyRiskDetectionController" >
+    <!-- Attributes -->
+    <aura:attribute name="clientAccountId" type="String" access="global" />
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" access="global" />
+    <aura:attribute name="selectedAccountNumberFromFlow" type="String" access="global" />
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    <aura:attribute name="caseIdFromFlow" type="String" access="global" />
+    <aura:attribute name="smsMessageTextToFlow" type="String" access="global" />
+    <aura:attribute name="showNextButton" type="Boolean" Default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="isShowSpinnerSetOff" type="Boolean" default="false"/>
+     <aura:attribute name="isModalOpen" type="Boolean" default="false"/>
+    <aura:attribute name="ptpResponse" type="String" />
+    <aura:attribute name="phoneNumber" type="String" />
+    <aura:attribute name="clientName" type="String" />
+    <aura:attribute name="cyclePhaseResponse" type="List"/>
+    <aura:attribute name="collectionPhase" type="String" />
+    <aura:attribute name="collectionCycle" type="String" />
+    <aura:attribute name="customerOnPTP" type="String" />
+      <aura:attribute name="modalObject" type="Object" access="global" />
+    <aura:attribute name="modalsToDisplay" type="List" default="['PTP', 'TransactionHistory']" />
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <!-- Case  RecordEditForm -->
+    <lightning:recordEditForm aura:id="caseEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}" onload="{!c.handleCaseLoad}">
+        <lightning:inputField aura:id="serviceGroupField" fieldName="sd_Service_Group__c" class="slds-hide" />
+        <lightning:inputField aura:id="cifField" fieldName="CIF__c" class="slds-hide" />
+        <lightning:inputField aura:id="caseType__cField" fieldName="Type__c" class="slds-hide" /> 
+        <lightning:inputField aura:id="caseSubTypeField" fieldName="Subtype__c" class="slds-hide" />
+        <lightning:inputField aura:id="originalServiceGroupId" fieldName="sd_Original_Service_Group__c" class="slds-hide" />
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+        <lightning:inputField aura:id="clientNumber" fieldName="Client_Mobile_Phone__c" class="slds-hide"/>
+        <lightning:inputField aura:id="clientName" fieldName="Auto_Response_Greeting__c" class="slds-hide"/>
+        <lightning:inputField aura:id="descriptionField" fieldName="Description" class="slds-hide" />
+        <lightning:inputField aura:id="selectedAccountNumber" fieldName="Account_Number__c" class="slds-hide" />
+    </lightning:recordEditForm>
+    
+    <article class="slds-card">
+        <!--Declare Spinner-->
+        <aura:if isTrue="{!v.showSpinner}">
+            <div class="exampleHolder">
+                <lightning:spinner alternativeText="Loading" size="medium" />
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+            <lightning:layout>
+                <lightning:layoutItem padding="around-small" size="12">
+                    <p style="color: red">
+                        <ui:outputText aura:id="iCustomErrorMessage" value="{!v.errorMessage}" />
+                    </p>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:if>
+        <aura:if isTrue="{!!v.showNextButton}">
+            <lightning:card title="">
+                
+              
+                    <c:CollectionCycle selectedAccountNumberFromFlow ="{!v.selectedAccountNumberFromFlow}" caseIdFromFlow="{!v.caseIdFromFlow}"  
+                                       modalsToDisplay="{!v.modalObject}"  Title="Credit card details" 
+                                       titleTransactionHistory="Credit card usage"  customerOnPTP="{!v.customerOnPTP}"/>
+                  <lightning:layout multipleRows="true">   
+                <aura:if isTrue="{!v.customerOnPTP == 'No'}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <div class="slds-clearfix">
+                                <aura:if isTrue="{!empty(v.errorMessage)}">
+                                    <lightning:button
+                                                      class="slds-float_right"
+                                                      aura:id="nextBtn"
+                                                      variant="brand"
+                                                      name="Next"
+                                                      label="Next"
+                                                      onclick="{!c.onNext}"
+                                                      />
+                                </aura:if>
+                            </div>
+                        </lightning:layoutItem>
+                        <aura:set attribute="else">
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <div class="slds-float_right slds-clearfix">
+                                <lightning:button
+                                                  class="slds-float_right"
+                                                  aura:id="nextBtn"
+                                                  variant="brand"
+                                                  name="Close case"
+                                                  label="Close case"
+                                                  onclick="{!c.closeCase}"
+                                                  />
+                                </div>
+                            </lightning:layoutItem>
+                        </aura:set>
+                    </aura:if>
+                </lightning:layout>
+                
+            </lightning:card>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.showNextButton}">
+             <lightning:card title="">
+            <c:EBCollectionCustomerContacts phoneNumber="{!v.phoneNumber}" selectedAccountNumberFromFlow ="{!v.selectedAccountNumberFromFlow}" clientName="{!v.clientName}" caseIdFromFlow="{!v.caseIdFromFlow}"/>
+            </lightning:card>
+        </aura:if>
+    </article>
+</aura:component>

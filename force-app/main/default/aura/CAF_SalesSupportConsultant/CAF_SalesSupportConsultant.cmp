@@ -1,0 +1,137 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" access="global" 
+                 controller="CAF_Sanctioning_Controller">
+    
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+    <aura:attribute name="recordId" type="Id" /> 
+    <aura:attribute name="isAttestSecurities" type="Boolean" default="false"/>
+    <aura:attribute name="gridData" type="Object" access="public" />
+    <aura:attribute name="gridColumns" type="List" access="PRIVATE" />
+    <aura:attribute name="showSpinner" type="Boolean" default="true"/>
+    <aura:attribute name="isAttestedContract" type="Boolean" default="false"/>
+    <aura:attribute name="isSubmitDecision" type="Boolean" default="false"/>
+    <aura:attribute name="isEditable" type="boolean" default="false" />
+    <aura:attribute name="autoChecked" type="boolean" default="false" />
+    <aura:attribute name="activeSections" type="List" default="['securitiesRequest','releaseContract','returnApplication','decisionHistory']" />
+   <aura:attribute name="caseRecord" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="OwnerId,Status"
+                      targetFields="{!v.caseRecord}"
+                      targetError="{!v.recordLoadError}"
+                      />
+    
+    <div class="exampleHolder">
+        <lightning:spinner aura:id="mySpinner" class="slds-hide" alternativeText="Loading..." variant="brand" size="large"/>
+    </div>
+         <lightning:recordEditForm aura:id="securitiesValidationForm" objectApiName="Case" recordId="{!v.recordId}"
+                              onload="" onsuccess="" onerror="">
+         <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="securitiesRequest" label="Request Securities Preparation from Flight Center"> 
+            
+           <div class="slds-grid slds-wrap slds-gutters_medium">
+        <div class="slds-col slds-size_1-of-2">
+            <span>
+            
+          <lightning:input type="checkbox" label="I attest that the information captured is accurate." 
+                                aura:id="attestSecurities" default="unchecked" onchange="{! c.onAttestSecurities}" checked="{!v.autoChecked}"/>   
+            </span>
+        </div>
+               <aura:if isTrue="{!v.isAttestSecurities}">
+        <div class="slds-col slds-size_1-of-2">
+            <span>
+            <lightning:button variant="brand"
+                                              aura:id="requestSecurities"
+                                              label="Submit to Flight Center"
+                                              title="requestSecurities"
+                                              class="slds-button slds-button_brand slds-m-top--medium "
+                                              onclick="{!c.handleAttestSecurities}"
+                                              disabled="{!v.isEditable}"/>          
+            </span>
+        </div>
+                   </aura:if>
+    </div>
+         
+      </lightning:accordionSection>
+            
+            <lightning:accordionSection name="releaseContract" label="Release Contracts to Banker">    
+     
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+        <div class="slds-col slds-size_1-of-2">
+            <span>
+                 <lightning:input type="checkbox" label="I have prepared all required contract documents for the completed applications." 
+                                aura:id="attestContract" default="unchecked" onchange="{! c.onAttestContract}"/>     
+            </span>
+        </div>
+               <aura:if isTrue="{!v.isAttestedContract}">
+        <div class="slds-col slds-size_1-of-2">
+            <span>
+            <lightning:button variant="brand"
+                                              aura:id="approveSanctioninh"
+                                              label="Release Contract Documents to Banker"
+                                              title="Approve"
+                                              class="slds-button slds-button_brand slds-m-top--medium "
+                                              onclick="{!c.handleAttestContract}"
+                                              disabled="{!v.isEditable}" />     
+            </span>
+        </div>
+                   </aura:if>
+    </div>
+                
+                
+      </lightning:accordionSection>
+             
+              <lightning:accordionSection name="returnApplication" label="Return Application"> 
+                   <div class="slds-grid slds-wrap slds-gutters_medium">
+        <div class="slds-col slds-size_1-of-2">
+            <span>   
+               <lightning:inputField aura:id="rejectedReasons" fieldName="SV_Reason_for_More_Info__c" /> 
+                  </span>
+        </div> 
+        
+                      
+        <div class="slds-col slds-size_1-of-2">
+            <span>
+            <lightning:input type="checkbox" label="I understand that this decision cannot be changed once submitted."
+                                aura:id="attestDecision" default="unchecked" onchange="{! c.onAttestDecision}"/> 
+          
+                
+                <aura:if isTrue="{!v.isSubmitDecision}"> 
+                <lightning:button variant="brand"
+                                              aura:id="submitDecision"
+                                              label="Submit"
+                                              title="Submit"
+                                              type="submit"
+                                              class="slds-button slds-button_brand slds-m-top--medium"
+                                              onclick="{!c.submitDecision}"
+                                              disabled="{!v.isEditable}"/> 
+                    
+                 </aura:if>     
+            </span>
+        </div>
+             
+             <div class="slds-col slds-size_1-of-2">
+            <span>   
+               <lightning:inputField aura:id="informationSource" fieldName="Information_Source__c" /> 
+                  </span>
+        </div>  
+                  
+    
+      </div>     
+      </lightning:accordionSection>
+             
+               <lightning:accordionSection name="decisionHistory" label="Decision History"> 
+             
+        <lightning:datatable data="{! v.gridData }"
+        columns="{! v.gridColumns }"
+        keyField="Id"
+        hideCheckboxColumn="true"/>    
+          
+          </lightning:accordionSection>
+           
+              
+	</lightning:accordion>
+    
+  </lightning:recordEditForm>
+        
+</aura:component>

@@ -1,0 +1,181 @@
+<!--
+* Lightning Component for Stop and Replace Card Form
+*
+* @author  Manoj Danthala : Absa
+* @version v1.0
+* @since   2019-10-24
+*
+-->
+<aura:component access="global" controller="StopAndReplaceCreditCardController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">
+    <!--Handlers-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:handler name="selectedJobEvent" event="c:selectedJobEvent" action="{!c.handleDeliveryCodeEvent}"/>
+                
+    <!--Attributes-->
+    <aura:attribute name="cardCircumstancesList" type="Integration_Translation__c[]" />
+    <aura:attribute name="cardReasonsList" type="Integration_Translation__c[]" />
+    <aura:attribute name="deliveryMethodsList" type="Integration_Translation__c[]" />
+    <aura:attribute name="cardNumber" type="String" />
+    <aura:attribute name="stopCardReason" type="String" />
+    <aura:attribute name="deliverySiteCode" type="object" />
+    <aura:attribute name="responseWrapper" type="object" />
+    <aura:Attribute name="errorMessage" type="String" />
+    <aura:Attribute name="isshowError" type="boolean" />
+    <aura:Attribute name="isshowSuccess" type="boolean" />
+    <aura:attribute name="todaysDate" type="Object" />
+    
+    <aura:registerEvent name="appEvent" type="c:StopReplaceCardEvent"/>
+    <div class="slds-form">
+    	<div class="slds-form-element slds-form-element_stacked">
+            <!--FORM ELEMENTS START-->
+            <div class="slds-hide">
+                <lightning:input name="plstCardNmr" disabled="true" aura:id="plstCardNmr" label="CARD NUMBER" placeholder="" value="{!v.cardNumber}"/>
+                <lightning:input name="stopCardReason" disabled="true" aura:id="stopCardReason" label="Stop Card Reason" placeholder="" value="{!v.stopCardReason}"/>
+            </div>
+            <lightning:select name="chooseReason" label="Reason for stopping card" aura:id="stopReason">
+                <option value="">Please select</option>
+                <aura:iteration items="{!v.cardReasonsList}" var="reason">
+                    <option value="{!reason.External_Value__c}">{!reason.Internal_Value__c}</option>
+                </aura:iteration>
+            </lightning:select>
+            <div aura:id="stopReasonerror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">please select reason.</div>
+            
+            <lightning:select name="" label="Circumstances" aura:id="circum">
+                <option value="">Please select</option>
+                <aura:iteration items="{!v.cardCircumstancesList}" var="circum">
+                    <option value="{!circum.External_Value__c}">{!circum.Internal_Value__c}</option>
+                </aura:iteration>
+            </lightning:select>
+            <div aura:id="circumerror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">please select circumstance.</div>
+            
+            <lightning:input name="placeOfLost" aura:id="placeOfLost" label="Where was the card lost / Stolen" placeholder="Place of lost or theft" />
+            <div aura:id="placeOfLosterror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Please enter place of stolen.</div>
+            
+            <label class="slds-form-element__label" for="">Where was the card lost / Stolen</label>
+            <div class="slds-grid slds-wrap">
+                <div class="slds-col slds-size_6-of-12">
+                    <span>
+                        <lightning:input type="date" name="dateOfLost" max="{!v.todaysDate}" aura:id="dateOfLost" label="Date" required="true"/>
+                    </span>
+                    <div aura:id="dateOfLosterror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Please enter date.</div>
+                    
+                </div>
+                <div class="slds-col slds-size_6-of-12">
+                    <span>
+                        <lightning:input type="time" name="timeOfLost" aura:id="timeOfLost" label="Time" required="true"/>
+                    </span>
+                    <div aura:id="timeOfLosterror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Please enter time.</div>
+                    
+                </div>
+            </div>
+            
+            <label class="slds-form-element__label" for="">When was the card last used</label>
+            <div class="slds-grid slds-wrap">
+                <div class="slds-col slds-size_6-of-12">
+                    <span>
+                        <lightning:input type="date" name="lastUsedDate" max="{!v.todaysDate}" aura:id="lastUsedDate" label="Date" />
+                    </span>
+                    <div aura:id="lastUsedDateerror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Complete this field.</div>
+                    
+                </div>
+                <div class="slds-col slds-size_6-of-12">
+                    <span>
+                        <lightning:input name="lastPlace" aura:id="lastPlace" label="Last place card was used" />
+                    </span>
+                    <div aura:id="lastPlaceerror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Complete this field.</div>
+                    
+                </div>
+            </div>
+            <lightning:input type="checkbox" label="Was the card signed" name="cardSigned" aura:id="cardSigned"/>
+            <lightning:input type="checkbox" label="Did card have a safe pin" name="haveSafePin" aura:id="haveSafePin"/>
+            <lightning:input type="checkbox" label="Is this the primary account holder" name="primaryAccHolder" aura:id="primaryAccHolder"/>
+            <lightning:input type="checkbox" label="Was customer told not to use other cards" name="custComm" aura:id="custComm"/>
+            
+            <br/>                                    
+            <div class="slds-grid slds-wrap">
+                <div class="slds-col slds-size_6-of-12">
+                    <span>
+                        <lightning:input label="Home phone" aura:id="homePhone" name="homePhone" placeholder=""/>
+                    </span>
+                    <div aura:id="homePhoneerror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Please enter valid home phone number</div>
+                    
+                </div>
+                <div class="slds-col slds-size_6-of-12">
+                    <span>
+                        <lightning:input label="Office phone" aura:id="officePhone" name="officePhone" placeholder=""/>
+                    </span>
+                    <div aura:id="officePhoneerror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Please enter valid office phone number</div>
+                 </div>
+            </div>
+            <lightning:textarea name="cardLostDescr" aura:id="cardLostDescr" label="How was the cards lost" placeholder="Was there any special circumstances that led to loss or theft"/>
+            <div aura:id="cardLostDescrerror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Complete this field.</div>
+            
+            <div class="slds-grid slds-wrap">
+                <div class="slds-col slds-size_6-of-12">
+                    <span>
+                        <lightning:input name="siteCode" aura:id="siteCode" label="Agent Site Code"/>
+                    </span>
+                    <div aura:id="siteCodeerror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Please enter site code number</div>
+                </div>
+            </div>
+            <lightning:input type="checkbox" label="Replace Card" name="replaceCard" aura:id="replaceCard" onchange="{!c.showDeliverySiteCode}"/>
+            
+            <div class="slds-hide" aura:id="deliverySiteCheck">
+                <lightning:select name="" label="Delivery Method" aura:id="delMethod11" required="true" onchange="{!c.onchangeDM}">
+                    <option value="">Please select</option>
+                    <aura:iteration items="{!v.deliveryMethodsList}" var="delivery">
+                        <option value="{!delivery.Internal_Value__c}">{!delivery.Internal_Value__c}</option>
+                    </aura:iteration>
+                </lightning:select>
+				
+                <!--
+                <br/> REMOVE
+                <select class="slds-input" id="{#'delMethod '+v.cardNumber}" onchange="{!c.onDeliveryMethodChange}" label="Delivery Method">
+                    <option value="">Please select</option>
+                    <aura:iteration items="{!v.deliveryMethodsList}" var="delivery">
+                        <option value="{!delivery.Internal_Value__c}">{!delivery.Internal_Value__c}</option>
+                    </aura:iteration>
+                </select>
+                -->
+                <div class="slds-hide" aura:id="delMethodCheck" id="{#'delMethodCheck '+cardNumber}">
+                    <c:SiteLookup placeholder="{!$Label.c.Site_Code}" objectAPIName="Absa_Branch_Site_Code__mdt"/>
+                </div>
+                <div aura:id="branchsiteCodeerror" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Please enter Branch Site code.</div>
+    		</div>
+            
+            <aura:if isTrue="{!v.isshowError}">
+                
+                    <div class="slds-notify slds-notify_toast slds-theme_error slds-align_absolute-center" style="position:fixed;right: 0 !important;left: 15px !important;" ><!--style="position:fixed;right: 0 !important;left: 15px !important;"-->
+                        <span class="slds-assistive-text">error</span>
+                        <div class="slds-notify__content">
+                            <!-- <h6 class="slds-text-heading_small">Error Message </h6> -->
+                            <div class="slds-align_absolute-center">Error Message : {!v.errorMessage}</div>                
+                        </div>
+                    </div>
+                
+            </aura:if>
+            
+            <aura:if isTrue="{!v.isshowSuccess}">
+                <div class="">
+                    <div class="slds-notify slds-notify_toast slds-theme_success">
+                        <span class="slds-assistive-text">success</span>
+                        <div class="slds-notify__content">
+                            <!-- <h6 class="slds-text-heading_small">Error Message </h6> -->
+                            <p class="slds-align_absolute-center">
+                                The following card has been stopped <br/>
+                                Card Holder: {!v.responseWrapper.accHolderName} <br/>
+                                Card Number: {!v.responseWrapper.plasticCardNum} <br/>
+                            </p>                
+                        </div>
+                    </div>
+                </div>
+            </aura:if>
+            
+            <br/>
+            <lightning:button variant="destructive" class="slds-align_absolute-center slds-m-top_xx-large" label="Submit" title="Save" onclick="{! c.saveCardDetails }"/>
+            <!--FORM ELEMENTS END-->
+        </div>
+    </div>
+    
+</aura:component>

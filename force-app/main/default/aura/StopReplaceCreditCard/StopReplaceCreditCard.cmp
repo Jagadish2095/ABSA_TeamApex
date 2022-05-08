@@ -1,0 +1,109 @@
+<!--
+* Lightning Component for Stop and Replace Credit Card
+*
+* @author  Manoj Danthala : Absa
+* @version v1.0
+* @since   2019-10-15
+*
+-->
+<aura:component access="global" controller="StopAndReplaceCreditCardController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">
+    <!--Handlers-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:handler event="c:StopReplaceCardEvent" action="{!c.handleCardFormDetails}"/>
+                       
+    <!--Attributes-->
+    <aura:attribute name="fullMap" type="Map" />
+    <aura:attribute name="cardWrapperList" type="List" />
+    <aura:attribute name="cardWrapperMap" type="map" />
+    <aura:attribute name="fullCardsWrapper" type="map" />
+    <aura:attribute name="errorMessageFromService" type="String" />
+    
+    <aura:attribute name="cardReasonsList" type="Integration_Translation__c[]" />
+    <aura:attribute name="cardCircumstancesList" type="Integration_Translation__c[]" />
+    <aura:attribute name="stopServiceWrapperList" type="StopAndReplaceCardsServiceWrapper[]" />
+    <aura:attribute name="StopServiceWrapObj" type="StopAndReplaceCardsServiceWrapper" />
+    
+    <aura:attribute name="stopCardReasonForCmp" type="String" />
+    
+    <!--Attributes to Flow-->
+    <aura:attribute name="clientAccountId" type="String" access="global"/>
+    <aura:attribute name="stopCardNumbersToFlow" type="String" access="global"/>
+    
+    {!v.errorMessageFromService}
+   
+    <aura:iteration items="{!v.cardWrapperMap}" indexVar="cardkey" var="item">
+        <p class="slds-text-heading_small"><b>{!item.key}</b></p>
+        <table aria-multiselectable="true" class="slds-table slds-table_bordered slds-table_fixed-layout slds-table_resizable-cols" role="grid">
+            <thead>
+                <tr class="slds-line-height_reset">
+                    <th class="slds-text-align_right" scope="col" style="width:3.25rem">
+                        <span id="column-group-header" class="slds-assistive-text">Choose a row</span>
+                        <div class="slds-th__action slds-th__action_form">
+    
+                        </div>
+                    </th>
+                    <th aria-label="Name" aria-sort="none" class="slds-is-resizable slds-is-sortable" scope="col">
+                        
+                    </th>
+                    <th aria-label="Account Name" aria-sort="none" class="slds-is-resizable slds-is-sortable" scope="col">
+                        
+                    </th>
+        
+                </tr>
+            </thead>
+            <tbody>
+                <aura:iteration items="{!item.value}" indexVar="lstkey" var="lst">
+                    <tr aria-selected="false" class="slds-hint-parent">
+                        <td class="slds-text-align_right" role="gridcell">
+                            
+                            <div class="slds-checkbox">
+                                
+                                <lightning:input type="checkbox" multipleselect="false" value="{!lst.plasticCardNum}" label="" aura:id="cardCheck" name="selectCard" onchange="{!c.showReason}"/>
+                            </div>
+                        </td>
+                        
+                        <td scope="row"> 
+                            <div class="slds-hide" id="{#'chooseReason '+lst.plasticCardNum}" data-record-id="{!lst.plasticCardNum}">
+                                <lightning:select name="chooseReason" label="Reason for stopping card" aura:id="stopReason"
+                                                  onchange="{! c.onChangeStopReason}" >
+                                    <option value="">Please select</option>
+                                    <aura:iteration items="{!v.cardReasonsList}" var="reason">
+                                        <option value="{!reason.External_Value__c}">{!reason.Internal_Value__c}</option>
+                                    </aura:iteration>
+                                </lightning:select>
+                                <!--
+                                <select class="slds-input" onchange="{! c.onChangeStopReason}" id="{#'chooseReason '+lst.plasticCardNum}">
+                                	<option value="">Please select</option>
+                                    <aura:iteration items="{!v.cardReasonsList}" var="reason">
+                                    	<option value="{!reason.External_Value__c}">{!reason.Internal_Value__c}</option>
+                                    </aura:iteration>
+                                </select>
+                                -->
+                            </div>
+                            <div class="slds-size_5-of-6 ">
+                                <aura:iteration items="{!lst.plasticCardsList}" indexVar="key" var="cardLst">
+                                    <c:DisplayStopReplaceCard cardDetails="{!cardLst}"/>
+                                </aura:iteration>
+                            </div>
+                        </td>
+                        <td role="gridcell">
+                            <div class="slds-truncate transTable" title="">
+                                <br/>
+                                <div id="{#'transDetailsTable '+lst.plasticCardNum}" class="">
+                                    <c:DisplayStopReplaceCardTransactions cardTransDetails="{!lst.transcactionList}"/>
+                                </div>                                
+                                <div class="slds-hide" id="{#'cardLostDetails '+lst.plasticCardNum}" aura:id="cardLostDetails">
+                                    <c:StopReplaceCardForm cardNumber="{!lst.plasticCardNum}" />
+                                </div>
+                                <br/>
+                            </div>
+                        </td>
+                    </tr>
+                </aura:iteration>
+            </tbody>
+        </table>
+        
+    </aura:iteration>
+    <br/>
+</aura:component>

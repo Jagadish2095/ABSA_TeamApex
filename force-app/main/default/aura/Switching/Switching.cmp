@@ -1,0 +1,378 @@
+<!--
+  @description       : Switching Component
+  @author            : André Pietersen (IQ Business)
+  @last modified on  : 2021-08-18
+  @last modified by  : André Pietersen (IQ Business)
+  Modifications Log
+  Ver   Date         Author                          Modification
+  1.0   2021-06-17   André Pietersen (IQ Business)   Initial Version
+  1.1   2021-08-16   André Pietersen (IQ Business)   Force deployment
+-->
+<aura:component
+	access="global"
+	controller="SwitchingController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+>
+	<!--Handlers-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:dependency resource="markup://force:showToast" type="EVENT,COMPONENT" />
+	<aura:attribute name="recordId" type="String" />
+	<aura:attribute name="opportunityId" type="String" />
+	<aura:attribute name="opprLineItemId" type="String" />
+	<aura:attribute name="sObjectName" type="String" />
+	<!--Switching Selection Attributes-->
+	<aura:attribute name="showSelectionDetails" type="boolean" default="true" />
+	<aura:attribute name="showSwitchingOptions" type="boolean" default="true" />
+	<aura:attribute name="isSwitching" type="boolean" default="true" />
+	<aura:attribute name="isSalarySwitching" type="boolean" default="false" />
+	<aura:attribute name="isDebitOrderSwitching" type="boolean" default="false" />
+	<aura:attribute name="showSalaryDetails" type="boolean" default="false" />
+	<aura:attribute name="showDebitOrderDetails" type="boolean" default="false" />
+	<aura:attribute name="selectedBank" type="sObject" />
+	<aura:attribute name="selectedEmployer" type="sObject" />
+	<aura:attribute name="selectedLookUpRecord" type="sObject" />
+	<aura:attribute name="nextSALLabel" type="string" default="Next" />
+	<!--Salary Attributes-->
+	<aura:attribute name="AccountName" type="string" default="" />
+	<aura:attribute name="AccountNumber" type="string" default="" />
+	<aura:attribute name="EmployerEmail" type="string" default="" />
+	<aura:attribute name="EmployerName" type="string" default="" />
+	<aura:attribute name="financialInstitution" type="String" />
+	<aura:attribute name="financialInstitutionList" type="list" />
+	<aura:attribute name="BankName" type="sObject" />
+	<aura:attribute name="AccountType" type="string" />
+	<aura:attribute name="SalaryDate" type="Date" />
+	<aura:attribute name="SearchPreviousInstitution" type="string" />
+	<aura:attribute name="SearchEmployerInstitution" type="string" />
+	<aura:attribute name="pendingSalarySwitchId" type="string" default="" />
+	<!--Debit Order Attributes-->
+	<aura:attribute name="debitOrders" type="Object" />
+	<aura:attribute name="mycolumns" type="List" />
+	<aura:attribute name="selectedDebitOrder" type="Object" />
+	<aura:attribute name="isOpen" type="boolean" default="false" />
+	<aura:attribute name="isSaved" type="boolean" default="false" />
+	<aura:attribute name="Heading" type="string" />
+	<aura:attribute name="SearchInstitution" type="string" default="" />
+	<!--Register the component level event-->
+	<aura:registerEvent name="oSelectedRecordEvent" type="c:selectedAgentEvent" />
+	<aura:attribute name="ShowSpinner" type="boolean" default="false" />
+
+	<aura:attribute name="closeBankSelection" type="boolean" default="false" />
+	<aura:attribute name="closeEmployerSelection" type="boolean" default="false" />
+
+	<aura:attribute name="showDialog" type="boolean" default="false" />
+	<aura:attribute name="headingDialog" type="string" default="attribute: heading" />
+	<aura:attribute name="messageDialog" type="string" default="attribute: message" />
+
+	<!-- Loading Spinner-->
+	<aura:if isTrue="{!v.ShowSpinner}">
+		<center style="z-index: 99">
+			<lightning:spinner aura:id="TheSpinner" variant="brand" size="large" />
+		</center>
+	</aura:if>
+
+	<aura:if isTrue="{!v.showSelectionDetails}">
+		<lightning:layout>
+			<lightning:layoutItem padding="around-medium" size="6">
+				<legend class="slds-text-heading--medium slds-p-vertical--large">
+					<p><b>Switching</b></p>
+				</legend>
+				<lightning:input
+					type="toggle"
+					label="Switch Customer?"
+					aura:id="isSwitching"
+					checked="{!v.isSwitching}"
+					onchange="{!c.toggleSwitching}"
+					messageToggleActive="Yes"
+					messageToggleInactive="No"
+				/>
+				<br />
+				<aura:if isTrue="{!v.showSwitchingOptions}">
+					<p>What would the customer like to Switch?</p>
+					<lightning:input type="checkbox" aura:id="isSalarySwitching" name="Salary" label="Salary" checked="{!v.isSalarySwitching}" />
+					<lightning:input
+						type="checkbox"
+						aura:id="isDebitOrderSwitching"
+						name="Debit Order"
+						label="Debit Order"
+						checked="{!v.isDebitOrderSwitching}"
+					/>
+				</aura:if>
+			</lightning:layoutItem>
+		</lightning:layout>
+
+		<lightning:layout>
+			<lightning:layoutItem padding="around-small" size="12">
+				<lightning:button class="slds-float_right margin-left" label="Next" variant="brand" name="SelectionPage" onclick="{!c.navigate}" />
+				<lightning:button class="slds-float_right" label="Pause" name="SelectionPage" onclick="{!c.navigatePause}" />
+			</lightning:layoutItem>
+		</lightning:layout>
+	</aura:if>
+
+	<aura:if isTrue="{!v.showSalaryDetails}">
+		<lightning:layout>
+			<lightning:layoutItem padding="around-medium" size="12">
+				<legend class="slds-text-heading--medium slds-p-vertical--large">
+					<p><b>Switch Salary</b></p>
+				</legend>
+				<legend class="slds-text-heading--small slds-p-vertical--medium">
+					<b>Previous account details</b>
+				</legend>
+				<lightning:layout>
+					<lightning:layoutitem padding="around-medium" size="3">
+						<lightning:input type="text" aura:id="AccountName" name="AccountName" value="{!v.AccountName}" label="Account holder name" />
+					</lightning:layoutitem>
+					<lightning:layoutitem padding="around-medium" size="3">
+						<lightning:select
+							aura:id="FinancialInstitution"
+							name="FinancialInstitution"
+							label="Bank Name"
+							class="label-hidden"
+							value="{! v.financialInstitution }"
+						>
+							<option value="">Please select</option>
+							<aura:iteration items="{! v.financialInstitutionList }" var="f">
+								<option value="{!f}" selected="{!f==v.financialInstitution}">{!f}</option>
+							</aura:iteration>
+						</lightning:select>
+					</lightning:layoutitem>
+				</lightning:layout>
+				<lightning:layout>
+					<lightning:layoutitem padding="around-medium" size="3">
+						<lightning:input type="picklist" aura:id="AccountNumber" name="AccountNumber" value="{!v.AccountNumber}" label="Account number" />
+					</lightning:layoutitem>
+					<lightning:layoutitem padding="around-medium" size="3">
+						<lightning:select aura:id="AccountType" name="AccountType" label="Account Type" value="{!v.AccountType}">
+							<option value="">Please select</option>
+							<option value="Cheque">Cheque</option>
+							<option value="Savings">Savings</option>
+						</lightning:select>
+					</lightning:layoutitem>
+				</lightning:layout>
+
+				<legend class="slds-text-heading--small slds-p-vertical--medium">
+					<b>Employer's details</b>
+				</legend>
+				<lightning:layout>
+					<lightning:layoutitem padding="around-medium" size="3">
+						<c:SwitchingInstitutionInfo
+							aura:id="employerInstitution"
+							institutionLabel="Employer Name"
+							institutionRequired="true"
+							showParticipation="false"
+						/>
+					</lightning:layoutitem>
+					<lightning:layoutitem padding="around-medium" size="3">
+						<lightning:input
+							type="date"
+							name="SalaryDate"
+							aura:id="SalaryDate"
+							value="{!v.SalaryDate}"
+							label="Date Salary is paid"
+							required="true"
+							placeholder="mm/dd/yyyy"
+						/>
+					</lightning:layoutitem>
+				</lightning:layout>
+				<lightning:layout>
+					<lightning:layoutItem padding="around-medium" size="3">
+						<lightning:input
+							type="email"
+							aura:id="EmployerEmail"
+							name="EmployerEmail"
+							value="{!v.EmployerEmail}"
+							label="Employer's email address"
+						/>
+					</lightning:layoutItem>
+				</lightning:layout>
+			</lightning:layoutItem>
+		</lightning:layout>
+		<lightning:layout>
+			<lightning:layoutItem padding="around-small" size="12">
+				<lightning:button class="slds-float_right margin-left" label="{!v.nextSALLabel}" variant="brand" name="SalaryPage" onclick="{!c.navigate}" />
+				<lightning:button class="slds-float_right" label="Previous" name="SalaryPage" onclick="{!c.navigateBack}" />
+				<lightning:button class="slds-float_right" label="Pause" name="SalaryPage" onclick="{!c.navigatePause}" />
+			</lightning:layoutItem>
+		</lightning:layout>
+	</aura:if>
+
+	<aura:if isTrue="{!v.showDebitOrderDetails}">
+		<aura:if isTrue="{!v.isSalarySwitching}">
+			<aura:set attribute="else">
+				<lightning:layout>
+					<lightning:layoutitem padding="around-small" size="3">
+						<legend class="slds-text-heading--small slds-p-vertical--medium">
+							<b>Previous account details</b>
+						</legend>
+					</lightning:layoutitem>
+				</lightning:layout>
+				<lightning:layout>
+					<lightning:layoutitem padding="around-small" size="3">
+						<lightning:input type="text" aura:id="AccountName" name="AccountName" value="{!v.AccountName}" label="Account holder name" />
+						<lightning:input type="picklist" aura:id="AccountNumber" name="AccountNumber" value="{!v.AccountNumber}" label="Account number" />
+					</lightning:layoutitem>
+					<lightning:layoutitem padding="around-small" size="3">
+						<lightning:select
+							aura:id="FinancialInstitution"
+							name="FinancialInstitution"
+							label="Bank Name"
+							class="label-hidden"
+							value="{! v.financialInstitution }"
+						>
+							<option value="">Please select</option>
+							<aura:iteration items="{! v.financialInstitutionList }" var="f">
+								<option value="{!f}" selected="{!f==v.financialInstitution}">{!f}</option>
+							</aura:iteration>
+						</lightning:select>
+						<lightning:select aura:id="AccountType" name="AccountType" label="Account Type" value="{!v.AccountType}">
+							<option value="">Please select</option>
+							<option value="Cheque">Cheque</option>
+							<option value="Savings">Savings</option>
+						</lightning:select>
+					</lightning:layoutitem>
+				</lightning:layout>
+			</aura:set>
+		</aura:if>
+		<lightning:layout>
+			<lightning:layoutitem padding="around-small" size="12">
+				<legend class="slds-text-heading--medium slds-p-vertical--large">
+					<p><b>Switch Debit Order(s)</b></p>
+				</legend>
+				<lightning:layout>
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:datatable
+							data="{! v.debitOrders }"
+							columns="{! v.mycolumns }"
+							keyField="id"
+							resizeStep="20"
+							hideCheckboxColumn="true"
+							onrowaction="{! c.handleRowAction }"
+							onrowselection="{! c.getSelectedName }"
+						/>
+
+						<lightning:button
+							class="slds-float_right"
+							label="Add debit order"
+							iconName="utility:add"
+							iconPosition="right"
+							onclick="{! c.addRow }"
+						/>
+					</lightning:layoutItem>
+				</lightning:layout>
+				<lightning:layout>
+					<lightning:layoutItem padding="around-large" size="12">
+						<lightning:button class="slds-float_right margin-left" label="Finish" variant="brand" name="DebitOrderPage" onclick="{!c.navigate}" />
+						<lightning:button class="slds-float_right" label="Previous" name="DebitOrderPage" onclick="{!c.navigateBack}" />
+						<lightning:button class="slds-float_right" label="Pause" name="DebitOrderPage" onclick="{!c.navigatePause}" />
+					</lightning:layoutItem>
+				</lightning:layout>
+				<lightning:layout>
+					<lightning:layoutItem padding="around-large" size="12">
+						<aura:if isTrue="{!v.isSaved}">
+							<lightning:badge
+								class="slds-float_right"
+								iconName="utility:info"
+								iconPosition="left"
+								label="The customer's switching application will be saved. Please proceed to contracting to complete the application."
+							/>
+						</aura:if>
+					</lightning:layoutItem>
+				</lightning:layout>
+			</lightning:layoutitem>
+
+			<aura:if isTrue="{!v.isOpen}">
+				<section
+					role="dialog"
+					tabindex="-1"
+					aria-labelledby="modal-heading-01"
+					aria-modal="true"
+					aria-describedby="modal-content-id-1"
+					class="slds-modal slds-fade-in-open"
+				>
+					<div class="slds-modal__container full-width">
+						<div class="slds-modal__header">
+							<h2 class="title slds-text-heading--medium">{! v.Heading} Debit Order</h2>
+						</div>
+						<div class="slds-modal__content slds-p-around--medium">
+							<lightning:layout multipleRows="true">
+								<lightning:layoutitem padding="around-small" flexibility="auto" size="6">
+									<c:SwitchingInstitutionInfo aura:id="serviceProvider" institutionLabel="Service Provider" institutionRequired="true" />
+								</lightning:layoutitem>
+								<lightning:layoutitem padding="around-small" flexibility="auto" size="6">
+									<lightning:input
+										label="Ref Account Number"
+										aura:id="field"
+										value="{!v.selectedDebitOrder.refAccountNumber}"
+										required="true"
+										messageWhenValueMissing="Reference Account Number is required."
+									/>
+								</lightning:layoutitem>
+								<lightning:layoutitem padding="around-small" flexibility="auto" size="6">
+									<lightning:input
+										label="Due Date"
+										type="date"
+										aura:id="field"
+										value="{!v.selectedDebitOrder.dueDate}"
+										required="true"
+										messageWhenValueMissing="Due Date is required."
+									/>
+								</lightning:layoutitem>
+								<lightning:layoutitem padding="around-small" flexibility="auto" size="6">
+									<lightning:select
+										aura:id="frequency"
+										name="selectFrequency"
+										required="true"
+										label="Frequency"
+										value="{!v.selectedDebitOrder.frequency}"
+										messageWhenValueMissing="Frequency is required"
+									>
+										<option value="">Please select</option>
+										<option value="Monthly">Monthly</option>
+										<option value="Quarterly">Quarterly</option>
+										<option value="Annually">Annually</option>
+									</lightning:select>
+								</lightning:layoutitem>
+								<lightning:layoutitem padding="around-small" flexibility="auto" size="6">
+									<lightning:input
+										label="Amount"
+										aura:id="amount"
+										value="{!v.selectedDebitOrder.amount}"
+										required="true"
+										messageWhenValueMissing="Amount is required."
+									/>
+								</lightning:layoutitem>
+								<lightning:layoutitem padding="around-small" flexibility="auto" size="6">
+									<lightning:select
+										aura:id="fixvar"
+										name="selectFixVar"
+										required="true"
+										label="Fixed\Variable"
+										value="{!v.selectedDebitOrder.fixvar}"
+										messageWhenValueMissing="Fixed\Vatiable is required."
+									>
+										<option value="">Please select</option>
+										<option value="Fixed">Fixed</option>
+										<option value="Variable">Variable</option>
+									</lightning:select>
+								</lightning:layoutitem>
+							</lightning:layout>
+							<lightning:layout horizontalAlign="center">
+								<lightning:layoutitem padding="around-small">
+									<lightning:button label="Save" variant="brand" onclick="{!c.editAccountInfo}" />
+								</lightning:layoutitem>
+								<lightning:layoutitem padding="around-small">
+									<lightning:button label="Cancel" variant="brand" onclick="{!c.cancelAccountInfo}" />
+								</lightning:layoutitem>
+							</lightning:layout>
+						</div>
+					</div>
+				</section>
+				<div class="slds-backdrop slds-backdrop_open"></div>
+			</aura:if>
+		</lightning:layout>
+	</aura:if>
+
+	<aura:if isTrue="{! v.showDialog }">
+		<c:BranchDialog showDialog="{! v.showDialog }" heading="{! v.headingDialog }" message="{! v.messageDialog }" />
+	</aura:if>
+</aura:component>

@@ -1,0 +1,554 @@
+<!-- Lightning Component is based upon Inter Transfer payment
+        @author: Lulu Rankwe
+        @created 2020/02/05 -->
+
+<!-- Updated @2021/02/12
+         Developer: Humbelani Denge
+         Updates: Inter account payment based on accounts linked to selected combi -->
+
+<aura:component
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global"
+                controller="InterAccountTransferController"
+                >
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <!-- Flow attributes  -->
+    <aura:attribute name="useLinkedAccounts" type="Boolean" Default="false" />
+    <aura:attribute name="selectedCombiValue" type="string" default="" />
+    <aura:attribute name="combiAccList" type="List" />
+    <aura:attribute name="clientAccountId" type="String" access="global" />
+    <aura:attribute name="accountNumber" type="String" />
+    <aura:attribute name="amount" type="String" />
+    <aura:attribute name="reference" type="String" />
+    <aura:attribute name="status" type="String" default="Pending" />
+    <aura:attribute name="selectedAccountTo" type="string" default="" />
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" access="global" />
+    <aura:attribute name="selectedAccountNumberFrom" type="string" />
+    <aura:attribute name="selectedAccountNumberFromType" type="string" /><!--Added by Chandra-->
+    <aura:attribute name="selectedAccountNumberTo" type="string" />
+    <aura:attribute name="selectedAccountNumberToType" type="string" /><!--Added by Chandra-->
+    <aura:attribute name="accountsFromResponse" type="List" />
+    <aura:attribute name="accountFrom" type="List" />
+    <aura:attribute name="accountTo" type="List" default="[]" />
+    <aura:attribute name="paymentVerification" type="Boolean" default="false" />
+    <aura:attribute name="verificationCheck" type="Boolean" default="false" />
+    <aura:attribute name="statusPending" type="Boolean" default="false" /> <!--This and statusSuccess can be one status -->
+    <aura:attribute name="statusSuccess" type="Boolean" default="false" />
+    <aura:attribute name="showButton" type="Boolean" default="true" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="caseIdFromFlow" type="String" access="global" />
+    <aura:attribute name="tbSourceAccount" type="String" />
+    <aura:attribute name="targetBalance" type="String" />
+    <aura:attribute name="sourceBalance" type="String" />
+    <aura:attribute name="showSpinner" type="Boolean" />
+    <aura:attribute name="showToggleFlag" type="Boolean" Default="false" /> <!-- Toggle between Linked accounts view and other -->
+    <!-- InterAccount sweeps starts-->
+    <aura:attribute name="IsEBServiceGroupSweepServiceType" type="Boolean" Default="false" />
+    <aura:attribute name="reason" type="String" />
+    <aura:attribute name="otherReasonComment" type="String" />
+    <aura:attribute name="collectionPhase" type="String" />
+    <aura:attribute name="collectionCycle" type="String" />
+    <aura:attribute name="closeCase" type="Boolean" Default="false" />
+    <aura:attribute name="approvalStatus" type="String"/>
+    <aura:attribute name="approvalStatusMessage" type="String"  />
+    <aura:attribute name="caseTransactionRecordFromFlow" type="String" access="global" />
+    <aura:attribute name="approvalMandateQueues" type="String" />
+    <aura:attribute name="caseLoaded" type="Boolean" Default="false" />
+    <aura:attribute name="arrearAmount" type="String" />
+    <aura:attribute name="sourceAccType" type="String" />
+    <!-- SET-OFF starts-->
+    <aura:attribute name="IsEBServiceGroupSetOffServiceType" type="Boolean" Default="false" />
+    <aura:attribute name="customerOnPTP" type="String" />
+    <aura:attribute name="SetOffAmount" type="String" />
+    <aura:attribute name="DateOfPreviousSetOff" type="Date" />
+    <aura:attribute name="initialPaymentAmount" type="Decimal" />
+    <aura:attribute name="initialPaymentDate" type="DateTime" />
+    <aura:attribute name="scheduledStartDate" type="String" />
+    <aura:attribute name="scheduledPaymentAmount" type="Decimal" />
+    <aura:attribute name="scheduledNumberOfPayments" type="String" />
+    <aura:attribute name="paymentFrequency" type="String" />
+    <aura:attribute name="paymentFrequencyMonths" type="Integer" />
+    <aura:attribute name="isShowSpinnerSetOff" type="boolean" default="false" />
+    <!--For Modal Pop-Up-->
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <!-- InterAccount sweeps ends-->
+    <aura:attribute name="idsToValidate" type="List" default="['tbSourceAcc','tbTargetAcc','sourceAcc', 'accountSelect', 'amount', 'reference','reasonEV']" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="smsMessageTextToFlow" type="String" access="global" /><!--Added by Koketso for sms functionality on 12/04/2021-->
+    
+    <aura:attribute name="sObjectRecord" type="Object" />
+    <aura:attribute name="recordLoadError" type="String" />
+    
+    
+    <lightning:recordEditForm aura:id="caseEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}" onload="{!c.handleCaseLoad}">
+        <lightning:inputField aura:id="serviceGroupField" fieldName="sd_Service_Group__c" class="slds-hide" />
+        <lightning:inputField aura:id="cifField" fieldName="CIF__c" class="slds-hide" />
+        <lightning:inputField aura:id="caseType__cField" fieldName="Type__c" class="slds-hide" /> <!-- InterAccount Sweep w-013364-->
+        <lightning:inputField aura:id="caseSubTypeField" fieldName="Subtype__c" class="slds-hide" />
+        <lightning:inputField aura:id="originalServiceGroupId" fieldName="sd_Original_Service_Group__c" class="slds-hide" />
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+        <lightning:inputField aura:id="descriptionField" fieldName="Description" class="slds-hide" />
+        <lightning:inputField aura:id="clientName" fieldName="Auto_Response_Greeting__c" class="slds-hide" />
+    </lightning:recordEditForm>
+     <aura:if isTrue="{!not(empty(v.caseIdFromFlow))}">
+        <force:recordData
+                          aura:id="recordLoader"
+                          recordId="{!v.caseIdFromFlow}"
+                          fields="Account.Rounded_Age__c,Type__c"
+                          targetFields="{!v.sObjectRecord}"
+                          targetError="{!v.recordLoadError}"
+                          recordUpdated="{!c.handleRecordUpdated}"
+                          />
+    </aura:if>
+    <aura:if isTrue="{!v.caseLoaded}">
+        <lightning:recordEditForm aura:id="caseTransactionRecords" objectApiName="Case_Transaction__c" recordId="{!v.caseTransactionRecordFromFlow}" onload="{!c.handleCaseTransactionRecordLoad}">
+            <lightning:inputField aura:id="ctreference" fieldName="Reference__c" class="slds-hide" />
+            <lightning:inputField aura:id="ctreasonComment" fieldName="Reason_Comments__c" class="slds-hide" />
+            <lightning:inputField aura:id="ctreason" fieldName="Reason__c" class="slds-hide" /> 
+            <lightning:inputField aura:id="ctamount" fieldName="Amount__c" class="slds-hide" />
+            <lightning:inputField aura:id="ctsourAcc" fieldName="Source_Account__c" class="slds-hide" /> 
+            <lightning:inputField aura:id="ctsourAccType" fieldName="Source_Account_Type__c" class="slds-hide" />
+            <lightning:inputField aura:id="ctstatus" fieldName="Status__c" class="slds-hide" />
+            <lightning:inputField aura:id="cttarAcc" fieldName="Target_Account__c" class="slds-hide" /> 
+            <lightning:inputField aura:id="cttarAccType" fieldName="Target_Account_Type__c" class="slds-hide" /> 
+        </lightning:recordEditForm>
+    </aura:if>
+    <article class="slds-card">
+        <!--Declare Spinner-->
+        <aura:if isTrue="{!v.showSpinner}"> <!-- comment why is it there is more than one spinner(SpinnerSetOFF) -->
+            <div class="slds-spinner_container">
+                <lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+            <lightning:layout>
+                <lightning:layoutItem padding="around-small" size="12">
+                    <p style="color: red">
+                        <ui:outputText aura:id="iCustomErrorMessage" value="{!v.errorMessage}" />
+                    </p>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:if>
+        <aura:if isTrue="{!v.showToggleFlag}">
+            <lightning:layoutItem padding="around-small" size="3">
+                <lightning:input aura:id="toggleLinkedAcc" type="checkbox" label="Use Linked Account" onchange="{!c.toggleView}" />
+            </lightning:layoutItem>
+        </aura:if>
+        <!-- InterAccount Sweep -->
+        <aura:if isTrue="{!v.IsEBServiceGroupSweepServiceType}">
+            
+            <lightning:card title="">
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Account details">Account details</span>
+                </h3>
+                <div class="" aura:id="loadingSnip">
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        
+                        <span >Loading the Account Data...</span> <!-- comment please use actual spinnner-->
+                        
+                    </lightning:layoutItem>
+                </div>
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <label class="slds-form-element__label" for="colphase">
+                            Collection Phase</label>
+                        <ui:outputText value="{!v.collectionPhase}"  aura:id="colphase" class="slds-input slds-output" />
+                        
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <label class="slds-form-element__label" for="colcycle">
+                            Collection Cycle</label>
+                        <ui:outputText value="{!v.collectionCycle}"  aura:id="colcycle" class="slds-input slds-output" />
+                        
+                    </lightning:layoutItem>
+                </lightning:layout>
+                
+            </lightning:card>
+            
+        </aura:if>
+        <!-- SET-OFF -->
+        <aura:if isTrue="{!v.IsEBServiceGroupSetOffServiceType}">
+            
+            <lightning:card title="">
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Account Selection">Account details</span>
+                </h3>
+                <div class="" aura:id="loadingSnip">
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        
+                        <span >Loading the Account Data...</span>
+                        
+                    </lightning:layoutItem>
+                </div>
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <label class="slds-form-element__label" for="colphase">
+                            Collection Phase</label>
+                        <ui:outputText value="{!v.collectionPhase}"  aura:id="colphase" class="slds-input slds-output" />
+                        
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <label class="slds-form-element__label" for="colcycle">
+                            Collection Cycle</label>
+                        <ui:outputText value="{!v.collectionCycle}"  aura:id="colcycle" class="slds-input slds-output" />
+                        
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem  padding="around-small" size="6">
+                        <label class="slds-form-element__label" for="previousEmployerName">
+                            Is the Customer on a PTP</label>
+                        <ui:outputText value="{!v.customerOnPTP}"  aura:id="previousEmployerName" class="slds-input slds-output" />
+                        
+                        <aura:if isTrue="{!v.customerOnPTP == 'Yes'}">
+                            <p><a onclick="{! c.openModel }">View Promise to Pay</a></p>
+                            <aura:if isTrue="{!v.isModalOpen}">
+                                <!-- Modal/Popup Box starts here-->
+                                <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                                    <div class="slds-modal__container">
+                                        
+                                        <!-- Modal/Popup Box Header Starts here-->
+                                        <header class="slds-modal__header">
+                                            <lightning:buttonIcon iconName="utility:close"
+                                                                  onclick="{! c.closeModel }"
+                                                                  alternativeText="close"
+                                                                  variant="bare-inverse"
+                                                                  class="slds-modal__close"/>
+                                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">View Promise to Pay</h2>
+                                        </header>
+                                        
+                                        <!--Modal/Popup Box Body Starts here-->
+                                        <lightning:card>
+                                            <!--Declare Spinner-->
+                                            <aura:if isTrue="{!v.isShowSpinnerSetOff}">
+                                                <div class="slds-spinner_container">
+                                                    <lightning:spinner aura:id="spinner" variant="brand" size="medium" />
+                                                </div>
+                                            </aura:if>
+                                            <div class="slds-p-horizontal--small">
+                                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1"> </div>
+                                                <lightning:layout multipleRows="true">
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                                        <label class="slds-form-element__label" for="colphase">
+                                                            Initial payment amount
+                                                        </label>
+                                                        <ui:outputText value="{!v.initialPaymentAmount}"  aura:id="initialPaymentAmount" class="slds-input slds-output" />
+                                                    </lightning:layoutItem>                  
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                                        <label class="slds-form-element__label" for="colcycle">
+                                                            Initial payment date
+                                                        </label>
+                                                        <ui:outputText value="{!v.downPaymentYMDDate}"  aura:id="downPaymentYMDDate" class="slds-input slds-output" />
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                                        <label class="slds-form-element__label" for="colphase">
+                                                            Scheduled start date
+                                                        </label>
+                                                        <ui:outputText value="{!v.scheduledStartDate}"  aura:id="scheduledStartDate" class="slds-input slds-output" />
+                                                    </lightning:layoutItem>                  
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                                        <label class="slds-form-element__label" for="colcycle">
+                                                            Scheduled payment amount
+                                                        </label>
+                                                        <ui:outputText value="{!v.scheduledPaymentAmount}"  aura:id="scheduledPaymentAmount" class="slds-input slds-output" />
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                                        <label class="slds-form-element__label" for="colphase">
+                                                            Scheduled number of payments
+                                                        </label>
+                                                        <ui:outputText value="{!v.scheduledNumberOfPayments}"  aura:id="scheduledNumberOfPayments" class="slds-input slds-output" />
+                                                    </lightning:layoutItem>                  
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                                        <label class="slds-form-element__label" for="colcycle">
+                                                            Payment frequency
+                                                        </label>
+                                                        <ui:outputText value="{!v.paymentFrequency}"  aura:id="paymentFrequency" class="slds-input slds-output" />
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                                                        <label class="slds-form-element__label" for="colphase">
+                                                            Payment frequency months
+                                                        </label>
+                                                        <ui:outputText value="{!v.paymentFrequencyMonths}"  aura:id="paymentFrequencyMonths" class="slds-input slds-output" />
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                        </lightning:card>
+                                        
+                                        <!--Modal/Popup Box Footer Starts here-->
+                                        <footer class="slds-modal__footer">
+                                            <lightning:button variant="brand"
+                                                              label="Close"
+                                                              title="Close"
+                                                              onclick="{!c.closeModel}"/>
+                                        </footer>
+                                    </div>
+                                    
+                                </section>
+                                <div class="slds-backdrop slds-backdrop_open"></div>
+                            </aura:if>
+                        </aura:if>
+                        
+                    </lightning:layoutItem>
+                    <!--  <lightning:layoutItem  padding="around-small" size="6">
+                        <label class="slds-form-element__label" for="previousEmployerName">
+                            Is the Customer on a PTP</label>
+                        <ui:outputText value="{!v.customerOnPTP}"  aura:id="previousEmployerName" class="slds-input slds-output" />
+                        
+                    </lightning:layoutItem> -->
+                </lightning:layout>
+                
+            </lightning:card>
+        </aura:if>
+        <lightning:layout multipleRows="true">
+            <!--Render Linked Accounts Scenario-->
+            <aura:if isTrue="{!v.useLinkedAccounts}">
+                <!-- SHOW Combi Account  PICKLIST VALUES-->
+                <lightning:layoutItem class="slds-p-around_x-large" size="12">
+                    <lightning:select
+                                      value="{!v.selectedCombiValue}"
+                                      class="select-auto-width"
+                                      aura:id="mycombiselection"
+                                      onchange="{!c.onSelectCombiAccount}"
+                                      label="Select Combi Account"
+                                      required="true"
+                                      >
+                        <option value="">--None--</option>
+                        <aura:iteration items="{!v.combiAccList}" var="combiAccDet" indexVar="key">
+                            <option value="{!combiAccDet}">{!combiAccDet}</option>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                
+                <!-- SHOW SOURCE ACCOUNT  PICKLIST VALUES-->
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:select
+                                      value="{!v.tbSourceAccount}"
+                                      class="select-auto-width"
+                                      aura:id="tbSourceAcc"
+                                      onchange="{!c.onSelectTBSourceAccount}"
+                                      label="From Account"
+                                      required="true"
+                                      >
+                        <option value="">--None--</option>
+                        <aura:iteration items="{!v.accountTo}" var="combiLinkedToAccount" indexVar="key">
+                            <option value="{!combiLinkedToAccount}">{!combiLinkedToAccount}</option>
+                        </aura:iteration>
+                    </lightning:select>
+                    <lightning:input type="text" aura:id="sourceAccType" value="{!v.selectedAccountNumberFromType}" label="Source Account Type" disabled="true"/><!--Added by Chandra-->
+                    <lightning:input type="text" aura:id="tbSourceBalance" value="{!v.sourceBalance}" label="Source Balance"> </lightning:input>
+                </lightning:layoutItem>
+                
+                <!-- SHOW TARGET ACCOUNT  PICKLIST VALUES-->
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:select aura:id="tbTargetAcc" value="{!v.selectedAccountNumberTo}" label=" To Account" required="true" onchange="{!c.onChange}">
+                        <option value="">--None--</option>
+                        <aura:iteration items="{!v.accountTo}" var="item">
+                            <option value="{!item}">{!item}</option>
+                        </aura:iteration>
+                    </lightning:select>
+                    <lightning:input type="text" aura:id="targetAccType" value="{!v.selectedAccountNumberToType}" label="Target Account Type" disabled="true"/><!--Added by Chandra-->
+                    <lightning:input type="text" aura:id="tbTargetBalance" value="{!v.targetBalance}" label="Target Balance"> </lightning:input>
+                </lightning:layoutItem>
+                
+                <!-- Show non linked accounts scenario -->
+                <aura:set attribute="else">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input type="text" aura:id="sourceAcc" value="{!v.selectedAccountNumberFrom}" label=" From Account" onchange="{!c.onChange}">
+                        </lightning:input>
+                        <lightning:input type="text" aura:id="sourceAccType" value="{!v.selectedAccountNumberFromType}" label="Source Account Type" disabled="true"/><!--Added by Chandra-->
+                        <lightning:input type="text" aura:id="sourceBalance" value="{!v.sourceBalance}" label="Source Balance"> </lightning:input>
+                    </lightning:layoutItem>
+                    <!-- SHOW TARGET ACCOUNT  PICKLIST VALUES-->
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:select
+                                          aura:id="accountSelect"
+                                          value="{!v.selectedAccountNumberTo}"
+                                          label=" To Account"
+                                          required="true"
+                                          onchange="{!c.onChange}"
+                                          >
+                            <option value="">--None--</option>
+                            <aura:iteration items="{!v.accountTo}" var="item">
+                                <option value="{!item}">{!item}</option>
+                            </aura:iteration>
+                        </lightning:select>
+                        <lightning:input type="text" aura:id="targetAccType" value="{!v.selectedAccountNumberToType}" label="Target Account Type" disabled="true"/><!--Added by Chandra-->
+                        <aura:if isTrue="{!or(v.IsEBServiceGroupSweepServiceType,v.IsEBServiceGroupSetOffServiceType)}">
+                                <span > <b>Account type {!v.sourceAccType} </b> </span>
+                            </aura:if>
+                        <lightning:input type="text" aura:id="targetBalance" value="{!v.targetBalance}" label="Target Balance"> </lightning:input>
+                    </lightning:layoutItem>
+                </aura:set>
+            </aura:if>
+            
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:input aura:id="amount" value="{!v.amount}" label="Amount" required="true" />
+                <!-- Inter Account Sweep -->
+                <aura:if isTrue="{!or(v.IsEBServiceGroupSweepServiceType,v.IsEBServiceGroupSetOffServiceType)}">
+                    <span > <b>Arrears amount R  {!v.arrearAmount} </b> </span>
+                </aura:if>   
+            </lightning:layoutItem>
+            <!-- InterAccount Sweep -->
+            <aura:if isTrue="{!or(v.IsEBServiceGroupSweepServiceType,v.IsEBServiceGroupSetOffServiceType)}">
+                <lightning:layoutItem padding="around-small" size="6">
+                    <!--<lightning:input aura:id="reason" value="{!v.reason}" label="Reason" required="true" /> -->
+                    <lightning:select aura:id="reasonEV" name="reason" label="Reason" required="true" onchange="{!c.onChangeReason}">
+                        <option value="">-None-</option>
+                        <option value="Account in arrears">Account in arrears</option>
+                    <aura:if isTrue="{!v.IsEBServiceGroupSweepServiceType}">     <option value="Settlement">Settlement</option>  </aura:if>
+                        <option value="Other">Other</option>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <aura:if isTrue="{!v.reason=='Other'}">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input aura:id="reasonText" value="{!v.otherReasonComment}" label="Please enter a reason" required="true" /> <!--Comment use textarea tag instead-->
+                    </lightning:layoutItem>
+                </aura:if>
+            </aura:if>
+            
+            <lightning:layoutItem padding="around-small" size="6">
+                <aura:if isTrue="{!or(v.IsEBServiceGroupSweepServiceType,v.IsEBServiceGroupSetOffServiceType)}">
+                    <label class="slds-form-element__label" for="reference">
+                            Reference</label>
+                        <ui:outputText value="{!v.reference}"  aura:id="reference" class="slds-input slds-output" />
+                    <aura:set attribute="else">
+                        <lightning:input aura:id="reference" value="{!v.reference}" label="Reference" required="true" />
+                        </aura:set>
+                </aura:if>
+                
+            </lightning:layoutItem>
+        </lightning:layout>
+        
+        <!--Inter Account sweep -->
+        <aura:if isTrue="{!v.IsEBServiceGroupSweepServiceType}">
+            <div class="" aura:id="statusApprovals">
+                <aura:if isTrue="{!and(v.IsEBServiceGroupSweepServiceType,v.approvalStatus !=null)}">
+                    <lightning:card title="">
+                        <aura:if isTrue="{!v.approvalStatus=='Approved'}">
+                            <lightning:icon iconName="utility:success" alternativeText="Success!" variant="Success" title="Approved" />  {!v.approvalStatusMessage}
+                            <aura:set attribute="else">
+                                <aura:if isTrue="{!v.approvalStatus=='Rejected'}">
+                                    <lightning:icon iconName="action:reject" alternativeText="Rejected" variant="error" title="Rejected by Approver" />  {!v.approvalStatusMessage}
+                                    <aura:set attribute="else">
+                                        <lightning:icon iconName="utility:info" alternativeText="info!" variant="Warning" title="info" />   {!v.approvalStatusMessage}
+                                    </aura:set>
+                                </aura:if>
+                            </aura:set>
+                        </aura:if>
+                        
+                        
+                    </lightning:card>
+                </aura:if>
+            </div>
+            
+            
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12">
+                    <br /> <br />
+                    <lightning:input class="slds-float--left" aura:id="cancelSweep" type="checkbox" label="Cancel Sweeps" onchange="{!c.onChangeCancelSweep}" />
+                </lightning:layoutItem>
+            </lightning:layout>
+            
+            <lightning:layout multipleRows="true">
+                <aura:if isTrue="{!v.closeCase}">
+                    <lightning:layoutItem size="6" padding="around-small">
+                        <div class="slds-m-top_small slds-float--left">
+                            <lightning:button
+                                              aura:id="closecase"
+                                              variant="brand"
+                                              name="Close Case"
+                                              label="Close Case"
+                                              onclick="{!c.closeCase}"
+                                              />
+                        </div>
+                    </lightning:layoutItem>
+                </aura:if>
+            </lightning:layout>
+        </aura:if>
+        <!-- SET-OFF -->
+        <aura:if isTrue="{!v.IsEBServiceGroupSetOffServiceType}">
+            <div class="" aura:id="statusApprovals">
+                <aura:if isTrue="{!and(v.IsEBServiceGroupSetOffServiceType,v.approvalStatus !=null)}">
+                    <lightning:card title="">
+                        <aura:if isTrue="{!v.approvalStatus=='Approved'}">
+                            <lightning:icon iconName="utility:success" alternativeText="Success!" variant="Success" title="Approved" />  {!v.approvalStatusMessage}
+                            <aura:set attribute="else">
+                                <aura:if isTrue="{!v.approvalStatus=='Rejected'}">
+                                    <lightning:icon iconName="action:reject" alternativeText="Rejected" variant="error" title="Rejected by Approver" />  {!v.approvalStatusMessage}
+                                    <aura:set attribute="else">
+                                        <lightning:icon iconName="utility:info" alternativeText="info!" variant="Warning" title="info" />   {!v.approvalStatusMessage}
+                                    </aura:set>
+                                </aura:if>
+                            </aura:set>
+                        </aura:if>
+                        
+                        
+                    </lightning:card>
+                </aura:if>
+            </div>
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12">
+                    <br /> <br />
+                    <lightning:input class="slds-float--left" aura:id="cancelSweep" type="checkbox" label="Cancel Set OFF" onchange="{!c.onChangeCancelSweep}" />
+                </lightning:layoutItem>
+            </lightning:layout>
+            
+            <lightning:layout multipleRows="true">
+                <aura:if isTrue="{!v.closeCase}">
+                    <lightning:layoutItem size="6" padding="around-small">
+                        <div class="slds-m-top_small slds-float--left">
+                            <lightning:button
+                                              aura:id="closecase"
+                                              variant="brand"
+                                              name="Close Case"
+                                              label="Close Case"
+                                              onclick="{!c.closeCase}"
+                                              />
+                        </div>
+                    </lightning:layoutItem>
+                </aura:if>
+            </lightning:layout>
+            
+        </aura:if>
+        
+        
+        
+        <!-- CONFIRM PAYMENT-->
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="12">
+                <lightning:input class="slds-float--right" aura:id="PaymentVerification" type="checkbox" label="Payment Verification" /><br /> <br />
+                <h5 class="slds-float--right">
+                    (This confirms that the payment details have been verified<br /> I have ensured that the payment information is accurate)
+                </h5>
+            </lightning:layoutItem>
+        </lightning:layout>
+        <lightning:layout multipleRows="true">
+            <aura:if isTrue="{!v.showButton}">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <div class="slds-m-top_small slds-float--right">
+                        <lightning:button
+                                          aura:id="submitButton"
+                                          variant="brand"
+                                          name="submitPayment"
+                                          label="Submit Payment"
+                                          onclick="{!c.validateRequiredFields}"
+                                          />
+                    </div>
+                </lightning:layoutItem>
+            </aura:if>
+            <div class="slds-hide" aura:id="closeCaseSetOff">
+                <div class="slds-m-top_small slds-float--right">
+                    <lightning:button
+                                      aura:id="closeCaseSetOffBtn"
+                                      variant="brand"
+                                      name="Close Case"
+                                      label="Close Case"
+                                      onclick="{!c.closeCase}"
+                                      />
+                </div>
+            </div>
+        </lightning:layout>
+    </article>
+</aura:component>

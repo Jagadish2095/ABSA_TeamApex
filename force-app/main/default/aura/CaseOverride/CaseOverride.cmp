@@ -1,0 +1,645 @@
+<!--
+* Lightning Component for CaseOverride
+*
+* @author  Tracy de Bruin : CloudSmiths
+* @version v1.0
+* @since   2018-07-20
+*
+-->
+
+<aura:component controller="CaseOverrideController" implements="lightning:isUrlAddressable,lightning:hasPageReference,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName" access="global" >   
+    <!--<aura:method name="setAccountId" action="{!c.getAccountId}" />-->
+    <!--Added by Vinod on 29th sept 2021-->
+    <aura:attribute name="prepaidComplaintServiceGroup" type="string"/>
+    <aura:attribute name="atmRefundOptionValue" type="string"/>
+    <aura:attribute name="cashSendComplaintServiceGroup" type="string"/>
+    
+    <aura:handler event="c:setClientInfo" action="{!c.setClientValue}"/>
+    <aura:handler event="c:setContactInfo" action="{!c.setContactValue}"/>
+    <aura:handler event="c:setProductInfo" action="{!c.setProductValue}"/>
+    <!--<aura:handler event="c:setParticipantInfo" action="{!c.setParticipantValue}"/>-->
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>  
+      <aura:attribute name='iscontextDeposit' type='Boolean' default='false'/>
+
+    <aura:attribute name="isCompliment" type="Boolean" default="false"/>
+    <aura:attribute name="isComplaint" type="Boolean" default="false"/>
+    <aura:attribute name="isServiceRequest" type="Boolean" default="false"/>
+    <aura:attribute name="isNonConfidentialFraud" type="Boolean" default="false"/>
+    <aura:attribute name="isATM" type="Boolean" default="false"/>
+    <aura:attribute name="isShortTermComplaint" type="Boolean" default="false"/>
+    <aura:attribute name="isLifeComplaint" type="Boolean" default="false"/>
+    <aura:attribute name="caseRecord" type="sObject"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="parentId" type="String" />
+    <aura:attribute name="isReceiptChecked" type="Boolean" default="false" />
+    <aura:attribute name="contentDocumentId" type="String" />
+    
+    <aura:attribute name="fileStr" type="String" default="No File(s) Selected." />
+    <aura:attribute name="fileIds" type="List" default="[]"/>
+    <aura:attribute name="uploadFormats" type="List" default="['.jpg','.jpeg','.png','.pdf','.msg','.xls','.doc','.Ppt','.xlsx','.docx','.Pptx','.zip','.txt','.wav','.aac','.m4a','.mp3','.wma']"/>
+    <aura:attribute name="uploadHelpText" type="String" default="Please select all files at once when adding multiple files."/>
+    
+    <aura:attribute name="isClassify" type="Boolean" default="false" />
+    <aura:handler name="change" value="{!v.serviceTypeId}" action="{!c.reloadServiceTypes}"/>
+    <aura:handler name="change" value="{!v.productId}" action="{!c.getServiceTypesByProduct}"/>
+    <aura:attribute name="serviceTypeId" type="String" />
+    <aura:attribute name="productId" type="String" />
+    <aura:attribute name="serviceTypeOptions" type="List[]"/> 
+    <aura:attribute name="productOptions" type="List[]"/> 
+    <aura:attribute name="serviceTypeObj" type="Service_Type__c" />
+    
+    <aura:attribute name="caseRecordId" type="String" />
+    <aura:attribute name="accountId" type="String" />
+    <aura:attribute name="contactId" type="String" /> 
+    <aura:attribute name="serviceGroupFilter" type="String" /> 
+    <aura:attribute name="serviceGroupId" type="String" />
+    <aura:attribute name="siteId" type="String" />
+    <aura:handler name="change" value="{!v.serviceGroupId}" action="{!c.getServiceGroup}"/> 
+    <aura:handler name="change" value="{!v.serviceGroupFilter}" action="{!c.onServiceGroupSelectChange}"/>
+    <aura:attribute name="isRouting" type="Boolean" default="false"/>
+    <aura:attribute name="isFPOC" type="Boolean" default="false"/>
+    <aura:attribute name="isIwillResolve" type="Boolean" default="false"/>
+    <aura:attribute name="isCloseCase" type="Boolean" default="false"/>
+    <aura:attribute name="showRoutingBtn" type="Boolean" default="false"/>
+    <aura:attribute name="showFpocBtn" type="Boolean" default="false"/>
+    <aura:attribute name="showIwillResolveBtn" type="Boolean" default="false"/>
+    <aura:attribute name="contactRecord" type="Contact" default="{
+                                                                 'SObjectType': 'Contact',
+                                                                 'FirstName': '',
+                                                                 'LastName': '',
+                                                                 'Email': '',
+                                                                 'Phone': ''
+                                                                 }"/>    
+    <aura:attribute name="accountRecord" type="Account" default="{'sobjectType': 'Account',
+                                                                 'FirstName': '',
+                                                                 'LastName': '',
+                                                                 'Phone': '',
+                                                                 'CIF__c': '',
+                                                                 'RecordTypeId':'',
+                                                                 'Name' : '',
+                                                                 'isPersonAccount':'',
+                                                                 'PersonContactId' : ''
+                                                                 }"/>
+    <aura:attribute name="isIndvClient" type="Boolean"/>
+    
+    <aura:attribute name="serviceGroupRecord" type="Service_Group__c" default="{'sobjectType': 'Service_Group__c',
+                                                                               'Name': '',
+                                                                               'Queue__c': '',
+                                                                               'Id': ''
+                                                                               }"/>
+    
+    <aura:attribute name="serviceTypeRecord" type="Service_Type__c" default="{'sobjectType': 'Service_Type__c',
+                                                                             'Type__c': '',
+                                                                             'Subtype__c': '',
+                                                                             'Product__c' : '',
+                                                                             'Id': '',
+                                                                             'Name': ''
+                                                                             }"/>
+    
+    <aura:attribute name="siteRecord" type="Site__c" default="{'sobjectType': 'Site__c',
+                                                              'Service_Group__c': '',
+                                                              'Id': '',
+                                                              'Name': ''
+                                                              }"/>
+    
+    <aura:attribute name="newCase" type="Case" default="{'sobjectType': 'Case',
+                                                        'AccountId': '',
+                                                        'Subject': '',
+                                                        'Description': '',
+                                                        'Expectation_of_the_Customer__c': '',
+                                                        'Claim_Amount__c': '',
+                                                        'Incident_Date__c': '',
+                                                        'Responsible_Site__c': '',
+                                                        'RecordTypeId':'',
+                                                        'International_ATM_Used__c': '',
+                                                        'Country__c':'',
+                                                        'IncidentTime__c':'',
+                                                        'Amount_Withdrawn__c':'',
+                                                        'Amount_Received__c':'',
+                                                        'Account_Number__c':'',
+                                                        'Type__c':'',
+                                                        'Site__c':'',
+                                                        'Classify_Service_Group__c':''
+                                                        }"/>
+    
+    <!-- Selected Account Number info -->
+    <aura:attribute name="accountNumberSelected" type="String" /> 
+    
+    <!-- Selected Product info -->
+    <aura:attribute name="accountNumber" type="String" /> 
+    <aura:attribute name="accountStatus" type="String" />
+    <aura:attribute name="accountProduct" type="String" />
+    
+    <aura:attribute name="searchValue" type="String" />
+    <aura:attribute name="isNotValidSearchValue" type="boolean" default="true"/>
+    
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" alternativeText="Loading..."/>
+    </center>
+    
+    <aura:attribute name="caseTypeOption" type="List" default="[]"/>
+    
+    <aura:attribute name="caseTypeSelected" type="String" default="Complaint"/>
+    <aura:attribute name="popupMessage" type="String"/>
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="claimAmount" type="String"/>
+    <aura:attribute name="amountReceived" type="String" default = "0.00"/>
+    <aura:attribute name="amountWithdrawn" type="String" default = "0.00"/>
+    
+    <!-- Create & Send Email Option  -->
+    <aura:attribute name="isCreateAndEmail" type="boolean" default="false" />
+    
+    <lightning:workspaceAPI aura:id="workspace"/>
+    
+    <!-- Added by Simangaliso Mathenjwa 4 June 2020 -->
+    <aura:attribute name="serviceGroupId2" type="String" />
+    <!-- Added by Poulami 16 July for NBFS Dispute Record Type-->
+    <aura:handler name="change" value="{!v.serviceGroupId2}" action="{!c.checkNBFSServiceGroup}"/>
+    <aura:attribute name="isNBFSServiceGroup" type="Boolean" default="false" />
+    <aura:attribute name="NBFSServiceGroup" type="String"/>
+    <aura:attribute name="NBFSCategory" type="String"/>
+    <aura:attribute name="NBFSQueueMember" type="String" />
+    <aura:attribute name="advisorCode" type="String" />
+    <aura:attribute name="regionList" type="String[]" />
+    <aura:attribute name="region" type="String" />
+    <aura:attribute name="UserTypes" type="User" />
+    <!-- Added by Poulami 05 Jan 2021 for NBFS Dispute Record Type-->
+    <aura:attribute name="MonResRequired" type="String" />
+    <!-- NBFS-->
+    <aura:attribute name="serviceGroupSearchLabel" type="String" default="Service Group Search" />
+    <aura:attribute name="serviceGroupSearchPlaceHolder" type="String" default="Search Service Groups... " />
+    <aura:attribute name="sobjecttype" type="String" default="{!v.sObjectName}"/>
+    <aura:attribute name="communicationMethod" type="String" default="Email" />
+    <aura:attribute name="serviceGroupLookupCondition" type="String" default=""/>
+    <aura:attribute name="isButtonDisabled" type="boolean" default="false"/>
+    <aura:attribute name="alternateEmailAddress" type="String" default="{!v.accountRecord.PersonEmail}"/>
+    <aura:attribute name="productList" type="Object" />
+    <aura:attribute name="showTheReminder" type="boolean" default ="true"/>
+    <aura:attribute name="shortTermPermissions" type="boolean" default ="false"/> <!--Added by Mbuyiseni Mbhokane for short-term insurance-->
+    <aura:attribute name="showStaffTheReminder" type="boolean" default ="true"/>
+    <aura:attribute name="staffMemberHelpText" type="String" default="Staff Member, not on Salesforce, Compliment Applies To. Please remember to send an email to the staff member to receive the compliment"/>
+    <aura:attribute name="staffMemberValue" type="String"/>
+
+    <!--Added newly by pranav for show components-->
+    <aura:attribute name="showDDCase" type="boolean" default="false"/>
+    <aura:attribute name="showCaseOverride" type="boolean" default="true"/>
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    <!-- Simangaliso Mathenjwa 4 June 2020-->
+    
+   <!-- Ashok added to show AIP component -->
+   <!-- <aura:attribute name="showAIPCase" type="boolean" default="false"/> -->
+    <aura:attribute name="hideAIPCase" type="boolean" default="true"/>
+    
+    <!--Added by pranav on 8 apr 2021-->
+    <aura:if isTrue="{!v.showCaseOverride}">
+    <div class="slds-grid slds-gutters" style="margin-bottom: 40px;">
+        <div class="slds-col slds-border_right" style="width: 8rem">
+            <!-- Client Finder Lightning Component with Attributes-->
+            <c:ClientFinder
+                            isCompactView="true"
+                            showCreateIndividualProspect="true" 
+                            showCreateBusinessProspect="true"
+                            showProductSelection="true"
+                            showContactSelection="true"
+                            showCaseHistory="true"
+                            showLeadHistory = "false"
+                            showParticipantSelection = "false"
+                            searchValue = "{!v.searchValue}"
+                            isNotValidSearchValue = "{!v.isNotValidSearchValue}"
+                            productPaginationList ="{!v.productList}"
+                            />
+        </div> 
+        <div class="slds-col .slds-border_left" style="width: 8rem" >
+            <lightning:card iconName="action:new_case" title="Case Information">
+                <div class="c-container" >
+                    <lightning:recordEditForm  aura:id="iCreateCase" objectApiName="Case" recordId="{!v.recordId}"> 
+                        
+                        <!-- COMMON CASE FIELDS -->
+                        <lightning:layout>
+                            <lightning:layoutItem padding="around-small" size="12">
+                                
+                                <lightning:inputField  aura:id="iSubject" fieldName="Subject" label="Subject" class="customRequired"/> 
+                                <lightning:inputField aura:id="iDescription" fieldName="Description" label="Description" class="customRequired"/>
+                                <lightning:inputField aura:id="iOrigin" fieldName="Origin" label="Case Origin" class="customRequired"/>
+                                
+                                <!-- CREATE AND SEND - ONLY SHOW WHEN **NOT** A COMPLIMENT -->
+                                <aura:if isTrue="{!v.isServiceRequest == true}">
+                                    <lightning:input fieldLevelHelp="When selected an email will automatically be sent to the client with attachments included." label="Create case &amp; send email" checked="{!v.isCreateAndEmail}" type="checkbox" disabled="false" />
+                                    <aura:if isTrue="{!v.isCreateAndEmail}">
+                                        <lightning:input placeholder="Enter Email Address" label=" Alternate email address" type="Email" value="{!v.alternateEmailAddress}" fieldLevelHelp="Add an email address to bypass the incorrect email address on client finder"/>
+                                    </aura:if>
+                                    
+                                </aura:if>
+                                <!-- / CREATE AND SEND -->
+                                
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        <!-- / COMMON CASE FIELDS -->
+                        <div class="slds-p-around_medium"><!--Added by Mbuyiseni Mbhokane: add padding around the radioGroup-->
+                        <lightning:layout>
+                            <lightning:radioGroup name="radioGroupRequired"
+                                                  class="customButton"
+                                                  label=""
+                                                  options="{!v.caseTypeOption }"
+                                                  value="{!v.caseTypeSelected }"
+                                                  onchange="{!c.onServiceGroupSelectChange}"
+                                                  type="button"/>
+                        </lightning:layout>
+                        </div>
+                        
+                        <aura:if isTrue="{!or(v.isServiceRequest, v.isCompliment)}"> 
+                            <aura:set attribute="else">
+                                <lightning:layout>
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <lightning:inputField aura:id="iCustomerExpectation" fieldName="Expectation_of_the_Customer__c" label="Customer Expectation" class="customRequired"/>
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                                <lightning:layout>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <label class="slds-form-element__label" for="iIncidentDate">Incident Date</label>
+                                        <lightning:inputField aura:id="iIncidentDate" fieldName="Incident_Date__c" class="customRequired" variant="label-hidden" />
+                                        <lightning:inputField  aura:id="iIdvLevelRequired" fieldName="ID_V_Level_Required__c" /> 
+                                        <br/>
+                                        <lightning:inputField  aura:id="iIdvCompleted" fieldName="ID_V_Completed__c" /> 
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <aura:if  isTrue="{!(v.caseTypeSelected == 'ATM')}">
+                                            <lightning:input aura:id="iIncidentTime" type="time" fieldName="IncidentTime__c"  label="Incident Time" class="customRequired"/>
+                                        </aura:if> 
+                                        <lightning:input aura:id="iClaimAmount" label="Claim Amount" value="{!v.claimAmount}" onchange="{!c.checkIfNotNumber}"/>
+  											<!--aura:if isTrue="{!(v.caseTypeSelected == 'ATM')}">
+                                        	<lightning:inputField aura:id="iRefundOption" fieldName="Refund_Option__c" label="Refund Option" onchange="{!c.checkRefundOption}" class="customRequired"/>
+                                        	<aura:if isTrue="{!(v.atmRefundOptionValue == 'Inter Branch')}">
+                                            	<lightning:inputField aura:id="iRefundSite" fieldName="Site__c" label="Site" class="customRequired"/>
+                                        	</aura:if>
+                                        </aura:if> -->
+                                        <!--<lightning:inputField aura:id="iClaimAmount" value="{!v.claimAmount}" fieldName="Claim_Amount__c" label="Claim Amount" onchange="{!c.checkIfNotNumber}"/> -->
+                                        <lightning:inputField aura:id="iFastTrack" fieldName="Fast_Track__c" label="Fast Track"/>
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                                <aura:if  isTrue="{!(v.caseTypeSelected == 'ATM')}">
+                                    <lightning:layout>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <!-- <lightning:input aura:id="iIncidentTime" type="time" fieldName="IncidentTime__c"  label="Incident Time" class="customRequired"/>-->
+                                            <lightning:inputField aura:id="iType" fieldName="ATM_Service_Type__c" label="ATM Service Type"  onchange="{!c.assignPrepaidServiceGroup}"/>  
+                                            <lightning:input aura:id="iAmountWithdrawn" label="Amount Withdrawn" value="{!v.amountWithdrawn}" onchange="{!c.checkIfNotNumberAmountWithdrawn}" disabled='{!v.iscontextDeposit}'/>
+                                            <!--<lightning:inputField aura:id="iAmountWithdrawn" fieldName="Amount_Withdrawn__c" label="Amount Withdrawn" /> -->
+                                            <lightning:inputField aura:id="iAbsaAtm" fieldName="AbsaATM__c" label="Absa ATM"/>
+                                            <lightning:inputField aura:id="iSequenceNumber" fieldName="SequenceNumber__c" label="Sequence Number" />
+                                            
+
+                                        </lightning:layoutItem>
+                                        
+                                        <lightning:layoutItem padding="around-small" size="4">
+                                            <lightning:inputField aura:id="iDepositType" fieldName="Deposit_Type__c" />
+                                            <lightning:input aura:id="iAmountRecieved" label="Amount Received" value="{!v.amountReceived}" onchange="{!c.checkIfNotNumberAmountReceived}" disabled='{!v.iscontextDeposit}' />
+                                            <!--<lightning:inputField aura:id="iAmountRecieved" fieldName="Amount_Received__c" label="Amount Received" /> -->
+                                            <lightning:inputField aura:id="iNonAbsaAtmText" fieldName="NonAbsaATMText__c" label="Non Absa ATM Text" />
+                                            <lightning:inputField aura:id="iAccountNumber" fieldName="Account_Number__c" label="Account Number" /> 
+                                        </lightning:layoutItem>
+                                        
+                                    </lightning:layout>
+                                    <!--<lightning:layout>
+                                    <lightning:layoutItem padding="around-small" size="4">
+                                        <lightning:inputField aura:id="iAccountNumber" fieldName="Account_Number__c" label="Account Number" /> 
+                                        <lightning:inputField aura:id="iType" fieldName="ATM_Service_Type__c" label="ATM Service Type" />  
+                                 </lightning:layoutItem>
+                                  </lightning:layout>-->  
+                                </aura:if>   
+                                <h3 class="slds-section__title">
+                                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Communication Method</span>
+                                </h3>
+                                <lightning:layout>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:inputField  aura:id="iCommunicationMethod" fieldName="Communication_Method__c" value="{!v.communicationMethod}" class="customRequired"/> 
+                                        <lightning:inputField aura:id="iPhone" fieldName="Phone__c" />
+                                        <lightning:inputField aura:id="iMobile" fieldName="Mobile__c"  />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:inputField  aura:id="iEmail" fieldName="Email__c" /> 
+                                        <lightning:inputField aura:id="iPostalAddress" fieldName="Postal_Address__c" />
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </aura:set> 
+                        </aura:if>  
+                        
+                        <!-- Non-Confidential Fraud -->
+                        <aura:if isTrue="{!v.isNonConfidentialFraud}">
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Upload Files&nbsp;
+                                    <lightning:helptext content="{!v.uploadHelpText}" class="customIcon"/></span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:fileUpload aura:id="fileId" name="fileUploader" label= "" multiple="true" 
+                                                          accept="{!v.uploadFormats}" disabled="false"   
+                                                          recordId="{!v.parentId}" onuploadfinished="{!c.handleFilesChange}" />
+                                    <div class="slds-text-body_small slds-text-color_error" aura:id="forensicFileText">{!v.fileStr}</div>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <!--<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Non-Confidential Fraud</span>-->
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Non Confidential - Forensic</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="iResponsibleSiteFraud" fieldName="Responsible_Site__c" label="Responsible Site" />
+                                    <lightning:inputField aura:id="iOriginatedBy" fieldName="Originated_By__c" class="customRequired"/> 
+                                    <lightning:inputField aura:id="iReportedDate" fieldName="Reported_Date__c"/> 
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="iLossAmount" fieldName="Loss_Amount__c" label="Loss Amount" />
+                                    <lightning:inputField aura:id="iEntity" fieldName="Entity__c" class="customRequired"/> 
+                                    <lightning:inputField aura:id="iPoliceCaseNumber" fieldName="Police_Case_Number__c"/> 
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField aura:id="iForm1481" fieldName="Declaration_Form_1481_Attached__c"/> 
+                                    <lightning:inputField aura:id="iForm1094" fieldName="Fraud_Declaration_Form_1094_Attached__c"/> 
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Risk Management Centre</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField fieldName="Service_Group_Search__c" aura:id="serviceGroupLookupSearch" onchange="{!c.getServiceGroup}" /> 
+                                </lightning:layoutItem>
+                            </lightning:layout> 
+                        </aura:if> 
+                        
+                        <!-- Service Request-->
+                        <aura:if isTrue="{!v.isServiceRequest}">
+                            
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Responsible Area</span> 
+                            </h3>
+                            
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <c:LookUpField lookupSearchData="ServiceGroupLookupSearch" lookupSearchCondition="{!v.serviceGroupLookupCondition}" icon_name="custom:custom84" selectedRecord ="{!v.serviceGroupRecord}" recordIdString="{!v.serviceGroupId2}" aura:id="serviceGrouplookup" label="{!v.serviceGroupSearchLabel}" placeHolder="{!v.serviceGroupSearchPlaceHolder}"/>
+                                    <lightning:inputField aura:id="iResponsibleSiteServiceReq" fieldName="Responsible_Site__c"/>
+                                    &nbsp;<label lightning-input_input="" for="classify" class="slds-checkbox__label">Classify?</label>
+                                    <ui:inputCheckbox aura:id="classify" change="{!c.onCaseClassify}" class="lightning-input_input"/>
+                                </lightning:layoutItem>
+                            </lightning:layout> 
+                            
+                            <aura:if isTrue="{!v.isClassify}">
+                                <h3 class="slds-section__title">
+                                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Classification</span>
+                                </h3>
+                                <lightning:layout>
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <c:strike_picklist value="{!v.productId}" errorMessage="Invalid input" searchable="true" label="Product / Channel Search">
+                                            <aura:iteration  items="{!v.productOptions}" var="selectOption" indexVar="index">
+                                                <c:strike_option label="{!selectOption.name}" value="{!selectOption.id}" />
+                                            </aura:iteration>
+                                        </c:strike_picklist>
+                                        <c:strike_picklist value="{!v.serviceTypeId}" errorMessage="Invalid input" searchable="true" label="Service Type Search">
+                                            <aura:iteration  items="{!v.serviceTypeOptions}" var="selectOption" indexVar="index">
+                                                <c:strike_option label="{!selectOption.name}" value="{!selectOption.id}" />
+                                            </aura:iteration>
+                                        </c:strike_picklist>
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </aura:if>
+                            
+                            <!-- FILE UPLOADS -->                                
+                            <lightning:layout class="slds-m-top_small" multipleRows="true">
+                                
+                                <lightning:layoutItem size="12">
+                                    <h3 class="slds-section__title"><span class="slds-truncate slds-button slds-section__title-action">Upload Files</span></h3>
+                                </lightning:layoutItem>
+                                
+                                <lightning:layoutItem class="slds-p-left_small slds-p-top_none" size="12">
+                                    <lightning:fileUpload aura:id="fileId" label="" name="fileUploader" variant="label-hidden" multiple="true" accept="{!v.uploadFormats}" disabled="false" recordId="{!v.parentId}" onuploadfinished="{!c.handleFilesChange}" />
+                                </lightning:layoutItem>
+                                
+                                <lightning:layoutItem class="slds-p-left_small slds-m-top_small" size="12">                                        
+                                    <span class="slds-text-body_small slds-text-color_error" aura:id="uploadedFileNames">{!v.fileStr}</span>
+                                </lightning:layoutItem>
+                                
+                            </lightning:layout>
+                            <!-- / FILE UPLOADS --> 
+                            
+                        </aura:if>
+                        
+                        <!-- Complaint-->
+                        <aura:if isTrue="{!or(v.isComplaint,v.isShortTermComplaint)}">
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Upload Files&nbsp;
+                                    <lightning:helptext content="{!v.uploadHelpText}" class="customIcon"/></span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:fileUpload aura:id="fileId" name="fileUploader" label= "" multiple="true" 
+                                                          accept="{!v.uploadFormats}" disabled="false"   
+                                                          recordId="{!v.parentId}" onuploadfinished="{!c.handleFilesChange}" />
+                                    <div class="slds-text-body_small slds-text-color_error" aura:id="complaintFileText">{!v.fileStr}</div>
+                                </lightning:layoutItem>
+                            </lightning:layout> 
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Responsible Area</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <c:LookUpField lookupSearchData="ServiceGroupLookupSearch" lookupSearchCondition="{!v.serviceGroupLookupCondition}" icon_name="custom:custom84" selectedRecord ="{!v.serviceGroupRecord}" recordIdString="{!v.serviceGroupId2}" aura:id="serviceGrouplookup" label="{!v.serviceGroupSearchLabel}" placeHolder="{!v.serviceGroupSearchPlaceHolder}"/>
+                                    
+                                    <aura:if isTrue="{!v.isComplaint}">                               
+                                        <lightning:inputField aura:id="iResponsibleSiteComplaint" fieldName="Responsible_Site__c" class="customRequired"/>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!v.isShortTermComplaint}">
+                                        <lightning:inputField aura:id="relatedBusinessArea" fieldName="Related_Business_Area__c" class="customRequired"/><!--Added by Mbuyiseni Mbhokane: Short-term insurance Bankers field -->                                 
+                                        <lightning:inputField aura:id="relatedProductArea" fieldName="Related_Product_Area__c" class="customRequired"/><!--Added by Mbuyiseni Mbhokane: Short-term insurance Bankers field -->
+                                        <lightning:inputField aura:id="complaintCausedBy" fieldName="Complaint_Caused_By__c" class="customRequired"/><!--Added by Mbuyiseni Mbhokane: Short-term insurance Bankers field -->
+                                        <lightning:inputField aura:id="claimNumber" fieldName="Claim_Number__c" /><!--Added by Mbuyiseni Mbhokane: Short-term insurance Bankers field -->
+                                        <lightning:inputField aura:id="policyNumber" fieldName="Policy_Number__c" /><!--Added by Mbuyiseni Mbhokane: Short-term insurance Bankers field -->
+                                    </aura:if>
+                                    
+                                    </lightning:layoutItem>
+                            </lightning:layout> 
+                            
+                            <!--Start of Categorisation of Complaint -->
+                            <aura:if isTrue="{!v.isNBFSServiceGroup}">
+                                    <h3 class="slds-section__title">
+                                        <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Categorisation of Complaint</span>
+                                    </h3>
+                                    <lightning:layout>
+                                        <lightning:layoutItem padding="around-small" size="12">
+                                        	<lightning:inputField aura:id="iCategory" fieldName="NBFS_Category__c" value="{!v.NBFSCategory}" label="Category" onchange="{!c.checkButtonDisplay}" class="customRequired" />
+                                         <aura:renderIf isTrue="{!and(v.NBFSCategory == 'Level 3',v.isComplaint)}">
+                                             <lightning:select aura:id="levelsource" label="Source" class="customRequired">
+                            				 <aura:renderIf isTrue="{!v.regionList.length == 1}">
+                                    		 <option value="{!v.regionList[0]}" text="{!v.regionList[0]}"></option>
+                            			     <aura:set attribute="else">
+                                    			<option value="--None--" text="--None--"></option>
+                                    			<aura:iteration items="{!v.regionList}" var="s" indexVar="index" >
+                                        		<option value="{!s}" text="{!s}"></option>
+                                    			</aura:iteration>
+                            				 </aura:set>
+                            				 </aura:renderIf>
+                        					 </lightning:select>
+                                         <aura:set attribute="else">
+                                            <lightning:inputField aura:id="iSource" fieldName="Source__c" label="Source" class="customRequired"/>  
+                                         </aura:set>
+                                         </aura:renderIf>
+                                         <aura:if isTrue="{!not(v.isShortTermComplaint)}"><!--Added for short term insurance-->
+                                            <lightning:inputField aura:id="iMonResReq" fieldName="Monetary_Resolution_Required__c" value="{!v.MonResRequired}" label="Monetary Resolution Required" onchange="{!c.checkButtonDisplay}" class="customRequired" />
+                                        </aura:if>
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                    <h3 class="slds-section__title">
+                                        <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Additional Contact Information</span>
+                                    </h3>
+                                    <lightning:layout>
+                                        <lightning:layoutItem padding="around-small" size="12">
+                                            
+                                            <aura:if isTrue="{!v.isComplaint}">
+                                            <lightning:inputField aura:id="iAlternativeContact" fieldName="Alternative_Contact__c" label="Alternative Contact" class="customRequired"/>
+                                            </aura:if>
+                                            
+                                            <!--added by Mbuyiseni Mbhokane: Alternetive contact details for short insurance complaints -->
+                                            <aura:if isTrue="{!v.isShortTermComplaint}">
+                                            <lightning:inputField aura:id="sfirstName" fieldName="First_Name__c" required="true"/> 
+                                            <lightning:inputField aura:id="slastName" fieldName="Last_Name__c" required="true"/>
+                                            <div class="slds-p-left_xx-small">
+                                            <label for="salternativePhone">Phone</label>
+                                            <lightning:inputField aura:id="salternativePhone" fieldName="Alternative_Phone__c" label="Phone" variant="label-hidden"/>
+                                            <label for="salternativeEmail">Email</label>
+                                        	<lightning:inputField aura:id="salternativeEmail" fieldName="Alternative_Email__c" label="Email" variant="label-hidden"/> 
+                                            </div>
+                                            </aura:if>
+                                            
+                                            <!--End of Alternetive contact details for short insurance complaints -->
+                                            <lightning:inputField aura:id="iCapacity" fieldName="Capacity__c" label="Capacity" class="customRequired"/>
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                </aura:if>
+                            
+                            <!--End of Categorisation of Complaint -->
+                            
+                        </aura:if>
+                        
+                        <!-- ATM -->
+                        <aura:if isTrue="{!v.isATM}">
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">ATM</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="iInternationalATMUsed" fieldName="International_ATM_Used__c" />
+                                    <lightning:inputField aura:id="iCountry" fieldName="Country__c" /> 
+                                   <!-- <aura:if isTrue="{!v.isReceiptChecked}"> -->
+                                        <lightning:fileUpload  name="fileUploader"   label= "Receipt Upload" multiple="false"
+                                                              accept="['.jpg', '.jpeg', '.png','.pdf']" disabled="false"   
+                                                              recordId="{!v.parentId}" onuploadfinished="{! c.handleUploadFinished }" />
+                                   <!-- </aura:if> -->
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                   <!-- <lightning:inputField aura:id="iDepositType" fieldName="Deposit_Type__c" /> -->
+                                    <br/>
+                                    <lightning:inputField aura:id="iReceiptSlipAvailable" fieldName="Receipt_Slip_Available__c" onchange="{!c.isReceiptChanged}"/>
+                                    <!--lightning:inputField aura:id="iPrepaid" fieldName="Prepaid__c" hidden='true' /> -->
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Responsible Area</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <label class="slds-form-element__label" for="siteLookupSearch">ATM Number</label>
+                                    <lightning:inputField fieldName="Responsible_Site__c" aura:id="siteLookupSearch" onchange="{!c.getSite}" class="customRequired" variant="label-hidden"/>
+                                    <lightning:inputField fieldName="Service_Group_Search__c" disabled="true" aura:id="serviceGroupLookupSearchATM" onchange="{!c.getServiceGroup}" /> 
+                                </lightning:layoutItem>
+                            </lightning:layout> 
+                        </aura:if>
+                        
+                        <!-- Compliment-->	
+                        <aura:if isTrue="{!v.isCompliment}">	
+                            <h3 class="slds-section__title">	
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Responsible Area</span>	
+                            </h3>	
+                            <lightning:layout>	
+                                <lightning:layoutItem padding="around-small" size="12">	
+                                <lightning:inputField fieldName="Staff_Member_Compliment_Applies_To__c" aura:id="staffMemberSF"/> 
+                                <lightning:input label="Staff Member (Non Salesforce User)" fieldLevelHelp="{!v.staffMemberHelpText}" aura:id="staffMember" oncommit="{!c.showEmailReminder}" value="{!v.staffMemberValue}"/> 	    
+                                <lightning:inputField fieldName="Service_Group_Search__c" aura:id="serviceGroupLookupSearchCompliment" onchange="{!c.getServiceGroup}" /> 	
+                                </lightning:layoutItem>	
+                            </lightning:layout> 	
+                        </aura:if>
+                        
+                        <!-- Custom Buttons -->
+                        <lightning:layout>
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <aura:if isTrue="{!and(v.showFpocBtn, v.isComplaint)}">
+                                    <lightning:button label="FPOC" onclick="{!c.saveAsFPOC}" variant="brand" aura:id="ibtnFPOC" />
+                                </aura:if>
+                                <aura:if isTrue="{!v.showIwillResolveBtn}">
+                                    <lightning:button label="I will Resolve" onclick="{!c.saveAndNavigateToCase}" variant="brand" aura:id="ibtnIwillResolve"/>
+                                </aura:if>
+                                <aura:if isTrue="{!v.showRoutingBtn}">
+                                    <lightning:button label="Route" onclick="{!c.serviceGroupRouting}" variant="brand" aura:id="ibtnServiceGroupRouting" />
+                                </aura:if>
+                                <aura:if isTrue="{!v.isServiceRequest == true}">
+                                    <aura:if isTrue="{!and(v.isClassify, v.isCreateAndEmail)}">
+                                        <lightning:button label="Close" onclick="{!c.closeCase}" variant="brand" aura:id="ibtnClose" />
+                                    </aura:if>
+                                </aura:if>
+                                <lightning:button label="Cancel" onclick="{!c.cancelAndCloseTab}" variant="brand" aura:id="ibtnCancel" />
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </lightning:recordEditForm>
+                    <div style="height:40px; width:55%"> </div>
+                </div>
+            </lightning:card>
+        </div>
+    </div>
+    
+    <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute] -->   
+    <aura:if isTrue="{!v.isOpen}">
+        
+        <!--###### MODAL BOX Start######--> 
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Please Confirm</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p><b> Is this an ATM Transaction complaint?
+                        </b>
+                    </p>
+                </div>
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Yes"
+                                      title="Yes"
+                                      onclick="{! c.closeModelYes }"/>
+                    <lightning:button variant="brand" 
+                                      label="No"
+                                      title="No"
+                                      onclick="{! c.closeModelNo }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+        
+    </aura:if>
+    <aura:set attribute="else">
+          <!-- Ashok added this code to show AIP Component -->
+       <aura:if isTrue="{!!v.hideAIPCase}">
+           <c:caseOverride_DD recordType = "AIP Case"/>
+        </aura:if>
+        <aura:if isTrue="{!v.hideAIPCase}">
+           <c:caseOverride_DD recordType = "DD STI Case"/>
+        </aura:if>
+    </aura:set>
+</aura:if>
+</aura:component>

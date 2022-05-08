@@ -1,0 +1,352 @@
+<!--
+  @description       : AccountEnquiry
+  @author            : Mradul Maheshwari
+  @last modified on  : 05-11-2021
+  @last modified by  : Mradul Maheshwari
+  @Work Id           : W-013340 W-016008
+-->
+<aura:component controller="AccountEnquiryCntr"
+  implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+  access="global">
+
+  <aura:attribute name="accountNumberFromFlow" type="String" access="global" />
+  <aura:attribute name="errorMessage" type="String" />
+  <aura:attribute name="showSpinner" type="boolean" default="false" />
+  <aura:attribute name="mandateEmail" type="String" default="" access="global" />
+  <aura:attribute name="isEmailEditable" type="boolean" default="false" />
+  <aura:attribute name="caseRecordId" type="String" access="global" />
+  <aura:attribute name="caseRecordTypeId" type="String" access="global" />
+  <aura:attribute name="caseAccountId" type="String" access="global" />
+  <aura:attribute name="accountDetails" type="AccountEnquiry_Resp_IB_V1" access="global" />
+  <aura:attribute name="stepName" type="String" default='accountDetails' />
+  <aura:attribute name="pdfData" type="String" access="global" />
+
+  <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+  <aura:attribute name="accountRecord" type="Account" />
+
+  <aura:attribute name="caseRecord" type="Case" />
+  <force:recordData aura:id="recordLoader" recordId="{!v.caseRecordId}" fields="Client_Email_Address__c,Status"
+    targetFields="{!v.caseRecord}" />
+
+  <lightning:recordEditForm aura:id="caseCloseEditForm" objectApiName="Case" recordId="{!v.caseRecordId}"
+    onsuccess="{!c.refreshView}" onerror="{!c.handleError}">
+    <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+  </lightning:recordEditForm>
+
+
+
+  <force:recordData aura:id="accountRecordLoader" recordId="{!v.caseAccountId}" fields="Name"
+    targetFields="{!v.accountRecord}" />
+  <article class="slds-card">
+    <!-- Lightning Spinner -->
+    <aura:if isTrue="{!v.showSpinner}">
+      <lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+    </aura:if>
+
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+      <ui:message title="Error" severity="error" closable="false">
+        {!v.errorMessage}
+      </ui:message>
+    </aura:if>
+
+    <aura:if isTrue="{!and(v.accountDetails,v.stepName == 'accountDetails')}">
+      <div class="slds-card__body slds-card__body_inner">
+        <div class=" slds-p-around--medium slds-align_absolute-center">
+          <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{!c.closeCase }" />
+          <lightning:button variant="neutral" label="Next" title="Next" onclick="{!c.showEmailScreen }" />
+        </div>
+        <article class="slds-card slds-card_boundary">
+          <div class="slds-card__body slds-card__body_inner">
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Client Name</span>
+                    <input class="slds-input" value="{!v.accountRecord.Name}" disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Property Type</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PROPERTY_DETAIL[0].MLB857O_PROPERTY_DESCR}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">ERF Number</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PROPERTY_DETAIL[0].MLB857O_ERF_NBR}"
+                      disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Unit No</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PROPERTY_DETAIL[0].MLB857O_UNIT_NBR}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Township</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PROPERTY_DETAIL[0].MLB857O_TOWNSHIP}"
+                      disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Portion</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PROPERTY_DETAIL[0].MLB857O_PORTION}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">City</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PROPERTY_DETAIL[0].MLB857O_CITY}"
+                      disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Complex</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PROPERTY_DETAIL[0].MLB857O_COMPLEX_NAME}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">HOC Anniversary Date</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PROPERTY_DETAIL[0].MLB857O_HOC_ANIV_DATE}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </article>
+
+        <article class="slds-card slds-card_boundary">
+          <div class="slds-card__body slds-card__body_inner">
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Account Number</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_ACCT_NBR}"
+                      disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Total Amount of registered Bond(s)</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_BOND_AMT}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Registration Date</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_BOND_REG_DATE}"
+                      disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Original Term</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_TERM_OF_LOAN}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Remaining Term</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_REMAINING_TERM}"
+                      disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Interest Rate</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_EFF_ACCT_RATE}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Outstanding Balance</span>
+                    <input class="slds-input" style="currency" currencyCode="{!v.record.CurrencyIsoCode}"
+                      currencyDisplayAs="symbol"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_OUTST_BAL}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </article>
+        <article class="slds-card slds-card_boundary">
+          <label>Monthly installment is made up as follows from next due date</label>
+          <div class="slds-card__body slds-card__body_inner">
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Basic Installment</span>
+                    <input class="slds-input" style="currency" currencyCode="{!v.record.CurrencyIsoCode}"
+                      currencyDisplayAs="symbol"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_INST_DETAIL.MLB857O_PR_BASIC_INST}"
+                      disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">House owner Insurance</span>
+                    <input class="slds-input" style="currency" currencyCode="{!v.record.CurrencyIsoCode}"
+                      currencyDisplayAs="symbol"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_INST_DETAIL.MLB857O_PR_PROV_HOC}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Life Insurance</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_INST_DETAIL.MLB857O_PR_PROV_HMP}"
+                      disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Endowment Option</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_INST_DETAIL.MLB857O_PR_PROV_ENDOWMENT}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Service fee/Administration fee</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_INST_DETAIL.MLB857O_PR_PROV_ADMIN_FEE}"
+                      disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Due Date</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_INST_DETAIL.MLB857O_PR_DUE_DAY}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="slds-form--compound">
+              <div class="form-element__group">
+                <div class="slds-form-element__row">
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">TOTAL Instalment</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_INST_DETAIL.MLB857O_PR_TOTAL_INST}"
+                      disabled="true" />
+                  </label>
+                  <label class="slds-form-element__control slds-size--1-of-2">
+                    <span class="slds-form-element__helper">Flexi Reserve Amount on Day</span>
+                    <input class="slds-input"
+                      value="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_PRIM_ACCT_DETAIL.MLB857O_PR_FLEXI_AMT_AVAIL}"
+                      disabled="true" />
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </article>
+        <aura:if
+          isTrue="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_SEC_ACCT_DETAIL[0].MLB857O_SE_ACCT_NBR != 0 }">
+          <article class="slds-card slds-card_boundary">
+            <label>Secondary Account Details</label>
+            <div class="slds-card__body slds-card__body_inner">
+              <aura:iteration items="{!v.accountDetails.MLB857O.MLB857O_OUTPUT_AREA.MLB857O_SEC_ACCT_DETAIL}" var="sec"
+                indexVar="index">
+                <aura:if isTrue="{!and(sec.MLB857O_SE_ACCT_NBR != 0 ,sec.MLB857O_SE_ACCT_NBR)}">
+                  <fieldset class="slds-form--compound">
+                    <div class="form-element__group">
+                      <div class="slds-form-element__row">
+                        <label class="slds-form-element__control slds-size--1-of-2">
+                          <span class="slds-form-element__helper">Account Number {!index+1}</span>
+                          <input class="slds-input" value="{!sec.MLB857O_SE_ACCT_NBR}" disabled="true" />
+                        </label>
+                        <label class="slds-form-element__control slds-size--1-of-2">
+                          <span class="slds-form-element__helper">Balance</span>
+                          <input class="slds-input" value="{!sec.MLB857O_SE_OUTST_BAL}" disabled="true" />
+                        </label>
+                      </div>
+                    </div>
+                  </fieldset>
+                </aura:if>
+              </aura:iteration>
+            </div>
+          </article>
+        </aura:if>
+        <div class=" slds-align_absolute-center slds-p-around--medium">
+          <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{!c.closeCase }" />
+          <lightning:button variant="neutral" label="Next" title="Next" onclick="{!c.showEmailScreen }" />
+        </div>
+      </div>
+    </aura:if>
+    <aura:if isTrue="{!v.stepName == 'Email Screen'}">
+      <div class="slds-card__body slds-card__body_inner">
+        <article class="slds-card slds-card_boundary">
+          <div class="slds-align_absolute-center slds-p-around--medium">
+            <lightning:button variant="neutral" label="Back" title="Back" onclick="{!c.showAccountDetails}" />
+            <lightning:button variant="neutral" label="Close Case" title="Close Case" onclick="{!c.sendEmail}" />
+          </div>
+          <div class="slds-card__body slds-card__body_inner">
+            <lightning:input aura:id="clientEmailAddress" type="email" name="email" label="Customer Email Address"
+              value="{!v.mandateEmail}" />
+          </div>
+          <div style="height: 1000px;">
+            <c:pdfViewer pdfData="{!v.pdfData}" />
+          </div>
+          <div class="slds-align_absolute-center slds-p-around--medium">
+            <lightning:button variant="neutral" label="Back" title="Back" onclick="{!c.showAccountDetails}" />
+            <lightning:button variant="neutral" label="Close Case" title="Close Case" onclick="{!c.sendEmail}" />
+          </div>
+        </article>
+      </div>
+    </aura:if>
+  </article>
+
+</aura:component>

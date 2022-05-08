@@ -1,0 +1,511 @@
+<!--
+* Lightning Component for Income and Expenses
+* @author  Almas Aleem: Absa
+* @version v1.0
+* @since   2020-09-28
+*
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                controller="IncomeAndExpenseController" access="global" >
+
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="grossIncome" type="Object" />
+    <aura:attribute name="netIncome" type="Object" />
+    <aura:attribute name="disposalIncome" type="Object" />
+    <aura:attribute name="recordAppId" type="Id" />
+    <aura:attribute name="externalRecordListIds" type="List" />
+    <aura:attribute name="fixedRecordListIds" type="List" />
+    <aura:attribute name="monthlyRecordListIds" type="List" />
+    <aura:attribute name="liveExpRecordListIds" type="List" />
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />
+    <aura:attribute name="grossMonthlyIncome" type="Decimal" default="0.00" access="private"/>
+    <aura:attribute name="extSpousetotal" type="Decimal" default="0.00" access="private"/>
+    <aura:attribute name="businessholdtotal" type="Decimal" default="0.00" access="private"/>
+    <aura:attribute name="householdtotal" type="Decimal" default="0.00" access="private"/>
+    <aura:attribute name="nethouseIncome" type="Decimal" default="0.00" access="private"/>
+    <aura:attribute name="netMonthlyIncome" type="Decimal" default="0.00" access="private"/>
+    <aura:attribute name="SgrossMonthlyIncome" type="Decimal" default="0.00" access="private"/>
+    <aura:attribute name="SnetMonthlyIncome" type="Decimal" default="0.00" access="private"/>
+    <aura:attribute name="creditTurnOver" type="Decimal" default="0.00" />
+    <aura:attribute name="IDNumber" type="String"  />
+    <aura:attribute name="clientCode" type="String"  />
+    <aura:attribute name="showDisposal" type="Boolean"  default="false" />
+    <aura:attribute name="isreload" type="Boolean"  default="false" />
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="large" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    <!-- Spinner end-->
+
+    <!-- UI Section -->
+
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+
+
+   <!-- <p>As at (date): <ui:outputDate class="slds-float_right" value="{!v.AsAtDate}" /></p> -->
+
+    <p>ID Number: <ui:outputText class="slds-float_right" value="{!v.IDNumber}" /></p>
+
+    <p>Client Code <ui:outputText class="slds-float_right" value="{!v.clientCode}" /></p>
+
+    <p>TRIAD Expected Credit Turnover (ECTO) <lightning:formattedNumber class="slds-float_right" value="{!v.creditTurnOver}" style="currency" currencyCode="ZAR" currencyDisplayAs="symbol"/></p>
+
+
+    <!-- Monthly Data-->
+    <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+    font-style: normal !important;
+    font-size: 17px !important;
+    text-align: left !important;
+    background-color: rgb(240,235,235) !important;
+    margin:4px !important;">
+        <div class="slds-col">Monthly</div>
+        <div class="slds-col">Applicant</div>
+        <div class="slds-col">Spouse</div>
+    </div>
+
+
+    <aura:iteration items="{!v.monthlyRecordListIds}" var="monthId" end="4" start="0">
+        <lightning:recordEditForm aura:id="monthEdit" class=" tableStyle" recordId="{!monthId}" objectApiName="Application_Income_and_Expense__c">
+
+            <div class="slds-grid slds-gutters marginclass">
+
+                <div class="slds-col" style="width:400px !important">
+                    <lightning:inputField fieldName="Expense_Value__c" variant="label-hidden"   readonly="true"/>
+                </div> <div class="slds-col inputVal">
+                <lightning:inputField fieldName="Applicant_Value__c" aura:id="grossappValue" variant="label-hidden"  onchange="{!c.calculateGross}"/>
+                </div>
+                <div class="slds-col inputVal">
+
+                    <lightning:inputField fieldName="Spouse_Value__c" aura:id="grosspouseValue" variant="label-hidden" onchange="{!c.calculateGross}"/>
+
+                </div>
+
+
+            </div>
+        </lightning:recordEditForm>
+    </aura:iteration>
+
+
+    <lightning:recordEditForm aura:id="monthEdit" class=" tableStyle" recordId="{!v.grossIncome.Id}" objectApiName="Application_Income_and_Expense__c">
+        <lightning:inputField fieldName="Operation_Type__c" variant="label-hidden" value="Aggregation"  class="slds-hide"/>
+        <lightning:inputField fieldName="Application__c" variant="label-hidden" value="{!v.recordAppId}"  class="slds-hide"/>
+        <lightning:inputField fieldName="Category__c" variant="label-hidden" value="Monthly Income"  class="slds-hide"/>
+        <lightning:inputField fieldName="Expense_Value__c" variant="label-hidden" value="Total Gross Monthly Income"  class="slds-hide"/>
+
+        <div class="slds-grid slds-gutters marginclass">
+
+            <div class="slds-col" style=" width:400px !important; text-align: right!important;  background-color: rgb(240,235,235)!important;   font-weight: 450 !important;">
+                Total Gross Monthly Income
+            </div>
+            <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+               <!-- <aura:if isTrue="{!v.grossMonthlyIncome == 0.00}"> -->
+
+                    <lightning:inputField fieldName="Applicant_Value__c" aura:id="totgrossappValue" variant="label-hidden" value ="{!v.grossMonthlyIncome}"  disabled="true"/>
+                     <!-- <aura:set attribute="else">
+                      R{!v.grossMonthlyIncome} -->
+
+            </div>
+            <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+
+                    <lightning:inputField fieldName="Spouse_Value__c" aura:id="totgrosspouseValue" variant="label-hidden" value="{!v.SgrossMonthlyIncome}"  disabled="true"/>
+
+            </div>
+        </div>
+    </lightning:recordEditForm>
+
+    <aura:iteration items="{!v.monthlyRecordListIds}" var="monthId" end="7" start="4">
+
+        <lightning:recordEditForm aura:id="monthEdit" class=" tableStyle" recordId="{!monthId}" objectApiName="Application_Income_and_Expense__c">
+
+            <div class="slds-grid slds-gutters marginclass">
+                <div class="slds-col" style="width:400px !important;">
+                    <lightning:inputField fieldName="Expense_Value__c" variant="label-hidden"   readonly="true"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Applicant_Value__c" aura:id="netappValue" variant="label-hidden"  onchange="{!c.calculateNet}" />
+
+                </div>
+                <div class="slds-col inputVal">
+
+                    <lightning:inputField fieldName="Spouse_Value__c" aura:id="netspouseValue" variant="label-hidden" onchange="{!c.calculateNet}" />
+
+                </div>
+            </div>
+
+        </lightning:recordEditForm>
+
+    </aura:iteration>
+
+    <lightning:recordEditForm aura:id="monthEdit" class=" tableStyle" recordId="{!v.netIncome.Id}" objectApiName="Application_Income_and_Expense__c">
+        <lightning:inputField fieldName="Operation_Type__c" variant="label-hidden" value="Aggregation"  class="slds-hide"/>
+        <lightning:inputField fieldName="Application__c" variant="label-hidden" value="{!v.recordAppId}" class="slds-hide"/>
+        <lightning:inputField fieldName="Category__c" variant="label-hidden" value="Monthly Income"  class="slds-hide"/>
+        <lightning:inputField fieldName="Expense_Value__c" variant="label-hidden" value="Net Monthly Income"  class="slds-hide"/>
+
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" text-align: right !important; width:400px !important;  background-color: rgb(240,235,235)!important; font-weight: 450 !important;">
+                Net Monthly Income
+            </div>
+            <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+
+
+                    <lightning:inputField fieldName="Applicant_Value__c" aura:id="totnetappValue" variant="label-hidden"  value="{!v.netMonthlyIncome}" disabled="true" />
+
+            </div>
+            <div class="slds-col" style=" text-align: right !important;   font-weight: 450 !important;">
+
+                    <lightning:inputField fieldName="Spouse_Value__c" aura:id="totnetspouseValue" variant="label-hidden"  value="{!v.SnetMonthlyIncome}" disabled="true"/>
+
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style="width:400px !important; text-align: right!important;  background-color: rgb(240,235,235)!important; font-weight: 450 !important;">
+                Net Monthly Household Income </div>
+            <div class="slds-col" style=" text-align: right!important;  font-weight: 450 !important;">
+
+                    <lightning:inputField fieldName="Total_Monthly_Household_Income__c" aura:id="tothouseValue" variant="label-hidden" value="{!v.nethouseIncome}"  disabled="true" />
+            </div>
+        </div>
+    </lightning:recordEditForm>
+
+
+    <!-- Monthly Data section End-->
+
+    <!-- Fixed Data Section-->
+    <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+    font-style: normal !important;
+    font-size: 17px !important;
+    text-align: left !important;
+    background-color: rgb(240,235,235) !important;
+    margin:4px !important;" >
+        <div class="slds-col">Fixed Debt Repayments - Absa Instalments</div>
+        <div class="slds-col">Applicant</div>
+        <div class="slds-col">Spouse</div>
+    </div>
+
+    <aura:iteration items="{!v.fixedRecordListIds}" var="fixedId">
+
+        <lightning:recordEditForm aura:id="fixedEdit"  class="formStyle" recordId="{!fixedId}" objectApiName="Application_Income_and_Expense__c">
+            <div class="slds-grid slds-gutters marginclass">
+                <div class="slds-col" style=" width:400px !important;">
+                    <lightning:inputField fieldName="Expense_Value__c" variant="label-hidden"   readonly="true"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Applicant_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Spouse_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+            </div>
+        </lightning:recordEditForm>
+    </aura:iteration>
+
+    <!-- Fixed Data Section END-->
+
+    <!-- External Data Section-->
+    <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+    font-style: normal !important;
+    font-size: 17px !important;
+    text-align: left !important;
+    background-color: rgb(240,235,235) !important;
+    margin:4px !important;">
+        <div class="slds-col">External Instalments</div>
+        <div class="slds-col">Applicant Declared</div>
+        <div class="slds-col">Applicant Bureau</div>
+        <div class="slds-col">Applicant Maximum</div>
+        <div class="slds-col">Spouse Declared</div>
+        <div class="slds-col">Spouse Bureau</div>
+        <div class="slds-col">Spouse Maximum</div>
+    </div>
+    <aura:iteration items="{!v.externalRecordListIds}" var="externalId" start="0" end="{!(v.externalRecordListIds.length-1)}" >
+
+        <lightning:recordEditForm aura:id="externalEdit" class="formStyle"  recordId="{!externalId}" objectApiName="Application_Income_and_Expense__c">
+
+            <div class="slds-grid slds-gutters marginclass">
+                <div class="slds-col" style=" width:400px !important;">
+                    <lightning:inputField fieldName="Expense_Value__c" variant="label-hidden"   readonly="true"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Applicant_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Applicant_Bureau_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Applicant_Maximum_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Spouse_Value__c" aura:id="extSpouseVal" variant="label-hidden"  onchange="{!c.calculateExtSpouseTotal}"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Spouse_Bureau_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Spouse_Maximum_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+            </div>
+        </lightning:recordEditForm>
+
+    </aura:iteration>
+    <aura:iteration items="{!v.externalRecordListIds}" var="externalId" start="{!(v.externalRecordListIds.length-1)}" end="{!(v.externalRecordListIds.length)}" >
+
+        <lightning:recordEditForm aura:id="externalEdit"  class="formStyle" recordId="{!externalId}" objectApiName="Application_Income_and_Expense__c">
+            <div class="slds-grid slds-gutters marginclass">
+                <div class="slds-col" style="width:400px !important; text-align: right!important;  background-color: rgb(240,235,235)!important; font-weight: 450 !important;">
+                    <lightning:inputField fieldName="Expense_Value__c" variant="label-hidden"   readonly="true"/>
+                </div>
+                <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+                    <lightning:inputField fieldName="Applicant_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+                    <lightning:inputField fieldName="Applicant_Bureau_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+                    <lightning:inputField fieldName="Total_Maximum_Applicant__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col" style=" text-align: right!important;  font-weight: 450 !important;">
+                     <lightning:inputField fieldName="Spouse_Value__c" variant="label-hidden" value="{!v.extSpousetotal}"  disabled="true"/>
+
+                </div>
+                <div class="slds-col" style=" text-align: right!important;  font-weight: 450 !important;">
+                    <lightning:inputField fieldName="Spouse_Bureau_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+                    <lightning:inputField fieldName="Total_Maximum_Spouse_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+            </div>
+
+        </lightning:recordEditForm>
+    </aura:iteration>
+
+    <!-- External Data Section END-->
+
+    <!-- Leaving Expense Data Section-->
+
+    <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+    font-style: normal !important;
+    font-size: 17px !important;
+    text-align: left !important;
+    background-color: rgb(240,235,235) !important;
+    margin:4px !important;">
+        <div class="slds-col">Living / Business Expenses</div>
+        <div class="slds-col">Household</div>
+        <div class="slds-col">Business</div>
+        <div class="slds-col">Bureau</div>
+        <div class="slds-col">Maximum</div>
+
+    </div>
+
+    <aura:iteration items="{!v.liveExpRecordListIds}" var="liveId" start="0" end="{!v.liveExpRecordListIds.length-1}">
+
+        <lightning:recordEditForm aura:id="liveEdit" class="formStyle" recordId="{!liveId}" objectApiName="Application_Income_and_Expense__c">
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col inputVal" style=" width:400px !important;">
+                    <lightning:inputField fieldName="Expense_Value__c" variant="label-hidden"   readonly="true"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Household_Value__c" aura:id="householdVal" variant="label-hidden" onchange="{!c.calculateHoldTotal}" />
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Business_Value__c" aura:id="businessholdVal" variant="label-hidden" onchange="{!c.calculateHoldTotal}" />
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Bureau_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col inputVal">
+                    <lightning:inputField fieldName="Maximum_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+            </div>
+
+        </lightning:recordEditForm>
+    </aura:iteration>
+    <aura:iteration items="{!v.liveExpRecordListIds}" var="liveId" start="{!v.liveExpRecordListIds.length-1}" end="{!v.liveExpRecordListIds.length}">
+
+        <lightning:recordEditForm aura:id="liveEdit" class="formStyle" recordId="{!liveId}" objectApiName="Application_Income_and_Expense__c">
+
+            <div class="slds-grid slds-gutters marginclass">
+                <div class="slds-col" style=" text-align: right!important;  width:400px !important; background-color: rgb(240,235,235)!important; font-weight: 450 !important;">
+                    <lightning:inputField fieldName="Expense_Value__c" variant="label-hidden"   readonly="true"/>
+                </div>
+                <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+                        <lightning:inputField fieldName="Household_Value__c" variant="label-hidden" value="{!v.householdtotal}"  disabled="true"/>
+
+                </div>
+                <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+                        <lightning:inputField fieldName="Business_Value__c" variant="label-hidden"  value="{!v.businessholdtotal}"  disabled="true" />
+
+                </div>
+                <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+                    <lightning:inputField fieldName="Bureau_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+                <div class="slds-col" style=" text-align: right!important;   font-weight: 450 !important;">
+                    <lightning:inputField fieldName="Maximum_Value__c" variant="label-hidden" readonly="true"/>
+                </div>
+            </div>
+        </lightning:recordEditForm>
+    </aura:iteration>
+
+    <!-- Leaving Expense Data Section END-->
+
+
+
+    <!-- Disposable Total Data-->
+    <!-- <aura:if isTrue="{!v.showDisposal}" > -->
+
+    <div class="slds-grid slds-gutters " style="font-weight: 400 !important;
+    font-style: normal !important;
+    font-size: 17px !important;
+    text-align: left !important;
+    background-color: rgb(240,235,235) !important;
+    margin:4px !important;">
+        <div class="slds-col">Disposable Income</div>
+        <div class="slds-col">Total</div>
+    </div>
+
+    {!v.disposalIncome.id}
+    <lightning:recordEditForm aura:id="disposal"  recordId="{!v.disposalIncome.Id}" objectApiName="Application_Income_and_Expense__c">
+
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important;font-weight: 450 !important;">
+                Net Household Monthly Income
+            </div>
+            <div class="slds-col" style=" width:400px !important; font-weight: 450 !important;">
+                <lightning:inputField fieldName="Total_Monthly_Household_Income__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important;  ">
+
+                Less:  Total Absa Instalments - Applicant and Spouse
+            </div>
+
+            <div class="slds-col" style=" width:400px !important; ">
+                <lightning:inputField fieldName="Total_Absa_Instalments__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important; ">
+
+                Less:  Total External Instalments - Applicant and Spouse Declared
+            </div>
+
+            <div class="slds-col" style=" width:400px !important; ">
+
+                <lightning:inputField fieldName="Total_External_Instalments__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important;  ">
+
+                Less:  Total Living/Business Expense Declared
+            </div>
+            <div class="slds-col" style="width:400px !important; ">
+                <lightning:inputField fieldName="Total_Living_Expense__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important;   font-weight: 450 !important;">
+
+                Total Monthly Disposable Income (MDI) Declared
+            </div>
+            <div class="slds-col" style=" width:400px !important; font-weight: 450 !important;">
+                <lightning:inputField fieldName="Total_Monthly_Disposable_Income__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important;   font-weight: 450 !important;">
+                Total MDI Adjusted
+            </div>
+            <div class="slds-col" style=" width:400px !important;   font-weight: 450 !important;">
+                <lightning:inputField fieldName="Total_MDI_Adjusted__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important;  ">
+
+                Less:  Necessary Expenses Shortfall
+            </div>
+            <div class="slds-col" style=" width:400px !important;  ">
+
+                <lightning:inputField fieldName="Necessary_Expenses_Shortfall__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important; font-weight:450 !important; ">
+
+                Total MDI after Necessary Expenses Shortfall
+            </div>
+            <div class="slds-col" style=" width:400px !important; font-weight:450 !important; ">
+
+                <lightning:inputField fieldName="Total_MDI_Expenses__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important;  ">
+
+                Less:  Stress Allowance
+            </div>
+
+            <div class="slds-col" style=" width:400px !important; ">
+
+                <lightning:inputField fieldName="Stress_Allowance__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important; font-weight:450 !important; ">
+
+                Total MDI Available
+            </div>
+            <div class="slds-col" style=" width:400px !important; font-weight:450 !important; ">
+
+                <lightning:inputField fieldName="Total_MDI_Available__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important;  ">
+
+                Less: Cost of New Facility
+            </div>
+
+            <div class="slds-col" style=" width:400px !important;  ">
+
+                <lightning:inputField fieldName="Cost_of_New_Facility__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important;  ">
+
+                Plus: Cost of Current Faclity Settlements
+            </div>
+            <div class="slds-col" style=" width:400px !important; ">
+                <lightning:inputField fieldName="Cost_of_Current_Faclity_Settlements__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters marginclass">
+            <div class="slds-col" style=" width:400px !important; font-weight:450 !important; ">
+
+                Surplus/Shortage
+            </div>
+
+            <div class="slds-col" style=" width:400px !important; font-weight:450 !important; ">
+
+                <lightning:inputField fieldName="Surplus_Shortage__c" variant="label-hidden" readonly="true"/>
+            </div>
+        </div>
+
+    </lightning:recordEditForm>
+   <!-- </aura:if> -->
+     <!-- button section -->
+    <div class="slds-grid slds-gutters ">
+	<lightning:button class="slds-var-m-top_small slds-float_right" variant="brand" type="submit" name="update" label="Save All"  onclick="{!c.saveAll}"/>
+    </div>
+     <!-- button section end-->
+</aura:component>

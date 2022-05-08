@@ -1,0 +1,164 @@
+<!--
+  @description       : View and update cost account. W-12427 (View current cost account) & W-015612 (Update cost account & email customer)
+  @author            : Lehlohonolo.Matsoso@absa.africa
+  @last modified on  : 2021-11-26
+  @last modified by  : Lehlohonolo.Matsoso@absa.africa.
+-->
+<aura:component 
+    access="global"
+    controller="TBCostAccountController"
+    implements="force:hasRecordId,lightning:availableForFlowScreens,flexipage:availableForAllPageTypes">
+
+    <aura:attribute name="accountList" type="Object[]"/>
+    <aura:attribute name="accountCharges" type="Object[]"/>
+    <aura:attribute name="summeryCharges" type="Object[]"/>
+    <aura:attribute name="filteredAccountCharges" type="Object[]"/>
+    <aura:attribute name="accountTypes" type="Object[]"/>
+    <aura:attribute name="filteredAccountList" type="Object[]"/>
+    <aura:attribute name="accountColumns" type="List"/>
+    <aura:attribute name="detailedViewColumns" type="List"/>
+    <aura:attribute name="summeryViewColumns" type="List"/>
+    <aura:attribute name="mode" type="String" default="view"/>
+    <aura:attribute name="selectedAccountType" type="String"/>
+    <aura:attribute name="selectedAccount" type="String" access="global"/>
+    <aura:attribute name="costAccount" type="Object[]"/>
+    <aura:attribute name="isAccountsListDisplayed" type="Boolean"/>
+    <aura:attribute name="isConfirmingAccountSelection" type="Boolean"/>
+    <aura:attribute name="isSendingChargesEmail" type="Boolean"/>
+    <aura:attribute name="stage" type="Integer" default="1" />
+    <aura:attribute name="email" type="String"/>
+    <aura:attribute name="accountId" type="String"/>
+    <aura:attribute name="accountName" type="String"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="areChargesFiltered" type="Boolean" default="false"/>
+    <aura:attribute name="startDate" type="Date" default=""/>
+    <aura:attribute name="endDate" type="Date" default=""/>
+
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!-- Loading Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <center style="z-index:99">
+            <lightning:spinner aura:id="spinner"  variant="brand" size="large"/>
+        </center>
+    </aura:if>
+
+    <!-- View Mode (recordId = accountID): For displaying the Cost Account on Product Details tab W-12427 for cost account & W-012425 for the detailed & summery view -->
+    <aura:if isTrue="{!v.mode == 'view'}">
+      <aura:if isTrue="{!v.stage == 1}">
+        <lightning:tabset selectedTabId="costAccount">
+          <!-- Cost Account -->
+          <lightning:tab label="Cost Account" id="costAccount">
+              <lightning:datatable  data="{! v.costAccount }"
+                                    columns="{! v.accountColumns }"
+                                    keyField="id"
+                                    hideCheckboxColumn="true"/>
+          </lightning:tab>
+          <lightning:tab label="Detailed View" id="detailView">
+            <!-- Detailed View -->
+            <lightning:layout horizontalAlign="space">
+              <lightning:layoutItem padding="around-small">
+                <ui:inputDate aura:id="startDateCtrl" label="Start Date" class="field expand" value="{!v.startDate}" displayDatePicker="true" />
+              </lightning:layoutItem>
+              <lightning:layoutItem padding="around-small">
+                  <ui:inputDate aura:id="endDateCtrl" label="End Date" class="field expand" value="{!v.endDate}" displayDatePicker="true" />
+              </lightning:layoutItem>
+            </lightning:layout>
+            <br/>
+            <button onclick="{!c.filterCharges}"  class="slds-button slds-button--brand">Submit</button>
+            <br/>
+            <aura:if isTrue="{!v.areChargesFiltered}">
+              <!-- Filter by date(s) -->
+              <lightning:datatable  data="{! v.filteredAccountCharges }"
+                                    columns="{! v.detailedViewColumns }"
+                                    keyField="id"
+                                    hideCheckboxColumn="true"/>
+              <aura:set attribute="else">
+                <!-- Default charges -->
+                <lightning:datatable  data="{! v.accountCharges }"
+                                    columns="{! v.detailedViewColumns }"
+                                    keyField="id"
+                                    hideCheckboxColumn="true"/>
+              </aura:set>
+            </aura:if>
+            <button onclick="{!c.sendDetailedCharges}" class="slds-button slds-button--brand">Send</button>
+          </lightning:tab>
+          <lightning:tab label="Summery View" id="summeryView">
+            <!-- Summery View     -->
+            <lightning:datatable    data="{! v.summeryCharges }"
+                                    columns="{! v.summeryViewColumns }"
+                                    keyField="id"
+                                    hideCheckboxColumn="true"/>
+          </lightning:tab>
+        </lightning:tabset>
+      </aura:if>
+      <!-- Send email -->
+      <aura:if isTrue="{!v.stage == 2}">
+        <ui:inputEmail aura:id="clientEmail" label="Email" class="field" value="{!v.email}"/>
+        <br/>
+        <button onclick="{!c.sendDetailedChargesConfirmation}"  class="slds-button slds-button--brand">Send</button>
+      </aura:if>
+
+    </aura:if>
+
+    <!-- Update Mode (recordId = caseID): For updating, displayed via a flow  -->
+    <!-- Stage 1: Account Selection -->
+    <aura:if isTrue="{!v.mode == 'update'}">
+      <aura:if isTrue="{!v.stage == 1}">
+        <!-- Account/Product Type -->
+        <lightning:select name="accountTypes" label="Select Account Type:" aura:id="accountTypes" value="{!v.selectedAccountType}" onchange="{! c.onProductTypeChange }">
+          <aura:iteration items="{!v.accountTypes}" var="option">
+              <option text="{!option}" value="{!option}" selected="{!option.selected}"/>
+          </aura:iteration>
+        </lightning:select>
+
+        <!-- Accounts -->
+        <aura:if isTrue="{!v.isAccountsListDisplayed}">
+          <lightning:select name="accounts" label="Select Account:" aura:id="accounts" value="{!v.selectedAccount}">
+            <aura:iteration items="{!v.filteredAccountList}" var="option">
+                <option text="{!option.AccountNumber}" value="{!option.AccountNumber}" selected="{!option.selected}"/>
+            </aura:iteration>
+          </lightning:select>
+        </aura:if>
+        <br/>
+        <!-- Cancel and Submit buttons -->
+        <lightning:layout horizontalAlign="space">
+          <lightning:layoutItem padding="around_large">
+            <button class="slds-button slds-button--neutral">Cancel</button>
+          </lightning:layoutItem>
+          <lightning:layoutItem padding="around_large">
+            <button onclick="{!c.popConfirmationModal}" class="slds-button slds-button--brand">Submit</button>
+          </lightning:layoutItem>
+        </lightning:layout>
+
+      </aura:if>
+      <!-- Stage 2: Email confirmation -->
+      <aura:if isTrue="{!v.stage == 2}">
+        <ui:inputEmail aura:id="clientEmail" label="Email" class="field" value="{!v.email}"/>
+        <br/>
+        <button onclick="{!c.closeCase}"  class="slds-button slds-button--brand">Close Case</button>
+      </aura:if>
+    </aura:if>
+
+    <!-- Mode: Update. Stage:1 => Account selection confirmation Modal -->
+    <aura:if isTrue="{!v.isConfirmingAccountSelection}">
+      <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+          aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+          <div class="slds-modal__container container-details">
+              <header class="slds-modal__header">
+                  <h3 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Update Cost Account
+                  </h3>
+              </header>
+							<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                <span>Are you sure you want to update the cost account?</span>
+              </div>
+              <footer class="slds-modal__footer">
+                  <lightning:button variant="neutral" label="Close" title="No" onclick="{! c.closeModel }" />
+                  <lightning:button variant="brand" label="Update" title="Yes" onclick="{! c.updateCostAccount }" disabled="{!v.showSpinner}" />
+              </footer>
+          </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open" style="height:1000px"></div>
+    </aura:if>
+
+</aura:component>

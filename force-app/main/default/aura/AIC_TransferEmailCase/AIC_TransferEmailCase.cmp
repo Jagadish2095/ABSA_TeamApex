@@ -1,0 +1,173 @@
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global"  description="FIC_TransferEmailCase">
+
+    <aura:attribute name="optionSelected" type="String" default=""/>
+    <aura:attribute name="departmentSelected" type="String" default="Non-Res"/>
+    <aura:attribute name="emailSubject" type="String" default=""/>
+    <aura:attribute name="emailBody" type="String" default=""/>
+
+    <aura:attribute name="privacyNotification" type="Boolean" default="false"/>
+    <aura:attribute name="isModalOpen" type="Boolean" default="false"/>
+    <aura:attribute name="isButtonActive" type="Boolean" default="true"/>
+    <aura:attribute name="showcaseData" type="Boolean" default="false"/>
+
+    <aura:attribute name="options" type="List"/>
+    <aura:attribute name="departmentsList" type="List"/>
+
+
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}" />
+
+    <aura:attribute name="searchValue" type="String" default=""/>
+    <aura:attribute name="ableCaseData" type="Boolean" default="false"/>
+
+
+    <lightning:spinner aura:id="spinner" variant="brand" size="medium" class="slds-hide"/>
+
+    <div class="slds-box" style="border: 1px solid rgb(221, 219, 218);">
+
+        <div class="compPadding">
+            <div class="slds-text-title_bold slds-m-bottom_large">Email Content Relevance</div>
+            <div class="slds-text-body_regular slds-m-bottom_large">
+                Find the client's email on the card below, under the actions tab and determine whether the email is relevant or not relevant
+            </div>
+            <div class="slds-m-bottom_large">
+                <lightning:select name="emailRelevancePicklist" label="Select email relevance" value="{!v.optionSelected}">
+                    <aura:iteration items="{!v.options}" var="opt">
+                        <option value="{!opt}">{!opt}</option>
+                    </aura:iteration>
+                </lightning:select>
+            </div>
+        </div>
+        
+     <!--   <aura:if isTrue="{!and(equals(v.optionSelected, 'Email is relevant'))}">
+            <div class="slds-text-title_bold slds-m-bottom_small">Find client</div>
+            <div class="slds-text-body_regular slds-m-bottom_large">
+                Find the client who sent the email and link the case to their profile	.
+            </div>
+            <div class="slds-m-bottom_large">
+              <div class="slds-grid slds-gutters">
+                  <div class="slds-col slds-size_3-of-12">
+                    <lightning:select name="emailRelevancePicklist" label="Select department" value="{!v.departmentSelected}">
+                        <aura:iteration items="{!v.departmentsList}" var="opt">
+                            <option value="{!opt}">{!opt}</option>
+                        </aura:iteration>
+                    </lightning:select>
+                  </div>
+                  <div class="slds-col slds-size_6-of-12">
+                    <lightning:input value="{!v.searchValue}" label="Search Value" />
+                  </div>
+                  <div class="slds-col slds-size_1-of-12" style="align-self: end !important;">
+                    <lightning:button name='Search' label='Search' class="slds-button slds-button_neutral" variant="netural" onclick='{!c.searchFunx}'/>
+                  </div>
+                </div>
+                <aura:if isTrue="{!ableCaseData}">
+                    
+                </aura:if>
+              
+                
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!and(equals(v.optionSelected, 'Email relevant to other department'))}">
+            <div class="slds-text-title_bold slds-m-bottom_small">Send email to relevant department</div>
+            <div class="slds-text-body_regular slds-m-bottom_large">
+                Please select the appropriate department and provide a subject and body text for the email.
+                The customer's email and attachments will be included in the email.
+            </div>
+            <div class="slds-m-bottom_large">
+                <lightning:select name="emailRelevancePicklist" label="Select department" onchange="{!c.activeButton}" value="{!v.departmentSelected}">
+                    <aura:iteration items="{!v.departmentsList}" var="opt">
+                        <option value="{!opt}">{!opt}</option>
+                    </aura:iteration>
+                </lightning:select>
+            </div>
+            <div class="slds-m-bottom_large">
+                <lightning:input value="{!v.emailSubject}" label="Email subject" onchange="{!c.activeButton}"/>
+            </div>
+            <div class="slds-m-bottom_x-large">
+                <lightning:textarea value="{!v.emailBody}" label="Email body" onchange="{!c.activeButton}"/>
+            </div>
+            <div class="slds-align-bottom slds slds-grid_align-end" >
+                <p align="right">
+                    <lightning:button name='Send email' label='Send email' variant="brand" onclick='{!c.sendToQueue}' disabled="{!v.isButtonActive}"/>
+                </p>
+            </div>
+             <aura:if isTrue="{!showcaseData}">
+                 
+            </aura:if>
+        </aura:if>
+
+        <aura:if isTrue="{!and(equals(v.optionSelected, 'Email not relevant, send case to junk queue'))}">
+            <div class="slds-align-bottom slds slds-grid_align-end">
+                <p align="right">
+                    <lightning:button name='Send to junk' label='Send to junk' variant="brand" onclick='{!c.openModal}'/>
+                </p>
+            </div>
+            <aura:if isTrue="{!v.isModalOpen}">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{!c.closeModal}"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Send to junk queue</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <p>Are you sure that you want to send this case to the junk queue?</p>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral"
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{!c.closeModal}"/>
+                            <lightning:button variant="brand"
+                                              label="Send to junk"
+                                              title="Send to junk"
+                                              onclick="{!c.sendToQueue}"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </aura:if>
+        </aura:if>
+
+        <aura:if isTrue="{!and(equals(v.optionSelected, 'Manually send an email to the relevant recipient group'))}">
+            <div class="slds-align-bottom slds slds-grid_align-end">
+                <p align="right">
+                    <lightning:button name='Send to archive' label='Send to archive' variant="brand" onclick='{!c.openModal}'/>
+                </p>
+            </div>
+            <aura:if isTrue="{!v.isModalOpen}">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{!c.closeModal}"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Send to archive queue</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <p>Are you sure that you want to send this case to the archive?</p>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral"
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{!c.closeModal}"/>
+                            <lightning:button variant="brand"
+                                              label="Send to archive"
+                                              title="Send to archive"
+                                              onclick="{!c.sendToQueue}"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </aura:if>
+        </aura:if>
+	-->    
+
+</div>
+</aura:component>

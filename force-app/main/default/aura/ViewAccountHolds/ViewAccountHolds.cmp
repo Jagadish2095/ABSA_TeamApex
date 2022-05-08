@@ -1,0 +1,313 @@
+<!-- Lightning cmp for viewing and removing account holds(Telephonic)
+         Author: Mashudu Motau
+         Date : 21/03/2020  -->
+
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes"
+                access="global"
+                controller = "ViewAccountHoldsController">
+
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}"/>
+
+    <!--Bank Account -->
+    <aura:attribute name="prodTypesList" type="List" />
+    <aura:attribute name="accNumList" type="List" />
+    <aura:attribute name="selectedAccountBalance" type="Integer"/>
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="selectedAccountNumber" type="String" />
+    <aura:attribute name="selectedAccountType" type="String" />
+    <aura:attribute name="selectedProductValue" type="String" />
+
+    <!-- Saving account holds attributes -->
+    <aura:attribute name="savingList" type="list"/>
+    <aura:attribute name="blockedAccount" type="String"/>
+    <aura:attribute name="courtOrder" type="String"/>
+    <aura:attribute name="dormant" type="String"/>
+    <aura:attribute name="semiDormant" type="String"/>
+    <aura:attribute name="exclEstate" type="String"/>
+    <aura:attribute name="exclInslvnt" type="String"/>
+    <aura:attribute name="rbaEddHold" type="String"/>
+    <aura:attribute name="frozenInd" type="String"/>
+    <aura:attribute name="stoppedInd" type="String"/>
+    <aura:attribute name="signingAuthInd" type="String"/>
+    <aura:attribute name="monitorActivityInd" type="String"/>
+    <aura:attribute name="potBadDebtInd" type="String"/>
+    <aura:attribute name="legalActionInd" type="String"/>
+    <aura:attribute name="nonResidentInd" type="String"/>
+    <aura:attribute name="lostBookInd" type="String"/>
+    <aura:attribute name="offlineEnqInd" type="String"/>
+    <aura:attribute name="securityMessageInd" type="String"/>
+    <aura:attribute name="restricHoldInd" type="String"/>
+    <aura:attribute name="exceedMaxBalInd" type="String"/>
+    <aura:attribute name="wtiCountry" type="String"/>
+
+    <!-- Cheque account holds attributes -->
+    <aura:attribute name="blockedCQ" type="String"/>
+    <aura:attribute name="courtOrderCQ" type="String"/>
+    <aura:attribute name="mandateRequiredCQ" type="String"/>
+    <aura:attribute name="dormantCQ" type="String"/>
+    <aura:attribute name="semiDormantCQ" type="String"/>
+    <aura:attribute name="confiscatedCQ" type="String"/>
+    <aura:attribute name="externalTransferCQ" type="String"/>
+    <aura:attribute name="staffCQ" type="String"/>
+    <aura:attribute name="creditAccountCQ" type="String"/>
+    <aura:attribute name="excludeFromEstateCQ" type="String"/>
+    <aura:attribute name="blockAdhocDbtCQ" type="String"/>
+    <aura:attribute name="blockAdhocCrdCQ" type="String"/>
+    <aura:attribute name="specialRqpRedirectCQ" type="String"/>
+    <aura:attribute name="commercialPropFinCQ" type="String"/>
+    <aura:attribute name="misHoldCQ" type="String"/>
+    <aura:attribute name="genSecMsgCQ" type="String"/>
+    <aura:attribute name="exclFromInsolventCQ" type="String"/>
+    <aura:attribute name="digitalHoldCQ" type="String"/>
+    <aura:attribute name="odSwitchIndCQ" type="String"/>
+    <aura:attribute name="wapWildAccPickupCQ" type="String"/>
+
+    <aura:attribute name="updateSavingHolds" type="boolean" default="false"/>
+    <aura:attribute name="updateChequeHolds" type="boolean" default="false"/>
+    <aura:attribute name="showSVHolds" type="boolean" default="false"/>
+    <aura:attribute name="showChequeHolds" type="boolean" default="false"/>
+    <aura:attribute name="showBalance" type="boolean" default="false"/>
+
+    <!--# Flow Attribute -->
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" />
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"  />
+
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    <lightning:card iconName="log_event" >
+
+        <div class="c-container">
+
+            <h3 class="slds-section__title">
+                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title"></span>
+            </h3>
+
+            <aura:if isTrue="{!v.showSVHolds}">
+                <lightning:layout multipleRows="true">
+                    <table class="slds-table slds-table--bordered slds-table--cell-buffer" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th scope="col">SAVING ACCOUNT HOLDS</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!--<aura:iteration items="{!v.savingList}" var="itemSA" indexVar="indx">  -->
+                            <tr style="border: 1px solid black;"><td scope="row" > Blocked Account </td><td scope="row" >{!v.blockedAccount} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Court Order </td> <td scope="row">{!v.courtOrder}</td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Dormant </td> <td >{!v.dormant} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Semi Dormant </td> <td > {!v.semiDormant} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Exclude From Estate </td> <td >{!v.exclEstate} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Exclude From Insolvent </td> <td >{!v.exclInslvnt} </td> </tr>
+                            <tr style="border: 1px solid black;"><td scope="row">RBA Edd</td> <td >{!v.rbaEddHold} </td></tr>
+
+                        </tbody>
+                    </table>
+                </lightning:layout>
+            </aura:if>
+
+            <!--Cheque DETAILS -->
+            <aura:if isTrue="{!v.showChequeHolds}">
+                <lightning:layout multipleRows="true">
+                    <table class="slds-table slds-table--bordered slds-table--cell-buffer" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th scope="col">CHEQUE ACCOUNT HOLDS</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!--<aura:iteration items="{!v.savingList}" var="itemSA" indexVar="indx">  -->
+                            <tr style="border: 1px solid black;"><td scope="row" > Blocked Account </td><td scope="row" >{!v.blockedCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Court Order </td> <td scope="row">{!v.courtOrderCQ}</td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Dormant </td> <td >{!v.dormantCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Semi Dormant </td> <td > {!v.semiDormantCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Exclude From Estate </td> <td >{!v.excludeFromEstateCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Exclude From Insolvent </td> <td >{!v.exclFromInsolventCQ} </td> </tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Mandate Required</td> <td >{!v.mandateRequiredCQ} </td></tr>
+
+                            <tr style="border: 1px solid black;"><td scope="row">Confiscated</td> <td >{!v.confiscatedCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">External Transfer</td> <td >{!v.externalTransferCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Staff</td> <td >{!v.staffCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Credit Account</td> <td >{!v.creditAccountCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Block Ad Hoc Debit</td> <td >{!v.blockAdhocDbtCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Block Ad Hoc Credit</td> <td >{!v.blockAdhocCrdCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Special Redirect</td> <td >{!v.specialRqpRedirectCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Commercial PropFin</td> <td >{!v.commercialPropFinCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">MisHold</td> <td >{!v.misHoldCQ} </td></tr>
+                            <tr style="border: 1px solid black;"><td scope="row">Gen Sec Msg</td> <td >{!v.genSecMsgCQ} </td></tr>
+                        </tbody>
+                    </table>
+                </lightning:layout>
+            </aura:if>
+            <lightning:layoutItem padding="around-small" size="8">
+                <lightning:button aura:id="submitButton" class="slds-m-top_small slds-float--right" iconName="utility:edit" variant="brand" label="Edit Holds" title="Update action" onclick="{! c.handleClickUpdate }" />
+            </lightning:layoutItem>
+            <br/><br/>
+
+            <!--Modal : Edit Saving details -->
+            <aura:if isTrue="{!v.updateSavingHolds}">
+                <!--###### MODAL BOX Start######-->
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <!-- ###### MODAL BOX HEADER Start ######-->
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{! c.cancel }"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Update Savings holds</h2>
+                        </header>
+                        <!--###### MODAL BOX BODY Part Start######-->
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+
+                            <lightning:layout multipleRows="true">
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="blockedAccountId" label="Blocked Account" value="{!v.blockedAccount}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="courtOrderId" label="Court Order" value="{!v.courtOrder}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="dormantId" label="Dormant" value="{!v.dormant}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="semiDormantId" label="Semi Dormant" value="{!v.semiDormant}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="exclEstateId" label="Exclude From Estate" value="{!v.exclEstate}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="exclInslvntId" label="Exclude From Insolvent" value="{!v.exclInslvnt}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="rbaEddHoldId" label="RBA Edd " value="{!v.rbaEddHold}"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+
+                        </div>
+                        <!--###### MODAL BOX FOOTER Part Start ######-->
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral"
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{! c.cancel }"/>
+                            <lightning:button variant="brand"
+                                              label="Update"
+                                              title="Updtae"
+                                              onclick="{! c.updateSavingHolds}"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+                <!--###### MODAL BOX Part END Here ######-->
+            </aura:if>
+
+            <!--Modal : Edit Cheque details -->
+            <aura:if isTrue="{!v.updateChequeHolds}">
+                <!--###### MODAL BOX Start######-->
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <!-- ###### MODAL BOX HEADER Start ######-->
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{! c.cancelCheque }"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Update Cheque holds</h2>
+                        </header>
+                        <!--###### MODAL BOX BODY Part Start######-->
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+
+                            <lightning:layout multipleRows="true">
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="blockedAccountId" label="Blocked Account" value="{!v.blockedCQ}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="courtOrderId" label="Court Order" value="{!v.courtOrderCQ}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="dormantId" label="Dormant" value="{!v.dormantCQ}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="semiDormantId" label="Semi Dormant" value="{!v.semiDormantCQ}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="exclEstateId" label="Exclude From Estate" value="{!v.excludeFromEstateCQ}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="exclInslvntId" label="Exclude From Insolvent" value="{!v.exclFromInsolventCQ}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="mandateRequiredCQId" label="Mandate Required " value="{!v.mandateRequiredCQ}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="confiscatedCQId" label="Confiscated " value="{!v.confiscatedCQ}"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="externalTransferCQId" label="External Transfer " value="{!v.externalTransferCQ}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="staffCQId" label="Staff" value="{!v.staffCQ}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="blockAdhocDbtCQId" label="Block Ad Hoc Dbt" value="{!v.blockAdhocDbtCQ}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="blockAdhocCrdCQId" label="Block Ad Hoc Crt " value="{!v.blockAdhocCrdCQ}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="specialRqpRedirectId" label="Special Redirect" value="{!v.specialRqpRedirectCQ}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="commercialPropFinId" label="Commercial Prop" value="{!v.commercialPropFinCQ}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="misholdId" label="MisHold" value="{!v.misHoldCQ}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:input aura:id="genSecId" label="Gen Sec" value="{!v.genSecMsgCQ}"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+
+                        </div>
+                        <!--###### MODAL BOX FOOTER Part Start ######-->
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral"
+                                              label="Cancel"
+                                              title="Cancelcheque"
+                                              onclick="{! c.cancelCheque }"/>
+                            <lightning:button variant="brand"
+                                              label="Update Cheque Holds"
+                                              title="Updtae"
+                                              onclick="{! c.updateChequeHolds}"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+                <!--###### MODAL BOX Part END Here ######-->
+            </aura:if>
+
+        </div>
+    </lightning:card>
+
+</aura:component>

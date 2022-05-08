@@ -1,0 +1,264 @@
+<!--
+* Lightning Component for Commercial Bureau (CommercialBureau)
+*
+* @author  Ephetehe Mokgopanyane
+* @version v1.0
+* @since   2020-11-17
+*
+-->
+
+<aura:component access="global"
+                controller="CommercialBureauCtrl"
+    			implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome">
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <!--aura:handler name="change" value="{!v.commBureauData}" action="{!c.onRender}"/-->
+    <aura:registerEvent name="creditOriginationEvent" type="c:creditOriginationEvent"/>
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="recordId" type="String" default=""/>
+    <aura:attribute name="opportunityId" type="String" default=""/>
+	<aura:attribute name="commBureauData" type="Map[]" default=""/>
+    <aura:attribute name="headerColSpan" type="Integer" default="1" access="private"/>
+    <aura:attribute name="bureauDataChanged" type="boolean" default="false" access="private"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false" access="private"/>
+
+    <div>
+        <div class="slds-grid slds-wrap slds-gutters_medium">
+            <div class="slds-col slds-size_12-of-12 slds-text-align_left">
+                <aura:if isTrue="{!v.showSpinner}">
+                    <lightning:spinner aura:id="spinner" variant="brand" size="large" alternativeText="Loading...." />
+                </aura:if>
+                <table class="slds-table slds-table_cell-buffer slds-table_striped tableStyle">
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Commercial Bureau Header</th>
+                    </tr>
+                    <tr id="{!'pcceId' + v.opportunityId}">
+                        <td>Entity / Client Unique PCCE ID</td>
+                    </tr>
+                    <tr id="{!'clientName' + v.opportunityId}">
+                        <td>Client Name</td>
+                    </tr>
+                    <tr id="{!'idRegNum' + v.opportunityId}">
+                        <td>ID Registration Number</td>
+                    </tr>
+                    <tr id="{!'cifCode' + v.opportunityId}">
+                        <td>CIF Code</td>
+                    </tr>
+                    <tr id="{!'enquiryDate' + v.opportunityId}">
+                        <td>Enquiry Date</td>
+                    </tr>
+                    <tr id="{!'time' + v.opportunityId}">
+                        <td>Time</td>
+                    </tr>
+                    <tr id="{!'callType' + v.opportunityId}">
+                        <td>Call Type</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Bureau Summary</th>
+                    </tr>
+                    <tr id="{!'creditBureauReport' + v.opportunityId}">
+                        <td>Credit Bureau Report</td>
+                    </tr>
+                    <tr id="{!'onRecAtBureau' + v.opportunityId}">
+                        <td>On Record at Bureau</td>
+                    </tr>
+                    <tr id="{!'bureauOffline' + v.opportunityId}">
+                        <td>Bureau Offline</td>
+                    </tr>
+                    <tr id="{!'bureauName' + v.opportunityId}">
+                        <td>Business Name</td>
+                    </tr>
+                    <tr id="{!'businessStartDate' + v.opportunityId}">
+                        <td>Business Start Date</td>
+                    </tr>
+                    <tr id="{!'monthsSinceBusStart' + v.opportunityId}">
+                        <td>Months Since Business Start Date</td>
+                    </tr>
+                    <tr id="{!'tradingName' + v.opportunityId}">
+                        <td>Trading Name</td>
+                    </tr>
+                    <tr id="{!'companyStatus' + v.opportunityId}">
+                        <td>Company Status</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Judgement Summary</th>
+                    </tr>
+                    <tr id="{!'numJudgements' + v.opportunityId}">
+                        <td>Number Of Judgements</td>
+                    </tr>
+                    <tr id="{!'totValJudgements' + v.opportunityId}">
+                        <td>Total Value Of Judgements</td>
+                    </tr>
+                    <tr id="{!'highestJudgementAmt' + v.opportunityId}">
+                        <td>Highest Judgement Amount</td>
+                    </tr>
+                    <tr id="{!'dateSinceHighestJudgement' + v.opportunityId}">
+                        <td>Date Since Highest Judgement</td>
+                    </tr>
+                    <tr id="{!'mnthsSinceHighestJudgement' + v.opportunityId}">
+                        <td>Months Since Highest Judgement</td>
+                    </tr>
+                    <tr id="{!'lstJudgementAmt' + v.opportunityId}">
+                        <td>Last Judgement Amount</td>
+                    </tr>
+                    <tr id="{!'dateSinceLastJudgement' + v.opportunityId}">
+                        <td>Date Since Last Judgement</td>
+                    </tr>
+                    <tr id="{!'mnthsSinceLastJudgement' + v.opportunityId}">
+                        <td>Months Since Last Judgement</td>
+                    </tr>
+                    <tr id="{!'numJudgementLst12Mnths' + v.opportunityId}">
+                        <td>Number Of Judgement Last 12 Months</td>
+                    </tr>
+                    <tr id="{!'valJudgementLst12Mnths' + v.opportunityId}">
+                        <td>Value Of Judgement Last 12 Months</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Judgement Details</th>
+                    </tr>
+                    <tbody id="{!'judgementDetailsBody' + v.opportunityId}"></tbody>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">KISS Summary</th>
+                    </tr>
+                    <tr id="{!'transactionPeriod' + v.opportunityId}">
+                        <td>Transaction Period</td>
+                    </tr>
+                    <tr id="{!'numDebtors' + v.opportunityId}">
+                        <td>Number Of Debtors</td>
+                    </tr>
+                    <tr id="{!'numOverdue' + v.opportunityId}">
+                        <td>Number Overdue</td>
+                    </tr>
+                    <tr id="{!'totOverdueAmt' + v.opportunityId}">
+                        <td>Total Overdue Amount</td>
+                    </tr>
+                    <tr id="{!'totOverduePercent' + v.opportunityId}">
+                        <td>Total Overdue Percentage</td>
+                    </tr>
+                    <tr id="{!'withinTermsAmt' + v.opportunityId}">
+                        <td>Within Terms Amount</td>
+                    </tr>
+                    <tr id="{!'totOutstandingAmt' + v.opportunityId}">
+                        <td>Total Outstanding Amount</td>
+                    </tr>
+                    <tr id="{!'amtOutstandingCurrent' + v.opportunityId}">
+                        <td>Amount Outstanding Current</td>
+                    </tr>
+                    <tr id="{!'amtOutstanding30Days' + v.opportunityId}">
+                        <td>Amount Outstanding 30 Days</td>
+                    </tr>
+                    <tr id="{!'amtOutstanding60Days' + v.opportunityId}">
+                        <td>Amount Outstanding 60 Days</td>
+                    </tr>
+                    <tr id="{!'amtOutstanding90Days' + v.opportunityId}">
+                        <td>Amount Outstanding 90 Days</td>
+                    </tr>
+                    <tr id="{!'amtOutstanding120Days' + v.opportunityId}">
+                        <td>Amount Outstanding 120 Days</td>
+                    </tr>
+                    <tr id="{!'amtOutstanding150Days' + v.opportunityId}">
+                        <td>Amount Outstanding 150 Days</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Bank Report Details Summary</th>
+                    </tr>
+                    <tr id="{!'latestBankCode' + v.opportunityId}">
+                        <td>Latest Bank Code</td>
+                    </tr>
+                    <tr id="{!'lastBankCode' + v.opportunityId}">
+                        <td>Last Bank Code</td>
+                    </tr>
+                    <tr id="{!'BankCodeDesc' + v.opportunityId}">
+                        <td>Bank Code Description</td>
+                    </tr>
+                    <tr id="{!'dateBankCodeReportDate' + v.opportunityId}">
+                        <td>Date Of Bank Code / Report Date</td>
+                    </tr>
+                    <tr id="{!'accOpenedDate' + v.opportunityId}">
+                        <td>Account Opened Date</td>
+                    </tr>
+                    <tr id="{!'numReturnedItems' + v.opportunityId}">
+                        <td>Number Of Returned Items</td>
+                    </tr>
+                    <tr id="{!'amtLastReturnedItem' + v.opportunityId}">
+                        <td>Amount Of Last Returned Item</td>
+                    </tr>
+                    <tr id="{!'dateLastReturnedItem' + v.opportunityId}">
+                        <td>Date Of Last Returned Item</td>
+                    </tr>
+                    <tr id="{!'mnthsSinceLastReturnedItem' + v.opportunityId}">
+                        <td>Months Since Last Returned Item</td>
+                    </tr>
+                    <tr id="{!'bank' + v.opportunityId}">
+                        <td>Bank</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Auditor Details</th>
+                    </tr>
+                    <tr id="{!'auditorName' + v.opportunityId}">
+                        <td>Auditor Name</td>
+                    </tr>
+                    <tr id="{!'typeOfAudit' + v.opportunityId}">
+                        <td>Type Of Audit</td>
+                    </tr>
+                    <tr id="{!'statusOfAudit' + v.opportunityId}">
+                        <td>Status Of Audit</td>
+                    </tr>
+
+                    <!-- Start new section -->
+                    <tr>
+                        <td colspan="{!v.headerColSpan}">&nbsp;</td>
+                    </tr>
+
+                    <tr class="headerTableRow">
+                        <th colspan="{!v.headerColSpan}">Enquiries Summary</th>
+                    </tr>
+                    <tr id="{!'enqLast3Mnths' + v.opportunityId}">
+                        <td>Enquiries Last 3 Months</td>
+                    </tr>
+                    <tr id="{!'enqLast12Mnths' + v.opportunityId}">
+                        <td>Enquiries Last 12 Months</td>
+                    </tr>
+                </table><br/><br/>
+            </div>
+        </div>
+    </div>
+</aura:component>

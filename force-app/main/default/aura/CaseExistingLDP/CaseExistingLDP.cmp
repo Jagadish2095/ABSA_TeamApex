@@ -1,0 +1,204 @@
+<aura:component controller="CaseExistingLDPController" implements="force:appHostable,lightning:actionOverride,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global">
+	
+    <aura:attribute name="accnumber" type="String"/>
+    <aura:attribute name="accbalance" type="Decimal"/>
+    <aura:attribute name="accexpirydate" type="String"/>
+    <aura:attribute name="acclimit" type="Decimal"/>
+    <aura:attribute name="accreviewdate" type="String"/>
+    <aura:attribute name="contractlist" type="list"/>
+    <aura:attribute name="IsSpinner" type="boolean" default="false"/>
+    
+    
+    <aura:attribute name="existingBankGuarantees" type="Integer" default="0" access="private"/>
+    <aura:attribute name="mngdExistingBankGuarantees" type="Integer" default="0" access="private"/>
+    <aura:attribute name="newBankGuarantee" type="Integer" default="0" access="private"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false" access="private"/>
+	<aura:attribute name="existingAccounts" type="String[]" default="" access="private"/>
+	<aura:attribute name="managedAccounts" type="List" default=""/>
+	<aura:attribute name="contracts" type="String[]" default="" access="private"/>
+    <aura:attribute name="applicationProduct" type="Application_Product__c" default="{ 'sobjectType': 'Application_Product__c' }"/>
+    <aura:attribute name="isModalVisble" type="Boolean" default="false" />
+    <aura:attribute name="modRecordId" type="Id" />
+    <aura:attribute name="isContractChecked" type="Boolean" />
+    <aura:attribute name="errorMessage" type="Boolean" default="false" />
+    <aura:attribute name="errorMessageManaged" type="Boolean" default="false" />
+   
+    
+      <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    
+     <lightning:accordion allowMultipleSectionsOpen="true">
+        <lightning:accordionSection name="Existing Bank Guarantee" label="{!'Bank Guarantee - Existing(' + v.existingBankGuarantees + ')'}">
+            <p>
+                Descriptive Label or Call to Action Text goes here
+            </p>
+            <p>
+                Primary Explainer Text goes here (2 lines)
+            </p>
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                <thead>
+                    <tr class="slds-var-m-top_small slds-line-height_reset headerRow">
+                        <th scope="col">
+                            <div class="slds-truncate" title="Facility account number">Facility account number</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="Facility limit">Facility limit</div>
+                        </th>
+                    
+                        <th scope="col">
+                            <div class="slds-truncate" title="Total contract balance">Total contract balance</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="Review date">Review date</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="Manage Facility">Manage Facility</div>
+                        </th>
+                       </tr>
+                </thead>
+                <tbody id="accountsTableBody">
+                    <aura:if isTrue="{!v.isModalVisble}">
+                    <c:ModalBankGuarantee aura:id="chqDetails" recordId="{!v.modRecordId}"/>
+                  </aura:if>
+                    <aura:iteration items="{!v.existingAccounts}" var="existingAccount" indexVar="index">
+                        <tr>
+                            <td>
+                                                <div class="popover1" >
+                                                    <a id="{!existingAccount.Id}" onclick="{!c.handleShowModal}">{!existingAccount.Facility_account_number__c}</a>
+                                                </div>
+                                            </td>
+                            <!--
+                            <td>
+                                <ui:outputText value="{!existingAccount.Facility_account_number__c}" />
+                            </td>
+                             -->
+                       
+                            <td>
+                                <ui:outputText value="{!existingAccount.Facility_limit__c}" />
+                            </td>
+                            <td>
+                                <ui:outputText value="{!existingAccount.Total_contract_balance__c}" />
+                            </td>
+                            <td>
+                                <ui:outputText value="{!existingAccount.Review_date__c}" />
+                            </td>
+                            <td>
+                                <!--aura:if isTrue="{!existingAccount.isSelected__c}">
+                                    <input type="checkbox" id="{!existingAccount.Facility_account_number__c + '|' + index}" onclick="{!c.onCheckManageAcc}" checked="true"/>
+        
+                                    <aura:set attribute="else">
+                                        <input type="checkbox" id="{!existingAccount.Facility_account_number__c + '|' + index}" onclick="{!c.onCheckManageAcc}"/>
+                                    </aura:set>
+                                </aura:if -->
+                              <!-- <aura:if isTrue="{!existingAccount.isSelected__c}">
+                                <ui:inputCheckbox  aura:Id="facilityAccount1" text="{!existingAccount.Id}"  change="{!c.onCheckManageAcc}" value="true" />
+                                
+                                <aura:set attribute="else">
+                                    <ui:inputCheckbox  aura:Id="facilityAccount1"  text="{!existingAccount.Id}"  change="{!c.onCheckManageAcc}" value="false"/>
+                                     </aura:set>
+                                </aura:if>-->
+                                </td> 
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table> <br/>
+
+         </lightning:accordionSection>
+    </lightning:accordion>
+    
+    
+    <!--<lightning:card>
+        <aura:if isTrue="{!v.IsSpinner}">
+            <lightning:spinner variant="brand"  size="medium" alternativeText="Loading" />
+        </aura:if>
+        <lightning:notificationsLibrary aura:id="notifLib"/>
+        <lightning:tabset>
+          <lightning:tab label="Account Information">
+              <lightning:layout multipleRows="true">
+                  <lightning:layoutItem padding="around-small" size="6">
+                      <div class="slds-form-element">
+                          <label class="slds-form-element__label">Account Number</label>
+                          <div class="slds-form-element__control">
+                              <lightning:formattedText value="{!v.accnumber}"/>
+                          </div>
+                      </div>
+                  </lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="6">
+                      <div class="slds-form-element">
+                          <label class="slds-form-element__label">Account Balance</label>
+                          <div class="slds-form-element__control">
+                              <lightning:formattedNumber value="{!v.accbalance}"/>
+                          </div>
+                      </div>
+                  </lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="6">
+                      <div class="slds-form-element">
+                          <label class="slds-form-element__label">Account Expiry Date</label>
+                          <div class="slds-form-element__control">
+                              <lightning:formattedText value="{!v.accexpirydate}"/>
+                          </div>
+                      </div>
+                  </lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="6">
+                      <div class="slds-form-element">
+                          <label class="slds-form-element__label">Account Limit</label>
+                          <div class="slds-form-element__control">
+                              <lightning:formattedNumber value="{!v.acclimit}"/>
+                          </div>
+                      </div>
+                  </lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="6">
+                      <div class="slds-form-element">
+                          <label class="slds-form-element__label">Account Review Date</label>
+                          <div class="slds-form-element__control">
+                              <lightning:formattedText value="{!v.accreviewdate}"/>
+                          </div>
+                      </div>
+                  </lightning:layoutItem>
+              </lightning:layout>
+          </lightning:tab>
+          <lightning:tab label="Contract Details">
+              <table class="slds-table slds-table_cell-buffer slds-table_bordered" role="grid">
+                  <thead>
+                      <tr class="slds-line-height_reset">
+                          <th scope="col">Sub Product</th>
+                          <th scope="col">Contract Number</th>
+                          <th scope="col">Amount</th>
+                          <th scope="col">Balance</th>
+                          <th scope="col">Expiry Date</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      <aura:iteration items="{!v.contractlist}" var="contract">
+                          <tr>
+                              <td scope="col">
+                                  {!contract.contractSubProduct}
+                              </td>
+                              <td scope="col">
+                                  {!contract.contractNumber}
+                              </td>
+                              <td scope="col">
+                                  {!contract.contractAmount}
+                              </td>
+                              <td scope="col">
+                                  {!contract.contractBalance}
+                              </td>
+                              <td scope="col">
+                                  {!contract.contractExpiryDate}
+                              </td>
+                          </tr>
+                      </aura:iteration>
+                  </tbody>
+              </table>
+          </lightning:tab>
+        </lightning:tabset>
+    </lightning:card> -->
+</aura:component>

@@ -1,0 +1,305 @@
+<!--
+  @description       : 
+  @author            : 
+  @last modified on  : 2021-07-01
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-07-01      Initial Version
+-->
+<aura:component controller="CPFFacilityPrimarySecondaryAccDetails" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+<aura:attribute name="vatApplicableOptions" type="List" default="[
+                                                                    {'label': 'Yes', 'value': 'Y'},
+                                                                    {'label': 'No', 'value': 'N'}
+
+                                                                    ]"/>
+<aura:attribute name="includeVATchargesOptions" type="List" default="[
+                                                                        {'label': 'Yes', 'value': 'Y'},
+                                                                        {'label': 'No', 'value': 'N'}
+
+                                                                        ]"/>
+<aura:attribute name="otheramountsincludedintotalfacility" type="List" default="[
+                                                                                {'label': 'Yes', 'value': 'Y'},
+                                                                                {'label': 'No', 'value': 'N'}
+
+                                                                                ]"/>
+<aura:attribute name="Differenceclauseapplicableoption" type="List" default="[
+                                                                                {'label': 'None', 'value': 'None'},
+                                                                                {'label': 'Standard clause', 'value': 'Standardclause'},
+                                                                                {'label': 'Payout in tranches', 'value': 'Payoutintranches'}
+                                                                                ]"/>
+<aura:attribute name="Includebalanceonexistingaccountoption" type="List" default="[
+                                                                                    {'label': 'Yes', 'value': 'Y'},
+                                                                                    {'label': 'No', 'value': 'N'}
+
+                                                                                    ]"/>
+<aura:attribute name="IncluderepaymentscheduleOptions" type="List" default="[
+                                                                            {'label': 'Yes', 'value': 'Y'},
+                                                                            {'label': 'No', 'value': 'N'}
+
+                                                                            ]"/>
+<aura:attribute name="newFacilityAccount" type="Application_Financial_Account__c[]" />
+<aura:attribute name="vatApplicableoptionGiven" type="String" default="No" />
+<aura:attribute name="vatApplicableValues" type="String" default ="No"/>
+<aura:attribute name="DifferenceclauseapplicableValues" type="String" default ="Standard Clause"/>
+<aura:attribute name="otheramountsincludedintotalfacilityValues" type="String" default ="No"/>
+<aura:attribute name="includeVATchargeoptionGiven" type="String" default="N"/>
+<aura:attribute name="IsIncludeVAToncharges" type="boolean"/>
+<aura:attribute name="showdifferenceclausefields" type="String" />
+<aura:attribute name="otheramountsincludedintotalfacilityoptionGiven" type="String" />
+<aura:attribute name="DifferenceclauseapplicableoptionGiven" type="String" />
+<aura:attribute name="IncludebalanceonexistingaccountoptionGiven" type="String" default="N"/>
+<aura:attribute name="DifferenceclauseGiven" type="String" />
+<aura:attribute name="recordId" type="Id" />
+<aura:attribute name="appPrdctCpfRec" type="Object" />
+<aura:attribute name="appFinAccRecId" type="Id" />
+<aura:attribute name="showIncludebalanceonexistingacc" type="String" />
+<aura:attribute name="Isotheramountsincludedintotalfacility" type="Boolean" />
+<aura:attribute name="showSpinner" type="Boolean" default="false"/>
+<aura:attribute name="prodName" type="string" />
+<aura:attribute name="newOtherfees" type="list" />
+<aura:attribute name="newFeesOther" type="Application_Fees__c[]" />
+
+
+<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+<!--c:CPFApplicationFinancialAccCreation-->
+<aura:handler name="CPFApplicationFinancialAccCreation" event="c:CPFApplicationFinancialAccCreation" action="{!c.handleApplicationEvent}"/>
+<aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleOthefeesApplicationEvent}"/>
+
+<lightning:accordion activeSectionName="Facility" allowMultipleSectionsOpen="false">
+    <lightning:accordionSection name="Facilitysection" label="Facility" >
+        <lightning:recordEditForm aura:id="iAppProdcpfRecord" objectApiName="Application_Product_CPF__c" recordId="{!v.appPrdctCpfRec.Id}"  >
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Drawdown_amount__c" aura:id="drawdownamount" required="true"/>
+                    </span>
+                </div>
+                <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                    <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Retention_amount__c" aura:id="retentionamount" />
+                    </span>
+                </div>
+                </aura:if>
+                <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  >
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Retention_amount__c" aura:id="retentionamount" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Capitalised_Interest__c" aura:id="capitalinterest" />
+                        </span>
+                    </div>
+                    </aura:if>
+
+                <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Is VAT facility applicable</span>
+                                <lightning:helptext icon-name="utility:like" content="Select Yes if client require VAT Facility" />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                            picklistfieldName="Is_VAT_facility_applicable__c"
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.vatApplicableValues}" disabled="true" />
+                        </span>
+                    </div>
+                </aura:if>
+                <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  >
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Is VAT facility applicable</span>
+                                <lightning:helptext icon-name="utility:like" content="Select Yes if client require VAT Facility" />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                            picklistfieldName="Is_VAT_facility_applicable__c"
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.vatApplicableValues}" />
+                        </span>
+                    </div>
+                </aura:if>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="slds-m-right_small">Include VAT on charges</span>
+                            <lightning:helptext icon-name="utility:like" content="Select Yes if VAT must be added on charges and costs VAT on charges and costs: R[AMOUNT]" />
+                        </label>
+                        <lightning:radioGroup name="IncludeVAToncharges" fieldName="Include_VAT_on_charges__c"
+
+                                                options="{!v.includeVATchargesOptions }"
+                                                value="{!v.includeVATchargeoptionGiven}"
+                                                onchange="{!c.handleChangeIncludeVAT}"
+                                                type="button"/>
+                    </span>
+                </div>
+                <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Other amounts included in total facility</span>
+                                <lightning:helptext icon-name="utility:like" content="Select Yes if existing account balance must be included in the Total Facility Limit" />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                            picklistfieldName="Other_amounts_included_in_total_facility__c"
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.otheramountsincludedintotalfacilityValues}"  disabled="true"/>
+                        </span>
+                    </div>
+                </aura:if>
+                <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  >
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Other amounts included in total facility</span>
+                                <lightning:helptext icon-name="utility:like" content="Select Yes if existing account balance must be included in the Total Facility Limit" />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                            picklistfieldName="Other_amounts_included_in_total_facility__c"
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.otheramountsincludedintotalfacilityValues}" />
+                        </span>
+                    </div>
+                </aura:if>
+               <aura:if isTrue="{!v.otheramountsincludedintotalfacilityValues=='Yes'}">
+               <aura:iteration items="{!v.newOtherfees}" var="nOtherFeesItem" indexVar="index">
+                    <c:CPFOtherFees aura:id="newotherfeesId" otherfeesItem="{!nOtherFeesItem}" rowindex="{!index}" otherfees="{!v.newFeesOther}" OppRecId="{!v.recordId}" Type="Facility"/>
+                </aura:iteration>
+                <div class="slds-col slds-size_1-of-2">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span class="slds-m-top_medium">
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                            <lightning:button label="Add Other Amount" onclick="{!c.addOtherfees}" variant="brand" aura:id="ibtn1" disabled="true"/>
+                        </aura:if>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  >
+                            <lightning:button label="Add Other Amount" onclick="{!c.addOtherfees}" variant="brand" aura:id="ibtn1" />
+                        </aura:if>
+                    </span>
+                </div>
+                <br><br></br></br>
+               <!-- <div class="slds-col slds-size_1-of-1">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherfeesSubmit}" variant="brand" aura:id="ibtn1" disabled="true"/>
+                        </aura:if>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  >
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherfeesSubmit}" variant="brand" aura:id="ibtn1" />
+                        </aura:if>
+                    </span>
+                </div>-->
+                   </aura:if>
+
+
+                <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  >
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="slds-m-right_small">Difference clause applicable</span>
+                            <lightning:helptext icon-name="utility:like" content="The normal clause will display with logic if charges and cost, Capitalized Interest Allowance, Retention Amount, VAT Facility or balance on existing account was captured.The difference between the new loan limit less Option: [charges and costs,] Option: [Capitalised Interest Allowance, ] Option: [Retention Amount,] Option:VAT Facility,] Option: [the balance on the existing account], : Option: [which account is to be settled and closed] is the amount that will be available upon activation of the new Loan together with fulfilment of any conditions provided for by the Bank upon approval of the Loan." />
+                        </label>
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                        picklistfieldName="Difference_clause_applicable__c"
+                                                        objectName="Application_Product_CPF__c"
+                                                        value="{!v.DifferenceclauseapplicableValues}"
+                                                        titleyes="Registration of the Continuing Covering Mortgage Bonds for amounts over and above the Total Facility Limit, does not guarantee automatic approval of a facility in excess of the Total Facility Limit at a later date. The difference between the amount of any Mortgage Bond/s registered or to be registered and the Total Facility Limit will be subject to approval by the Bank of a further advance application by the Borrower and fulfillment by the Borrower of any conditions imposed by the Bank at the time, which may include a full re-assessment of the Property."
+                                                        titleno="The difference between the Total Facility Limit of R[AMOUNT] less the fees including VAT and the balance on the account, is the amount that will be available for disbursement in tranches as follows:1. up to the existing registered Mortgage Bond amount of R[AMOUNT] will be available on signature of all security documents;2. the remaining R[AMOUNT] will be available for disbursement on registration of the Mortgage Bonds and compliance by the Borrower with any additional conditions imposed by the Bank in respect of this tranche."
+                                                        disabled="true"/>
+                    </span>
+                </div>
+                </aura:if>
+                <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  >
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="slds-m-right_small">Difference clause applicable</span>
+                            <lightning:helptext icon-name="utility:like" content="The normal clause will display with logic if charges and cost, Capitalized Interest Allowance, Retention Amount, VAT Facility or balance on existing account was captured.The difference between the new loan limit less Option: [charges and costs,] Option: [Capitalised Interest Allowance, ] Option: [Retention Amount,] Option:VAT Facility,] Option: [the balance on the existing account], : Option: [which account is to be settled and closed] is the amount that will be available upon activation of the new Loan together with fulfilment of any conditions provided for by the Bank upon approval of the Loan." />
+                        </label>
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                        picklistfieldName="Difference_clause_applicable__c"
+                                                        objectName="Application_Product_CPF__c"
+                                                        value="{!v.DifferenceclauseapplicableValues}"
+                                                        titleyes="Registration of the Continuing Covering Mortgage Bonds for amounts over and above the Total Facility Limit, does not guarantee automatic approval of a facility in excess of the Total Facility Limit at a later date. The difference between the amount of any Mortgage Bond/s registered or to be registered and the Total Facility Limit will be subject to approval by the Bank of a further advance application by the Borrower and fulfillment by the Borrower of any conditions imposed by the Bank at the time, which may include a full re-assessment of the Property."
+                                                        titleno="The difference between the Total Facility Limit of R[AMOUNT] less the fees including VAT and the balance on the account, is the amount that will be available for disbursement in tranches as follows:1. up to the existing registered Mortgage Bond amount of R[AMOUNT] will be available on signature of all security documents;2. the remaining R[AMOUNT] will be available for disbursement on registration of the Mortgage Bonds and compliance by the Borrower with any additional conditions imposed by the Bank in respect of this tranche."
+                                                        />
+                    </span>
+                </div>
+                </aura:if>
+
+                <aura:if isTrue="{!v.DifferenceclauseapplicableValues =='Payout In Tranches'}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Amount of existing register Mortgage Bonds</span>
+                                <lightning:helptext icon-name="utility:like" content="The difference between the Total Facility Limit of R[AMOUNT] less the fees including VAT and the balance on the account, is the amount that will be available for disbursement in tranches as follows:1. up to the existing registered Mortgage Bond amount of R[AMOUNT] will be available on signature of all security documents;2. the remaining R[AMOUNT] will be available for disbursement on registration of the Mortgage Bonds and compliance by the Borrower with any additional conditions imposed by the Bank in respect of this tranche." />
+                            </label>
+
+                            <lightning:inputField fieldName="Amount_of_existing_register_mortgage_bon__c" aura:id="amountofexistingmortgage" required="true" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Remaining available amount</span>
+                                <lightning:helptext icon-name="utility:like" content="The difference between the Total Facility Limit of R[AMOUNT] less the fees including VAT and the balance on the account, is the amount that will be available for disbursement in tranches as follows:1. up to the existing registered Mortgage Bond amount of R[AMOUNT] will be available on signature of all security documents;2. the remaining R[AMOUNT] will be available for disbursement on registration of the Mortgage Bonds and compliance by the Borrower with any additional conditions imposed by the Bank in respect of this tranche." />
+                            </label>
+                            <lightning:inputField fieldName="Remaining_available_amount__c" aura:id="Remainingavailableamount" required="true" variant="label-hidden"/>
+                        </span>
+                    </div>
+                </aura:if>
+
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="slds-m-right_small">Include balance on existing account</span>
+                            <lightning:helptext icon-name="utility:like" content="Select yes if balance on existing account must be included in Total Facility limit" />
+                        </label>
+
+                        <lightning:radioGroup name="Includebalanceonexistingaccount" fieldName="Include_balance_on_existing_account__c"
+                                                options="{!v.Includebalanceonexistingaccountoption }"
+                                                value="{!v.IncludebalanceonexistingaccountoptionGiven}"
+                                                onchange="{!c.IncludebalanceonexistingaccounthandleChange}"
+                                                type="button"/>
+                    </span>
+                </div>
+                <aura:if isTrue="{!v.showIncludebalanceonexistingacc =='Yes'}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                        </span>
+                    </div>
+                    <aura:iteration items="{!v.newFacilityAccount}" var="nFacilityAccItem" indexVar="index">
+                        <c:CPFFacilityAccountSection aura:id="newFacilityAcc" accItem="{!nFacilityAccItem}" rowindex="{!index}" newFacilityAccount="{!v.newFacilityAccount}" OppRecId="{!v.recordId}" appFinAccRec ="{!v.appFinAccRecId}"/>
+                    </aura:iteration>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button label="Add New Existing Account" onclick="{!c.addNewAccount}" variant="brand" aura:id="ibtn" />
+                        </span>
+                    </div>
+                </aura:if>
+                <div class="slds-col slds-size_1-of-1">
+                    <span >
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-1">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                        <lightning:button label="Save &amp; Validate" onclick="{!c.handleSubmit}" variant="brand" aura:id="ibtn1" />
+                    </span>
+                </div>
+            </div>
+        </lightning:recordEditForm>
+
+    </lightning:accordionSection>
+</lightning:accordion>
+</aura:component>

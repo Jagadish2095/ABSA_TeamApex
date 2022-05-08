@@ -1,0 +1,164 @@
+<aura:component implements="force:lightningQuickActionWithoutHeader,force:hasRecordId" controller="EmailSenderController">
+    <aura:attribute name="lineItemData" type="EmailSenderController.wrapperOppLineItem"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="douments" type="ContentDocument[]" />
+    <aura:attribute name="open" type="boolean" default="false"/>
+    <aura:attribute name="openModel" type="boolean" default="false"/>
+    <aura:attribute name="noError" type="boolean" default="false"/>
+    <aura:handler name="EmailSenderEvent" event="c:EmailSenderEvent" action="{!c.send}"/>
+    
+    <aura:attribute name="sObjectName" type="String" default="OpportunityLineItem"/> 
+    <aura:attribute name="oppRecord" type="Object" />
+    <c:EmailSenderConfirmModel isModalOpen="{!v.openModel}" toAddress="{!v.oppRecord.Account.PersonEmail}" accId="{!v.oppRecord.AccountId}"/>
+    
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="AccountId,Sub_Status__c,Account.Salutation,Account.PersonEmail,Email_Status__c"
+                      targetFields="{!v.oppRecord}"
+                      targetError="{!v.recordLoadError}"
+                      recordUpdated="{!c.doInit}" />
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    <aura:if isTrue ="{!v.noError}">
+        <div class="slds-form-element"> 
+            <lightning:card iconName="custom:custom19" title="Information">
+                <div class="slds-p-bottom_large slds-p-left_large">
+                    <lightning:layout multipleRows="true" class="slds-grid"> 
+                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                            <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                <lightning:layoutItem size="12">
+                                    <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Product Name</span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12">
+                                    {!v.lineItemData.oppLineItem.Product_Name__c}
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                            <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                <lightning:layoutItem size="12">
+                                    <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Product House</span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12">
+                                    {!v.lineItemData.oppLineItem.Product2.Primary_Service_Provider__r.Name}
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                            <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                <lightning:layoutItem size="12">
+                                    <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Premium Type</span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12">
+                                    {!v.lineItemData.appProduct.Premium_Type__c}
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                            <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                <lightning:layoutItem size="12">
+                                    <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Premium</span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12">
+                                    <lightning:formattedNumber value="{!v.lineItemData.appProduct.Product_Amount__c}" style="currency" currencyCode="ZAR" currencyDisplayAs="symbol"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                            <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                <lightning:layoutItem size="12">
+                                    <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Source Of Income</span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12">
+                                    {!v.lineItemData.appProduct.Income_Source__c}
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!v.lineItemData.appProduct.Premium_Type__c == 'Recurring / Lump Sum'}">
+                            <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                                <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                    <lightning:layoutItem size="12">
+                                        <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Recurring Premium</span>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem size="12">
+                                        <lightning:formattedNumber value="{!v.lineItemData.appProduct.Reduction_Amount__c}" style="currency" currencyCode="ZAR" currencyDisplayAs="symbol"/>
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </lightning:layoutItem>
+                        </aura:if>                        
+                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                            <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                <lightning:layoutItem size="12">
+                                    <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Source Of Funds</span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12">
+                                    {!v.lineItemData.financialProduct.Source_of_Funds__c}
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                            <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                <lightning:layoutItem size="12">
+                                    <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Commission - 1st Year(Including VAT)</span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12">
+                                    <lightning:formattedNumber value="{!v.lineItemData.appProduct.Variable_Amount_1__c}" style="currency" currencyCode="ZAR" currencyDisplayAs="symbol"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>                        
+                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                            <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                <lightning:layoutItem size="12">
+                                    <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Ongoing Fee(%)</span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12">
+                                    {!v.lineItemData.appProduct.Ongoing_Fee_Percent__c}
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                            <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                <lightning:layoutItem size="12">
+                                    <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Upfront Fee(%)</span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12">
+                                    {!v.lineItemData.appProduct.Upfront_Fee_Percent__c}
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" class="slds-col slds-size_1-of-2">
+                            <lightning:layout multipleRows="true" class="slds-border_bottom">
+                                <lightning:layoutItem size="12">
+                                    <span class="test-id__field-label-container1 slds-form-element__label no-utility-icon">Term Of Investment</span>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12">
+                                    {!v.lineItemData.appProduct.Term_Of_Investment__c}
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+                
+            </lightning:card>
+            <lightning:card iconName="custom:custom105" title="Email Body"> 
+                <lightning:formattedRichText value="{!v.lineItemData.textBody}"/>
+            </lightning:card>                 
+            <lightning:card iconName="utility:attach" title="Attachments">
+                <c:selectAttachments isOpen="{!v.open}" attachments="{!v.douments}"/>
+                <aura:iteration items="{!v.douments}" var="doc"> 
+                    <aura:if isTrue="{!doc.Title != null}">
+                        <a href="{!'/'+(doc.Id)}" target="_blank">{!doc.Title}.{!doc.FileExtension}</a>&nbsp;               
+                    </aura:if>                    
+                </aura:iteration>
+            </lightning:card>
+            <lightning:button iconName="utility:email" class="slds-button slds-button--brand slds-m-top_medium slds-float_right" label="Send Email" onclick="{!c.sendMail}" disabled=""/>
+            <lightning:button iconName="utility:attach" class="slds-m-top_medium slds-float_right" label="Attachments" onclick="{!c.toOpenAttachments}"/>
+            <br/>
+        </div>        
+    </aura:if>
+    <aura:html tag="style">
+        .slds-modal__content{
+        height: auto !important;
+        max-height: fit-content !important; 
+        }
+    </aura:html>
+</aura:component>

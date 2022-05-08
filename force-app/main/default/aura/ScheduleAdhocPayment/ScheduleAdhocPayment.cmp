@@ -1,0 +1,319 @@
+<!--This is the Schedule Adhoc Payment Component-->
+<!--@author: Koketso Mpshane-->
+<!--@Created Date: 2021-02-17-->
+<!--@WorkID: W-007204-->
+<!-- @updated: Bhanumurty Rayala
+	 @updatedDate: 2021-09-08
+	 @WorkID: W - 011355 -->
+<aura:component
+	controller="AdhocPaymentController"
+	implements="force:appHostable,flexipage:availableForAllPageTypes,force:hasRecordId,lightning:availableForFlowScreens"
+	access="global"
+>
+	<!--Attribute Declaration-->
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+	<aura:attribute name="showConfirmSubmission" type="boolean" default="false" />
+	<aura:attribute name="policyNumber" type="String" default="" access="global" />
+	<aura:attribute name="policyContract" type="Object" />
+	<aura:attribute name="selectedAccountFromFlow" type="String" access="global" />
+	<aura:attribute name="caseIdFromFlow" type="String" access="global" default="" />
+	<aura:attribute name="headerTextToFlow" type="String" default="" access="global" />
+	<aura:attribute name="paragraphTextToFlow" type="String" default="" access="global" />
+	<aura:attribute name="premiumAmount" type="Integer" access="global" default="0" />
+	<aura:attribute name="collectionDate" type="Date" />
+	<aura:attribute name="bankName" type="String" />
+	<aura:attribute name="branchName" type="String" />
+	<aura:attribute name="branchCode" type="String" />
+	<aura:attribute name="showBankSearchFields" type="boolean" default="false" />
+	<aura:attribute name="accountType" type="String" />
+	<aura:attribute name="accountTypeList" type="List" />
+	<aura:attribute name="exergyBankId" type="String" />
+	<aura:attribute name="exergyBranchId" type="String" />
+	<aura:attribute name="exergyBankName" type="String" />
+	<aura:attribute name="isAccountUpToDate" type="boolean" default="false" />
+	<aura:attribute name="isPaymentScheduledToFlow" type="boolean" default="false" access="global" />
+
+	<!--Transactional History attribute declaration-->
+	<aura:attribute name="transactionalHistoryData" type="List" />
+	<aura:attribute name="transactionalHistoryDataTable" type="List" />
+	<aura:attribute name="filterStartDate" type="Date" />
+	<aura:attribute name="filterEndDate" type="Date" />
+	<aura:attribute name="transactionalHistoryColumns" type="List" />
+
+	<!--Handler Declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:handler name="change" value="{!v.bankName}" action="{!c.handleBankChange}" />
+	<aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBranchCodeEvent}" />
+
+	<article class="slds-card slds-p-around_xx-large">
+		<!-- Lightning Spinner -->
+		<aura:if isTrue="{!v.showSpinner}">
+			<center style="z-index: 99">
+				<lightning:spinner class="slds-align_absolute-center" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+			</center>
+		</aura:if>
+
+		<!--Error Message-->
+		<aura:if isTrue="{!not(empty(v.errorMessage))}">
+			<ui:message title="Error" severity="error" closable="true"> {!v.errorMessage} </ui:message>
+		</aura:if>
+
+		<!-- account up to date-->
+		<aura:if isTrue="{!v.isAccountUpToDate}">
+			<ui:message title="The account is up to date." severity="confirm" closable="true"> </ui:message>
+		</aura:if>
+
+		<!-- payment successfully scheduled-->
+		<aura:if isTrue="{!v.isPaymentScheduledToFlow}">
+			<ui:message title="Success" severity="confirm" closable="true"> Adhoc payment scheduled successfully </ui:message>
+		</aura:if>
+
+		<!--Updated the component with tabset as required in the enhancment story-->
+		<!-- Account Details tab coding by Koketso-->
+		<lightning:tabset selectedTabId="AccountDetails">
+			<lightning:tab label="Account Details" id="AccountDetails">
+				<div class="slds-card__body slds-card__body_inner">
+					<article class="slds-card slds-card_boundary">
+						<div class="slds-card__body slds-card__body_inner">
+							<lightning:layout>
+								<lightning:layoutItem padding="around-small" size="6">
+									<b><ui:outputText value="Adhoc Payment for Policy Product" /></b>
+									<br />
+									<ui:outputText value="{!v.policyContract.ContractTypeDescription}" class="slds-text-title--caps" />
+									<br /><br /> <b><ui:outputText value="Premium Balance: " /></b><ui:outputText value="{!v.policyContract.PremiumBalance}" />
+								</lightning:layoutItem>
+							</lightning:layout>
+							<lightning:layout>
+								<lightning:layoutItem padding="around-small" size="12">
+									<b><ui:outputText value="Account Details" /></b>
+									<br /><br />
+									<fieldset class="slds-form-element_compound">
+										<div class="form-element__group">
+											<div class="slds-form-element__row">
+												<span class="slds-form-element__control slds-size--1-of-2">
+													<lightning:input
+														disabled="true"
+														aura:id="fPolicyNumber"
+														value="{!v.selectedAccountFromFlow}"
+														label="Policy Number"
+													/>
+												</span>
+												<span class="slds-form-element__control slds-size--1-of-2">
+													<lightning:input
+														disabled="true"
+														aura:id="fAccountName"
+														value="{!v.policyContract.BankContract.AccountName}"
+														label="Account Holders Name"
+														required="true"
+													/>
+												</span>
+											</div>
+										</div>
+									</fieldset>
+									<aura:if isTrue="{!v.showBankSearchFields}">
+										<fieldset class="slds-form-element_compound">
+											<div class="form-element__group">
+												<div class="slds-form-element__row">
+													<span class="slds-form-element__control slds-size--1-of-2">
+														<label class="slds-float_left" padding="around-small">Search Bank</label>
+														<c:customLookUp aura:id="fSearchBank" IconName="custom:custom17" selectedRecord="{!v.bankName}" />
+													</span>
+													<span class="slds-form-element__control slds-size--1-of-2">
+														<label class="slds-float_left" padding="around-small">Search Branch</label>
+														<c:dependentCutomLookup
+															aura:id="fSearchBranch"
+															dselectedBankName="{!v.bankName}"
+															IconName="custom:custom16"
+															selectedRecord="{!v.branchName}"
+														/>
+													</span>
+												</div>
+											</div>
+										</fieldset>
+									</aura:if>
+									<fieldset class="slds-form-element_compound">
+										<div class="form-element__group">
+											<div class="slds-form-element__row">
+												<span class="slds-form-element__control slds-size--1-of-2">
+													<lightning:input disabled="true" aura:id="fBank" value="{!v.bankName}" label="Bank" required="true" />
+												</span>
+												<span class="slds-form-element__control slds-size--1-of-2">
+													<lightning:input
+														disabled="true"
+														aura:id="fBranchNumber"
+														value="{!v.branchName}"
+														label="Branch Name"
+														required="true"
+													/>
+												</span>
+											</div>
+										</div>
+									</fieldset>
+									<fieldset class="slds-form-element_compound">
+										<div class="form-element__group">
+											<div class="slds-form-element__row">
+												<span class="slds-form-element__control slds-size--1-of-2">
+													<lightning:input
+														disabled="true"
+														aura:id="fBranchCode"
+														value="{!v.branchCode}"
+														label="Bank Branch Code"
+														required="true"
+													/>
+												</span>
+												<span class="slds-form-element__control slds-size--1-of-2">
+													<lightning:input
+														disabled="true"
+														aura:id="fAccountNumber"
+														value="{!v.policyContract.BankContract.AccountNo}"
+														label="Account Number"
+														required="true"
+													/>
+												</span>
+											</div>
+										</div>
+									</fieldset>
+									<fieldset class="slds-form-element_compound">
+										<div class="form-element__group">
+											<div class="slds-form-element__row">
+												<span class="slds-form-element__control slds-size--1-of-2">
+													<lightning:select
+														aura:id="fBankAccountType"
+														name="Bank Account Type"
+														label="Bank Account Type"
+														value="{!v.accountType}"
+														onchange="{!c.handleAccountTypeChange}"
+														disabled="true"
+														required="true"
+													>
+														<aura:iteration items="{!v.accountTypeList}" var="item">
+															<option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.accountType}" />
+														</aura:iteration>
+													</lightning:select>
+												</span>
+												<span class="slds-form-element__control slds-size--1-of-2">
+													<lightning:input disabled="true" aura:id="fAmount" value="{!v.premiumAmount}" label="Amount" />
+												</span>
+											</div>
+										</div>
+									</fieldset>
+									<fieldset class="slds-form-element_compound">
+										<div class="form-element__group">
+											<div class="slds-form-element__row">
+												<span class="slds-form-element__control slds-size--1-of-2">
+													<lightning:input
+														type="date"
+														disabled="true"
+														aura:id="fCollectionDate"
+														value="{!v.collectionDate}"
+														label="Collection Date"
+														required="true"
+													/>
+												</span>
+												<span class="slds-form-element__control slds-size--1-of-2"> </span>
+											</div>
+										</div>
+									</fieldset>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<!-- Custom Buttons -->
+							<lightning:layout>
+								<lightning:layoutItem class="right-align" padding="around-small" size="12">
+									<footer class="slds-float_right">
+										<lightning:button variant="neutral" label="Edit" onclick="{!c.handleEdit}" aura:id="bEdit" />
+										<lightning:button variant="brand" label="Submit" onclick="{!c.handleSubmit}" aura:id="bSubmit" />
+									</footer>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<aura:if isTrue="{!v.showConfirmSubmission}">
+								<!--CONFIRMATION MODAL BOX Start-->
+								<section
+									role="dialog"
+									tabindex="-1"
+									aria-labelledby="modal-heading-01"
+									aria-modal="true"
+									aria-describedby="modal-content-id-1"
+									class="slds-modal slds-fade-in-open"
+								>
+									<!-- Lightning Spinner -->
+									<aura:if isTrue="{!v.showSpinner}">
+										<lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+									</aura:if>
+									<div class="slds-modal__container">
+										<header class="slds-modal__header">
+											<lightning:buttonIcon
+												iconName="utility:close"
+												onclick="{! c.cancelSubmission }"
+												alternativeText="close"
+												variant="bare-inverse"
+												class="slds-modal__close"
+											/>
+											<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Schedule Adhoc Payment</h2>
+										</header>
+										<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+											<p><b>Are you sure you want to schedule this Adhoc payment?</b></p>
+											<br />
+											<label class="slds-form-element__control slds-size--1-of-2">
+												<span class="slds-form-element__helper"><b>Policy Number</b></span>
+												<ui:outputText value="{!v.selectedAccountFromFlow}" /> </label
+											><br />
+											<label class="slds-form-element__control slds-size--1-of-2">
+												<span class="slds-form-element__helper"><b>Amount</b></span>
+												<ui:outputText value="{!v.premiumAmount}" /> </label
+											><br />
+											<label class="slds-form-element__control slds-size--1-of-2">
+												<span class="slds-form-element__helper"><b>Collection Date</b></span>
+												<ui:outputText value="{!v.collectionDate}" />
+											</label>
+										</div>
+										<footer class="slds-modal__footer">
+											<lightning:button
+												variant="neutral"
+												label="Cancel"
+												title="Cancel"
+												aura:id="bCancelSubmit"
+												onclick="{!c.cancelSubmission}"
+											/>
+											<lightning:button
+												variant="brand"
+												label="Confirm"
+												title="Confirm"
+												aura:id="bConfirmSubmit"
+												onclick="{!c.confirmSubmission}"
+											/>
+										</footer>
+									</div>
+								</section>
+								<div class="slds-backdrop slds-backdrop_open"></div>
+								<!-- CONFIRMATION MODAL BOX END-->
+							</aura:if>
+						</div>
+					</article>
+				</div>
+			</lightning:tab>
+			<!--Transactional history tab is the enhancements for the component -->
+			<lightning:tab label="Transactional history" id="TransactionalHistory" onactive="{!c.handleTransactionalHistory}">
+				<lightning:layout multipleRows="true">
+					<lightning:layoutItem size="4" padding="around-small">
+						<lightning:input type="date" aura:id="startDate" label="Start Date" value="{!v.filterStartDate}" />
+					</lightning:layoutItem>
+					<lightning:layoutItem size="4" padding="around-small">
+						<lightning:input type="date" aura:id="endDate" label="End Date" value="{!v.filterEndDate}" />
+					</lightning:layoutItem>
+					<lightning:layoutItem size="4" padding="around-small" class="slds-grid slds-align-bottom">
+						<lightning:button variant="brand" label="Apply Date Range" title="Apply Date Range" onclick="{! c.filterDateRange }" />
+					</lightning:layoutItem>
+				</lightning:layout>
+				<lightning:layout>
+					<lightning:datatable
+						keyField="id"
+						data="{! v.transactionalHistoryDataTable }"
+						columns="{! v.transactionalHistoryColumns }"
+						hideCheckboxColumn="true"
+					/>
+				</lightning:layout>
+			</lightning:tab>
+		</lightning:tabset>
+	</article>
+</aura:component>

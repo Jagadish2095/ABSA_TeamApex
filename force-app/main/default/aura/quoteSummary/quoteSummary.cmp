@@ -1,0 +1,442 @@
+<!--Created By Eduardo Salia
+*** Created Date 14/10/2020-->
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes,lightning:availableForFlowScreens"
+                controller="QuoteSummaryController">
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <aura:attribute name="selectedPartyType" type="string" access="global"/>
+    <aura:attribute name="selectedProduct" type="string" access="global"/>
+    <aura:attribute name="opportunityId" type="String" access="global"/>
+    <aura:attribute name="mainMemcover" type="String" access="global"/>
+    
+    <!-- Start Flags Control Component Display -->
+    <aura:attribute name="showQuoteDetails" type="boolean" default="false"/>
+    <aura:attribute name="showDependents" type="boolean" default="false"/>
+    <aura:attribute name="isQuoteSummary" type="boolean" default="true"/>
+    <aura:attribute name="showUpdateModal" type="boolean" default="false"/>
+    <!-- End Flags Control Component Display -->
+    
+    <aura:attribute name="policyFee" type="String"/>
+    <aura:attribute name="quoteTotal" type="String"/>
+    
+    <!-- Start Products -->
+    <aura:attribute name="productFlexiFuneral" type="String" default="Flexi Funeral"/>
+    <aura:attribute name="productRoadCover" type="String" default="Road Cover"/>
+    <aura:attribute name="productHealthAssistance" type="String" default="Health Assistance"/>
+    <aura:attribute name="productLawForYou" type="String" default="Law 4 u"/>
+    <aura:attribute name="productUltimateProtector" type="String" default="Ultimate Protector"/>
+    <!-- End Products -->
+    
+    <aura:attribute name="productFlexiFuneralUnique" type="String"/>
+    <aura:attribute name="productRoadCoverUnique" type="String"/>
+    <aura:attribute name="productHealthAssistanceUnique" type="String"/>
+    <aura:attribute name="productLawForYouUnique" type="String"/>
+    <aura:attribute name="productUltimateProtectorUnique" type="String"/>
+    
+    <aura:attribute name="grandTotalPremium" type="Decimal" default="0"/>
+    <aura:attribute name="grandTotalSumAssured" type="Decimal" default="0"/>
+    
+    <aura:attribute name="grandTotalFlexiFuneral" type="Decimal" default="0"/>
+    <aura:attribute name="grandTotalHealthAssistance" type="Decimal" default="0"/>
+    <aura:attribute name="grandTotalUltimateProtector" type="Decimal" default="0"/>
+    <aura:attribute name="grandTotalRoadCover" type="Decimal" default="0"/>
+    <aura:attribute name="grandTotalLawForYou" type="Decimal" default="0"/>
+    
+    <aura:attribute name="memberDetails" type="object"/>
+    <aura:attribute name="response" type="Object"/>
+    <aura:attribute name="dataDependants" type="Object"/>
+    <aura:attribute name="columnsDependants" type="List"/>
+    
+    <!-- Start Flow Attributes -->
+    <aura:attribute name="selectedProductFromFlow" type="String" access="global"/>
+    <aura:attribute name="selectedOppIdFromFlow" type="String" access="global"/>
+    <aura:attribute name="selectedDescriptionFromFlow" type="String" access="global"/>
+    <!-- Start Flow Attributes -->
+    
+    <aura:attribute name="isLoading" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.isLoading}">
+        <div class="slds-spinner_container" style="z-index: 99; position: fixed;">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    
+    <lightning:layout multipleRows="true">
+        <aura:if isTrue="{!v.showQuoteDetails}">
+            <aura:if isTrue="{!v.selectedProductFromFlow == v.productFlexiFuneral}">
+                
+                <lightning:layoutItem size="12">
+                    <br/>
+                    <aura:if isTrue="{!v.isQuoteSummary}">
+                        <lightning:tile label="Quote Summary">
+                            <aura:set attribute="media">
+                                <lightning:avatar fallbackIconName="standard:opportunity"/>
+                            </aura:set>
+                        </lightning:tile>
+                        <aura:set attribute="else">
+                            <lightning:tile label="Product Summary">
+                                <aura:set attribute="media">
+                                    <lightning:avatar fallbackIconName="standard:opportunity"/>
+                                </aura:set>
+                            </lightning:tile>
+                        </aura:set>
+                    </aura:if>
+                    <br/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="12">
+                    <table style="width:100%" class="slds-table slds-table_cell-buffer slds-table_bordered">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title=""></div></th>
+                                <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Name">Name</div></th>
+                                <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Product">Product</div></th>
+                                <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Benefit">Benefit</div></th>
+                                <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Sum Assured">Sum Assured</div></th>
+                                <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Premium">Premium</div></th>
+                                <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title=""></div></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.response}" var="quoteSummary" indexVar="rowIndex">
+                                
+                                <tr class="slds-hint-parent">
+                                    <td data-label=""><div class="slds-truncate" title="{!quoteSummary.partyType}">{!quoteSummary.partyType}</div></td>
+                                    
+                                    <aura:if isTrue="{!quoteSummary.partyType == 'Main Member'}">
+                                        <td data-label="Name"><div class="slds-truncate" title="Name">{!quoteSummary.opportunity.Person_Account_First_Name__c}&nbsp;{!quoteSummary.opportunity.Person_Account_Last_Name__c}</div></td>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!quoteSummary.partyType == 'Spouse'}">
+                                        <td data-label="Name"><div class="slds-truncate" title="Name">{!quoteSummary.opportunityParty.First_Name__c}&nbsp;{!quoteSummary.opportunityParty.Last_Name__c}</div></td>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!and(quoteSummary.partyType != 'Main Member',quoteSummary.partyType != 'Spouse')}">
+                                        <td data-label="Name"><div class="slds-truncate" title="Name">{!quoteSummary.partyName}</div></td>
+                                    </aura:if>
+                                    
+                                    <td data-label="Product"><div class="slds-truncate" title="Product">{!quoteSummary.productName}</div></td>
+                                    <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                    <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                    <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                    <td data-label="">
+                                        <div class="slds-truncate" data-record="{!rowIndex}" title="Edit">
+                                            <a data-record="{!rowIndex}" onclick="{!c.editRow}">
+                                                <lightning:icon iconName="utility:edit"  size="x-small" alternativeText="Edit"/>
+                                                <span class="slds-assistive-text">Edit Icon</span>
+                                            </a> 
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <aura:iteration items="{!quoteSummary.quoteLineItems}" var="quoteLineItem">
+                                    <tr class="slds-hint-parent">
+                                        <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        <td data-label="Benefit"><div class="slds-truncate" title="Benefit">{!quoteLineItem.Benefit__c}</div></td>
+                                        <td data-label="Sum Assured"><div class="slds-truncate" title="Sum Assured">R<lightning:formattedNumber value="{!quoteLineItem.Policy_Cover__c}" style="decimal" maximumFractionDigits="2"/></div></td>
+                                        <td data-label="Premium"><div class="slds-truncate" title="Premium">R<lightning:formattedNumber value="{!quoteLineItem.Premium__c}" style="decimal" maximumFractionDigits="2"/></div></td>
+                                        <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                    </tr>
+                                </aura:iteration>
+                                
+                                <tr class="slds-hint-parent" style="background-color:#cfc7c6;">
+                                    <td data-label=""><div class="slds-truncate" title="SUB TOTAL"><b>SUB TOTAL</b></div></td>
+                                    <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                    <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                    <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                    <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                    <td data-label="Total Premium"><div class="slds-truncate" title="Total Premium"><b>R<lightning:formattedNumber value="{!quoteSummary.totalPremium}" style="decimal" maximumFractionDigits="2"/></b></div></td>
+                                    <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                </tr>
+                                <br/>
+                            </aura:iteration>
+                            
+                            <tr class="slds-hint-parent">
+                                <td data-label=""><div class="slds-truncate" title="TOTAL"><b>TOTAL</b></div></td>
+                                <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                <td data-label="Total Premium"><div class="slds-truncate" title="Total Premium"><b>R<lightning:formattedNumber value="{!v.grandTotalPremium}" style="decimal" maximumFractionDigits="2"/></b></div></td>
+                                <td data-label=""><div class="slds-truncate" title=""></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <br/>
+                    <aura:if isTrue="{!v.showDependents}">
+                        
+                        <lightning:layoutItem size="12">
+                            <br/>
+                            <lightning:tile label="Quote Summary - Members">
+                                <aura:set attribute="media">
+                                    <lightning:avatar fallbackIconName="standard:opportunity"/>
+                                </aura:set>
+                            </lightning:tile>
+                            <br/>
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="12">
+                            <div>
+                                <lightning:datatable
+                                                     columns="{!v.columnsDependants}"
+                                                     data="{!v.dataDependants}"
+                                                     keyField="id"
+                                                     hideCheckboxColumn="true"/>
+                            </div>
+                        </lightning:layoutItem>
+                    </aura:if>
+                </lightning:layoutItem>
+                <aura:set attribute="else">
+                    
+                    <lightning:layoutItem size="12">
+                        <br/>
+                        <aura:if isTrue="{!v.isQuoteSummary}">
+                            <lightning:tile label="Quote Summary">
+                                <aura:set attribute="media">
+                                    <lightning:avatar fallbackIconName="standard:opportunity"/>
+                                </aura:set>
+                            </lightning:tile>
+                            <aura:set attribute="else">
+                                <lightning:tile label="Product Summary">
+                                    <aura:set attribute="media">
+                                        <lightning:avatar fallbackIconName="standard:opportunity"/>
+                                    </aura:set>
+                                </lightning:tile>
+                            </aura:set>
+                        </aura:if>
+                        <br/>
+                        
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem size="12">
+                        <table style="width:100%" class="slds-table slds-table_cell-buffer slds-table_bordered">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title=""></div></th>
+                                    <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Name">Name</div></th>
+                                    <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Product">Product</div></th>
+                                    <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Benefit">Benefit</div></th>
+                                    <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Sum Assured">Sum Assured</div></th>
+                                    <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title="Premium">Premium</div></th>
+                                    <th class="slds-text-title_caps" scope="col"><div class="slds-truncate" title=""></div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.response}" var="quoteSummary" indexVar="rowIndex">
+                                    
+                                    <tr class="slds-hint-parent">
+                                        <td data-label=""><div class="slds-truncate" title="{!quoteSummary.partyType}">{!quoteSummary.partyType}</div></td>
+                                        
+                                        <aura:if isTrue="{!quoteSummary.partyType == 'Main Member'}">
+                                            <td data-label="Name"><div class="slds-truncate" title="Name">{!quoteSummary.opportunity.Person_Account_First_Name__c}&nbsp;{!quoteSummary.opportunity.Person_Account_Last_Name__c}</div></td>
+                                        </aura:if>
+                                        
+                                        <aura:if isTrue="{!quoteSummary.partyType == 'Spouse'}">
+                                            <td data-label="Name"><div class="slds-truncate" title="Name">{!quoteSummary.opportunityParty.First_Name__c}&nbsp;{!quoteSummary.opportunityParty.Last_Name__c}</div></td>
+                                        </aura:if>
+                                        
+                                        <aura:if isTrue="{!and(quoteSummary.partyType != 'Main Member',quoteSummary.partyType != 'Spouse')}">
+                                            <td data-label="Name"><div class="slds-truncate" title="Name">{!quoteSummary.partyName}</div></td>
+                                        </aura:if>
+                                        
+                                        <td data-label="Product"><div class="slds-truncate" title="Product">{!quoteSummary.productName}</div></td>
+                                        <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        <td data-label="">
+                                            <div class="slds-truncate" data-record="{!rowIndex}" title="Edit">
+                                                <a data-record="{!rowIndex}" onclick="{!c.editRow}">
+                                                    <lightning:icon iconName="utility:edit"  size="x-small" alternativeText="Edit"/>
+                                                    <span class="slds-assistive-text">Edit Icon</span>
+                                                </a> 
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    
+                                    <aura:iteration items="{!quoteSummary.quoteLineItems}" var="quoteLineItem">
+                                        <tr class="slds-hint-parent">
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label="Benefit"><div class="slds-truncate" title="Benefit">{!quoteLineItem.Benefit__c}</div></td>
+                                            <td data-label="Sum Assured"><div class="slds-truncate" title="Sum Assured">R<lightning:formattedNumber value="{!quoteLineItem.Policy_Cover__c}" style="decimal" maximumFractionDigits="2"/></div></td>
+                                            <td data-label="Premium"><div class="slds-truncate" title="Premium">R<lightning:formattedNumber value="{!quoteLineItem.Premium__c}" style="decimal" maximumFractionDigits="2"/></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        </tr>
+                                    </aura:iteration>
+                                    
+                                    <aura:if isTrue="{!and(quoteSummary.productName == v.productFlexiFuneral, quoteSummary.partyName == v.productFlexiFuneralUnique)}">
+                                        <tr class="slds-hint-parent" style="background-color:#cfc7c6;">
+                                            <td data-label=""><div class="slds-truncate" title="SUB TOTAL"><b>SUB TOTAL</b></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label="Total Premium"><div class="slds-truncate" title="Total Premium"><b>R<lightning:formattedNumber value="{!v.grandTotalFlexiFuneral}" style="decimal" maximumFractionDigits="2"/></b></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        </tr>
+                                        <br/>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!and(quoteSummary.partyType == v.productRoadCover, quoteSummary.partyName == v.productRoadCoverUnique)}">
+                                        <tr class="slds-hint-parent" style="background-color:#cfc7c6;">
+                                            <td data-label=""><div class="slds-truncate" title="SUB TOTAL"><b>SUB TOTAL</b></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label="Total Premium"><div class="slds-truncate" title="Total Premium"><b>R<lightning:formattedNumber value="{!v.grandTotalRoadCover}" style="decimal" maximumFractionDigits="2"/></b></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        </tr>
+                                        <br/>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!and(quoteSummary.partyType == v.productUltimateProtector, quoteSummary.partyName == v.productUltimateProtectorUnique)}">
+                                        <tr class="slds-hint-parent" style="background-color:#cfc7c6;">
+                                            <td data-label=""><div class="slds-truncate" title="SUB TOTAL"><b>SUB TOTAL</b></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label="Total Premium"><div class="slds-truncate" title="Total Premium"><b>R<lightning:formattedNumber value="{!v.grandTotalUltimateProtector}" style="decimal" maximumFractionDigits="2"/></b></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        </tr>
+                                        <br/>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!and(quoteSummary.partyType == v.productHealthAssistance, quoteSummary.partyName == v.productHealthAssistanceUnique)}">
+                                        <tr class="slds-hint-parent" style="background-color:#cfc7c6;">
+                                            <td data-label=""><div class="slds-truncate" title="SUB TOTAL"><b>SUB TOTAL</b></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label="Total Premium"><div class="slds-truncate" title="Total Premium"><b>R<lightning:formattedNumber value="{!v.grandTotalHealthAssistance}" style="decimal" maximumFractionDigits="2"/></b></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        </tr>
+                                        <br/>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!and(quoteSummary.partyType == v.productLawForYou, quoteSummary.partyName == v.productLawForYouUnique)}">
+                                        <tr class="slds-hint-parent" style="background-color:#cfc7c6;">
+                                            <td data-label=""><div class="slds-truncate" title="SUB TOTAL"><b>SUB TOTAL</b></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                            <td data-label="Total Premium"><div class="slds-truncate" title="Total Premium"><b>R<lightning:formattedNumber value="{!v.grandTotalLawForYou}" style="decimal" maximumFractionDigits="2"/></b></div></td>
+                                            <td data-label=""><div class="slds-truncate" title=""></div></td>
+                                        </tr>
+                                        <br/>
+                                    </aura:if>
+                                    
+                                </aura:iteration>
+                                
+                            </tbody>
+                        </table>
+                        
+                        <br/>
+                        <aura:if isTrue="{!v.showDependents}">
+                            
+                            <lightning:layoutItem size="12">
+                                <br/>
+                                <lightning:tile label="Quote Summary - Members">
+                                    <aura:set attribute="media">
+                                        <lightning:avatar fallbackIconName="standard:opportunity"/>
+                                    </aura:set>
+                                </lightning:tile>
+                                <br/>
+                            </lightning:layoutItem>
+                            
+                            <lightning:layoutItem size="12">
+                                <div>
+                                    <lightning:datatable
+                                                         columns="{!v.columnsDependants}"
+                                                         data="{!v.dataDependants}"
+                                                         keyField="id"
+                                                         hideCheckboxColumn="true"/>
+                                </div>
+                            </lightning:layoutItem>
+                        </aura:if>
+                    </lightning:layoutItem>
+                    
+                </aura:set>
+            </aura:if>
+            <aura:set attribute="else">
+                <li class="slds-item">
+                    <lightning:tile label="No Results Found">
+                        <aura:set attribute="media">
+                            <lightning:avatar fallbackIconName="standard:opportunity"/>
+                        </aura:set>
+                    </lightning:tile>
+                </li>
+            </aura:set>
+        </aura:if>
+    </lightning:layout>
+    
+    <aura:if isTrue="{!v.showUpdateModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeConfirmation}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Edit Member Details</h2>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.selectedProduct == 'Health Assistance'}">
+                    <c:crossSellProductsHealthAssistance OpportunityFromFlow="{!v.opportunityId}" showQuoteEdit="True" updateQuoteScreenClose="{!v.showUpdateModal}"/>
+                    </aura:if>
+                    
+                    <aura:if isTrue="{!v.selectedProduct == 'Road Cover'}">
+							<c:crossSellProducts OpportunityFromFlow="{!v.opportunityId}" showQuoteEdit="True" updateQuoteScreenClose="{!v.showUpdateModal}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.selectedProduct == 'Ultimate Protector'}">
+							<c:crossSellProductUltimateProtector OpportunityFromFlow="{!v.opportunityId}" showQuoteEdit="True" updateQuoteScreenClose="{!v.showUpdateModal}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.selectedProduct == 'Law 4 u'}">
+							<c:crossSellProductLawForU OpportunityFromFlow="{!v.opportunityId}" showQuoteEdit="True" updateQuoteScreenClose="{!v.showUpdateModal}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.selectedProduct == 'Flexi Funeral', v.selectedPartyType =='Main Member') }">
+							<c:MainMemberManagement selectedOppIdFromFlow="{!v.opportunityId}" selectedProductNameFromFlow='Flexi Funeral' showQuoteEdit="false" updateQuoteScreenClose="{!v.showUpdateModal}" />
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.selectedProduct == 'Flexi Funeral', v.selectedPartyType =='Extended Family Member') }">
+							<c:dependantManagement dependantTypeFromFlow="Extended Family Member" selectedOppIdFromFlow="{!v.opportunityId}" selectedProductNameFromFlow='Flexi Funeral' showQuoteEdit="true" updateQuoteScreenClose="{!v.showUpdateModal}" />
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.selectedProduct == 'Flexi Funeral', v.selectedPartyType =='Child') }">
+							<c:dependantManagement dependantTypeFromFlow="Child" selectedOppIdFromFlow="{!v.opportunityId}" selectedProductNameFromFlow='Flexi Funeral' showQuoteEdit="true" updateQuoteScreenClose="{!v.showUpdateModal}" />
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.selectedProduct == 'Flexi Funeral', v.selectedPartyType =='Spouse') }">
+							<c:spouseManagement selectedOppIdFromFlow="{!v.opportunityId}" selectedMainMemberCoverFromFlow='{!v.mainMemcover}' selectedProductNameFromFlow='Flexi Funeral' showQuoteEdit="True" updateQuoteScreenClose="{!v.showUpdateModal}" />
+                    </aura:if>
+                    <aura:if isTrue="{!v.selectedProduct == 'AVAF Credit Life'}">
+							<c:crossSellProductsCreditLife OpportunityFromFlow="{!v.opportunityId}" showQuoteEdit="True" updateQuoteScreenClose="{!v.showUpdateModal}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.selectedProduct == 'Extended Cover'}">
+							<c:crossSellProductsExtendedCover OpportunityFromFlow="{!v.opportunityId}" showQuoteEdit="True" updateQuoteScreenClose="{!v.showUpdateModal}"/>
+                    </aura:if>
+                </div>
+                
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{!c.closeConfirmation}"/>
+                    <!--<lightning:button variant="brand" selectedPartyType
+                                      label="Update"
+                                      title="Update"
+                                      onclick="{!c.updateMember}"/>-->
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+</aura:component>

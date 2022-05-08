@@ -1,0 +1,259 @@
+<aura:component implements="flexipage:availableForAllPageTypes,force:appHostable,force:lightningQuickAction,force:hasRecordId" access="global" >
+    
+    <!-- BEGAN ATTRIBUTE -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Yes', 'value': 'Yes'},
+                                                        {'label': 'No', 'value': 'No'}
+                                                        ]"/>
+    
+  
+    <aura:attribute name="applicationData" type="Object"/>
+    <aura:attribute name="termsInMonth" type="String" default="{v.termsInMonth}"/>
+
+    <aura:attribute name="fieldsData" type="Object"/> 
+    <aura:attribute name="creditLineHolder" type="String" default="{! v.fieldsData.Credit_Line__c.value }"/>  
+    <aura:attribute name="creditLineVal" type="String" default="{!v.applicationData.Credit_Line__c}"/> 
+    <aura:attribute name="ArticleSecureValue" type="String" default="{!v.applicationData.Article_secure__c}"/>
+    <aura:attribute name="indicatorInsolventValue" type="String" default="{!v.applicationData.Indicator_Insolvent__c}"/>
+    <aura:attribute name="indicatorITCConsentValue" type="String" default="{!v.applicationData.Indicator_ITC_Consent__c}"/>
+    <aura:attribute name="EnterpriseCustomerValue" type="String" default="{!v.applicationData.Is_this_an_enterprise_customer__c}"/>
+    <aura:attribute name="principalsClearBureauDataValue" type="String" default="{!v.applicationData.principals_clear_bureau__c}"/>
+    <aura:attribute name="customerClearBureauDataValue" type="String" default="{!v.applicationData.Clear_Bureau_Data__c}"/>
+    <aura:attribute name="principalsFavourableValue" type="String" default="{!v.applicationData.principals_favourable__c}"/>
+    <aura:attribute name="BusinessClearBureauValue" type="String" default="{!v.applicationData.Business_clear_bureau_data__c}"/>
+    <aura:attribute name="loanLessThan110Value" type="String" default="{!v.applicationData.Loan_value_less_than_110__c}"/>
+    <aura:attribute name="ageOfArticleLessThan10yrEndValue" type="String" default="{!v.applicationData.Age_of_article_less_than_10_years_at_the__c}"/>
+    <aura:attribute name="totalPotentialExposureLessThan1_5Value" type="String" default="{!v.applicationData.Total_potential_exposure_less_than_1_5__c}"/>
+    <aura:attribute name="applAmountLessThan15TurnoverValue" type="String" default="{! v.applicationData.Application_amount_less_than_15_of_turn__c }"/>
+    <aura:attribute name="calculateCreditAppResult" type="String" default=""/> 
+    <aura:attribute name="customerFavourableValue" type="String" default="{!v.applicationData.customer_business_favourable__c}"/>
+    <aura:attribute name="SanctioningRequiredValue" type="String" default="{!v.applicationData.Is_sanctioning_required__c}" />
+    <aura:attribute name="companyTurnoverCategory" type="String" default="{!v.companyTurnoverCategory}" />
+    
+    <!-- END ATTRIBUTE -->
+    
+    <lightning:accordionSection name="CAF_CreditApplicationDetails" label="Credit application details">
+        
+        <!-- BASIC GRID EXAMPLE -->
+        <div class="slds-grid slds-wrap p-lr-20">
+            <div class="slds-col slds-size_12-of-12">
+                                
+                <lightning:radioGroup name="CreditLine"
+                                      label="Credit Line?"
+                                      required="true"
+                                      options="{! v.options }"
+                                      onchange="{! c.yesORno }"
+                                      aura:id="IdCreditLine1"
+                                      value="{!v.creditLineVal}"
+                                      type="button"/>
+                <lightning:inputField class="slds-hide" fieldName="Credit_Line__c" aura:id="IdcreditLine"/> 
+                
+            </div>
+            <div class="slds-col slds-size_7-of-12">
+                <lightning:radioGroup name="SanctioningRequired"
+                                      label="Is sanctioning required?"
+                                      options="{! v.options }"
+                                      onchange="{! c.isSanctioningYesORno }"
+                                      value="{! v.SanctioningRequiredValue }"
+                                      type="button"/>
+                <lightning:inputField class="slds-hide" fieldName="Is_sanctioning_required__c" aura:id="IdIs_sanctioning"/>
+                <aura:if isTrue="{!v.SanctioningRequiredValue == 'Yes'}">
+                    
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-2">                        
+                            
+                            <div class="search">
+                                <div class="search-wrapper">
+                                    <lightning:inputField fieldName="Select_cheque_account__c"/>
+                                </div>
+                            </div>
+                        </div>                                
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:inputField fieldName="Profit_margin__c"/>
+                        </div>                                
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:inputField fieldName="Debt_levels__c"/>
+                        </div>                                
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:inputField fieldName="Number_of_company_shareholders__c"/>
+                        </div>
+                        <div class="slds-col slds-size_1-of-4"> 
+                            <lightning:inputField fieldName="Financed_amount__c"/>                           
+                        </div>
+
+                        <div class="slds-col slds-size_1-of-3"> 
+                            <lightning:inputField fieldName="Existing_ABSA_Client__c"/>                         
+                        </div> 
+                        <div class="slds-col slds-size_1-of-3"> 
+                            <label class="slds-form-element__label slds-no-flex">Company turnover</label>                            
+                            <div class="text ">
+                                <p><span>{! v.companyTurnoverCategory }</span></p>
+                            </div>                            
+                        </div>
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="ArticleSecure"
+                                                  label="Article secure"
+                                                  required="true"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.articleSecureYesOrNo }"
+                                                  value="{! v.ArticleSecureValue }"
+                                                  type="button"/>
+                            <lightning:inputField class="slds-hide" fieldName="Article_secure__c" value="{! v.ArticleSecureValue }" aura:id="IdArticleSecure"/> 
+                        </div> 
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="indicatorInsolvent"
+                                                  label="Indicator Insolvent"
+                                                  required="true"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.indicatorInsolventYesOrNo }"
+                                                  value="{! v.indicatorInsolventValue }"
+                                                  type="button"/>
+                            <lightning:inputField class="slds-hide" fieldName="Indicator_Insolvent__c" aura:id="IdindicatorInsolvent"/> 
+                        </div>                        
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="indicatorITCConsent"
+                                                  label="Indicator ITC Consent"
+                                                  required="true"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.indicatorITCConsentYesOrNo }"
+                                                  value="{! v.indicatorITCConsentValue }"
+                                                  type="button"/>
+                            <lightning:inputField class="slds-hide" fieldName="Indicator_ITC_Consent__c" aura:id="IdIndicatorITCConsent"/> 
+                        </div>                         
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="EnterpriseCustomer"
+                                                  label="Is this an enterprise customer"
+                                                  required="true"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.enterpriseCustomerYesOrNo }"
+                                                  value="{! v.EnterpriseCustomerValue }"
+                                                  type="button"/>
+                            <lightning:inputField class="slds-hide" fieldName="Is_this_an_enterprise_customer__c" aura:id="IdEnterpriseCustomer"/>
+                        </div>  
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:inputField fieldName="Existing_Absa_finance_to_be_settled__c"/>
+                        </div>  
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:inputField fieldName="Customer_TFL__c" label="What is the customer's TFL(Total Financing Limit)?"/>
+                        </div>    
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <label class="slds-form-element__label slds-no-flex">Does the client fall under the NCA</label>                            
+                            <div class="text ">
+                                <p><span>{! v.applicationData.Account_NCA_Status__c }</span></p>
+                            </div>                            
+                        </div>
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <!--<label class="slds-form-element__label slds-no-flex">What is the business status?</label> -->                           
+                            <div class="text ">
+                                <lightning:inputField fieldName="Business_status__c" value="{!v.Business_status__c}"/>
+                            </div>                            
+                        </div>  
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="principalsClearBureauData"
+                                                  label="Do the principals of the business have clear bureau data?"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.principalsClearBureauDataYesOrNo }"
+                                                  value="{! v.principalsClearBureauDataValue }"
+                                                  type="button"/>
+                            <lightning:inputField class="slds-hide" fieldName="principals_clear_bureau__c" aura:id="IdprincipalsClearBureauData"/>
+                        </div> 
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="customerClearBureauData"
+                                                  label="Does the customer (business) have clear bureau data?"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.customerClearBureauDataYesOrNo }"
+                                                  value="{! v.BusinessClearBureauValue }"
+                                                  type="button"/>
+                            <lightning:inputField class="slds-hide" fieldName="Business_clear_bureau_data__c" aura:id="IdcustomerClearBureauData"/>
+                        </div> 
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="principalsFavourable"
+                                                  label="Is the internal Absa data for the principals favourable?"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.principalsFavourableYesOrNo }"
+                                                  value="{! v.principalsFavourableValue }"
+                                                  type="button"/>
+                            <lightning:inputField class="slds-hide" fieldName="principals_favourable__c" aura:id="IdprincipalsFavourable"/>
+                        </div> 
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="customerFavourable"
+                                                  label="Is the internal Absa data for the customer(business) favourable?"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.customerFavourableYesOrNo }"
+                                                  value="{! v.customerFavourableValue }"
+                                                  type="button"/>
+                            <lightning:inputField class="slds-hide" fieldName="customer_business_favourable__c" aura:id="IdcustomerFavourable"/>
+
+                        </div>  
+                        <div class="slds-col slds-size_1-of-1"> 
+                            <p>
+                                <label class="slds-form-element__label slds-no-flex">Term less than 72 months</label>                            
+                                <div class="text ">
+                                    <span>{! v.applicationData.Term_less_than_72_months__c}</span>
+                                </div>      
+                            </p>                      
+                        </div>  
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="LoanLessThan110"
+                                                  label="Loan value less than 110%"
+                                                  required="true"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.loanLessThan110YesOrNo }"
+                                                  value="{! v.loanLessThan110Value }"
+                                                  type="button"/>
+                             <lightning:inputField class="slds-hide" fieldName="Loan_value_less_than_110__c" aura:id="IdloanLessThan110"/>
+
+                        </div> 
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="AgeOfArticleLessThan10yrEnd"
+                                                  label="Age of article less than 10 years at the end of term"
+                                                  required="true"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.ageOfArticleLessThan10yrEndYesOrNo }"
+                                                  value="{! v.ageOfArticleLessThan10yrEndValue }"
+                                                  type="button"/>
+                            <lightning:inputField class="slds-hide"  fieldName="Age_of_article_less_than_10_years_at_the__c" aura:id="IdageOfArticleLessThan10yrEnd"/>
+
+                        </div> 
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="totalPotentialExposureLessThan1_5"
+                                                  label="Total potential exposure less than 1.5"
+                                                  required="true"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.totalPotentialExposureLessThan1_5YesOrNo }"
+                                                  value="{! v.totalPotentialExposureLessThan1_5Value }"
+                                                  type="button"/>
+                             <lightning:inputField class="slds-hide" fieldName="Total_potential_exposure_less_than_1_5__c" aura:id="IdtotalPotentialExposureLessThan1_5"/>
+                        </div> 
+                        <div class="slds-col slds-size_1-of-2"> 
+                            <lightning:radioGroup name="ApplAmountLessThan15Turnover"
+                                                  label="Application amount less than 15% of turnover"
+                                                  required="true"
+                                                  options="{! v.options }"
+                                                  onchange="{! c.applAmountLessThan15TurnoverYesOrNo }"
+                                                  value="{! v.applAmountLessThan15TurnoverValue }"
+                                                  type="button"/>
+                            <lightning:inputField class="slds-hide" fieldName="Application_amount_less_than_15_of_turn__c" aura:id="IdapplAmountLessThan15Turnover"/>
+                        </div>                        
+                        <div class="slds-col slds-size_1-of-1"> 
+                            <p>
+                                What are the terms and conditions of the proposed deal and does it fall within our deal structure requirements?<strong>{! v.calculateCreditAppResult }</strong>     
+                            </p> 
+                            <lightning:inputField class="slds-hide" fieldName="Agree_Term_and_Condition__c" value="{! v.calculateCreditAppResult }"/>
+                        </div> 
+                        <div class="slds-col slds-size_1-of-1">
+                            <p>
+                                <lightning:button type="submit" label="Update"  variant="brand"/> then
+                                <lightning:button label="Calculate"  variant="brand" aura:id="btnCalculate"  onclick="{!c.calculateCreditApp}"/>
+                            </p>
+                        </div> 
+                    </div>
+                </aura:if>
+                
+            </div>
+        </div>
+        
+    </lightning:accordionSection>
+    
+</aura:component>

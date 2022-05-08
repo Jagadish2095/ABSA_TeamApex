@@ -1,0 +1,101 @@
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global" controller = "ClientFinderExt">
+    
+    <aura:attribute name="selectedProcessNameFromFlow" type="String" access="global"  />
+    <aura:attribute name="newAccount" type="Account" default="{ 'sobjectType': 'Account'}" />
+    <aura:attribute type="Boolean" name="isInvalidIdNumber" default="false" description="Determine whether the ID number is valid or not"/>
+    <aura:attribute type="Boolean" name="isnavigateNext" default="false" description="Determine whether the ID number is valid or not"/>
+    <aura:attribute type="Boolean" name="isDisabled" default="false" access="global"/>
+    <aura:attribute name="accountId" type="String" />
+    <aura:attribute name="selectedAccountRecordTypeId" type="String" />
+    <aura:attribute name="selectedAccountRecordTypeName" type="String"/>
+    <aura:attribute name="consentOptions" type="List" default="[
+                                                               {'label': 'Yes', 'value': 'Yes'},
+                                                               {'label': 'No', 'value': 'No'}
+                                                               ]"/>
+    <aura:attribute name="consentVal" type="string" />
+    
+    <lightning:flow aura:id="flowData"/>
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" alternativeText="Loading..."/>
+    </center>
+    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" style="overflow: initial">
+        <lightning:card >
+            <lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+                <h3 class="slds-section__title slds-theme_shade" style="width: 100%">
+                    <span class="slds-truncate slds-p-horizontal_small" title="Section Title" iconName="utility:case"><b>New to bank onboarding</b></span>
+                </h3>
+                <lightning:layoutItem size="6" class="slds-form__item">
+                    <div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+                        <div class="slds-form-element__control">
+                            <div class="slds-form-element__static">
+                                <lightning:input type="Text" aura:id="ID Number" disabled="{!v.isDisabled}" label="ID Number" value="{!v.newAccount.ID_Number__pc}" required="true" />
+                            </div>
+                        </div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="slds-form__item">
+                    <div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+                        <div class="slds-form-element__control">
+                            <div class="slds-form-element__static">
+                                
+                            </div>
+                        </div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="slds-form__item">
+                    <div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+                        <div class="slds-form-element__control">
+                            <div class="slds-form-element__static">
+                                <lightning:input type="Text" aura:id="firstName" disabled="{!v.isDisabled}" label="FirstName" value="{!v.newAccount.FirstName}" required="true" />
+                            </div>
+                        </div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="slds-form__item">
+                    <div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+                        <div class="slds-form-element__control">
+                            <div class="slds-form-element__static">
+                                <lightning:input type="Text" aura:id="lastName" disabled="{!v.isDisabled}" label="LastName" value="{!v.newAccount.LastName}" required="true" />
+                            </div>
+                        </div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="slds-form__item">
+                    <div class="slds-form-element slds-form-element_stacked slds-hint-parent">
+                        <div class="slds-form-element__control">
+                            <div class="slds-form-element__static">
+                                <lightning:input type="tel" aura:id="PersonMobilePhone" disabled="{!v.isDisabled}" label="Contact Number" value="{!v.newAccount.PersonMobilePhone}" required="true" />
+                            </div>
+                        </div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="8" class="slds-form__item">
+                    <ui:message severity="info" closable="false">
+                        <p><b>I confirm that I have asked the customer permission to contact them on the above mentioned number should they not be able to complete their application and the customer said:</b></p>
+                        <lightning:radioGroup aura:id="statementOptionsRadioGroup"
+                                              name="statementOptionsRadioGroup"
+                                              variant="lebel-hidden"
+                                              options="{!v.consentOptions }"
+                                              value="{!v.consentVal}"
+                                              type="radio" 
+                                              disabled="{!v.isDisabled}"
+                                              style="display: inline-block !important"
+                                              />
+                    </ui:message>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:card>
+    </div>
+    <footer class="slds-modal__footer">
+        <div aura:id="actionButtonBar" class="slds-clearfix slds-p-top_medium">
+            <!-- If Previous is available, display to the left -->
+            <div class="slds-float_left">
+                <lightning:button variant="neutral" label="Previous" aura:id="BACK" title="Previous" onclick="{! c.handleNext }"/>
+            </div>
+            <div class="slds-float_right">
+                <lightning:button variant="brand" label="Next" title="Next" aura:id="NEXT" onclick="{! c.handleNext }" disabled="{!if(v.consentVal =='Yes', false, true)}" />
+            </div>
+        </div>
+    </footer>
+</aura:component>

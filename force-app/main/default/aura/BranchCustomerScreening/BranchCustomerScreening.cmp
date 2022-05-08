@@ -1,0 +1,67 @@
+<!--
+  @description       : Component to Call Primary Screening.
+  @author            : Thomas Dry : ABSA (IQ Business)
+  @last modified on  : 2021-08-04
+  @last modified by  : PaulJohn.duRand@absa.africa
+-->
+<aura:component
+	access="global"
+	controller="BranchCasaController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+>
+	<aura:attribute name="accountRecordId" type="string" />
+	<aura:attribute name="screeningCallState" type="string" default="" access="global" />
+	<aura:attribute name="screeningPassed" type="boolean" default="" access="global" />
+	<aura:attribute name="casaStatus" type="String" default="" />
+	<aura:attribute name="screeningResult" type="String" default="" />
+	<aura:attribute name="casaScreeningStatus" type="string" default="" />
+	<aura:attribute name="casaReferenceNumber" type="string" default="" />
+	<aura:attribute name="dataLoaded" type="Boolean" default="false" />
+	<aura:attribute name="isCalledFromFlow" type="boolean" default="true" />
+	<aura:attribute name="isAnalystComments" type="boolean" default="false" />
+	<aura:attribute name="showMessageDialog" type="boolean" default="false" />
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+
+	<!-- Attributes used by Parent CMP -->
+	<aura:attribute name="isSuccessful" type="boolean" default="false" />
+	<aura:attribute name="hasProcessStopped" type="boolean" default="false" />
+	<aura:attribute name="enablePause" type="boolean" default="false" />
+	<aura:attribute name="errorDisplay" type="boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" default="" />
+
+	<!-- Attributes for BranchGenericServiceView -->
+	<aura:attribute name="statusLabel" type="string" default="" />
+	<aura:attribute name="casaStatusMessage" type="String" default="" />
+	<aura:attribute name="showSuccess" type="boolean" default="false" />
+	<aura:attribute name="showError" type="boolean" default="false" />
+
+	<!-- Handlers -->
+	<aura:handler name="init" value="{!this}" action="{!c.init}" />
+	<aura:handler name="change" value="{!v.casaStatus}" action="{!c.handleStatusMessage}" />
+
+	<c:BranchGenericServiceView
+		showSpinner="{!v.showSpinner}"
+		title="CASA Screening"
+		statusLabel="{!v.statusLabel}"
+		statusValue="{!v.casaStatusMessage}"
+		showSuccess="{!v.showSuccess}"
+		showError="{!v.showError}"
+	/>
+	<aura:if isTrue="{!(v.isAnalystComments) }">
+		<c:BranchAnalystComments
+			recordId="{! v.recordId }"
+			ScreeningStatus="{! v.casaStatus }"
+			showCmp="{! v.isAnalystComments }"
+			isSuccessful="{! v.isSuccessful}"
+			isCalledFromFlow="false"
+			errorDisplay="{! v.errorDisplay}"
+			errorMessage="{! v.errorMessage}"
+			showSuccess="{! v.showSuccess}"
+			enablePause="{! v.enablePause}"
+		/>
+	</aura:if>
+
+	<aura:if isTrue="{! v.showMessageDialog }">
+		<c:BranchDialog showDialog="{! v.showMessageDialog }" heading="{! v.dialogHeading }" message="{! v.dialogMessage }" />
+	</aura:if>
+</aura:component>

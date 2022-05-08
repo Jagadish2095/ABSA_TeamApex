@@ -1,0 +1,261 @@
+<aura:component controller="AuthorizedUsersController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="recordId" type="Id" />
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}"/>
+    <aura:attribute name="CurrentRecordToEdit" type="object"/>
+    <aura:attribute name="CurrentRecordToDelete" type="object"/>
+    <aura:attribute name="AssignedUsersTableList" type="List" default="[]"/>
+    <aura:attribute name="RelatedPartiesList" type="List" default="[]" description="RelatedParties Picklist Values"/>
+    <aura:attribute name="selectedRelatedPartiesList" type="List" default="[]" description="Selected RelatedParties Picklist Values"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="showAfterConfirmUsers" type="boolean" default="false"/>
+    <aura:attribute name="showAfterEditUsers" type="boolean" default="false"/> 
+    <aura:attribute name="showCreditLimit" type="boolean" default="false"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="DeliveryMethod" type="List" default="[
+                                                               {'label': 'Branch', 'value': 'Branch'},
+                                                               {'label': 'To me at existing address', 'value': 'To me at existing address'},
+                                                               {'label': 'To my company', 'value': 'To my company'},
+                                                               {'label': 'To another address', 'value': 'To another address'},
+                                                               ]"/>
+    <aura:attribute name="addressList" type="List" default=""/> 
+    <aura:attribute name="CompanyaddressList" type="List" default=""/> 
+    <aura:attribute name="existingAddresscolumns" type="List"/>
+    <aura:attribute name="ActionRequiredOptions" type="String[]" default="New,Remove,No action,Update"/>
+    <aura:attribute name="CardOptions" type="String[]" default="New Card,Replacement Card"/>
+    <aura:attribute name="ClientTypeOptions" type="String[]" default="Absa Staff,Private Individual"/>
+    <aura:attribute name="DesignationOptions" type="List"/>
+    <aura:attribute name="FacilityRequiredOptions" type="String[]" default="Aviation,Business and Garage Card,
+                                                                            Business Card Only,Garage Card Only"/>
+    <aura:attribute name="DeliveryMethodValue" type="String" default="Branch"/>
+    <aura:attribute name="selectedSiteRecord" type="sObject"/>
+    <aura:attribute name="searchKeyWord" type="String"/>
+    <aura:attribute name="CreditLimitLabel" type="String" default="Credit limit required for aviation card"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="AuthorizedUserList" type="List"/>
+    <aura:attribute name="appProductId" type="String" />
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    <aura:attribute name="record" type="Object"
+                    description="The record object to be displayed"/>
+    <aura:attribute name="oppRecord" type="Object"
+                    description="A simplified view record object to be displayed"/>
+    <aura:attribute name="recordError" type="String"
+                    description="An error message bound to force:recordData"/>
+    <force:recordData aura:id="record"
+                      fields="Id,AccountId"
+                      recordId="{!v.recordId}"
+                      targetError="{!v.recordError}"
+                      targetRecord="{!v.record}"
+                      targetFields ="{!v.oppRecord}"
+                      mode="VIEW"/>
+    <lightning:accordion allowMultipleSectionsOpen="true">
+        <lightning:accordionSection name="Authorized Users"  label="Authorized Users">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" padding="around-small">
+                    
+                    <lightning:dualListbox aura:id="Multiselect" name="RelatedParties" label="Select authorized users from the available operators list related to the primary client" sourceLabel="Available" selectedLabel="Selected" options="{!v.RelatedPartiesList}" value="{!v.selectedRelatedPartiesList}" onchange="{!c.handleRelatedPartiesChange}"/>
+                    
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                </lightning:layoutItem>    
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Confirm Users" variant="brand"
+                                      onclick="{!c.confirmUsers}" />
+                </lightning:layoutItem>
+                
+                <aura:if isTrue="{!v.showAfterConfirmUsers}">
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <lightning:datatable
+                                             keyField="id"
+                                             data="{!v.AssignedUsersTableList}"
+                                             columns="{! v.columns }"
+                                             hideCheckboxColumn="true"
+                                             onrowaction="{!c.handleRowAction}"/>
+                    </lightning:layoutItem>
+                    <aura:if isTrue="{!v.showAfterEditUsers}">
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input value="{!v.CurrentRecordToEdit.FName}" readonly="true"
+                                             label="First Name and Surname" disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input value="{!v.CurrentRecordToEdit.ClientCode}" readonly="true"
+                                             label="Client Code(CIF)" disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input value="{!v.CurrentRecordToEdit.CASA}" readonly="true"
+                                             label="CASA Reference" disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input value="{!v.CurrentRecordToEdit.Passport}" readonly="true"
+                                             label="Identification/Passport/Foreign Id" disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select name="Type of Client" label="Type of Client" value="{!v.CurrentRecordToEdit.ClientType}" required="true" messageWhenValueMissing="Please select an action">
+                                <option value="">-- None --</option>
+                                <aura:iteration items="{!v.ClientTypeOptions}" var="rec">
+                                    <option value="{!rec}" text="{!rec}"></option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input value="{!v.CurrentRecordToEdit.NameCard}" label="Name on Card"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select name="Action Required" label="Action Required" value="{!v.CurrentRecordToEdit.ActionRequired}" required="true" messageWhenValueMissing="Please select an action">
+                                <option value="">-- None --</option>
+                                <aura:iteration items="{!v.ActionRequiredOptions}" var="rec">
+                                    <option value="{!rec}" text="{!rec}"></option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select name="New/Replaced Card" label="New/Replaced Card" value="{!v.CurrentRecordToEdit.CardType}" required="true" messageWhenValueMissing="Please select an action">
+                                <option value="">-- None --</option>
+                                <aura:iteration items="{!v.CardOptions}" var="rec">
+                                    <option value="{!rec}" text="{!rec}"></option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:input value="{!v.CurrentRecordToEdit.AircraftRegNo}" label="Aircraft Registration Number"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select name="Designation" label="Designation" value="{!v.CurrentRecordToEdit.Designation}" required="true" messageWhenValueMissing="Please select an action">
+                                <option value="">-- None --</option>
+                                <aura:iteration items="{!v.DesignationOptions}" var="item">
+                                    <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:select aura:id="FacilityReq" name="FacilityReq" label="Facility Required" value="{!v.CurrentRecordToEdit.FacilityRequired}" required="true" messageWhenValueMissing="Please select an action" onchange="{!c.ChangeFacility}">
+                                <option value="">-- None --</option>
+                                <aura:iteration items="{!v.FacilityRequiredOptions}" var="rec">
+                                    <option value="{!rec}" text="{!rec}"></option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!v.CurrentRecordToEdit.FacilityRequired !=null}">
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input type="number" value="{!v.CurrentRecordToEdit.CreditLimit}" label="{!v.CreditLimitLabel}"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+                        <lightning:layoutItem size="12" padding="around-small">
+                            <lightning:radioGroup name="Delivery Method"
+                                                  label="Delivery Method"
+                                                  options="{!v.DeliveryMethod}"
+                                                  value="{! v.CurrentRecordToEdit.DeliveryMethodValue}"
+                                                  type="radio"
+                                                  onchange="{!c.handleDeliveryMethodChange}"/>
+                        </lightning:layoutItem>
+                        <aura:if isTrue="{!v.CurrentRecordToEdit.DeliveryMethodValue == 'Branch'}">
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <aura:if isTrue="{!v.CurrentRecordToEdit.BranchName != null}">
+                                    <b>Current Branch : {!v.CurrentRecordToEdit.BranchName}</b><br/>
+                                </aura:if>
+                                <aura:if isTrue="{!v.selectedSiteRecord != null}">
+                                <b>Selected Branch : {!v.selectedSiteRecord.Name}</b>
+                                </aura:if>
+                                <c:SiteLookup aura:id="siteLookupChild"
+                                              placeholder="Site Code"
+                                              objectAPIName="Product2"
+                                              selectedRecord="{!v.selectedSiteRecord}"
+                                              SearchKeyWord="{!v.searchKeyWord}"
+                                              label="Branch"
+                                              />
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small"></lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!v.CurrentRecordToEdit.DeliveryMethodValue == 'To me at existing address'}">
+                            <lightning:layoutItem size="12" padding="around-small">
+                                
+                                <lightning:datatable data="{! v.addressList }"
+                                                     columns="{! v.existingAddresscolumns }"
+                                                     keyField="Id"
+                                                     hideCheckboxColumn="false"
+                                                     maxRowSelection="1"
+                                                     onrowselection="{!c.UpdateSelectedRows}"
+                                                     selectedRows="{! v.selectedRows }"/>
+                                
+                            </lightning:layoutItem></aura:if>
+                        <aura:if isTrue="{!v.CurrentRecordToEdit.DeliveryMethodValue == 'To my company'}">
+                            <lightning:layoutItem size="12" padding="around-small">
+                                
+                                <lightning:datatable data="{! v.CompanyaddressList }"
+                                                     columns="{! v.existingAddresscolumns }"
+                                                     keyField="Id"
+                                                     hideCheckboxColumn="false"
+                                                     maxRowSelection="1"
+                                                     onrowselection="{!c.UpdateSelectedRows}"
+                                                     selectedRows="{! v.selectedRows }"/>
+                                
+                            </lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!v.CurrentRecordToEdit.DeliveryMethodValue == 'To another address'}">
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input value="{!v.CurrentRecordToEdit.DeliveryAddressLine1}" label="Delivery Address Line1"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input value="{!v.CurrentRecordToEdit.DeliveryAddressLine2}" label="Delivery Address Line2"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input value="{!v.CurrentRecordToEdit.DeliveryAddressSuburb}" label="Delivery Address Suburb"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input value="{!v.CurrentRecordToEdit.DeliveryAddressTown}" label="Delivery Address Town"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input value="{!v.CurrentRecordToEdit.DeliveryAddressPostalCode}" label="Delivery Address Postal Code"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input value="{!v.CurrentRecordToEdit.DeliveryAddressCountry}" label="Delivery Address Country"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <lightning:button class="slds-float_left" label="Save" variant="brand"
+                                              onclick="{!c.saveAU}" />
+                        </lightning:layoutItem>
+                    </aura:if>
+                </aura:if>
+                
+            </lightning:layout>
+        </lightning:accordionSection>    
+        
+    </lightning:accordion>
+    <aura:if isTrue="{!v.isModalOpen}">
+		<section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container" >
+				<div class="slds-card slds-card_boundary" style="width:500px"> 
+					<div class="slds-card slds-card_boundary">   
+						<header class="slds-card__header slds-grid">
+							<div class="slds-media slds-media--center slds-has-flexi-truncate">
+								<div class="slds-media__figure">
+									<lightning:icon iconName="custom:custom45" alternativeText="Absa Products" size="small" />
+								</div>
+								<div class="slds-media__body slds-truncate">
+									<h2>
+										<a href="javascript:void(0);" class="slds-text-link--reset">
+                                            <span class="slds-text-heading--small">Only delete this user if it was added by mistake.<br/> To remove an existing user, use the Action field</span>
+										</a>
+                                        
+									</h2>
+								</div>
+							</div>
+						</header>
+					</div>
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" > 
+					<lightning:button class="slds-float_left" label="Continue" variant="brand"
+                                              onclick="{!c.deleterecord}" />
+                                        <lightning:button class="slds-float_left" label="Cancel" variant="brand"
+                                              onclick="{!c.closeModal}" />	
+					</div>    
+					
+				</div>
+			</div>     
+		</section>
+    </aura:if>
+</aura:component>

@@ -1,0 +1,218 @@
+<!--
+* Lightning Component for Fulfillment of Product Application
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2021-01-06
+* @updated Almas Aleem
+* @updated 2021-05-06
+-->
+<aura:component access="global"
+                controller="FulfillmentApplicationController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+     <!-- Reference external CSS file-->
+    <ltng:require styles="{!$Resource.MultiLineToastCSS}" />
+
+    <!-- Attributes Declaration-->
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="userId" type="Id"/>
+    <aura:attribute name="clientCodeReviewData" type="Object[]" />
+    <aura:attribute name="clientCodeReviewColumns" type="List" />
+    <aura:attribute name="productsForFulfillmentData" type="Object[]" />
+    <aura:attribute name="productsForFulfillmentColumns" type="List" />
+    <aura:attribute name="securitiesOfferedData" type="Object[]" />
+    <aura:attribute name="confirmCheckboxOptions" type="List" default="[{'label': ' I am ready to submit to fulfillment', 'value': 'submit'}]"/>
+    <aura:attribute name="confirmCheckboxValue" type="List"/>
+    <!-- Added By Himani Joshi-->
+    <aura:attribute name="confirmComplianceOptions" type="List" default="[{'label': ' I confirm that the main applicant is fully compliant', 'value': 'submit'}]"/>
+    <aura:attribute name="confirmComplianceValue" type="List"/>
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="applicationDocumentList" type="List"/>
+    <aura:attribute name="productDocumentList" type="List"/>
+    <aura:attribute name="applicationProductId" type="String"/>
+    <aura:attribute name="isMainSpinner" type="Boolean" default="false" />
+    <aura:attribute name="isModalSpinner" type="Boolean" default="false" />
+    <aura:attribute name="hasRegion" type="Boolean" default="false" />
+    <!-- Added By Himani Joshi-->
+    <aura:attribute name="isCompliant" type="Boolean" default="false" />
+    <aura:attribute name="checkboxValue" type="Boolean" default="false"/>
+    <!--Added by Manish -->
+    <aura:attribute name="requiredApplicationDocs" type="List"/>
+    <aura:attribute name="requiredAgreementDocs" type="List"/>
+    <aura:attribute name="requiredSecurityDocs" type="List"/>
+    <aura:attribute name="requiredApplicationDocsColumns" type="List"/>
+    <aura:attribute name="requiredAgreementDocsColumns" type="List"/>
+    <aura:attribute name="requiredSecurityDocsColumns" type="List"/>
+
+    <!-- Added by Almas -->
+	<aura:attribute name="isCCProd" type="Boolean" default="false" />
+ 	<!-- Added by Almas -->
+	<aura:attribute name="isLDPProd" type="Boolean" default="false" />
+
+	 <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.initializeCmpData}"/>
+
+    <!-- Aura methods-->
+    <aura:method name="initializeCmpData" action="{!c.initializeCmpData}" />
+
+
+     <aura:handler event="c:initializeCmpDataEvent" action="{!c.initializeCmpData}" />
+
+
+
+    <!--Main Spinner-->
+    <aura:if isTrue="{!v.isMainSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError"><br/>
+            <h2 class="slds-section__title" style="color:red">{!v.errorMessage}</h2><br/>
+        </div>
+    </aura:if>
+
+    <lightning:accordion allowMultipleSectionsOpen="true" aura:id="fulfillmentAccordion">
+
+        <!--Client Code Review Section-->
+        <lightning:accordionSection name="ClientCodeReviewSection" label="Client Code Review" >
+            <lightning:datatable keyField="id" data="{! v.clientCodeReviewData }" columns="{! v.clientCodeReviewColumns }" hideCheckboxColumn="true" />
+        </lightning:accordionSection>
+
+        <!--Required Documents Section Added by Manish for W-011452-->
+        <lightning:accordionSection name="RequiredSignedDocumentsSection" label="Required Signed Documents" >
+            <p>Please ensure all the following required documents have been completed and uploaded (via the Documents Tab) on this opportunity before submitting it for fulfillment below.</p>
+            <h2 class="slds-section__title">Application Forms</h2>
+            <lightning:datatable keyField="Id" data="{! v.requiredApplicationDocs }" columns="{! v.requiredApplicationDocsColumns }"  hideCheckboxColumn="true"/>
+            <br/>
+            <h2 class="slds-section__title">Agreements</h2>
+            <lightning:datatable keyField="Id" data="{! v.requiredAgreementDocs }" columns="{! v.requiredAgreementDocsColumns }"  hideCheckboxColumn="true"/>
+            <br/>
+            <h2 class="slds-section__title">Security Documents</h2>
+            <lightning:datatable keyField="Id" data="{! v.requiredSecurityDocs }" columns="{! v.requiredSecurityDocsColumns }"  hideCheckboxColumn="true"/>
+            <br/>
+        </lightning:accordionSection>
+        <!-- w-011452-->
+
+        <!--Products for Fulfillment Section-->
+
+        <lightning:accordionSection name="ProductsForFulfillmentSection" label="Products for Fulfillment" >
+            <lightning:datatable aura:id="prodFulfillDatatable" keyField="Id" data="{! v.productsForFulfillmentData }" columns="{! v.productsForFulfillmentColumns }" maxRowSelection="1" onrowselection="{!c.handleRowAction}" />
+        </lightning:accordionSection>
+
+    </lightning:accordion>
+
+    <lightning:layout multipleRows="true">
+        <!-- Added By Himani Joshi-->
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:checkboxGroup aura:id="confirmCompliance"
+                                    name="Compliance"
+                                    options="{!v.confirmComplianceOptions}"
+                                    value="{! v.confirmComplianceValue }"
+                                    onchange="{! c.handleCompliance }"/>
+        </lightning:layoutItem>
+        <p>Congratulations! You are one step away from submitting this application</p>
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:checkboxGroup aura:id="confirmCheckboxGroup"
+                                    name="Confirmation"
+                                    options="{!v.confirmCheckboxOptions}"
+                                    value="{! v.confirmCheckboxValue }"
+                                    onchange="{! c.handleConfirmation }"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="12">
+            <lightning:button aura:id="submitFulfillment" variant="brand" name="Submit to Fulfillment" label="Submit to Fulfillment" class="slds-hide" onclick="{!c.validateAndSubmit}" />
+        </lightning:layoutItem>
+    </lightning:layout>
+
+    <!-- Modal - Editing Account Details -->
+    <div role="dialog" tabindex="-1" aria-labelledby="modalHeader" aura:id="accountDetailsModal" class="slds-modal slds-modal_large">
+        <div class="slds-modal__container" style="width: 50%">
+            <div class="slds-modal__header slds-text-heading_small">Edit Account Details</div>
+            <div class="slds-modal__content slds-p-around--medium" style="overflow: initial">
+                <!-- Modal Body -->
+                <!-- Spinner -->
+                <aura:if isTrue="{!v.isModalSpinner}">
+                    <lightning:spinner variant="brand" alternativeText="Busy" />
+                </aura:if>
+                <!-- LDS start -->
+                <lightning:recordEditForm aura:id="FulfillmentForm"
+                                    objectApiName="Application_Product__c"
+                                    recordId="{!v.applicationProductId}"
+                                    onload="{!c.handleOnLoad}"
+                                    onsuccess="{!c.handleSuccess}"
+                                    onerror="{!c.handleError}" >
+
+                    <lightning:layout multipleRows="true">
+                        <aura:if isTrue="{! not(v.isCCProd)}">
+                        <!-- fields -->
+                        <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="prductName" fieldName="Product_Name__c" disabled="true" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="productType" fieldName="Product_Type__c" disabled="true"/>
+                        </lightning:layoutItem>
+
+                       <!-- <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="limitType" fieldName="Overdraft_Type__c" disabled="true"/>
+                        </lightning:layoutItem>
+
+                          <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="onceOffDate" fieldName="Once_Off_Date__c" />
+                        </lightning:layoutItem>
+
+                         <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="ReductionDate" fieldName="Reduction_Date__c" />
+                        </lightning:layoutItem>-->
+
+                        <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="productAccountNumber" fieldName="Account_Number__c" /><!-- readonly="true"-->
+                        </lightning:layoutItem>
+                         <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="actionRequired" fieldName="Action_Required__c"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="domicileCode" fieldName="Domicible_Branch_Code__c"/>
+                        </lightning:layoutItem>
+                         <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="reviewDate" fieldName="Review_Date__c"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="expiryDate" fieldName="Expiry_Date__c"/>
+                        </lightning:layoutItem>
+                        </aura:if>
+                        <aura:if isTrue="{!v.isCCProd}">
+                        <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="reviewDate" fieldName="Review_Date__c"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="expiryDate" fieldName="Expiry_Date__c"/>
+                        </lightning:layoutItem>
+                         <lightning:layoutItem padding="around-small" size="4">
+                            <lightning:inputField aura:id="productAccountNumbers" fieldName="Account_Number__c" readonly="true" /> <!-- Added for defect W: 013959   -->
+                        </lightning:layoutItem>
+                        </aura:if>
+                            <lightning:layoutItem size="12" padding="around-small">
+                                <lightning:button variant="neutral"
+                                                    class="slds-float_right slds-m-top_xx-large"
+                                                    label="Close"
+                                                    onclick="{!c.closeModal}" aura:id="closeBtn"/>
+
+                                <lightning:button variant="brand"
+                                                    class="slds-float_right slds-m-right_xx-small slds-m-top_xx-large"
+                                                    label="Save"
+                                                    type="submit" aura:id="saveBtn"
+                                                    disabled="{!empty(v.applicationProductId)}"/>
+                            </lightning:layoutItem>
+
+                    </lightning:layout>
+                </lightning:recordEditForm>
+                <!-- LDS end -->
+            </div>
+        </div>
+    </div>
+    <!-- Modal Back Drop -->
+    <div class="slds-backdrop slds-backdrop--hide" aura:id="Modalbackdrop"></div>
+    <!-- Modal Definitions End -->
+
+</aura:component>

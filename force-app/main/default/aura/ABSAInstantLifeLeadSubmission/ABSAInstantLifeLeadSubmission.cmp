@@ -1,0 +1,163 @@
+<!--
+* Lightning Component for Lead Submission Service (LeadSubmittingservice)
+* @author  Haritha Police : Absa
+* @version v1.0
+* @since   2021-08-20
+*
+-->
+<aura:component implements="lightning:availableForFlowScreens,lightning:availableForFlowActions,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome" 
+                access="global" controller="AbsaInstantLifeController">	
+    <!-- handlers-->
+    <aura:dependency resource="markup://force:showToast" type="EVENT,COMPONENT" />  
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+    <!-- Attributes Declaration-->
+     <aura:attribute name="accountRecordId" type="string" />
+      <aura:attribute name="type" type="string" default="success" />
+    <aura:attribute name="title" type="string" />
+    <aura:attribute name="message" type="string" />    
+    <aura:attribute name="key" type="string" default="" />
+     <aura:attribute name="mode" type="string" default="dismissable" />
+    <aura:attribute name="duration" type="string" default="10" />
+    <aura:attribute name="accRec" type="object" />
+   	<aura:attribute name="indicativepremium" type="string" />
+    <aura:attribute name="coveramount" type="string" />
+     <aura:attribute name="InsuredAmount_Previous" type="string"/>
+    <aura:attribute name="PremiumAmount_Previous" type="string"/>
+    <aura:attribute name="InsuredAmount_Next" type="string"/>
+    <aura:attribute name="PremiumAmount_Next" type="string"/>
+     <aura:attribute name="dateValidationError" type="boolean" />
+    <aura:attribute name="dateValidationError2" type="boolean" />
+    <aura:attribute name="timeValidationError" type="boolean" />
+     <aura:attribute name="stages" type="String[]" default="Cover Amount"/>
+    <aura:attribute name="isOpen" type="boolean" default="false" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+      <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner />
+    </aura:if>
+      <legend class="slds-text-heading--small slds-p-vertical--large">
+                            <p><lightning:icon iconName="standard:account" title="Account" class = "my-icon" />&nbsp;<b>Personal Details  </b></p>
+                        </legend>
+     <lightning:recordEditForm aura:id = "Instantlifeleadform"
+                              recordId="{!v.accRec.Id}"
+                              objectApiName="Account"
+                              density="comfy">
+         
+          				<div class="slds-grid slds-wrap slds-gutters_medium">
+                            <div class="slds-col slds-size_1-of-2">
+                   			 <span >
+                                <lightning:inputField fieldName="FirstName" aura:id="fName" disabled="true" />
+                    		</span>
+                         </div>
+                              <div class="slds-col slds-size_1-of-2">
+                   			 <span>
+								<label class="slds-form-element__label">
+									<span class="slds-m-right_small">Surname</span>
+								</label>
+								<lightning:inputField fieldName="LastName" aura:id="lName" variant="label-hidden" disabled="true"/>
+							</span>
+                         </div>
+                             <div class="slds-col slds-size_1-of-2">
+                   			 <span>
+								<label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">ID/Passport number</span>
+								</label>
+								<lightning:inputField fieldName="ID_Number__pc" aura:id="idnumber" variant="label-hidden" disabled="true"/>
+							</span>
+                         </div>
+                             <div class="slds-col slds-size_1-of-2">
+                   			 <span>
+								<label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Cell Number</span>
+								</label>
+								<lightning:inputField fieldName="PersonMobilePhone" aura:id="mobilenumber" variant="label-hidden" disabled="true"/>
+							</span>
+                         </div>
+                             <div class="slds-col slds-size_1-of-2">
+                   			 
+								<lightning:input aura:id="callbackdate" class="{! v.dateValidationError ? 'slds-has-error' : ''}" type="date" onchange="{!c.checkValidity }" label="Call Back Date"/>
+                                  <aura:if isTrue="{!v.dateValidationError}">
+            <div class="slds-text-color_error slds-p-left_x-small">
+                Date must be in future..
+            </div>
+        </aura:if>   
+                         </div>
+                           <div class="slds-col slds-size_1-of-2">
+                   			 <lightning:input aura:id="callbacktime" class="{! v.timeValidationError ? 'slds-has-error' : ''}" type="Time" label="Call Back Time" min="08:00:00.000Z" max="17:00:00.000Z" onchange="{!c.checktimeValidity}"/>
+                               <aura:if isTrue="{!v.timeValidationError}">
+            						<div class="slds-text-color_error slds-p-left_x-small">
+               							 Time must be present or in future..
+           								 </div>
+       								 </aura:if> 
+                         </div>
+                             <div class="slds-col slds-size_1-of-2">
+                   			 <lightning:input aura:id="coverAmount" label="Cover Amount" type="Text" value="{!v.coveramount}" disabled="true"/>
+                         </div>
+                            <div class="slds-col slds-size_1-of-2">
+                   			 <lightning:input aura:id="indicativepremium" label="Indicative Premium" type="Text" value="{!v.indicativepremium}" disabled="true"/>
+                         </div>
+                             </div>
+         <br></br>
+       <div class="demo-only demo-only--sizing slds-grid slds-wrap">
+           <aura:if isTrue="{!v.coveramount !='1000000'}">
+  <div class="slds-size_1-of-2">
+    <div class="slds-box slds-box_x-small slds-text-align_left slds-m-around_x-small">
+        <b>Alternate Option 1</b>
+        <div class="slds-float_right">
+         <ui:inputRadio text="Sample1" label="" name="Role" change="{!c.onSelectOption}"/>
+        </div>
+        <br/><br/>
+         <dl>
+  <dt>Cover Amount:    <b>{!v.InsuredAmount_Previous}</b></dt>
+  <dt>Premium:    <b>{!v.PremiumAmount_Previous}</b></dt>
+  </dl>
+  </div>
+      </div>
+           </aura:if>
+           <aura:if isTrue="{!v.coveramount !='6000000'}">
+  <div class="slds-size_1-of-2">
+    <div class="slds-box slds-box_x-small slds-text-align_left slds-m-around_x-small">
+        <b>Alternate Option 2</b>
+        <div class="slds-float_right">
+         <ui:inputRadio text="Sample2" label="" name="Role" change="{!c.onSelectOption}"/>
+        </div>
+            <br/><br/>
+          <dl>
+  <dt>Cover Amount:    <b>{!v.InsuredAmount_Next}</b></dt>
+  <dt>Premium:    <b>{!v.PremiumAmount_Next}</b></dt>
+  </dl>
+      </div>
+  </div>
+        </aura:if>  
+            </div>
+         <aura:if isTrue="{! v.isOpen}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                             aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container container-details">
+                            <header class="slds-modal__header">
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Disclosures
+                                </h2>
+                            </header>
+                            <div class="slds-col slds-size_1-of-1 slds-p-left_large custom-background">                                                    
+                                <legend class="slds-text-heading_small slds-var-p-vertical_medium">
+                                    <b>Instant Life - Important Disclosures</b><br/>                              
+                                </legend>
+                                Please accept third party disclosure<br/>
+                                -Mention that once you click submit,customer gives consent for his/her information to be sent to Absa Instant Life.<br/>
+                                -Mention to the customer that the call will be in English.<br/>
+                                -Mention to the customer that they must have a valid email address<br/>
+                                -Mention to the customer that they should have their height and weight available for the underwriting to be done.<br/>
+                                <br/>
+                                Does the customer understand and accept these disclosures.<br/><br/><br/>
+                            </div>
+                            <footer class="slds-modal__footer">                       
+                                <lightning:button variant="Brand" label="OK" title="OK" class="slds-float_right" onclick="{!c.closeAndLeadServiceModel }" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open" style="height:1000px"></div>
+                </aura:if>
+          <div class="slds-var-p-around_x-small">
+            <c:BranchFlowFooter aura:id="branchFlowFooter" availableActions="{! v.availableActions }" navigateFlowEvent="{!c.handleNavigate}"/>
+        </div>
+          </lightning:recordEditForm>
+</aura:component>

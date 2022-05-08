@@ -1,0 +1,90 @@
+<!--
+* Lightning Component for  Covid 19 product Bank Guarantee or Credit maintenance 
+* 
+* @author  Almas Aleem : Absa
+* @version v1.0
+* @since   2020-11-20
+* @UserStory W-007397
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" controller="CovidBankGuaranteeController" 
+                >
+    <!-- Attributes Declaration-->
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="activeSections" type="List" default="['Covid19BankGuaranteeDetails', 'Covid19BankGuaranteeDocuments']" />
+    <aura:attribute name="hideSubmitButton" type="Boolean" default="false"/>
+    <aura:attribute name="agreeToTerms" type="Boolean" default="false"/>
+    <aura:attribute name="opportunityId" type="String" />
+    <aura:attribute name="stockNumber1" type="Application__c" />
+    <aura:attribute name="stockNumber" type="string" />
+    <aura:attribute name="application" type="Object"/>
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="OppRecord" type="Object"/>
+    <aura:attribute type="Boolean" name="disableBtn" default="false" />
+    <force:recordData aura:id="recordLoader"
+                      fields="Id,AccountId,RecordTypeName__c,StageName"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.OppRecord}"/>
+    
+    <!-- aura handler for init -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    
+    <!-- document  uploader -->   
+    <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections }">
+        <lightning:accordionSection name="Covid19BankGuaranteeDetails"  label="COVID-19 Bank Guarantee Details">
+            <aura:if isTrue="{!v.stockNumber == NULL}">
+                <lightning:button variant="brand" class="slds-align_absolute-left slds-var-m-top_xx-large"
+                                  label="Generate Term Loan Account Number" type="submit" onclick="{!c.callToAllocateStock}"/>
+            </aura:if>
+            
+            <br />
+            <lightning:layoutItem size="6" class="slds-var-p-top_large">
+                <p>Term Loan Account Number </p><ui:outputText value="{!v.stockNumber}"/>
+            </lightning:layoutItem>
+            
+            <br />
+            
+        </lightning:accordionSection>
+        <lightning:accordionSection name="Covid19BankGuaranteeDocuments"  label="Documents">
+        
+            <!-- UI for file upload-->
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <div class="slds-col slds-size_1-of-2">
+                    <c:DocumentUploaderBlock recordId = "{!v.recordId}"
+                                             objectApiName = "Opportunity"
+                                             fieldName = "Credit_Approval_URL__c"
+                                             fileType = "Credit Approval"
+                                             />
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <c:DocumentUploaderBlock recordId = "{!v.recordId}"
+                                             objectApiName = "Opportunity"
+                                             fieldName = "CIPC_URL__c"
+                                             fileType = "CIPC (Independently Drawn CIPC by banker)"
+                                             />
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <c:DocumentUploaderBlock recordId = "{!v.recordId}"
+                                             objectApiName = "Opportunity"
+                                             fieldName = "Covid_Loan_URL__c"
+                                             fileType = "7032 - Application for a Covid-19 Loan"
+                                             />
+                </div>
+            </div>
+            <lightning:recordEditForm aura:id="EditOpp" objectApiName="Opportunity" recordId="{!v.recordId}" >
+                <div class="slds-col slds-size_1-of-2">
+                    <span>
+                        <ui:inputCheckbox class="slds-float--left" label="&nbsp; I attest that the information captured is accurate." aura:id="iTermsAndConditions" change="{!c.showBtn}"/>
+                        <lightning:inputField fieldName="StageName" value="Request Contract" class="slds-hide" variant="label-hidden"/>
+                        <aura:if isTrue="{!v.agreeToTerms}">
+                            <span>
+                                <lightning:button variant="brand" class="slds-align_absolute-center slds-m-top_xx-large"
+                                                  label="Request contract from flight center" type="submit" />
+                            </span>
+                        </aura:if>
+                    </span>
+                </div>
+            </lightning:recordEditForm>
+            
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

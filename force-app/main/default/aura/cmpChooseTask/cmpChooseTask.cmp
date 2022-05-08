@@ -1,0 +1,67 @@
+<!--This is the ChooseTask Component for displaying the Jobs List-->
+<!--@author  Chandra-->
+<!--@since   2019-08-27-->
+<!--@Work Id: W-002766-->
+
+<aura:component
+	controller="RecordTypeIdController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+>
+	<!--Attribute Declaration-->
+	<aura:attribute name="recordId" type="String" access="global" />
+	<aura:attribute name="newCase" type="Object" />
+	<aura:attribute name="newCaseField" type="Object" />
+	<aura:attribute name="newCaseError" type="String" />
+	<aura:attribute name="accountRecord" type="Object" />
+	<aura:attribute name="recordLoadError" type="String" />
+	<aura:attribute name="developerName" type="String" default="Service_Request" />
+	<aura:attribute name="sObjectName" type="String" default="Case" />
+	<aura:attribute name="caseRecordTypeId" type="String" />
+	<aura:attribute name="currentCaseId" type="String" access="global" />
+	<aura:attribute name="ucid" type="String" /><!--Added by chandra dated 04/05/21 against W-011933-->
+	<aura:attribute name="errorMessage" type="String" default="" /><!--Added by chandra dated 05/05/21 against W-011933-->
+
+	<!--overlayLibrary to show modal-->
+	<lightning:overlayLibrary aura:id="overlayLib" />
+
+	<!--Handler Declaration-->
+	<aura:handler name="selectedJobEvent" event="c:selectedJobEvent" action="{!c.handleComponentEvent}" />
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<!--lookup component-->
+	<c:SiteLookup aura:id="siteLookupChild" placeholder="{!$Label.c.What_do_you_want_to_do_today}" objectAPIName="Service_Group_Type__c" />
+
+	<!--Using LDS to load Account record-->
+	<force:recordData
+		aura:id="recordLoader"
+		recordId="{!v.recordId}"
+		fields="Name,Phone,PersonEmail,Communication_Method__c"
+		targetFields="{!v.accountRecord}"
+		targetError="{!v.recordLoadError}"
+		recordUpdated="{!c.handleRecordUpdated}"
+	/>
+
+	<!--Using LDS to create case record-->
+	<force:recordData
+		aura:id="caseRecordCreator"
+		layoutType="FULL"
+		fields="AccountId,Subject,Status,RecordType,RecordTypeId,Type,Type__c,Subtype__c,Product__c,sd_Service_Group__c,sd_Service_Group_Type_Id__c,sd_Original_Service_Group__c,sd_Original_Service_Queue__c,sd_Service_Level_Id__c,sd_Service_Group_Id__c,BusinessHoursId,sd_Response_Email_Address__c"
+		targetRecord="{!v.newCase}"
+		targetFields="{!v.newCaseField}"
+		targetError="{!v.newCaseError}"
+	/>
+
+	<!-- Display Lightning Data Service errors -->
+	<aura:if isTrue="{!not(empty(v.newCaseError))}">
+		<div class="recordError">{!v.newCaseError}</div>
+	</aura:if>
+
+	<!-- Display method errors -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title slds-align_absolute-left" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+</aura:component>

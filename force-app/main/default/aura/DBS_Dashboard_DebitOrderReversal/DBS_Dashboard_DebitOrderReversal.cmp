@@ -1,0 +1,78 @@
+<aura:component access="global" controller="DBS_Dashboard_Populate_Controller" implements="force:appHostable">
+	<ltng:require scripts="{!$Resource.DBS_Dashboard_Utilities + '/Utilities.js'}" />
+     
+    <aura:attribute name="data" type="Map" default="" /> 
+     
+    <aura:attribute name="showOverlay" type="boolean" default="false"/>  
+    <aura:attribute name="selectedDebit" type="Map" default="" />
+
+    <aura:registerEvent name="updateDO" type="c:DBS_Dashboard_DebitOrderReversalEvent"/> 
+
+    <aura:attribute name="accAccOrIdNum" type="String" default="" />
+    <aura:attribute name="resultStatus" type="String" default="" />
+
+    <aura:attribute name="queueItemID" type="String" default=""/>     
+    <aura:attribute name="debitReverseAction" type="Robot_Data_Action__c" default="{'sObjectType':'Robot_Data_Action__c', 'Queue_Item_ID__c':'','Robot_Item_Exception_Reason__c':'','Robot_Item_Status__c':'','JSON__c':'', 'Access_Account_Number__c':'', 'Action_Type__c': 'Debit Order Reversal'}" />
+    
+    <aura:attribute name="maxRepeats" type="Integer" default="{!$Label.c.DBS_ActionMaxRepeats}" />
+    <aura:attribute name="extendPolling" type="Boolean" default="false" />
+    <aura:attribute name="errorMsg" type="String" default=""/> 
+    
+    <aura:attribute name="showBtnSpinner" type="Boolean" default="false"/>
+        
+    <aura:attribute name="requiredStar" type="Boolean" default="false"/>
+    <aura:attribute name="reasonValue" type="Integer" default="" />
+    
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': '30 - Did not authorise debit', 'value': '30'},
+                                                        {'label': '32 - Debit is in contravention of authority', 'value': '32'},
+                                                        {'label': '34 - Instructed beneficiary concerned to cancel authority', 'value': '34'},
+                                                        {'label': '36 - Previously stopped via stop payment', 'value': '36'}
+                                                        ]"/> 
+   
+    <aura:attribute name="value" type="String" default="30" description="stores selected reason for reversal"/>
+    <aura:attribute name="modalObj" type="Map" default="{isOpen: false, header: '', body: ''}"/>
+	    
+     <aura:if isTrue="{!v.showOverlay}">      
+        <div class="" style="height: 14px; width: 10px;">
+            <section class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">                     
+                        <h2 class="slds-text-heading_medium slds-hyphenate"><b>Disclaimer</b></h2>
+                    </header> 
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        
+                        <p>You agree that:<br/>
+                            The information supplied to Absa is correct and acknowledge that Absa cannot be held liable or responsible if the information supplied is incorrect or incomplete.
+                            <br/><br/>
+                            You fully indemnify and hold Absa harmless for any loss, damage or claim including legal fees which may be sustained by Absa as a result of Absa’s reversal of any debit order acting upon your instruction, which indemnity Absa accepts.
+                        </p><br/>
+                        
+                        <header class="slds-modal__header__reverseHeader">                     
+                            <h2 class="slds-text-heading_medium slds-hyphenate"><b>Reason for reversal</b></h2>
+                        </header> 
+                        <lightning:radioGroup name="reason"  
+                                              aura:id="reason"
+                                              options="{!v.options}"
+                                              label="{!v.errorMsg}"
+                                              value="{!v.value}"
+                                              required="{!v.requiredStar}"                                          
+                                              type="radio"/>
+                    </div>                                          
+                    <footer class="slds-modal__footer">
+                        <div class="slds-grid slds-grid_align-end">
+                            <div class="slds-p-left_small slds-p-right_small">
+                                <button style="width:110px;" class="slds-button slds-button_brand" label="Reverse" title="Reverse" onclick="{!c.reverseDebitOrderHandler}">Reverse</button> 
+                            </div>
+                            <div class="slds-p-left_small">
+                                <button class="slds-button neutral_button" label="Cancel" title="Cancel" onclick="{!c.cancelOverlay}">Cancel</button>                        
+                            </div>
+                        </div>   
+                    </footer> 
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>       
+    </aura:if> 
+    <c:DBS_Dashboard_Modal isModalOpen="{!v.modalObj.isOpen}" modalObj="{!v.modalObj}"/>    
+</aura:component>

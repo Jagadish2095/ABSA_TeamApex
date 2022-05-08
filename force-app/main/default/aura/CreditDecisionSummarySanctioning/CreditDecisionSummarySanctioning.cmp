@@ -1,0 +1,404 @@
+<!--
+* Lightning Component for Decision Summary (Sanctioning)
+* 
+* @author  Diksha Wasekar
+* @version v1.0
+* @since   2020-01-25
+-->
+
+<aura:component access="global" controller="CreditDecisionSummaryController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable">
+    <aura:attribute name="recordId" type="Id"/>
+    <!-- handlers-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.refreshReqProd}" />
+    
+    <aura:attribute name="application" type="Application__c" default="{sobjectType:'Application__c'}"/>
+    <aura:attribute name="opportunity" type="Opportunity" default="{sobjectType:'Opportunity'}"/>
+    
+    <!--When Application Already  Accepted Or Reffered Stage  -->
+    <aura:attribute name="isAppAccepted" type="boolean" default="false" />
+    <aura:attribute name="isAppRefferded" type="boolean" default="false" />
+    
+    <!--Accept Decline Refer buttons -->
+    <aura:attribute name="disableAccept" type="boolean" default="false" />
+    <aura:attribute name="disableRefer" type="boolean" default="false" />
+    <aura:attribute name="disableAmend" type="boolean" default="false" />
+    <aura:attribute name="isOneProdAccepted" type="boolean" default="false" />
+    
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="showNotTakenUp" type="Boolean" default="false" />
+    <aura:attribute name="iAccChecked" type="Boolean" default="false" />
+    <aura:attribute name="iReferChecked" type="Boolean" default="false" />
+    <aura:attribute type="Boolean" name="isAccepted" default="false" /> 
+    <aura:attribute type="Boolean" name="isReferred" default="false" />
+    <aura:attribute type="Boolean" name="isProceedSanctioning" default="false" />
+    <aura:attribute type="Boolean" name="isBeginSanctioning" default="false" />
+    <aura:attribute type="Boolean" name="disableBtnAccept" default="false" />
+    <aura:attribute type="Boolean" name="disableBtnRefer" default="false" />
+    <aura:attribute type="Boolean" name="disableBtnAmned" default="false" />
+    
+    <aura:attribute type="Boolean" name="isReferSanction" default="false" /> 
+    <aura:attribute type="Boolean" name="isAcceptedDecision" default="false" />
+    <aura:attribute type="Boolean" name="isAmended" default="false" />
+    
+    <aura:attribute name="selectedOption" type="String" />
+    <aura:attribute name="decisionOutomeOptions" type="List" default="[
+                                                                      {'label': 'Accept Decision', 'value': 'Accept Decision'} ,
+                                                                      {'label': 'Refer to Sanctioning', 'value': 'Refer to Sanctioning'} ,
+                                                                      {'label': 'Amend Applciation', 'value': 'Amend Applciation'}
+                                                                      ]"/>
+    <!-- Decision Summary-->
+    <aura:attribute name="dataDecisionSum" type="Object" access="public"/>
+    <aura:attribute name="columnsDecisionSum" type="List" access="public"/>
+    
+    <!-- Requested Products-->
+    <aura:attribute name="dataReqProd" type="Object" access="public"/>
+    <aura:attribute name="columnsReqProd" type="List" access="public"/>
+    
+    <!-- Submission History -->
+    <aura:attribute name="dataHistory" type="Object" access="public"/>
+    <aura:attribute name="columnsHistory" type="List" access="public"/>
+    
+    <!-- Reasons and Exceptions -->
+    <aura:attribute name="ReasonList" type="List" access="public"/>
+    <aura:attribute name="ReasonDescriptionList" type="List" access="public"/>
+    <aura:attribute name="ExceptionList" type="List" access="public"/>
+    <aura:attribute name="ExceptionDescriptionList" type="List" access="public"/>
+    
+    <!--Potential Total Grp Exposure -->
+    <aura:attribute name="ExposureDescripList" type="List" access="public"/>
+    <aura:attribute name="RequestedExpList" type="List" access="public"/>
+    <aura:attribute name="OfferedExpList" type="List" access="public"/>
+    <aura:attribute name="FinalExpnList" type="List" access="public"/>
+    
+    <aura:attribute name="userInfo" type="user"/> 
+    <aura:attribute name="datetime" type="string" />
+    <aura:attribute name="rowToNTU" type="Object" />
+    
+    
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    
+    <lightning:accordion allowMultipleSectionsOpen="true">
+        
+        <!-- Decision Summary>
+        <lightning:accordionSection name="Decision Summary"  label="Decision Summary">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12" >
+                    <lightning:datatable
+                                         data="{!v.dataDecisionSum}"
+                                         columns="{!v.columnsDecisionSum}"
+                                         keyField="Id"
+                                         aura:id="submissionHistory"
+                                         hideCheckboxColumn="true"
+                                         />
+                    
+                    
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection-->
+        
+        <!-- Decision Summary-->
+        <lightning:accordionSection name="Decision Summary"  label="Decision Summary">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12" >
+                    <table class="slds-table slds-table_cell-buffer">
+                        <thead>
+                            <tr class="slds-var-m-top_small slds-line-height_reset">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Description">Description</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Value">Value</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.dataDecisionSum}" var="DDS">
+                                <tr class="slds-hint-parent">
+                                    <th data-label="" scope="row">
+                                        <div class="slds-truncate" title=" ">
+                                            System Decision
+                                        </div>
+                                    </th>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!DDS.SYST_Decision__c}</div>
+                                    </td>
+                                </tr>
+                                <tr class="slds-hint-parent">
+                                    <th data-label="" scope="row">
+                                        <div class="slds-truncate" title=" ">
+                                            Decision Date
+                                        </div>
+                                    </th>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!DDS.SYST_Decision_Date__c}</div>
+                                    </td>
+                                </tr>
+                                <tr class="slds-hint-parent">
+                                    <th data-label="" scope="row">
+                                        <div class="slds-truncate" title=" ">
+                                            Decision Time
+                                        </div>
+                                    </th>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!DDS.SYST_Decision_Time__c}</div>
+                                    </td>
+                                </tr>     
+                                <tr class="slds-hint-parent">
+                                    <th data-label="" scope="row">
+                                        <div class="slds-truncate" title=" ">
+                                            Additional Approved Security Value Required
+                                        </div>
+                                    </th>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!DDS.ASV_Shortfall_Amount_after_Tolerance__c}</div>
+                                    </td>
+                                </tr>
+                                <tr class="slds-hint-parent">
+                                    <th data-label="" scope="row">
+                                        <div class="slds-truncate" title=" ">
+                                            Total Security Value Shortfall
+                                        </div>
+                                    </th>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!DDS.ASV_Shortfall_Amount__c}</div>
+                                    </td>
+                                </tr>
+                                <tr class="slds-hint-parent">
+                                    <th data-label="" scope="row">
+                                        <div class="slds-truncate" title=" ">
+                                            Total Approved Security Value Offered
+                                        </div>
+                                    </th>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!DDS.Total_Offered__c}</div>
+                                    </td>
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+        
+        <!-- Requested Products-->
+        <lightning:accordionSection name="Requested Products"  label="Requested Products">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12" >
+                    
+                    <lightning:datatable
+                                         data="{!v.dataReqProd}"
+                                         columns="{!v.columnsReqProd}"
+                                         keyField="Id"
+                                         aura:id="submissionHistory"
+                                         hideCheckboxColumn="true"
+                                         />
+                    
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+        
+        <lightning:accordionSection name="Reasons and Exceptions"  label="Reasons and Exceptions">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12" >
+                    <table class="slds-table slds-table_cell-buffer">
+                        <thead>
+                            <tr class="slds-var-m-top_small slds-line-height_reset">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Reason">Reason</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Code">Code</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Exception">Exception</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Code">Code</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <aura:iteration items="{!v.ReasonList}" var="cli1">
+                                        
+                                        <div class="slds-truncate" title=" ">{!cli1}</div>
+                                        
+                                    </aura:iteration>
+                                </td>
+                                <td>
+                                    <aura:iteration items="{!v.ReasonDescriptionList}" var="cli2">
+                                        <div class="slds-truncate" title=" ">{!cli2}</div>
+                                    </aura:iteration>
+                                </td>
+                                <td>
+                                    <aura:iteration items="{!v.ExceptionList}" var="cli3">
+                                        <div class="slds-truncate" title=" ">{!cli3}</div>
+                                    </aura:iteration>
+                                </td>
+                                <td>
+                                    <aura:iteration items="{!v.ExceptionDescriptionList}" var="cli4">
+                                        <div class="slds-truncate" title=" ">{!cli4}</div>
+                                    </aura:iteration>
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+        
+        
+        <lightning:accordionSection name="Potential Total Group Exposure"  label="Potential Total Group Exposure">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12" >
+                    <table class="slds-table slds-table_cell-buffer">
+                        <thead>
+                            <tr class="slds-var-m-top_small slds-line-height_reset">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Exposure">Exposure</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Requested">Requested</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Offered">Offered</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Final">Final</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <aura:iteration items="{!v.ExposureDescList}" var="cli1">
+                                        
+                                        <div class="slds-truncate" title=" ">{!cli1}</div>
+                                        
+                                    </aura:iteration>
+                                </td>
+                                <td>
+                                    <aura:iteration items="{!v.RequestedExpList}" var="cli2">
+                                        <div class="slds-truncate" title=" ">{!cli2}</div>
+                                    </aura:iteration>
+                                </td>
+                                <td>
+                                    <aura:iteration items="{!v.OfferedExpList}" var="cli3">
+                                        <div class="slds-truncate" title=" ">{!cli3}</div>
+                                    </aura:iteration>
+                                </td>
+                                <td>
+                                    <aura:iteration items="{!v.FinalExpnList}" var="cli4">
+                                        <div class="slds-truncate" title=" ">{!cli4}</div>
+                                    </aura:iteration>
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+        
+        
+        <lightning:accordionSection name="Origination - System Decision Submission History"   label="Origination - System Decision Submission History">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12" >
+                    <lightning:datatable
+                                         data="{!v.dataHistory}"
+                                         columns="{!v.columnsHistory}"
+                                         keyField="Id"
+                                         aura:id="submissionHistory"
+                                         hideCheckboxColumn="true"
+                                         />
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+        
+    </lightning:accordion>  
+    
+    
+    <!--Not Taken Up-->
+    <aura:if isTrue="{!v.showNotTakenUp}">
+        <!--###### MODAL BOX Start######--> 
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <p>NOT TAKEN UP</p>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:layout multipleRows="true">
+                        
+                        <lightning:layoutItem size="12">
+                            <p>The following account is not being taken up by the customer.
+                                Confirm the account selected is correct before proceeding.
+                                This process is not reversible</p>
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" >
+                            <b><p>Product Type :</p></b>
+                            <ui:outputText value="{!v.rowToNTU.productType}"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" >
+                            <b> <p>Account number :</p></b>
+                            <ui:outputText value="{!v.rowToNTU.productAccountNumber}"/> 
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" >
+                            <b> <p>Amount :</p></b>
+                            <ui:outputText value="{!v.rowToNTU.productAmount}"/> 
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" >
+                            <b> <p>Final Decision :</p></b>
+                            <ui:outputText value="{!v.rowToNTU.finalDecision}"/> 
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="12">
+                            <lightning:textarea aura:id="iNTUComment" name="NTUComment" required="true" label="Comments" />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="12">
+                            <lightning:input type="checkbox" required="true" aura:id="icheckNTU" class="slds-float--left" label="&nbsp;&nbsp; I understand that by proceeding, the selected product application and all associated cases and processes will be aborted and recorded as ‘Not Taken up’ " />
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="12">
+                            <b><p>Colleague :</p></b>
+                            <ui:outputText value="{!v.userInfo.Name}"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="12">
+                            <b><p>Date :</p></b>
+                            <ui:outputText value="{!v.datetime}"/>
+                        </lightning:layoutItem>
+                        
+                    </lightning:layout>
+                </div>
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{!c.close}"/>
+                    <lightning:button variant="brand" 
+                                      label="Confirm Not Taken up"
+                                      title="Confirm"
+                                      onclick="{!c.confirmNotTakenUp }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+        
+    </aura:if>
+    
+    
+    
+</aura:component>

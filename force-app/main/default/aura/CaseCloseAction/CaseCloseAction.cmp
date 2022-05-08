@@ -1,0 +1,301 @@
+<!--
+* Allow a user to close a case and provide the out-of-SLA reason
+* and comments
+*
+* @author  Rudolf Niehaus : CloudSmiths
+* @version v1.0
+* @since   2018-06-14
+-->
+<aura:component implements="force:lightningQuickAction,force:hasRecordId" controller="CaseCloseActionExt">
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="closeStatuses" type="String[]" />
+    <aura:attribute name="selectedStatus" type="String" />
+    <aura:attribute name="isOutOfSla" type="Boolean" />
+    <aura:attribute name="isCaseClosed" type="Boolean" />
+    <aura:attribute name="isNotClassified" type="Boolean" />
+    <aura:attribute name="isNotLinkedToAccount" type="Boolean" />
+    <!-- Attributes added for NBFS Service Groups -->
+    <aura:attribute name="regulatorydecisonsList" type="String[]" />
+    <aura:attribute name="regulatorydecisons" type="String" />
+    <aura:attribute name="documentlist" type="String[]" />
+    <aura:attribute name="documenttype" type="String" />
+    <aura:attribute name="isNBFSCaseRecordType" type="Boolean" />
+    <aura:attribute name="isNBFSMonetaryResolution" type="Boolean" default="false"/>
+    <aura:attribute name="productTypeList" type="String[]" />
+    <aura:attribute name="productType" type="String" />
+    <aura:attribute name="regionList" type="String[]" />
+    <aura:attribute name="region" type="String" />
+    <aura:attribute name="problemAreaList" type="String[]" />
+	<aura:attribute name="problemArea" type="String" />
+    <aura:attribute name="wealthArea" type="String" />
+    <aura:attribute name="UserTypes" type="User" />
+    <aura:attribute name="advisorFirstName" type="String" />
+    <aura:attribute name="servicegroupName" type="String" />
+    <aura:attribute name="category" type="String" />
+    <aura:attribute name="source" type="String" />
+    <aura:attribute name="advisorLastName" type="String" />
+    <aura:attribute name="advisorCode" type="String" />
+    <aura:attribute name="files" type="ContentDocument[]"/>  
+    <aura:attribute name="isFileUpload" type="Boolean" default="false"/>
+    <aura:attribute name="uploadFormats" type="List" default="['.jpg','.jpeg','.png','.pdf','.msg','.xls','.doc','.Ppt','.xlsx','.docx','.Pptx','.zip','.txt','.wav','.aac','.m4a','.mp3','.wma','.csv']"/>
+    <aura:attribute name="updateCase" type="Case" default="{'sobjectType': 'Case'}"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}"/> 
+
+    <!--Smanga start-->
+    <aura:attribute name="showUploadStatementField" type="Boolean"  default="false"/>
+    <aura:attribute name="amountRefunded" type="String"/>
+    <aura:attribute name="proofOfPaymentfileIds" type="List" default="[]"/>
+    <aura:attribute name="proofOfPaymentfileStr" type="String" default="No File Selected." />
+    <aura:attribute name="showTheReminder" type="boolean" default ="true"/>
+    <aura:attribute name="priorityServiceGroupNamesList" type="List" />
+    <aura:attribute name="isUserPriorityGroupMember" type="boolean" />
+    <aura:attribute name="isPriorityServiceGroup" type="boolean" />
+    <aura:attribute name="caseBeforeClosure" type="Case" default="{'sobjectType': 'Case'}"/>
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    <!--Smanga End-->
+    
+    <center style="z-index:99"> 
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    <aura:renderIf isTrue="{!v.isCaseClosed}">
+        
+        <ui:message title="Case Closed" severity="info" closable="false">
+            This Case is already Closed
+        </ui:message>
+        
+        <aura:set attribute="else">
+            <aura:renderIf isTrue="{!and(v.isPriorityServiceGroup, v.isUserPriorityGroupMember == false)}"> <!--Smanga--> 
+            <ui:message title="Priority Service" severity="info" closable="false">
+                    Note: You cannot close this Case since you are not a member of {!v.caseBeforeClosure.sd_Service_Group__c}
+            </ui:message>
+        <aura:set attribute="else">
+            <aura:renderIf isTrue="{!and(v.isNotClassified, v.isNotLinkedToAccount)}">
+                <ui:message title="Outstanding Actions" severity="info" closable="false">
+                    You need to classify this Case AND link this case to an Account before you can close it
+                </ui:message>
+                <aura:set attribute="else">
+                    <aura:renderIf isTrue="{!v.isNotClassified}">
+                        <ui:message title="Outstanding Action" severity="info" closable="false">
+                            You need to classify this Case before you can close it
+                        </ui:message>    
+                    </aura:renderIf>
+                    <aura:renderIf isTrue="{!v.isNotLinkedToAccount}">
+                        <ui:message title="Outstanding Action" severity="info" closable="false">
+                            You need to associate this case to an Account using the find client action before you can resolve it
+                        </ui:message>    
+                    </aura:renderIf>
+                </aura:set>   
+            </aura:renderIf>
+            
+            <aura:renderIf isTrue="{!or(v.isNotClassified, v.isNotLinkedToAccount)}">
+                
+                <aura:set attribute="else">   
+                    
+                    <lightning:recordEditForm aura:id="iUpdateCase" objectApiName="Case" recordId="{!v.recordId}" >
+                        <aura:renderIf isTrue="{!v.isNBFSCaseRecordType}">
+                            <lightning:inputField fieldName="Cause_of_problem__c" aura:id="iCauseOfProblem" class="customRequired"/>
+                        <aura:set attribute="else">
+                        <lightning:outputField fieldName="External_SLA_Status__c" aura:id="islasta" />
+                        
+                        <aura:renderIf isTrue="{!v.isOutOfSla}">
+                            <lightning:inputField fieldName="Out_Of_SLA_Reason__c" aura:id="ireason" class="customRequired" />
+                            <lightning:inputField fieldName="Out_Of_SLA_Comments__c" aura:id="icomm" class="customRequired" />
+                        </aura:renderIf> 
+                        
+                        <!--<lightning:inputField fieldName="Who_Caused_It__c" aura:id="iWhoCausedIt" class="customRequired"/>-->
+                        <lightning:inputField fieldName="Who_Caused_It_Options__c" aura:id="iWhoCausedIt" class="customRequired"/>
+                        </aura:set>
+                       </aura:renderIf>
+                        <lightning:inputField fieldName="Summary_of_Resolution__c" aura:id="iSummaryOfResolution" class="customRequired"/>
+                        <aura:renderIf isTrue="{!v.isNBFSCaseRecordType}">
+                        <aura:set attribute="else">
+                        <lightning:inputField fieldName="Where_Did_This_Happen__c" aura:id="iWhere_Did_This_Happen" class="customRequired"/>
+                        <lightning:inputField fieldName="Responsible_Site__c" aura:id="iResponsible_Site" class="customRequired"/>
+                        <lightning:inputField fieldName="Trade_Loss__c" aura:id="iTrade_Loss" class="customRequired"/>
+                        <!--<lightning:inputField fieldName="Amount_Refunded__c" aura:id="iAmount_Refunded"/>-->
+                        <lightning:input aura:id="iAmount_Refunded" label="Amount Refunded" value="{!v.amountRefunded}"  oncommit="{!c.handleOncommitAction}"/>
+                        <aura:if isTrue="{!not(empty(v.amountRefunded))}">
+                            <lightning:fileUpload aura:id="uploadStatement" name="fileUploader" label= "Upload Proof of Payment" multiple="true" 
+                                                  accept="{!v.uploadFormats}" disabled="false"   
+                                                  recordId="{!v.recordId}" onuploadfinished="{!c.handleOnuploadfinished}" />
+                            <div class="slds-text-body_small slds-text-color_error" aura:id="fpocfileText2">{!v.proofOfPaymentfileStr}</div>
+                        </aura:if>
+                        <lightning:inputField fieldName="Gesture_Of_Goodwill__c" aura:id="iGesture_Of_Goodwill"/>
+                        </aura:set>
+                        </aura:renderIf>                     
+                        <lightning:select aura:id="stselect" label="Available Close Statuses" onchange="{!c.onSelectChange}" disabled="{!v.isCaseClosed}" class="customRequired">
+                            <aura:renderIf isTrue="{!v.closeStatuses.length == 1}">
+                                    <option value="{!v.closeStatuses[0]}" text="{!v.closeStatuses[0]}"></option>
+                            <aura:set attribute="else">
+                                    <option value="--None--" text="--None--"></option>
+                                    <aura:iteration items="{!v.closeStatuses}" var="s" indexVar="index" >
+                                        <option value="{!s}" text="{!s}"></option>
+                                    </aura:iteration>
+                            </aura:set>
+                            </aura:renderIf>
+                        </lightning:select>
+                        <lightning:inputField fieldName="Resolved_in_Favour_of__c" aura:id="iResolvedInFavour" disabled="{!v.isCaseClosed}" class="slds-hide customRequired" />
+                        <lightning:inputField fieldName="Unresolved_Reason__c" aura:id="ureason" disabled="{!v.isCaseClosed}" class="slds-hide customRequired"/>
+                        
+                        <!-- to display additional fields for NBFS Case record type -->
+                        <aura:renderIf isTrue="{!v.isNBFSCaseRecordType}">
+                            <aura:renderIf isTrue="{!v.isNBFSMonetaryResolution}">
+                                <lightning:inputField fieldName="Resolution_Sub_Type__c" aura:id="iResolutionSubType" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                                <aura:If isTrue= "{!v.servicegroupName != 'Absa Short Term Insurance'}">
+                                    <!--lightning:inputField fieldName="Amount_Refunded__c" aura:id="iAmountPaid" disabled="{!v.isCaseClosed}" class="customRequired"/-->
+                                    <ui:inputCurrency label="Amount Refunded" aura:id="iAmountPaid" />
+                                </aura:If>
+                                <aura:If isTrue= "{!v.servicegroupName == 'Absa Short Term Insurance'}">
+                                 <lightning:inputField fieldName="Payment_Method__c" aura:id="iPaymentMethod" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                                </aura:If>
+                                <!--lightning:inputField fieldName="Date_of_payment__c" aura:id="iPaymentDate" disabled="{!v.isCaseClosed}" class="customRequired"/--> 
+                                <span class="input-container">
+                                <span class="asterix">*</span>
+                                <lightning:inputField fieldName="Date_of_payment__c" aura:id="iPaymentDate" disabled="{!v.isCaseClosed}"/>
+                            </span>
+                            </aura:renderIf>
+                        <lightning:inputField fieldName="Controllability__c" aura:id="iControllability" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                            
+                        <!--START OF FIELDS THAT ARE RELATED TO SHORT TERM INSURANCE -->
+                        <aura:If isTrue= "{!v.servicegroupName == 'Absa Short Term Insurance'}">
+                            <lightning:inputField fieldName="Controllable_Secondary_Complaint_Type__c" aura:id="controllableSecondary" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                            <lightning:inputField fieldName="Escalation_Controllable__c" aura:id="escControllability" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                            <!--<lightning:inputField fieldName="Regulatory_Decision__c" aura:id="regulatoryDecision" disabled="{!v.isCaseClosed}" class="customRequired"/>-->
+                            <lightning:inputField fieldName="Final_Claims_Decision__c" aura:id="finalClaimsDecision" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                            <lightning:inputField fieldName="Original_Claims_Decision__c" aura:id="originalClaimsDecision" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                        </aura:If>
+                        <!--END OF FIELDS THAT ARE RELATED TO SHORT TERM INSURANCE -->   
+                            
+                        <lightning:inputField fieldName="TCF_Outcomes__c" aura:id="iTCFOutcomes" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                           <div class="slds-grid">
+                            <div class="slds-col slds-size--5-of-12">  
+                            	<c:strike_picklist value="{!v.documenttype}" errorMessage="Invalid input" searchable="true" label="Document Type" class="customRequired" disabled="{!v.isCaseClosed}">
+                                                <aura:iteration  items="{!v.documentlist}" var="selectOption" indexVar="index">
+                                                    <c:strike_option label="{!selectOption}" value="{!selectOption}" />
+                                                </aura:iteration>
+								</c:strike_picklist></div>
+                             <aura:renderIf isTrue="{!v.documenttype}">
+                            	&nbsp; &nbsp; <div class="slds-col slds-size---of-12">            
+                             <lightning:fileUpload label="" multiple="false" accept="{!v.uploadFormats}" recordId="{!v.recordId}" onuploadfinished="{!c.UploadFinished}" />          
+                             </div> </aura:renderIf></div><br></br>
+                            <aura:renderIf isTrue="{!v.isFileUpload}">
+                            <table class="slds-table slds-table--bordered">
+                                <thead> <tr>
+                                        <th>File Name</th>
+                                        <th>File Type</th>
+                                        <th>Document Type</th>
+                                        </tr></thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.files}" var="f">
+                                        <tr>
+                                            <td>{!f.Title}</td>
+                                            <td>{!f.FileType}</td>
+                                            <td>{!f.Description}</td></tr>
+                                         </aura:iteration>
+                                    </tbody>
+                                </table>
+                            </aura:renderIf>
+                            <br></br>
+                            <aura:renderIf isTrue="{!v.servicegroupName == 'Wealth Advisory'}">
+                                <aura:renderIf isTrue="{!or(v.category == 'Level 2',v.category == 'Level 3')}">
+                                    <lightning:inputField fieldName="Financial_Advisor__c" aura:id="iFinancialAdvisor" disabled="{!v.isCaseClosed}"/>
+                                	<lightning:inputField fieldName="Wealth_Related_Business_Area__c" aura:id="iWealthArea" onchange="{!c.getWealthBusinessArea}" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                            		<aura:renderIf isTrue="{!v.wealthArea == 'Other'}">
+                                   		<lightning:input aura:id="iwealthAreaDesc" label="Wealth Business Area Description" class="customRequired"/>
+                               		</aura:renderIf>
+                                </aura:renderIf>
+                                <lightning:inputField fieldName="Banker__c" aura:id="iBanker" disabled="{!v.isCaseClosed}" class="customRequired" />
+                                <lightning:inputField fieldName="Segment__c" aura:id="iSegment" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                            </aura:renderIf>
+                            <aura:If isTrue="{!or(or(or(and(or(v.category == 'Level 2',v.category == 'Level 3'),v.servicegroupName == 'Wealth Advisory'), v.servicegroupName == 'Portfolio Management'), v.servicegroupName == 'Absa Advisers'), v.servicegroupName == 'Absa Linked Investments')}">
+                            	<c:strike_picklist value="{!v.productType}" errorMessage="Invalid input" searchable="true" label="Product Type" disabled="{!v.isCaseClosed}" class="customRequired">
+                                                <aura:iteration  items="{!v.productTypeList}" var="selectOption" indexVar="index">
+                                                    <c:strike_option label="{!selectOption}" value="{!selectOption}" />
+                                                </aura:iteration>
+								 </c:strike_picklist>
+                            </aura:If>
+                            <aura:renderIf isTrue="{!or(or(or(v.servicegroupName == 'Wealth Advisory', v.servicegroupName == 'Absa Fund Managers'), v.servicegroupName == 'Absa Linked Investments'),v.servicegroupName == 'Absa Advisers')}">
+                     			 <c:strike_picklist value="{!v.region}" errorMessage="Invalid input" searchable="true" label="Region" disabled="{!v.isCaseClosed}" class="customRequired">
+                                     <aura:iteration  items="{!v.regionList}" var="selectOption" indexVar="index">
+                                           <c:strike_option label="{!selectOption}" value="{!selectOption}" />
+                                     </aura:iteration>
+								 </c:strike_picklist>
+                            </aura:renderIf>
+                             <aura:renderIf isTrue="{!or(or(v.servicegroupName == 'Portfolio Management', v.servicegroupName =='Stockbroking'), v.servicegroupName =='Absa Fund Managers')}">
+                            	<lightning:inputField fieldName="Account_Number__c" aura:id="iAccountNumber" disabled="{!v.isCaseClosed}"/>
+                            </aura:renderIf>
+                            <aura:renderIf isTrue="{!and(or(v.category == 'Level 2',v.category == 'Level 3'),v.servicegroupName == 'Portfolio Management')}">
+                                <lightning:inputField fieldName="Portfolio_Manager__c" aura:id="iPortfolioManager" disabled="{!v.isCaseClosed}" />
+                                <lightning:inputField fieldName="Relationship_Manager__c" aura:id="iRelationshipManager" disabled="{!v.isCaseClosed}" />
+                                <lightning:inputField fieldName="Introducer__c" aura:id="iIntroducer" disabled="{!v.isCaseClosed}" />
+                            </aura:renderIf>
+                            <aura:renderIf isTrue="{!or(and(or(v.category == 'Level 2',v.category == 'Level 3'),v.servicegroupName == 'Portfolio Management'), v.servicegroupName =='Stockbroking')}">
+                            	<c:strike_picklist value="{!v.problemArea}" errorMessage="Invalid input" searchable="true" label="Problem Area" disabled="{!v.isCaseClosed}" class="customRequired">
+                                     <aura:iteration  items="{!v.problemAreaList}" var="selectOption" indexVar="index">
+                                          <c:strike_option label="{!selectOption}" value="{!selectOption}" />
+                                     </aura:iteration>
+								 </c:strike_picklist>
+                               <aura:renderIf isTrue="{!v.problemArea == 'Other'}">
+                                   <lightning:input aura:id="iProblemAreaDesc" label="Problem Area Description" class="customRequired"/>
+                               </aura:renderIf>
+                            </aura:renderIf>
+                            <aura:renderIf isTrue="{!v.servicegroupName == 'Absa Linked Investments'}">
+                                <lightning:inputField fieldName="Client_Number__c" aura:id="iClientNumber" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                                <lightning:inputField fieldName="Portfolio_Number__c" aura:id="iPortfolioNumber" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                                <lightning:inputField fieldName="Transaction_Type__c" aura:id="iTransaction" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                                <lightning:inputField fieldName="Consultant__c" aura:id="iConsultant" disabled="{!v.isCaseClosed}" />
+                                <lightning:inputField fieldName="Lodged_by_adviser__c" aura:id="ilodged" disabled="{!v.isCaseClosed}" />
+                            </aura:renderIf>
+                            <aura:renderIf isTrue="{!or(and(or(v.category == 'Level 2',v.category == 'Level 3'),v.servicegroupName == 'Portfolio Management'), v.servicegroupName =='Absa Linked Investments')}">
+                            	<lightning:inputField fieldName="Adviser_Name__c" aura:id="iAdvisorName" disabled="{!v.isCaseClosed}" />
+                            </aura:renderIf>
+                            <aura:renderIf isTrue="{!and(or(v.category == 'Level 2',v.category == 'Level 3'),v.servicegroupName == 'Absa Advisers')}">
+                                <lightning:inputField fieldName="Advisor__c" aura:id="iAdvisor" onchange="{!c.getAdvisorDetails}" />
+                                <lightning:inputField fieldName="Adviser_First_Name__c" aura:id="iAdvisorFirstName" class="customRequired" value="{!v.advisorFirstName}"/>
+                                <lightning:inputField fieldName="Adviser_Last_Name__c" aura:id="iAdvisorLastName" class="customRequired" value="{!v.advisorLastName}"/>
+                                <lightning:inputField fieldName="Adviser_Code__c" aura:id="iAdvisorCode" class="customRequired" value="{!v.advisorCode}"/>
+                                <lightning:inputField fieldName="Adviser_Type__c" aura:id="iAdvisortype" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                        		<lightning:inputField fieldName="Product_Number__c" aura:id="iproductnumber" disabled="{!v.isCaseClosed}" />
+                                <lightning:inputField fieldName="Product_Supplier__c" aura:id="iproductsupplier" disabled="{!v.isCaseClosed}" />
+                        		<lightning:inputField fieldName="Advice_Date__c" aura:id="iadvicedate" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                        		<lightning:inputField fieldName="Compliant__c" aura:id="icompliant" disabled="{!v.isCaseClosed}" class="customRequired"/>
+                        		<lightning:inputField fieldName="Nature_of_Non_Compliance_Text__c" aura:id="icompliantnature" disabled="{!v.isCaseClosed}"/>
+                            </aura:renderIf>
+                            <aura:renderIf isTrue="{!or(and(or(v.category == 'Level 2',v.category == 'Level 3'),v.servicegroupName == 'Absa Advisers'), v.servicegroupName =='Absa Fund Managers')}">
+                                <lightning:inputField fieldName="Product_Name__c" aura:id="iproductname" disabled="{!v.isCaseClosed}" />
+                        	 </aura:renderIf>
+                            <aura:renderIf isTrue="{!v.servicegroupName == 'Absa Estates Wills &amp; Trusts'}">
+                                <lightning:inputField fieldName="Product_Area__c" aura:id="iProductArea" disabled="{!v.isCaseClosed}" class="customRequired" />
+                                <lightning:inputField fieldName="Sub_Product_Area__c" aura:id="iSubProductArea" disabled="{!v.isCaseClosed}" class="customRequired" />
+                               <aura:renderIf isTrue="{!or(v.category == 'Level 2',v.category == 'Level 3')}">
+                                    <lightning:inputField fieldName="Responsible_Person__c" aura:id="iResponsiblePerson" disabled="{!v.isCaseClosed}" />
+                                </aura:renderIf>
+                            </aura:renderIf>
+                            
+                            <aura:renderIf isTrue="{!v.category == 'Level 3'}">
+           						<c:strike_picklist value="{!v.regulatorydecisons}" errorMessage="Invalid input" searchable="true" label="Regulatory Decision" class="customRequired">
+                                    <aura:iteration  items="{!v.regulatorydecisonsList}" var="selectOption" indexVar="index">
+                                         <c:strike_option label="{!selectOption}" value="{!selectOption}" />
+                                    </aura:iteration>
+								 </c:strike_picklist>
+                            </aura:renderIf>
+                          </aura:renderIf>
+                         <!-- to display additional fields for NBFS Case record type -->
+                        
+                        <br/>
+                        <lightning:button label="Close" onclick="{!c.updateCase}" variant="brand" aura:id="ibtn" disabled="{!v.isCaseClosed}" />
+                    </lightning:recordEditForm>
+                    
+                </aura:set>
+                
+            </aura:renderIf>
+            </aura:set> <!--Smanga-->  
+        </aura:renderIf><!--Smanga--> 
+        </aura:set> 
+        
+    </aura:renderIf> 
+    
+</aura:component>

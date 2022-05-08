@@ -1,0 +1,217 @@
+<!--
+  @description       : 
+  @author            : Sourabh Yadav
+  @last modified on  : 2021-11-10
+  @last modified by  : Sourabh Yadav
+-->
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global"
+                controller="EarlyRiskDetectionController">
+    <!-- Attributes -->
+    <aura:attribute name="selectedValue" type="String"/>
+    <aura:attribute name="selectedValueSMS" type="String"/>
+    <aura:attribute name="selectedValueSMSNumber" type="String"/>
+    <aura:attribute name="showCaseOutcome" type="Boolean" Default="false" />
+    <aura:attribute name="showSelectNotificationNumber" type="Boolean" Default="false" />
+    <aura:attribute name="valueCaseOutcome" type="String" />
+    <aura:attribute name="selectedAccountNumberFromFlow" type="String" access="global" />
+    <aura:attribute name="optionsCallingCustomer" type="List" default="[
+                                                                       {'label': 'I was able to get hold of customer telephonically', 'value': 'true'},
+                                                                       {'label': 'Unable to get a hold of customer telephonically', 'value': 'false'}
+                                                                       ]"/>
+    <aura:attribute name="valueFromCallingCustomer" type="String" />
+     <aura:attribute name="clientName" type="String" />
+    <aura:attribute name="phoneNumber" type="String" />
+    <aura:attribute name="showNextButton" type="Boolean" Default="false" />
+    <aura:attribute name="pauseAndWaitButton" type="Boolean" Default="false" />
+    <aura:attribute name="createReminderButtonNext" type="boolean" default="false"/>
+    <aura:attribute name="caseIdFromFlow" type="String" access="global" />
+    <aura:attribute name="getDateFromCalendar" type="DateTime" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="messageSent" type="String" />
+    <aura:if isTrue="{!not(empty(v.caseIdFromFlow))}">
+    <lightning:recordEditForm aura:id="caseRecordEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}" >
+        
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide" />
+        <lightning:inputField aura:id="clientNumber" fieldName="Client_Mobile_Phone__c" class="slds-hide"/>
+        <lightning:inputField aura:id="clientName" fieldName="Auto_Response_Greeting__c" class="slds-hide"/>
+        <lightning:inputField aura:id="descriptionField" fieldName="Description" class="slds-hide" />
+        <lightning:inputField aura:id="outOfSLA" fieldName="Out_Of_SLA_Comments__c" class="slds-hide"/>
+        <lightning:inputField aura:id="outOfSLAReason" fieldName="Out_Of_SLA_Reason__c" class="slds-hide"/>
+        <lightning:inputField aura:id="caseOutcome" fieldName="Outcome__c" class="slds-hide"/>
+        
+    </lightning:recordEditForm>
+    </aura:if>
+    <article class="slds-card">
+        <!--Declare Spinner-->
+        <aura:if isTrue="{!v.showSpinner}">
+            <div class="exampleHolder">
+                <lightning:spinner alternativeText="Loading" size="medium" />
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+            <lightning:layout>
+                <lightning:layoutItem padding="around-small" size="12">
+                    <p style="color: red">
+                        <ui:outputText aura:id="iCustomErrorMessage" value="{!v.errorMessage}" />
+                    </p>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:if>
+        <h1><b>Contact the Customer</b></h1>
+        <br></br>
+        <h2><b>How do you want to contact the customer?</b></h2>
+        
+        <br></br>
+        
+        <lightning:select name="select1" label="Select contact method" required="true" value="{!v.selectedValue}" aura:id ="picklist" onchange="{!c.getValueFromPicklist}">
+            <option value="">Select an option</option>
+            <option value="Send an SMS">Send an SMS</option>
+            <option value="Call the customer">Call the customer</option>
+        </lightning:select>
+        
+        <aura:if isTrue="{! v.selectedValue =='Send an SMS'}">
+            <br></br>
+            <br></br>
+            
+            <lightning:select name="selectSMS" label="Select notification number" required="true" value="{!v.selectedValueSMSNumber}" aura:id ="picklistSMS" onchange="{!c.getValueFromPicklistSMS}">
+                <option value="">Please select an options</option>
+                <option value="Send an SMS">{!v.phoneNumber}</option>
+            </lightning:select>
+            <br></br>
+            
+            <footer class="slds-card__footer" style="height:4rem">
+                <a class="slds-card__footer-action" >
+                    
+                    <aura:if isTrue="{!not(empty(v.selectedValueSMSNumber))}">
+                        <div style="padding-top : 0.5rem">
+                            <lightning:button
+                                              class="slds-float_right"
+                                              aura:id="sendSMS"
+                                              variant="brand"
+                                              name="Send SMS"
+                                              label="Send SMS"
+                                              onclick="{!c.sendSMS}"
+                                              />
+                        </div>
+                    </aura:if>
+                    
+                    
+                </a>
+            </footer>
+            
+        </aura:if>
+        <aura:if isTrue="{! v.selectedValue =='Call the customer'}">
+            <article class="slds-card">
+                <div class="slds-card__header slds-grid slds-assistive-text">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                        <div class="slds-media__body">
+                            <h2 class="slds-card__header-title">
+                                <a href="#" class="slds-card__header-link slds-truncate" title="Card Header">
+                                    <span>Card Header</span>
+                                </a>
+                            </h2>
+                        </div>
+                    </header>
+                </div>
+                <div class="slds-card__body slds-card__body_inner">
+                    
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col slds-size_2-of-3">
+                            <lightning:tabset>
+                                <lightning:tab label="Calling Customer">
+                                    <div class="slds-grid">
+                                        <div class="slds-col"> <lightning:icon iconName="utility:info_alt" size="medium" alternativeText="info"/></div>
+                                        <div class="slds-col"><b>Please Call the customer for payment agreement</b> </div>
+                                    </div>
+                                    <lightning:radioGroup aura:id="radios"
+                                                          options="{!v.optionsCallingCustomer}"
+                                                          value="{!v.valueFromCallingCustomer}"
+                                                          type="radio"
+                                                          onchange="{!c.handleCustomerContactMethod}" />
+                                    
+                                    <aura:if isTrue="{! and(v.showCaseOutcome, v.showSelectNotificationNumber==false)}">
+                                        <lightning:select name="selectCaseOutcome" label="Case outcome" required="true" value="{!v.valueCaseOutcome}" aura:id ="picklistCaseOutcome" onchange="{!c.getValueFromPicklistCaseOutcome}">
+                                            <option value="">Please select an option</option>
+                                            <option value="Agreed to a payment plan">Agreed to a payment plan</option>
+                                            <option value="Possible chargeback">Possible chargeback</option>
+                                            <option value="Payment received">Payment received</option>
+                                            <option value="Transactional Fraud">Transactional Fraud</option>
+                                            <option value="Cannot afford payment plan">Cannot afford payment plan</option>
+                                            <option value="Payment Relief">Payment Relief</option>
+                                            <option value="Forbearance">Forbearance</option>
+                                            <option value="Promise to Pay">Promise to Pay</option>
+                                            <option value="Disputes">Disputes</option>
+                                        </lightning:select>
+                                        <lightning:input type="datetime" name="input1" label="Set follow up reminder" onchange="{!c.getDate}" value="{!v.getDateFromCalendar}" aura:id ="getdate" required="true"/>
+                                        
+                                    </aura:if>
+                                    <aura:if isTrue="{! and(v.showSelectNotificationNumber, v.showCaseOutcome==false)}">
+                                        <lightning:select name="selectSMS" label="Select notification number" required="true" value="{!v.selectedValueSMSNumber}" aura:id ="picklistSMS" onchange="{!c.getValueFromPicklistSMS}">
+                                            <option value="">Please select an options</option>
+                                            <option value="Send an SMS">{!v.phoneNumber}</option>
+                                        </lightning:select>
+                                        <aura:if isTrue="{!not(empty(v.selectedValueSMSNumber))}">
+                                            <div style="padding-top : 0.5rem">
+                                                <lightning:button
+                                                                  class="slds-float_right"
+                                                                  aura:id="sendSMS"
+                                                                  variant="brand"
+                                                                  name="Send SMS"
+                                                                  label="Send SMS"
+                                                                  onclick="{!c.sendSMS}"
+                                                                  />
+                                            </div>
+                                        </aura:if>
+                                        {!v.messageSent}
+                                    </aura:if>
+                            <aura:if isTrue="{!and(v.showNextButton, v.createReminderButtonNext)}">
+                    <lightning:button
+                                        class="slds-float_right"
+                                        aura:id="closecase"
+                                        variant="brand"
+                                        name="Create Reminder"
+                                        label="Create Reminder"
+                                        onclick="{!c.createConsultantReminder}"
+                                        />
+                </aura:if>
+                                </lightning:tab>
+                                <lightning:tab label="Transaction History">
+                                    <c:CardTransactionHistory selectedAccountFromFlow="{!v.selectedAccountNumberFromFlow}" caseId="{!v.caseIdFromFlow}"/>
+                                </lightning:tab>
+                            </lightning:tabset>
+                        </div>
+                        
+                    </div>
+                    
+                    
+                    
+                </div>
+                <footer class="slds-card__footer" style="height:4rem">
+                    <a class="slds-card__footer-action" >
+                        <aura:if isTrue="{!v.showNextButton}">
+                            <lightning:button
+                                              class="slds-float_right"
+                                              aura:id="closecase"
+                                              variant="brand"
+                                              name="Close Case"
+                                              label="Close Case"
+                                              onclick="{!c.closeCaseFunction}"
+                                              />
+                        </aura:if>
+                        <aura:if isTrue="{!v.pauseAndWaitButton}">
+                            <lightning:button
+                                              class="slds-float_right"
+                                              aura:id="closeAndWait"
+                                              variant="brand"
+                                              name="Pause and wait for response"
+                                              label="Pause and wait for response"
+                                              onclick="{!c.awaitingForResponse}"
+                                              />
+                        </aura:if>
+                    </a>
+                </footer>
+            </article>
+        </aura:if>
+    </article>
+</aura:component>

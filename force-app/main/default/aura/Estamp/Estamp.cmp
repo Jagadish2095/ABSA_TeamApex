@@ -1,0 +1,225 @@
+<aura:component access="global" controller ="EstampController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:isUrlAddressable"  
+                >
+    
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    
+    <aura:attribute name="clientDetailsBean" type="Object" access="global"/>
+    <aura:attribute name="selectedReason" type="String" access="global" />
+    <aura:attribute name="enquiryreasonlist" type="List" />
+    <aura:attribute name="providerName" type="String" access="global" />
+    <aura:attribute name="providerCode" type="String" access="global" />
+    <aura:attribute name="providerAgentName" type="String" access="global" />
+    <aura:attribute name="providerContact" type="String" access="global" />
+    <aura:attribute name="eStampRefNum" type="String" access="global" />
+    <aura:attribute name="transactionYear" type="String" access="global" />
+    <aura:attribute name="transactionMonth" type="String" access="global" />
+    <aura:attribute name="transactionDay" type="String" access="global" />
+    <aura:attribute name="transactionHour" type="String" access="global" />
+    <aura:attribute name="transactionMinute" type="String" access="global" />
+    <aura:attribute name="showEstampForm" type="Boolean" access="global" default="true" />
+    <aura:attribute name="AccountNumber" type="String" access="global" /> 
+    <aura:attribute name="AccountType" type="String" access="global" />
+    <aura:attribute name="AccountName" type="String" access="global" />
+    
+    <!--transaction History -->
+    <aura:attribute name="todaysDate" type="Date" />
+    <aura:attribute name="fromDate" type="String" access="global"/>
+    <aura:attribute name="toDate" type="String" access="global"/>
+    <aura:attribute name="transactionData" type="Transaction_Filter_List__c[]" />
+    
+    
+    <!-- Flow Attribute -->
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" access="global"/>
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"  />
+    <aura:attribute name="caseRecordId" type="String" access="global"/>
+    
+    <center style="z-index:999">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    <div class="slds">
+        <aura:if isTrue="{!v.showEstampForm}"> 
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12">
+                    <h3 class="slds-section__title">
+                        <span class="slds-truncate slds-button slds-section__title-action" title="Retailer/Service Provider Details">Retailer/Service Provider Details</span>
+                    </h3>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6" >
+                    <lightning:input  value="{! v.providerName }" aura:id="estampForm" placeholder="Type Provider's Name" label="Provider's Name" required="true" messageWhenValueMissing="Enter Provider Name" />            
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6" >
+                    <lightning:input value="{! v.providerCode }" placeholder="Type Provider's Code" label="Provider's Code (Optional):"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6" >
+                    <lightning:input value="{! v.providerAgentName }" aura:id="estampForm" placeholder="Type Providers agent fullname and surname" required="true" messageWhenValueMissing="Enter Provider agent Name" label="Providers agent fullname and surname :"  />
+                </lightning:layoutItem>   
+                
+                <lightning:layoutItem padding="around-small" size="6" > 
+                    <lightning:input value="{! v.providerContact }" aura:id="estampForm" placeholder="Type Contact Number" maxlength="10" required="true" label="Contact Number :" min="9" max="10" messageWhenValueMissing="Enter Contact Number" />
+                </lightning:layoutItem>
+            </lightning:layout>
+            
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12">
+                    <h3 class="slds-section__title">
+                        <span class="slds-truncate slds-button slds-section__title-action" title="eStamp Details">eStamp Details</span>
+                    </h3>
+                </lightning:layoutItem>
+                <!--Reason For Enquiry-->
+                <lightning:layoutItem padding="around-small" size = "6">
+                    <lightning:select value="{!v.selectedReason}" class="select-auto-width" aura:id="estampForm"
+                                      onchange="{!c.getEnquiryReason}"	label="Reason For Enquiry" required="true">
+                        <option value="">--None--</option>
+                        <aura:iteration items="{!v.enquiryreasonlist}" var="item">
+                            <option text="{!item.label}" value="{!item.value}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6" >
+                    <lightning:input value="{! v.eStampRefNum }"  aura:id="estampForm" placeholder="Type estamp Reference Number:" required="true" label="estamp Reference Number:" messageWhenValueMissing="Enter Estamp Ref Number"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6" >
+                    <lightning:input value="{! v.transactionYear }"  aura:id="estampForm" placeholder="e.g : YYYY " required="true" label="Transaction Year:" messageWhenValueMissing="Enter Transaction Year e.g : YYYY" />
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6" >
+                    <lightning:input value="{! v.transactionMonth }" aura:id="estampForm" placeholder="e.g : MM " required="true" label="Transaction Month:" messageWhenValueMissing="Enter Transaction Month e.g : MM"  />
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6" >
+                    <lightning:input value="{! v.transactionDay }" aura:id="estampForm" placeholder="e.g : DD " required="true" label="Transaction Day:"  messageWhenValueMissing="Enter Transaction Day e.g : DD" />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6" >
+                    <lightning:input value="{! v.transactionHour }" aura:id="estampForm" placeholder="Type Transaction Hour:" required="true" label="Transaction Hour:"  messageWhenValueMissing="Enter Transaction Hour e.g : HH" />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6" >
+                    <lightning:input value="{! v.transactionMinute }" aura:id="estampForm" placeholder="Type Transaction Minute:" required="true" label="Transaction Minute:"  messageWhenValueMissing="Enter Transaction Minute e.g : mm" />
+                </lightning:layoutItem>
+                
+            </lightning:layout>
+            
+            <lightning:layoutItem size="12" padding="around-small">
+                <lightning:button aura:id="submitButton" class="slds-m-top_small slds-float--right" iconName="utility:check" variant="brand" type="submit" name="add" label="Submit eStamp" onclick="{!c.submitEstamp}"/>
+            </lightning:layoutItem>
+            
+            <aura:set attribute="else">
+                <lightning:layout multipleRows="true">
+                    
+                    <lightning:layoutItem padding="around-small" size="6" >
+                        <B> Account Number :  </B><br />   
+                        <ui:outputText value="{!v.AccountNumber}"/>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6" >
+                        <B> Account Type : </B><br />   
+                        <ui:outputText value="{!v.AccountType}"/>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6" >
+                        <B> Account Name :  </B><br />   
+                        <ui:outputText value="{!v.AccountName}"/>
+                    </lightning:layoutItem>   
+                    
+                    <lightning:layoutItem size="12">
+                        <h3 class="slds-section__title">
+                            <span class="slds-truncate slds-button slds-section__title-action" title="eStamp Details">eStampTransaction History :</span>
+                        </h3>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">  
+                        <lightning:input type="date" aura:id='fDate' name="From Date" label="From Date" value ="{!v.fromDate}" max="{!v.todaysDate}"/>
+                        <lightning:input type="date" aura:id='tDate' name="To Date" label="To Date" value ="{!v.toDate}" max="{!v.todaysDate}" />
+                        <br/>
+                        <div class="slds-m-top_small slds-float--left">
+                            <lightning:button aura:id="ApplyButtonLoad" variant="brand-outline" label="Load Transaction History" title="Load" onclick="{!c.loadTransactionData}" />
+                        </div>
+                    </lightning:layoutItem>
+                     <br/>
+                    <!--Datatable for displaying transaction history-->
+                    <div class="slds-table--header-fixed_container">
+                        
+                        <div class="slds-scrollable" style="width:100%;">
+                            
+                            <table class="slds-table slds-table_bordered slds-table--header-fixed">
+                                <thead>
+                                    <tr class="slds-text-title--caps">
+                                        <th scope="col">
+                                            <div class="slds-truncate">Processing Date</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">Trans Amount</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">Bal After Trans</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">Trans Cost</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">Trans Type</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">Description1</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">Description2</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">Trans Category</div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.transactionData}"  var="rec">
+                                        <tr>
+                                            <td scope="row">
+                                                <div class="slds-truncate" >{!rec.Processing_Date__c}</div>
+                                            </td>
+                                            <td scope="row">
+                                                <div class="slds-truncate" >{!rec.Transaction_Amount__c}</div>
+                                            </td>
+                                            <td scope="row">
+                                                <div class="slds-truncate" >{!rec.Balance_After_Transaction__c}</div>
+                                            </td>
+                                            <td scope="row">
+                                                <div class="slds-truncate" >{!rec.Transaction_Cost__c}</div>
+                                            </td>
+                                            <td scope="row">
+                                                <div class="slds-truncate" >{!rec.Transaction_Type__c}</div>
+                                            </td>
+                                            <td scope="row">
+                                                <div class="slds-truncate" >{!rec.Description1__c}</div>
+                                            </td>
+                                            <td scope="row">
+                                                <div class="slds-truncate" >{!rec.Description2__c}</div>
+                                            </td>
+                                            <td scope="row">
+                                                <div class="slds-truncate" >{!rec.Transaction_Category__c}</div>
+                                            </td>
+                                        </tr>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem padding="around-small" size="12">
+        	            <div class="slds-p-top_large">
+        		            <lightning:button aura:id="submitButton" class="slds-m-top_small slds-float--right" iconName="utility:check" variant="brand" type="submit" name="add" label="Close Case" onclick="{!c.closeCase}"/>    
+                        </div>
+                    </lightning:layoutItem>
+                    </lightning:layout>
+                </lightning:layout>
+            </aura:set>
+            
+        </aura:if>
+        
+    </div>
+    
+</aura:component>

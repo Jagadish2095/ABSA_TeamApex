@@ -1,0 +1,70 @@
+<!--
+* Lightning Component to Submit for Approval
+*
+* @author  Manish : Absa
+* @version v1.0
+* @since   2021-03-23
+*
+-->
+<aura:component controller="ProductOnboardingApprovalController" implements="lightning:isUrlAddressable,lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithoutHeader" access="global" >
+    <aura:html tag="style">
+        .cuf-content {
+            padding: 0 0rem !important;
+        }
+        .slds-p-around--medium {
+            padding: 0rem !important;
+        }       
+        .slds-modal__content{
+            overflow-y:hidden !important;
+            height:unset !important;
+            max-height:unset !important;
+        }
+    </aura:html>
+    
+    <aura:attribute name="comments" type="String" default=""/>
+    <aura:attribute name="opportunityRecord" type="Object" description="The record object to be displayed"/>
+    <aura:attribute name="recordError" type="String"  description="An error message bound to force:recordData"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="true"/>
+    <aura:attribute name="showModal" type="Boolean" default="false"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner alternativeText="Loading" size="medium" />
+    </aura:if>
+    <!--W-008562-StageName added -->
+    <force:recordData aura:id="record"
+                      fields="QA_Complex_Approval_Status__c,Service_Center_Approval_Status__c,Teller_Approval_Status__c,QC_Approval_Status__c,StageName"
+                      layoutType = "FULL"
+                      recordId="{!v.recordId}"
+                      targetError="{!v.recordError}"
+                      targetFields ="{!v.opportunityRecord}"
+                      recordUpdated="{!c. recordUpdated}" />
+    
+    <aura:if isTrue="{!not(empty(v.recordError))}">
+        <div class="recordError slds-text-heading_medium slds-text-color_destructive slds-p-around_medium">
+            <b>{!v.recordError}</b>
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!empty(v.recordError)}">
+        <!-- Header -->
+        <div class="slds-modal__header">
+            <h2 class="title slds-text-heading--medium slds-hyphenate">Submit For Approval</h2>
+        </div>
+        
+        <!-- Body -->
+        <div class="slds-modal__content ">
+            <lightning:textarea name="Comments" 
+                                aura:id="comments"
+                                label="Comments" 
+                                value="{!v.comments}" 
+                                class="slds-p-around_large StyleTextArea"
+                                />
+        </div>
+        
+        <!-- Footer buttons -->
+        <div class="slds-modal__footer">
+            <lightning:button variant="Neutral" label="Cancel" title="Cancel" onclick ="{! c.onCancel}"/>
+            <lightning:button variant="Brand" label="Submit" title="Submit" onclick="{! c.onSubmit }"/>
+        </div>
+    </aura:if>
+</aura:component>

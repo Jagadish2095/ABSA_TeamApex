@@ -1,0 +1,135 @@
+<aura:component controller="CaseQAChecklist" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+	
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <aura:attribute name="activeSections" type="List" default="['ConsultantChecklist', 'CheckerChecklist', 'ValidatorChecklist']"/>
+    
+    <aura:attribute name="recordId" type="Id" />
+    <!-- store the questions -->
+    <aura:attribute name="GuaranteeNumber" type="String"/>
+    <aura:attribute name="GuaranteeDocs" type="String"/>
+    <aura:attribute name="CollateralCaptured" type="String"/>
+    <aura:attribute name="CMSLimitLoaded" type="String"/>
+    <aura:attribute name="SMSCINAJournalNotesCaptured" type="String"/>
+    <aura:attribute name="JournalPrepared" type="String"/>
+    <aura:attribute name="CMSLimitApproved" type="String"/>
+    <aura:attribute name="SMSCINAMessageCaptured" type="String"/>
+    <aura:attribute name="StatusChangefromUtoIMGUstatus" type="String"/>
+    <aura:attribute name="YstatusRemoved" type="String"/>
+    <aura:attribute name="SecuritiesCollateralonSMSCaptured" type="String"/> 
+
+    <!-- store input values -->
+    <aura:attribute name="guaranteeCheck" type="Boolean"/>
+    <aura:attribute name="guaranteeDocsCheck" type="Boolean"/>
+    <aura:attribute name="collateralCapCheck" type="Boolean"/>
+    <aura:attribute name="cmsLoadedCheck" type="Boolean"/>
+    <aura:attribute name="smsCinaJournalCheck" type="Boolean"/>
+    <aura:attribute name="smsJournalQcCheck" type="Boolean"/>
+    <aura:attribute name="journalPrepCheck" type="Boolean"/>
+    <aura:attribute name="cmsLimitCheck" type="Boolean"/>
+    <aura:attribute name="statusChangeCheck" type="Boolean"/>
+    <aura:attribute name="statusRemovedCheck" type="Boolean"/>
+    <aura:attribute name="smsCinaMessCapCheck" type="Boolean"/>
+    <aura:attribute name="secCollatCheck" type="Boolean"/>
+    
+    <lightning:recordEditForm aura:id="casechecklist" objectApiName="Case" recordId="{!v.recordId}" >
+        <lightning:accordion aura:id="accordianId" activeSectionName="{!v.activeSections}" allowMultipleSectionsOpen="true">
+            <lightning:accordionSection name="ConsultantChecklist" label="EPREP Consultant Checklist">               
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="guaranteeNo" fieldName="Guarantee_Number_Contract_Created__c" onchange="{!c.handleGuaranteeNo}" class=""/> 
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="guaranteeDocs" fieldName="Guarantee_Documents_Issued__c" onchange="{!c.handleGuaranteeDocs}" class=""/>       
+                    </div>                    
+                </div>  
+                <br/>
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="collateralCap" fieldName="Collateral_Captured_on_SMS_to_O_status__c" onchange="{!c.handleCollateralCaptured}" class=""/>       
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="cmsLoaded" fieldName="CMS_Limit_Loaded__c" onchange="{!c.handleCmsLimitLoaded}" class=""/>       
+                    </div>
+                </div>
+                <br/>
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="smsCinaJournal" fieldName="SMS_CINA_Journal_Notes_Captured__c" onchange="{!c.handlesmsCinaJournal}" class=""/>       
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="journalPrep" fieldName="Journal_Prepared__c" onchange="{!c.handlejournalprep}" class=""/>       
+                    </div>
+                </div>
+
+				<lightning:layout multipleRows="true">
+            		<lightning:layoutItem size="12"  class="slds-p-top_large">
+                		<div>
+                    		<lightning:button variant="destructive" name="consultantchecklstButton" label="Save Checklist" aura:id="saveConsultClick" onclick="{!c.saveupdatecasechecklist}" class="slds-float_right slds-m-top_xx-large" type="submit"></lightning:button> 
+                    		<lightning:spinner aura:id="mySpinner" alternativeText="Processing.." title="Processing.." variant="brand" size="large" class="slds-hide"/>
+                		</div>
+            		</lightning:layoutItem>
+        		</lightning:layout>
+                
+            </lightning:accordionSection>            
+            <lightning:accordionSection name="CheckerChecklist" label="Quality Checker Checklist">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="cmsLimit" fieldName="CMS_Limit_Approved__c" onchange="{!c.handlecmslimitapp}" class=""/>       
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="smsCjQc" fieldName="SMS_CINA_Journal_Notes_Captured_QC__c" onchange="{!c.handlesmsCinaJournalQc}" class=""/>       
+                    </div>
+                </div> 
+                <lightning:layout multipleRows="true">
+            		<lightning:layoutItem size="12"  class="slds-p-top_large">
+                		<div>
+                    		<lightning:button variant="destructive" name="qualityCheckerButton" label="Save Checklist" aura:id="saveQcClick" onclick="{!c.saveupdatecasechecklist}" class="slds-float_right slds-m-top_xx-large" type="submit"></lightning:button> 
+                    		<lightning:spinner aura:id="mySpinner1" alternativeText="Processing.." title="Processing.." variant="brand" size="large" class="slds-hide"/>
+                		</div>
+            		</lightning:layoutItem>
+        		</lightning:layout>
+                
+                
+           </lightning:accordionSection>
+           <lightning:accordionSection name="ValidatorChecklist" label="Quality Validator Checklist">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="statusChange" fieldName="Status_Change_from_U_to_IMG_U_status__c" onchange="{!c.handlestatuschange}" class=""/>       
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="statusRemoved" fieldName="Y_status_Removed__c" onchange="{!c.handleystatremove}" class=""/>       
+                    </div>
+                </div> 
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="smsCinaMessCap" fieldName="SMS_CINA_Message_Captured__c" onchange="{!c.handlesmsCinaMess}" class=""/>       
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                     	<lightning:inputField aura:id="secCollat" fieldName="Securities_Collateral_on_SMS_Captured__c" onchange="{!c.handlesecureCollat}" class=""/>       
+                    </div>
+                </div>
+               
+               <lightning:layout multipleRows="true">
+            		<lightning:layoutItem size="12"  class="slds-p-top_large">
+                		<div>
+                    		<lightning:button variant="destructive" name="saveQVButton" label="Save Checklist" aura:id="saveQvClick" onclick="{!c.saveupdatecasechecklist}" class="slds-float_right slds-m-top_xx-large" type="submit"></lightning:button> 
+                    		<lightning:spinner aura:id="mySpinner2" alternativeText="Processing.." title="Processing.." variant="brand" size="large" class="slds-hide"/>
+                		</div>
+            		</lightning:layoutItem>
+        		</lightning:layout>
+               
+               
+           </lightning:accordionSection> 
+        </lightning:accordion>        
+        <!--<lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12"  class="slds-p-top_large">
+                <div>
+                    <lightning:button variant="destructive" name="saveButton" label="Save Checklist" aura:id="saveClick" onclick="{!c.saveupdatecasechecklist}" class="slds-float_right slds-m-top_xx-large" type="submit"></lightning:button> 
+                    <lightning:spinner aura:id="mySpinner" alternativeText="Processing.." title="Processing.." variant="brand" size="large" class="slds-hide"/>
+                </div>
+            </lightning:layoutItem>
+        </lightning:layout>-->
+   
+    </lightning:recordEditForm>   
+</aura:component>

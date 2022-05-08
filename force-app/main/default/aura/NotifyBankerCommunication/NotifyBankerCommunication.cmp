@@ -1,0 +1,129 @@
+<aura:component
+	controller="NotifyBankerController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:hasRecordId,force:lightningQuickAction"
+	access="global"
+>
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+	<aura:attribute name="emailToFlow" type="String" />
+	<aura:attribute name="mobileToFlow" type="String" />
+	<aura:attribute name="commMethod" type="String" />
+	<aura:attribute name="clientAccountIdFromFlow" type="String" access="global" />
+	<aura:attribute name="caseRecordId" type="String" access="global" />
+	<aura:attribute name="caseRecordTypeId" type="String" access="global" />
+	<aura:attribute name="templateName" type="String" access="global" />
+	<aura:attribute name="notifyBanker" type="boolean" default="false" access="global" />
+	<aura:attribute name="doNotSendConfrimation" type="boolean" default="false" access="global" />
+	<aura:attribute name="mandateEmail" type="String" default="" access="global" />
+	<aura:attribute name="mobileNumber" type="String" default="" access="global" />
+	<aura:attribute name="name" type="String" />
+	<aura:attribute name="accNumberFromFlow" type="String" Default="" access="global" />
+	<aura:attribute name="accBalanceFromFlow" type="String" Default="" access="global" />
+	<aura:attribute name="flowplstCardNumbers" type="String" access="global" />
+	<aura:attribute name="isModalShow" type="String" default="false" />
+	<aura:attribute name="executeAnotherJob" type="boolean" default="false" access="global" />
+	<aura:attribute name="executeJobs" type="boolean" default="true" />
+	<aura:attribute name="message" type="String" />
+	<aura:attribute name="responseStringFromFlow" type="String" Default="" access="global" /><!--Added by chandra dated 29/01/2021-->
+	<!--Added by Koketso dated 25/06/2021 for email template body replacements -->
+	<aura:attribute name="emailBodyMappingFromFlow" type="String" access="global" default="" />
+	<aura:attribute name="emailAddress" type="String" />
+	<aura:attribute name="sendConfirmation" type="boolean" default="false" />
+	<aura:attribute name="isEmailEditable" type="boolean" default="false" />
+	<aura:attribute name="hasBanker" type="boolean" default="false" /><!--Added by chandra dated 07/01/2021-->
+	<!-- sms attributes declaration added by Koketso dated 12/04/2021-->
+	<aura:attribute name="smsIntegrationAccount" type="String" Default="" access="global" />
+	<aura:attribute name="smsMessageText" type="String" Default="" access="global" />
+	<aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="caseRecord" type="Case" />
+    <!--Added by Nagpalsing Girase 09/07/2021 for email template body replacements -->
+	<aura:attribute name="taxPeriod" type="String" access="global"/>
+	<force:recordData
+		aura:id="recordLoader"
+		recordId="{!v.caseRecordId}"
+		fields="Client_Email_Address__c,sd_Service_Group__c,Account.ID_Number__pc,Account.Registration_Number__c"
+		targetFields="{!v.caseRecord}"
+		recordUpdated="{!c.doInit}"
+	/>
+
+	<!--Error Message-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<ui:message title="Error" severity="error" closable="true"> {!v.errorMessage} </ui:message>
+	</aura:if>
+
+	<div class="slds">
+		<lightning:card title="">
+			<h3 class="slds-section__title">
+				<span class="slds-truncate slds-button slds-section__title-action" title="Communication Preference">Communication Preference</span>
+			</h3>
+			<center style="z-index: 99">
+				<lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" />
+			</center>
+			<aura:if isTrue="{!v.executeJobs}">
+				<lightning:recordEditForm aura:id="recordViewForm" recordId="{!v.caseRecordId}" recordTypeId="{!v.caseRecordTypeId}" objectApiName="Case">
+					<lightning:inputField fieldName="Communication_Method__c" aura:id="commMethod" />
+					<lightning:inputField fieldName="Client_Mobile_Phone__c" aura:id="mobile" />
+					<aura:if isTrue="{!v.isEmailEditable}">
+						<lightning:input aura:id="clientEmailAddress" type="email" name="email" label="Client Email Address" />
+						<aura:set attribute="else">
+							<lightning:inputField fieldName="Client_Email_Address__c" aura:id="clientEmailAddress" />
+						</aura:set>
+					</aura:if>
+					<aura:if isTrue="{!and(!v.doNotSendConfrimation)}">
+						<lightning:layoutItem padding="around-small" size="12">
+							<lightning:input
+								aura:id="sendConf"
+								type="checkbox"
+								label="Do not send confirmation"
+								checked="{!v.sendConfirmation}"
+							/> </lightning:layoutItem
+						><br />
+					</aura:if>
+				</lightning:recordEditForm>
+				<lightning:layout multipleRows="true">
+					<lightning:layoutItem padding="around-small" size="12">
+						<aura:if isTrue="{! not(v.hideCloseCase)}">
+							<lightning:button class="slds-float--right" variant="brand" label="Close Case" title="Close Case" onclick="{!c.closeCase}" />
+						</aura:if>
+					</lightning:layoutItem>
+				</lightning:layout>
+				<aura:set attribute="else">
+					<lightning:layout multipleRows="true">
+						<lightning:layoutItem padding="around-small" size="10">
+							<div class="slds-align--absolute-left slds-p-top_small"><span style="color: green">{!v.message}</span></div>
+						</lightning:layoutItem>
+					</lightning:layout>
+				</aura:set>
+			</aura:if>
+		</lightning:card>
+	</div>
+
+	<aura:if isTrue="{!v.isModalShow}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-label="Meaningful description of the modal content"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<header class="slds-modal__header slds-modal__header_empty">
+					<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick="{!c.closeModal}">
+						X
+						<span class="slds-assistive-text">Close</span>
+					</button>
+				</header>
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<h1 class="slds-align_absolute-center">Do you want to execute another job</h1>
+				</div>
+				<footer class="slds-modal__footer">
+					<div class="slds-align_absolute-center">
+						<lightning:button class="slds-button slds-button_brand" label="Yes" aura:id="previousId" variant="neutral" onclick="{!c.executeJob}" />
+						<lightning:button class="slds-button slds-button_neutral" label="No" aura:id="previousId" variant="neutral" onclick="{!c.closeModal}" />
+					</div>
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+	</aura:if>
+</aura:component>

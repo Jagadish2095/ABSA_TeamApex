@@ -1,0 +1,92 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             : 
+  @last modified on  : 02-22-2022
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+-->
+<aura:component controller="CreditCardCustomerDetailsController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="clientDetails" type="Object" access="public" />
+    <aura:attribute name="accountsReturned" type="Object[]" />
+    <aura:attribute name="mdmClientDetailsBean" type="Object" access="public" />
+    <aura:attribute name="identityInformation" type="Object" access="public" />
+    <aura:attribute name="residentialInformation" type="Object" access="public" />
+    <aura:attribute name="searchType" type="String" access="public" default="" />
+    <aura:attribute name="searchValue" type="String" access="public" default="" />
+    <aura:attribute name="IdNumber" type="String" access="public" default="" />
+    <!--8305025256087-->
+    <aura:attribute name="recordId" type="String" access="public" default="" />
+    <aura:attribute name="applicationNumber" type="String" access="public" default="" />
+    <aura:attribute name="opportunityRecordId" type="String" access="public" default="" />
+    <aura:attribute name="applicationRecordId" type="String" access="public" default="" />
+    <aura:attribute name="actionClicked" type="string" default="" />
+    <aura:attribute name="nextDisabled" type="String" default="false" />
+    <aura:attribute name="cifInformationSerialized" type="String" />
+    <aura:attribute name="minimumCIFInformationCollection" type="Map" default="" />
+    <aura:attribute name="creditIdentityInformation" type="Map" default="" />
+    <aura:attribute name="creditResidentialInformation" type="Map" default="" />
+    <aura:attribute name="creditContactInformation" type="Map" default="" />
+    <aura:attribute name="creditMaritalInformation" type="Map" default="" />
+    <aura:attribute name="creditNextKinInformation" type="Map" default="" />
+    <aura:attribute name="creditPersonalInformation" type="Map" default="" />
+    <aura:attribute name="isEditMode" type="Boolean" default="true" />
+    <aura:attribute name="identitySection" type="Boolean" />
+    <aura:attribute name="contactSection" type="Boolean" />
+    <aura:attribute name="maritalSection" type="Boolean" />
+    <aura:attribute name="personalSection" type="Boolean" />
+    <aura:attribute name="maritalStatusList" type="List" default="[]" />
+    <aura:attribute name="maritalStatusContractList" type="List" default="[]" />
+    <aura:attribute name="genderList" type="List" default="[]" />
+    <aura:attribute name="IdTypeList" type="List" default="[]" />
+    <aura:attribute name="activeSection" type="List" default="['identity']" />
+
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" />
+    </center>
+    <lightning:accordion aura:id="accordion" allowMultipleSectionsOpen="true" activeSectionName="{!v.activeSection}">
+        <lightning:accordionSection name="identity" label="Identity Information" class="accordion-title">
+            <c:CC_IdentityInformation aura:id="ccIdentityInformation" gender="{!v.genderList}"
+                idTypeList="{!v.IdTypeList}" basicIdentityInformation="{!v.creditIdentityInformation}"
+                identityInfo="{!v.identityInformation}" isEdit="{!v.isEditMode}" onclick="{!c.inlineEdit}"
+                identityValidity="{!v.identitySection}" />
+        </lightning:accordionSection>
+        <lightning:accordionSection name="residential" label="Residential Information">
+            <aura:if isTrue="{!v.recordId != ''}">
+                <c:CPBCertificatetoDisplayVoice recordId="{!v.recordId}" />
+            </aura:if>
+            <!-- <c:ResidentialInformationFromCPB aura:id="ccResidentialInformationFromCPB"
+                identityInfo="{!v.residentialInformation}" recordId="{!v.recordId}" /> -->
+            <c:CC_ResidentialAddressInformation aura:id="ccResidentialInformation"
+                residentialInformation="{!v.creditResidentialInformation}" identityInfo="{!v.residentialInformation}"
+                isEdit="{!v.isEditMode}" onclick="{!c.inlineEdit}" recordId="{!v.recordId}" />
+        </lightning:accordionSection>
+        <lightning:accordionSection name="contact" label="Contact Information">
+            <c:CC_ContactInformation aura:id="ccContactInformation" contactInformation="{!v.creditContactInformation}"
+                identityInfo="{!v.identityInformation}" isEdit="{!v.isEditMode}" onclick="{!c.inlineEdit}"
+                contactValidity="{!v.contactSection}" />
+        </lightning:accordionSection>
+        <lightning:accordionSection name="marital" label="Marital Status and Marital Contract Information">
+            <c:CreditCardMaritalStatus aura:id="ccMaritalInformation" maritalInformation="{!v.creditMaritalInformation}"
+                maritalStatusList="{!v.maritalStatusList}" maritalContractList="{!v.maritalStatusContractList}"
+                identityInfo="{!v.identityInformation}" isEdit="{!v.isEditMode}" onclick="{!c.inlineEdit}"
+                maritalValidity="{!v.maritalSection}" />
+        </lightning:accordionSection>
+        <lightning:accordionSection name="kin" label="Next of Kin Information">
+            <c:CreditCardNextOfKinInformation aura:id="ccNextKinInformation"
+                kinInformation="{!v.creditNextKinInformation}" isEdit="{!v.isEditMode}" onclick="{!c.inlineEdit}"
+                identityInfo="{!v.identityInformation}" />
+        </lightning:accordionSection>
+        <lightning:accordionSection name="personal" label="Personal information">
+            <c:CreditCardPersonalInformation aura:id="ccPersonalInformation"
+                personalInformation="{!v.creditPersonalInformation}" identityInfo="{!v.identityInformation}"
+                isEdit="{!v.isEditMode}" onclick="{!c.inlineEdit}" personalValidity="{!v.personalSection}" />
+        </lightning:accordionSection>
+    </lightning:accordion>
+    <lightning:layoutItem padding="horizontal-small" size="12">
+        <c:CreditCardFlowFooter aura:id="creditCardFlowFooter" availableActions="{! v.availableActions }"
+            navigateFlowEvent="{! c.handleNavigate }" nextLabel="Next" nextDisabled="{! v.nextDisabled }"
+            backLabel="Previous" pauseLabel="Save" pauseVariant="brand" />
+    </lightning:layoutItem>
+</aura:component>

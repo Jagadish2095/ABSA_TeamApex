@@ -1,0 +1,327 @@
+<!--
+    This is the opportunity wizard component for creating opportunities leveraging off the results of the client finder
+    component
+
+    @author Nelson Chisoko (Dariel)
+    @since 06/02/2019
+-->
+
+
+<aura:component description="OpportunityWizard"
+                controller="OpportunityWizardController"
+                implements="lightning:isUrlAddressable,lightning:hasPageReference,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName"
+                access="global"
+                >
+    <!--WorkspaceID-->
+    <lightning:workspaceAPI aura:id="workspace"/>
+    
+    <!--Handlers-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="c:setClientInfo" action="{!c.handleClientSelectionEvent}"/>
+    <aura:handler event="c:setProductInfo" action="{!c.handleProductSelectionEvent}"/>
+    
+    <!--Attribute declarations-->
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="inActiveBrokerSelected" type="Boolean" default="true" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="accountData" type="Account"/>
+    <aura:attribute name="accrecordId" type="String" />
+    <aura:attribute name="productData" type="ClientFinderProduct"/>
+    <aura:attribute name="productDataDetails" type="String"/>
+    <aura:attribute name="productDataBankingDetails" type="String"/>
+    <aura:attribute name="productDataAssetsLiabilities" type="String"/>
+    <aura:attribute name="createdClient" type="Account"/>
+    <aura:attribute name="opportunityRecordTypesList" type="List"/>
+    <aura:attribute name="selectedOpportunityRecordTypeId" type="String"/>
+    <aura:attribute name="selectedOpportunityRecordTypeName" type="String"/>
+    <aura:attribute name="isVirtualAdvisorCase" type="Boolean" default="false"/>
+    <aura:attribute name="opportunityFields" type="String[]"/>
+    <aura:attribute name="recordFormSubmitted" type="Boolean" default="false"/>
+    <aura:attribute name="showClientFinder" type="Boolean" default="true"/>
+    <aura:attribute name="FinderdisableNext" type="Boolean" default="true"/>
+    <aura:attribute name="showOppotunityRecordTypeSelection" type="Boolean" default="false"/>
+    <aura:attribute name="showOpportunityEdit" type="Boolean" default="false"/>
+    <aura:attribute name="showOpportunitySummary" type="Boolean" default="false"/>
+    <aura:attribute name="bodya" type="Aura.Component[]"/>
+    <aura:attribute name="bodyb" type="Aura.Component[]"/>
+    <aura:attribute name="selectedAdviserId" type="Id"/>
+    <aura:attribute name="selectedSiteId" type="Id"/>
+    <aura:attribute name="isinvestmentType" type="Boolean" default="false"/>
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    <aura:attribute name="willTypeOptions" type="List" default="[
+                                                                {'label': 'Revision', 'value': 'Revision'}
+                                                                ]"
+                    />
+   	<aura:attribute name="fields" type="String[]" default="['Name','AccountId','StageName','Type','CloseDate']" />
+    <aura:attribute name="willTypeValue" type="String" default="Revision"/>
+    <aura:attribute name="showWillTypeSelection" type="boolean"/>
+    <aura:attribute name="Oppty" type="Opportunity" default=" { 'sobjectType':'Opportunity' }"/>
+    
+    <!--Custom Lookup Attributes-->
+    <aura:attribute name="selectedLookUpRecord" type="sObject" default="{}"/>
+    <aura:attribute name="selectedSiteRecord" type="Site__c" default="{}"/>
+    
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner alternativeText="theSpinner"/>
+    </aura:if>
+    
+    <div style="margin-bottom: 40px;">
+        
+        <lightning:card title="">
+            <!--Header-->
+            <div class="slds-page-header">
+                <div class="slds-media">
+                    <div class="slds-media__body">
+                        <aura:renderIf isTrue="{!v.showClientFinder}">
+                            <h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate">Opportunity Wizard 1 of 4</h1>
+                            <p class="slds-text-title--caps slds-line-height--reset">Client Search</p>
+                        </aura:renderIf>
+                        
+                        <aura:renderIf isTrue="{!v.showOppotunityRecordTypeSelection}">
+                            <aura:renderIf isTrue="{!v.isVirtualAdvisorCase}">
+                                <h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate">Opportunity Wizard 1 of 2</h1>
+                                <aura:set attribute="else">
+                                    <h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate">Opportunity Wizard 2 of 4</h1>
+                                </aura:set>
+                            </aura:renderIf>
+                            <p class="slds-text-title--caps slds-line-height--reset">Record Type Selection</p>
+                        </aura:renderIf>
+                        <aura:renderIf isTrue="{!v.showOpportunityEdit}">
+                            <aura:renderIf isTrue="{!v.isVirtualAdvisorCase}">
+                                <h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate">Opportunity Wizard 2 of 2</h1>
+                                <aura:set attribute="else">
+                                    <h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate">Opportunity Wizard 3 of 4</h1>
+                                </aura:set>
+                            </aura:renderIf>
+                            <p class="slds-text-title--caps slds-line-height--reset">Record Creation</p>
+                        </aura:renderIf>
+                        <aura:renderIf isTrue="{!v.showOpportunitySummary}">
+                            <h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate">Opportunity Wizard 4 of 4</h1>
+                            <p class="slds-text-title--caps slds-line-height--reset">Record Summary</p>
+                        </aura:renderIf>
+                    </div>
+                </div>
+            </div>
+            
+            <aura:if isTrue="{!v.showClientFinder}">
+                
+                <c:ClientFinder
+                                showCreateIndividualProspect="true"
+                                showCreateBusinessProspect="true"
+                                showProductSelection="true"
+                                showParticipantSelection="true" aura:id="clientFinderComponent"
+                                />
+                
+            </aura:if>
+            
+            <aura:if isTrue="{!v.showOppotunityRecordTypeSelection}">
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small">
+                        <lightning:radioGroup
+                                              aura:id="opportunityRecordTypeGroup"
+                                              name="opportunityRecordTypeGroup"
+                                              label="Select a record type for this Opportunity"
+                                              options="{!v.opportunityRecordTypesList}"
+                                              value="{!v.selectedOpportunityRecordTypeId}"
+                                              onchange="{!c.handleChange}"
+                                              type="radio"
+                                              />
+                    </lightning:layoutItem>
+                </lightning:layout>
+                
+            </aura:if>
+            <aura:renderIf isTrue="{!v.showOpportunityEdit}">
+              
+                <aura:renderIf isTrue="{!v.isVirtualAdvisorCase}">
+                <aura:renderIf isTrue="{!v.isinvestmentType}">
+                    <lightning:recordEditForm
+                                              aura:id="opportunityEditFormVirtual"
+                                              onsuccess="{!c.handleSuccessForNewOpp}"
+                                              recordTypeId="{!v.selectedOpportunityRecordTypeId}"
+                                              onsubmit="{!c.handleSubmit}"
+                                              onerror="{!c.handleError}"
+                                              objectApiName="Opportunity">
+                        <!-- Added By Divya -->
+                        <lightning:messages aura:id="OppMessage" />
+                        
+                        <lightning:layout>
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <div class="slds-grid slds-wrap">
+                                   <lightning:inputField  fieldName="Case__c" value="{!v.recordId}" variant="label-hidden" class="slds-hide"/> 
+                                    <lightning:inputField  fieldName="OwnerId" value="{!v.Oppty.OwnerId}" variant="label-hidden" class="slds-hide"/> 
+                                    <div class="slds-p-around_xx-small slds-size--1-of-1">
+                                        <lightning:inputField  fieldName="Name" label="Opporuntiy Name"/> 
+                                    </div>
+                                    <div class="slds-p-around_xx-small slds-size--1-of-1">
+                                        <lightning:inputField  fieldName="AccountId" aura:id="accountlookup" label="Account Name" value="{!v.accrecordId}"/>
+                                    </div>
+                                    <div class="slds-p-around_xx-small slds-size--1-of-1">
+                                        <lightning:inputField  fieldName="StageName" label="Stage" value="New" disabled="true"/>
+                                    </div>
+                                    <div class="slds-p-around_xx-small slds-size--1-of-1">
+                                        <lightning:inputField  fieldName="Type" label="Type"/>
+                                    </div>
+                                    <div class="slds-p-around_xx-small slds-size--1-of-1">
+                                        <lightning:inputField  fieldName="CloseDate" label="Close Date" value="{!v.Oppty.CloseDate}"/>
+                                    </div>
+                                     <div class="slds-p-around_xx-small slds-size--1-of-1">
+                                        <lightning:inputField  fieldName="ReferredByUser__c" aura:id="whoislookup" label="Agent who is referring the opportunity" value="{!v.Oppty.ReferredByUser__c}"/>
+                                    </div>
+                                   <div class="slds-p-around_xx-small slds-size1--of-1 slds-m-left_xx-small " style="width: 522px;">
+                                         <label for="Owner">Opportunity Owner</label>
+                                       <lightning:inputField  fieldName="ReferredByUser__c"  label="Agent who is referring the opportunity" value="{!v.Oppty.OwnerId}" variant="label-hidden"/>
+                                    </div>
+                                    <div class="slds-p-around_xx-small slds-size--1-of-1">
+                                        <lightning:inputField  fieldName="Comments__c"  value="{!v.Oppty.Comments__c}"/>
+                                    </div>
+                                    <div class="slds-p-around_x-small slds-size--1-of-1 slds-m-top_x-small">
+                                        <lightning:button variant="brand" type="submit" name="save" label="Save" />
+                                    </div>
+                                </div>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </lightning:recordEditForm>
+                    <aura:set attribute="else">
+                    <lightning:recordForm
+                                          objectApiName="Opportunity"
+                                          recordTypeId="{!v.selectedOpportunityRecordTypeId}"
+                                          fields="{!v.fields}"
+                                          onsuccess="{!c.handleSuccessForNewOpp}" />
+                     </aura:set>
+                 </aura:renderIf>
+                </aura:renderIf>
+            </aura:renderIf>
+            
+            <!--Divya Test-->
+            <lightning:recordEditForm
+                                          aura:id="opportunityEditForm"
+                                          recordId="{!v.recordId}"
+                                          onload="{!c.handleLoad}"
+                                          onsubmit="{!c.handleSubmit}"
+                                          onsuccess="{!c.handleSuccess}"
+                                          onerror="{!c.handleError}"
+                                          recordTypeId="{!v.selectedOpportunityRecordTypeId}"
+                                          objectApiName="Opportunity">
+                <aura:renderIf isTrue="{!v.showOpportunityEdit}">
+                    <aura:renderIf isTrue="{!!v.isVirtualAdvisorCase}">
+                        <lightning:messages />
+                    <lightning:layout>
+                        <lightning:layoutItem padding="around-small" size="3"/>
+                        
+                        <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                            <lightning:layout multipleRows="true">
+                                <!--{!v.body}-->
+                                <lightning:layoutItem padding="around-small" flexibility="auto">
+                                    <!--                                <c:AdviserLookup objectAPIName="User" IconName="standard:user" selectedRecord="{!v.selectedLookUpRecord}" label="Adviser"/>-->
+                                    <!--label class="slds-float_left" padding="around-small"><span style="color:red;" align="left">*</span>Adviser </label -->
+                                     <aura:renderIf isTrue="{!v.selectedOpportunityRecordTypeName != 'Investment Opportunity'}">
+                                    	<c:AdviserLookup objectAPIName="Employee__c" IconName="standard:user" selectedRecord="{!v.selectedLookUpRecord}" aura:id="adviserID" label="Adviser" />
+                                    </aura:renderIf>
+                                    
+                                    <!--Inactive Broker Selected Error Display-->
+                                    <aura:if isTrue="{!v.inActiveBrokerSelected}">
+                                        
+                                        <aura:set attribute="else">
+                                            <div class="slds-text-color_error slds-p-left_x-small">
+                                                <p>  Inactive Broker Selected (Please Select Active broker to Continue ...)</p>
+                                            </div>
+                                        </aura:set>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!v.showWillTypeSelection}">
+                                        <lightning:radioGroup
+                                                              aura:id="willTypeRadioGroup"
+                                                              name="willTypeRadioGroup"
+                                                              label="Will Type"
+                                                              options="{!v.willTypeOptions}"
+                                                              value="{!v.willTypeValue}"
+                                                              onchange="{!c.handleChange}"
+                                                              type="button"
+                                                              required="true"
+                                                              />
+                                    </aura:if>
+                                    
+                                    
+                                   	<aura:renderIf isTrue="{!and(v.selectedOpportunityRecordTypeName == 'Investment Opportunity',not(empty(v.recordId)))}">
+                                   		<lightning:inputField  fieldName="Sys_BypassValidation__c" value="{!v.showOpportunityEdit}" disabled="true" class="slds-hide"/>
+                                    </aura:renderIf>
+                                    
+                                    
+                                    {!v.bodya}
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" flexibility="auto">
+                                    <!--                                <c:SiteLookup objectAPIName="User_Site__c" IconName="custom:custom85" selectedRecord="{!v.selectedSiteRecord}" label="Site" selectedAdviserId="{!v.selectedLookUpRecord.Id}"/>-->
+                                    <!-- <c:SiteLookup objectAPIName="None" aura:id="siteID" IconName="custom:custom85" selectedRecord="{!v.selectedSiteRecord}" label="Site" selectedAdviserId="{!v.selectedLookUpRecord.Id}"/>
+                               -->
+									<aura:renderIf isTrue="{!v.selectedOpportunityRecordTypeName != 'Investment Opportunity'}">
+                                    	<c:SiteLookup objectAPIName="Site__c" IconName="custom:custom85" selectedRecord="{!v.selectedSiteRecord}" aura:id="siteID" label="Site" />
+                                    </aura:renderIf>       
+                                    {!v.bodyb}
+                                    <aura:renderIf isTrue="{!v.selectedOpportunityRecordTypeName == 'Investment Opportunity'}">
+                                    <label for="Owner" class="slds-form-element__label">Opportunity Owner</label>
+                                    <lightning:inputField  fieldName="ReferredByUser__c" value="{!v.Oppty.OwnerId}" variant="label-hidden"/>
+                                    </aura:renderIf>
+                                    
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:layoutItem>
+                                
+                        <lightning:layoutItem padding="around-small" size="3"/>
+                                
+                    </lightning:layout>
+                    </aura:renderIf>
+                </aura:renderIf>
+            </lightning:recordEditForm>
+            
+            
+            <aura:if isTrue="{!v.showOpportunitySummary}">
+                <lightning:layout>
+                    <lightning:layoutItem padding="around-small" size="3"/>
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <lightning:recordForm
+                                              recordId="{!v.recordId}"
+                                              objectApiName="Opportunity"
+                                              layoutType="Compact"
+                                              columns="2"
+                                              mode="readonly"
+                                              >
+                        </lightning:recordForm>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3"/>
+                </lightning:layout>
+            </aura:if>
+            
+            <!--Navigation buttons-->
+            <div class="slds-grid  slds-grid--align-center">
+                <aura:if isTrue="{!v.showClientFinder}">
+                    
+                    <lightning:button variant="brand" label="Next" onclick="{!c.nextTab}" disabled="{!v.FinderdisableNext}"/>
+                    <button class="slds-button slds-button--brand" onclick="{!c.cancel}" >Cancel</button>
+                    
+                </aura:if>
+                <aura:if isTrue="{!v.showOppotunityRecordTypeSelection}">
+                    <button class="slds-button slds-button--brand" onclick="{!c.previousTab}" >Back</button>
+                    <lightning:button variant="brand" label="Next" onclick="{!c.nextTab}"/>
+                    <button class="slds-button slds-button--brand" onclick="{!c.cancel}" >Cancel</button>
+                </aura:if>
+                <aura:if isTrue="{!v.showOpportunityEdit}">
+                    <aura:renderIf isTrue="{!v.isVirtualAdvisorCase}">
+                        <aura:set attribute="else">
+                    <button class="slds-button slds-button--brand" onclick="{!c.previousTab}" >Back</button>
+                    <lightning:button variant="brand" label="Next" onclick="{!c.nextTab}"/>
+                    <button class="slds-button slds-button--brand" onclick="{!c.cancel}" >Cancel</button>
+                        </aura:set>
+                    </aura:renderIf>
+                </aura:if>
+                <aura:if isTrue="{!v.showOpportunitySummary}">
+                    <button class="slds-button slds-button--brand" onclick="{!c.previousTab}" >Back</button>
+                    <button class="slds-button slds-button--brand" onclick="{!c.finish}" >Finish</button>
+                    <button class="slds-button slds-button--brand" onclick="{!c.cancel}" >Cancel</button>
+                </aura:if>
+            </div>
+            
+        </lightning:card>
+    </div>
+    <div style="height: 30px;"></div>
+</aura:component>

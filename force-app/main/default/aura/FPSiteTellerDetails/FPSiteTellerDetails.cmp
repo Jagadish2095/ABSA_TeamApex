@@ -1,0 +1,321 @@
+<!--This is the Fraud Prevention Site/Teller Details component Searching and displaying Site/Teller-->
+<!--@author  Simangaliso Mathenjwa-->
+<!--@Created Date   13 March 2022-->
+<!--@Work Id: W-017980 -->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" controller="FPSiteTellerDetailsController">
+<!--Attributes-->
+<aura:attribute name="errorMessage" type="String" />
+<aura:attribute name="showSpinner" type="boolean" default="false" />
+<aura:attribute name="selectedRecord" type="sObject" default="{}" description="Will store the selected record"/>
+<aura:attribute name="siteDetails" type="Object" default="{}" description="Will response from the service"/>
+<aura:attribute name="branchManagerFields" type="List" default="['Name', 'AB_Number__c', 'Email', 'MobilePhone']"/>
+<aura:attribute name="tellerBranchCode" type="String" />
+<aura:attribute name="branchName" type="String" />
+<aura:attribute name="showBranchDetails" type="boolean" />
+
+<!--Handlers-->
+<aura:handler name="selected_record_event" event="c:SelectedRecordEvent" action="{!c.handleEvent}"/>
+
+<div class="slds-clearfix slds-p-top_medium">
+    <lightning:accordion aura:id="accordion" class="accordioncss" activeSectionName="hiddenSection" allowMultipleSectionsOpen="true">
+        <lightning:accordionSection name="siteAndTeller" label="Site and Teller">
+        <!--Display Errors-->
+	    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			    <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+    <aura:if isTrue="{!v.showSpinner}">
+        <center style="z-index: 99">
+            <lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+        </center>
+	</aura:if>
+    <!--Main Top level Layout-->
+    <lightning:layout verticalAlign="start" horizontalAlign="center">
+        <lightning:layoutItem size="12">
+            <lightning:tabset>
+                <!--Site Details Tab-->
+                <lightning:tab id="siteDetails" label="Site Details">
+                    <lightning:recordViewForm aura:id="recordEditForm"
+                                     recordId="{!v.siteDetails.branchManagerSFId}"
+                                     objectApiName="User">
+                            <lightning:messages />
+                    <lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+                        <lightning:layoutItem flexibility="auto" size="10" padding="around-small">
+                            <c:LookUpField lookupSearchData="FPBranchLookUpQuery" icon_name="custom:custom84" selectedRecord ="{!v.selectedRecord}" aura:id="branchLookupField" label="Branch Search" placeHolder="Search branch by name or site code"/>
+                        </lightning:layoutItem>
+
+                        <!--Site Details-->
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Site Name </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.siteDetails.sipp01o.engLongName}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Site Code </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.siteDetails.sipp01o.controllingSite}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Site Contact Details </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.siteDetails.sipp01o.addManTel}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem><br/><br/>
+                        <h3 class="slds-section__title" style="width: 100%">
+                            <span class="slds-truncate slds-p-horizontal_small" title="Section Title"><b>Site Manager</b></span>
+                        </h3>
+                        
+                            
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Name </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="Name" value="{!v.managerName}" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> AB Number </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="AB_Number__c" value="{!v.managerABnumber}" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Email Address </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="Email" value="{!v.managerEmail}" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Mobile Number </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="MobilePhone" value="{!v.managerMobilePhone}" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        
+                        
+                    </lightning:layout>
+                </lightning:recordViewForm>
+                </lightning:tab>
+
+                <!--Teller Details Tab-->
+                <lightning:tab id="tellerDetails" label="Teller Details">
+                    <lightning:recordViewForm aura:id="recordEditForm"
+                                     recordId="{!v.selectedRecord.Id}"
+                                     objectApiName="User">
+                            <lightning:messages />
+                    <lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+                        <lightning:layoutItem flexibility="auto" size="10" padding="around-small">
+                            <c:LookUpField lookupSearchData="FPTellerQuery" icon_name="custom:custom84" selectedRecord ="{!v.selectedRecord}" aura:id="tellerLookupField" label="Teller Search" placeHolder="Search Teller by Name, Ab Number, BRID Number or Employee Number"/>
+                        </lightning:layoutItem><br/><br/><br/>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> AB Number </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="AB_Number__c" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Site code </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <a href="" onclick="{!c.getBranchDetails}">{!v.selectedRecord.SiteCode__c}</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Telephone Number </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="Phone" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Employee Number </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName=" EmployeeNumber"  variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Job Description </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="Title" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Last Sign-in </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="LastLoginDate" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Branch Name </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <a href="" onclick="{!c.getBranchDetails}">{!v.selectedRecord.Branch_Name__c}</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    </lightning:recordViewForm>
+
+                    
+
+                    <!--Site Details Tab 2-->
+                    <aura:if isTrue="{!v.showBranchDetails}">
+                        <h3 class="slds-section__title slds-theme_shade" style="width: 100%">
+                            <span class="slds-truncate slds-p-horizontal_small" title="Section Title"><b>Branch Details</b></span>
+                        </h3>
+                    <lightning:recordViewForm aura:id="recordEditForm"
+                                     recordId="{!v.siteDetails.branchManagerSFId}"
+                                     objectApiName="User">
+                            <lightning:messages />
+                    <lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+
+                        <!--Site Details consider putting this in a chil-->
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Site Name </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.siteDetails.sipp01o.engLongName}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Site Code </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.siteDetails.sipp01o.controllingSite}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Site Contact Details </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.siteDetails.sipp01o.addManTel}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem><br/><br/>
+                        <h3 class="slds-section__title" style="width: 100%">
+                            <span class="slds-truncate slds-p-horizontal_small" title="Section Title"><b>Site Manager</b></span>
+                        </h3>
+                        
+                            
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Name </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="Name" value="{!v.managerName}" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> AB Number </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="AB_Number__c" value="{!v.managerABnumber}" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Email Address </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="Email" value="{!v.managerEmail}" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-form__item">
+                            <div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+                                <span class="slds-form-element__label"> Mobile Number </span>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-form-element__static">
+                                        <lightning:outputField fieldName="MobilePhone" value="{!v.managerMobilePhone}" variant="label-hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                        
+                        
+                    </lightning:layout>
+                </lightning:recordViewForm>
+                </aura:if>
+                </lightning:tab>
+            </lightning:tabset>
+        </lightning:layoutItem>
+    </lightning:layout>
+    </lightning:accordionSection>
+
+    <!--Hidden Section to allow the first section to be closed by default-->
+    <lightning:accordionSection name="hiddenSection" label="hiddenSection" class="slds-hide">
+
+    </lightning:accordionSection>
+    </lightning:accordion>
+</div>
+</aura:component>

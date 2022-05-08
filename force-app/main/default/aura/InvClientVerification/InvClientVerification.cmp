@@ -1,0 +1,217 @@
+<aura:component controller="InvClientVerificationController" implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes,lightning:availableForFlowActions" 
+                access="global" >
+    
+    <aura:attribute name="statusVal" type="Boolean" />
+    <aura:attribute name="accObj" type="Account" default="{'sobjectType':'Account'}" />
+    <aura:attribute name="loaded" type="Boolean" default="false" />
+    <aura:attribute name="upsertedAccId" type="String" />
+    <aura:attribute name="AdvisorCheck" type="String" />
+    <aura:attribute name="userName" type="String" />    
+    <aura:attribute name="cifNumber" type="String" />
+    <aura:attribute name="isVerificationSuccess" type="Boolean" default="false" />
+    <aura:attribute name="isIdTypeSAId" type="Boolean" /> 
+    <aura:attribute name="isIdTypeblank" type="Boolean" /> 
+    <aura:attribute name="isCheckboxEnabled" type="Boolean" />
+    <aura:attribute name="isInvalidUser" type="Boolean" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="caseFields" type="Object"/>
+    <aura:attribute name="opportunityRecord" type="Object" />
+    <!--aura:attribute name="OpportunityRecord1" type="Object"/-->
+    <aura:attribute name="caseFieldsVerification" type="Object"/>
+    <aura:attribute name="caseRecordVerification" type="Object"/>
+    <aura:attribute name="isIDVEnabled" type="boolean" default="false"/>
+    <aura:attribute name="isSubmitEnabled" type="boolean" default="true"/>
+    <aura:attribute name="fields" type="String[]" default="['Id','Account.IsPersonAccount','STI_DOB__c','STI_Postal_Address__c',
+                                                           'STI_Email_Address__c','STI_Middle_name__c','STI_Id_Number__c',
+                                                           'STI_Physical_Address__c','STI_Full_Name__c','Inv_Phone_Number__c','Person_Account_First_Name__c',
+                                                           'Person_Account_Last_Name__c','Person_Id_Type__c','Sub_Status__c','StageName','Sys_BypassValidation__c','Account.Salutation']"/>
+    
+    <aura:attribute name="opportunityFields" type="Object"/>
+    <aura:registerEvent name="EnableNextButtonEvent1" type="c:EnableNextButtonEvent1"/>
+    
+    <!--person and business account-->
+    <aura:attribute name="opportunityId" type="string" access="public"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    
+    <aura:attribute name="hasRecordAccess" type="boolean" default="false"/>
+    <aura:attribute name="mode" type="String"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner aura:id="spinner" variant="brand" size="medium"/> 
+    </aura:if>
+    <aura:if isTrue="{!v.hasRecordAccess}">
+        <force:recordData aura:id="recordLoader"
+                          recordId="{!v.opportunityId}"
+                          fields="{!v.fields}"
+                          targetFields="{!v.opportunityRecord}"
+                          targetRecord="{!v.opportunityFields}"
+                          targetError="{!v.recordLoadError}"
+                          recordUpdated="{!c.onLoad}"
+                          mode="{!v.mode}" 
+                          
+                          />
+        <lightning:layout>
+            <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="A" aura:id="accordion" >
+                <lightning:accordionSection name="A" label="Individual Client Verification" class="brand">
+                    <!--<img src="{! $Resource.IPSMandatoryIcon}" height="13" width="15" class="alignment3"/> -->
+                    
+                    <lightning:layout multiplerows="true">
+                        <lightning:layoutItem size="8" padding="around-small">
+                            <div class="VerificationFont">
+                                Please verify and check the ID Number/Passport and any Two of the other Verification Questions
+                                <lightning:button variant="base" label="verification questions" title="verification questions" onclick="{!c.openModel}"/>
+                                the customer gets correct to submit verification.
+                            </div> 
+                        </lightning:layoutItem>
+                        <lightning:layoutitem size="4" padding="around-small">
+                            <div style="text-align:right"> <lightning:button variant="neutral"
+                                                                             label="Verification Script"
+                                                                             title="Verification Script"
+                                                                             onclick="{!c.openModel }" /></div>
+                        </lightning:layoutitem>
+                        
+                    </lightning:layout>
+                    
+                    <lightning:card>
+                        <div class="slds-grid">
+                            <div class="slds-col alignment"> 
+                                <lightning:input type="checkbox" label=""  disabled="{!v.isCheckboxEnabled}" 
+                                                 checked="{!v.opportunityRecord.STI_Id_Number__c}"  onchange="{!c.handleCheckbox}"/>
+                                <img src="{! $Resource.IPSMandatoryIcon}" height="8" width="10" class="alignment1"/>
+                                <label class="slds-form-element__label" for="textareaSample2" >ID Number/Passport</label>
+                            </div>
+                        </div><br/>
+                        <div class="CheckboxPad">
+                            <!--<lightning:input type="checkbox" label="Date of Birth" disabled="{!v.isCheckboxEnabled}" checked="{!v.opportunityRecord.STI_DOB__c}" onchange="{!c.handleCheckbox}"/><br/>-->
+                            <lightning:input type="checkbox" label="Postal Address" disabled="{!v.isCheckboxEnabled}" checked="{!v.opportunityRecord.STI_Postal_Address__c}" onchange="{!c.handleCheckbox}"/><br/>
+                            <lightning:input type="checkbox" label="Physical  Address" disabled="{!v.isCheckboxEnabled}" checked="{!v.opportunityRecord.STI_Physical_Address__c}" onchange="{!c.handleCheckbox}"/><br/>
+                            <lightning:input type="checkbox" label="Email Address" disabled="{!v.isCheckboxEnabled}" checked="{!v.opportunityRecord.STI_Email_Address__c}" onchange="{!c.handleCheckbox}"/><br/>
+                            <lightning:input type="checkbox" label="Full Name" disabled="{!v.isCheckboxEnabled}" checked="{!v.opportunityRecord.STI_Full_Name__c}" onchange="{!c.handleCheckbox}"/><br/>
+                            <lightning:input type="checkbox" label="Phone Number" disabled="{!v.isCheckboxEnabled}" checked="{!v.opportunityRecord.Inv_Phone_Number__c}" onchange="{!c.handleCheckbox}"/>
+                        </div>
+                        
+                        <div class="slds-float_right" >
+                            <lightning:button label="Submit Verification" variant="brand" disabled="{!v.isSubmitEnabled}" onclick="{!c.handleSaveRecord}" />
+                        </div>
+                    </lightning:card> 
+                </lightning:accordionSection>
+            </lightning:accordion>
+        </lightning:layout>
+        <div class="slds-m-around_xx-large">
+            
+            <!--Use aura:if tag to display/hide popup based on isModalOpen value-->  
+            <aura:if isTrue="{!v.isModalOpen}">
+                
+                <!-- Modal/Popup Box starts here-->
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <!-- Modal/Popup Box Header Starts here-->
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{! c.closeModel }"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Verification Script</h2>
+                        </header>
+                        <!--Modal/Popup Box Body Starts here-->
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <div>
+                                {!v.opportunityRecord.Account.Salutation} {!v.opportunityRecord.Person_Account_First_Name__c}&nbsp;{!v.opportunityRecord.Person_Account_Last_Name__c}, before I continue with the call I need to confirm I am speaking to the correct person- would you kindly verify the following.
+                            </div>
+                            <br/>
+                            
+                            <aura:if isTrue="{!v.isIdTypeSAId}">
+                                <div style="color:red">
+                                    5 Verification questions of which 3 questions must be asked ({!$Label.c.ID_Number} is mandatory)
+                                </div>
+                                <br/>
+                                <div>
+                                    1. <b>{!$Label.c.ID_Number} - </b> {!$Label.c.ID_Number_Verification_Script} <h5 style="color:red">(Most important question)</h5>
+                                </div>
+                                
+                                <aura:set attribute="else">
+                                    <aura:if isTrue="{!v.isIdTypeblank}">
+                                        <div style="color:red">
+                                            5 Verification questions of which 3 questions must be asked ({!$Label.c.Passport} is mandatory)
+                                        </div>
+                                        <br/>
+                                        <div>
+                                            1. <b>{!$Label.c.Passport}/{!$Label.c.ID_Number} - </b> {!$Label.c.Passport_Verification_Script} / {!$Label.c.ID_Number_Verification_Script} <h5 style="color:red">(Most important question)</h5>
+                                        </div>
+                                        <aura:set attribute="else">
+                                            <div style="color:red">
+                                                5 Verification questions of which 3 questions must be asked ({!$Label.c.Passport} is mandatory)
+                                            </div>
+                                            <br/>
+                                            <div>
+                                                1. <b>{!$Label.c.Passport} - </b> {!$Label.c.Passport_Verification_Script} <h5 style="color:red">(Most important question)</h5>
+                                            </div>
+                                        </aura:set>
+                                    </aura:if>
+                                    
+                                </aura:set>
+                            </aura:if> 
+                            <br/>
+                            <div>
+                                2. <b>Full names or maiden name - </b>please verify your full names or maiden
+                                name?
+                            </div>
+                            <br/>
+                            <div>
+                                3. <b>Email address - </b>please confirm your email address i.e. to what email
+                                address do you receive your Absa statements?
+                            </div>
+                            <br/>
+                            <div>
+                                4. <b>Postal address - </b>please confirm your postal address
+                            </div>
+                            <br/>
+                            <div>
+                                5. <b>Physical address - </b>please confirm your physical address
+                            </div>
+                            <div>
+                                6. <b>Phone Number - </b>please confirm your Phone Number
+                            </div>
+                        </div>
+                        <!--Modal/Popup Box Footer Starts here-->
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral"
+                                              label="Close"
+                                              title="Close"
+                                              onclick="{! c.closeModel }"/>
+                            
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </aura:if>
+        </div>
+        
+        <aura:if isTrue="{!v.isVerificationSuccess}">
+            
+            <lightning:card>
+                <lightning:layout multiplerows="true">
+                    <lightning:layoutItem size="2">
+                        <div class="slds-align_absolute-center" style="height:5rem">
+                            <lightning:icon iconName="action:approval" alternativeText="Approved" title="Approved" />
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="10">
+                        <div class="Custom">
+                            <lightning:formattedRichText class="Normal"  value="Customer Verification Done!">
+                            </lightning:formattedRichText>
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:card>
+            
+        </aura:if>
+    </aura:if>   
+</aura:component>

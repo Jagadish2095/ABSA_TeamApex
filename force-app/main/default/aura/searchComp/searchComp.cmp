@@ -1,0 +1,149 @@
+<aura:component Controller="BrokerNoteProcessController" implements="force:hasRecordId,lightning:availableForFlowScreens,flexipage:availableForAllPageTypes" access="global">
+    
+    <!--declare attributes--> 
+    <aura:attribute name="recordId" type="String" access="global"/>
+    <aura:attribute name="selectedRecord" type="sObject" default="{}" description="Use,for store SELECTED sObject Record"/>
+    <aura:attribute name="listOfSearchRecords" type="List" description="Use,for store the list of search records which returns from apex class"/>
+    
+    
+    <aura:attribute name="SearchKeyWord" type="string"/>
+     <!-- Vikaschand Balusu added Begin-->
+    <aura:attribute name="SearchKeyWord2" type="string"/>
+    <aura:attribute name="listOfSearchRecords2" type="List" description="Use,for store the list of search records which returns from apex class"/>
+    <!-- Vikaschand Balusu added End-->
+    <aura:attribute name="showFilterModal" type="boolean" default="false"/>
+    <aura:attribute name="recordTypeName" type="String" default=""/>
+    <aura:attribute name="objectAPIName" type="string" default="User_Site__c"/>
+    <aura:attribute name="IconName" type="string" default=""/>
+    <aura:attribute name="label" type="string" default="Search Suburb or Town"/> 
+     <aura:attribute name="labell" type="string" default="Search User"/> 
+    <aura:attribute name="Message" type="String" default=""/>
+    <aura:attribute name="showBranchdetails" type="boolean" default="false"/>
+      <aura:attribute name="showUserdetails" type="boolean" default="false"/>
+    <aura:attribute name="showBranchdetailsLst" type="Object" default=""/>
+    <aura:attribute name="showBranchdetailsLstMAp" type="Object" default=""/>
+    <aura:attribute name="userDetails" type="List" default=""/>
+ <aura:attribute name="selectedUser" type="User"/>
+    <aura:attribute name="fliterGenderOptions" type="List" default=""/>
+    <aura:attribute name="slectedGender" type="string" default=""/>
+    <aura:attribute name="selectedLang" type="string" default=""/>
+    <aura:attribute name="dsblbtn" type="boolean" default="true"/>
+    <aura:attribute name="showErrorMsg" type="boolean" default="false"/>
+    <aura:attribute name="ShowFilterIcons" type="boolean" default="false"/>
+	 <aura:attribute name="referralCase" type="Case" default=" { 'sobjectType':'Case' }"/>
+    <!--declare events handlers
+    <aura:handler name="init" value="{!this}"  action="{!c.doInit}"/>-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler name="oSelectedRecordEvent" event="c:selectedsObjectRecordEvent" action="{!c.handleComponentEvent}"/>
+    
+    <lightning:card>
+        <lightning:layout horizontalAlign="center" >
+            <lightning:layoutItem padding="horizontal-large">
+                  
+                <div onmouseleave="{!c.onblur}" style="width:300px !important;" aura:id="searchRes" class="slds-form-element slds-lookup slds-is-close" data-select="single">
+                    <label class="slds-form-element__label slds-text-color_default"  for="lookup-348"><i class="slds-text-color_destructive">*</i>{!v.label}</label>
+                    <!--This part is for display search bar for lookup-->  
+                    <div class="slds-form-element__control">
+                        
+                        <div class="slds-input-has-icon slds-input-has-icon--right ">
+                            <!-- This markup is for when an record is selected -->
+                            
+                            
+                            <div aura:id="lookup-pill"  class="slds-pill-container slds-hide">
+                                
+                                
+                                <lightning:pill class="pillSize  slds-grid slds-size_7-of-7"   label="{!v.selectedRecord.Site__r.Cities_PickList__c}" name="{!v.selectedRecord.Cities_PickList__c}" onremove="{! c.clear }">
+                                    <aura:set attribute="media">
+                                        <lightning:icon iconName="{!v.IconName}" size="x-small" alternativeText="{!v.IconName}"/>
+                                    </aura:set>
+                                </lightning:pill>
+                            </div>
+                            <div aura:id="lookupField" class="slds-show">
+                                <lightning:icon class="slds-input__icon slds-show" iconName="utility:search" size="x-small" alternativeText="search"/>
+                                <span class="slds-icon_container  slds-combobox__input-entity-icon" title="record">
+                                    <lightning:icon class="slds-icon slds-icon slds-icon_small slds-icon-text-default" iconName="{!v.IconName}" size="x-small" alternativeText="icon"/>
+                                    <span class="slds-assistive-text"></span>
+                                </span>
+                              
+                                <!--lightning:input type="text" aura:id="searchKey" name="searchKey" label="Enter" click="{!c.onfocus}"   updateOn="keyup" keyup="{!c.keyPressController}" value="{!v.SearchKeyWord}" class="slds-lookup__search-input slds-input leftPaddingClass" placeholder="Search" /-->
+                                <ui:inputText aura:id="searchKey" click="{!c.onfocus}"  updateOn="keyup" keyup="{!c.keyPressController}" class="slds-lookup__search-input slds-input leftPaddingClass" value="{!v.SearchKeyWord}" placeholder="search.."/>
+                            </div>   
+                        </div>
+                        
+                    </div>             
+                    
+                    <!--This part is for Display typehead lookup result List-->  
+                    <ul style="min-height:40px;margin-top:0px !important" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds" role="listbox">
+                        <lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinner"/>
+                        <center> {!v.Message}</center>
+                        <aura:iteration items="{!v.listOfSearchRecords}" var="singleRec">
+                            <c:Custom2 oRecord="{!singleRec}" />
+                            
+                        </aura:iteration>
+                    </ul>                     
+                    
+                </div>
+               
+            
+            </lightning:layoutItem>
+              <!-- Vikaschand Balusu added Begin-->
+            <aura:if isTrue = "{!v.recordTypeName == 'Broker_Note'}">
+       <lightning:layoutItem>              
+                <div onmouseleave="{!c.onblur2}" style="width:300px !important;" 
+                     aura:id="searchRess" class="slds-form-element slds-lookup slds-is-close" data-select="single">
+                    <label class="slds-form-element__label slds-text-color_default"  for="lookup-348">
+                        <i class="slds-text-color_destructive">*</i>{!v.labell}</label>
+                       <div class="slds-form-element__control">
+                        <div class="slds-input-has-icon slds-input-has-icon--right ">
+                            <div aura:id="lookup-pill"  class="slds-pill-container slds-hide">
+                                <lightning:pill class="pillSize  slds-grid slds-size_7-of-7" 
+                                                label="{!v.selectedRecord.User__c}" 
+                                                name="{!v.selectedRecord.User__c}" onremove="{! c.clear }">
+                                    <aura:set attribute="media">
+                                        <lightning:icon iconName="{!v.IconName}" size="x-small" 
+                                                        alternativeText="{!v.IconName}"/>
+                                    </aura:set>
+                                </lightning:pill>
+                            </div>
+                            <div aura:id="lookupField" class="slds-show">
+                                <lightning:icon class="slds-input__icon slds-show" iconName="utility:search" 
+                                                size="small" alternativeText="search"/>
+                                <span class="slds-icon_container  slds-combobox__input-entity-icon"
+                                      title="record">
+                                    <lightning:icon class="slds-icon slds-icon slds-icon_small slds-icon-text-default" 
+                                                    iconName="{!v.IconName}" 
+                                                    size="x-small" alternativeText="icon"/>
+                                    <span class="slds-assistive-text"></span>
+                                </span>
+                                <ui:inputText aura:id="searchKeyy" click="{!c.onfocus2}"  updateOn="keyup" 
+                                              keyup="{!c.keyPressController2}" class="slds-lookup__search-input slds-input leftPaddingClass"
+                                              value="{!v.SearchKeyWord2}" 
+                                              placeholder="search.."/>
+                            </div>   
+                        </div>
+                    </div>             
+                    <ul style="min-height:40px;margin-top:0px !important" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds" role="listbox">
+                        <lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinner"/>
+                        <center> {!v.Message}</center>
+                        <aura:iteration items="{!v.listOfSearchRecords2}" var="singleRec">
+                            <c:Custom2 oRecord="{!singleRec}" />
+                        </aura:iteration>
+                    </ul>                     
+                </div>
+            </lightning:layoutItem>
+                </aura:if>
+            <!-- Vikaschand Balusu added End-->
+        </lightning:layout>
+    </lightning:card>  
+    
+    <aura:if isTrue="{!and(v.showBranchdetails == true,v.showUserdetails == false)}">  
+        
+        <c:searchResultComp showBranchdetailsLst="{!v.showBranchdetailsLst}" showBranchdetailsLstMAp="{!v.showBranchdetailsLstMAp}" CurrentCaseRecordId="{!v.recordId}" /><!-- // CurrentCaseRecordId="{!v.recordId}" mod by HP -->    
+    </aura:if>
+      <aura:if isTrue="{!v.showUserdetails}">     
+        <c:searchResultComp selectedUser="{!v.selectedRecord}" CurrentCaseRecordId="{!v.recordId}" showBranchdetailsLst="{!v.showBranchdetailsLst}" showBranchdetailsLstMAp="{!v.showBranchdetailsLstMAp}" /><!-- // CurrentCaseRecordId="{!v.recordId}" mod by HP -->    
+     </aura:if>
+    <aura:if isTrue="{!v.showErrorMsg}">
+        <center>No Record Found...</center>
+    </aura:if>  
+</aura:component>

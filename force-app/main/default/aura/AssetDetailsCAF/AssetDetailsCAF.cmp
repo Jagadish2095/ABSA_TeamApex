@@ -1,0 +1,145 @@
+<aura:component
+    controller="LookUpAssetDetails"
+    implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasRecordId"
+    access="global"
+>
+    <!-- start of attributes -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="recordInfo" type="Object" />
+    <aura:attribute name="showMMCode" type="String" />
+    <aura:attribute name="assetType" type="String" />
+    <aura:attribute name="Asset_Type__c" type="String" />
+    <aura:attribute name="miliage" type="String" />
+    <aura:attribute name="registrationNumber" type="String" />
+    <aura:attribute name="serialNumber" type="String" />
+    <aura:attribute name="engineNumber" type="String" />
+    <aura:attribute name="VINChassisNumber" type="String" />
+    <aura:attribute name="YearFirstRegistered" type="String" />
+    <aura:attribute name="applicationData" type="Object" default="{! v.applicationData }" />
+    <aura:attribute name="showVehicleSearch" type="boolean" default="{! (v.applicationData.Asset_Type__c.value != '')? true:false }" />
+    <aura:attribute name="showMotoBikeSize" type="boolean" default="{! (v.applicationData.Asset_Type__c.value  == 'Motorbikes')? true:false }" />
+
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="appId" type="String" />
+    <aura:attribute name="selectedLookUpRecord" type="sObject" default="{}" />
+
+    <!-- End of attributes -->
+    <lightning:accordionSection name="AssetDetailsCAF" label="Asset/Article Details">
+        <!-- BASIC GRID EXAMPLE -->
+        <div class="slds-grid slds-wrap p-lr-20">
+            <div class="slds-col slds-size_8-of-12">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField
+                            fieldName="Asset_Type__c"
+                            required="true"
+                            label="Asset Type"
+                            aura:id="assetdetails"
+                            value="{!v.Asset_Type__c}"
+                            onchange="{!c.assetTypeSelector}"
+                        />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField
+                            fieldName="Article_Type__c"
+                            required="true"
+                            label="Article Type"
+                            aura:id="articledetails"
+                            value="{!v.Article_Type__c}"
+                        />
+                    </div>
+                </div>
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <aura:if isTrue="{!v.Asset_Type__c  != 'Other'}">
+                        <div class="slds-col slds-size_1-of-1">
+                            <aura:if isTrue="{!v.showVehicleSearch}">
+                                <div class="slds-col slds-size_1-of-1 p-0">
+                                    <c:customLookupCAF
+                                        objectAPIName="Vehicle_Make_Model__c"
+                                        IconName="custom:custom31"
+                                        selectedRecord="{!v.selectedLookUpRecord}"
+                                        label="* Vehicle Details"
+                                    />
+                                    <br />
+                                    <p class="">Saved Vehicle Details : <strong>{! v.applicationData.Vehicle_Make_Model__c }</strong></p>
+                                </div>
+                            </aura:if>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{! or(v.Asset_Type__c  == 'Motorbikes', v.showMotoBikeSize == true) }">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:inputField
+                                fieldName="Motorbike_Engine_Size__c"
+                                label="Motorbike engine size"
+                                aura:id="motorbike"
+                                value="{!v.Motorbike_Engine_Size__c}"
+                            />
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{! v.Asset_Type__c  == 'Other' }">
+                        <!--
+                        <div class="slds-col slds-size_1-of-2">
+                            <label class="slds-form-element__label" for="form-element-01">Equipment Type</label>
+                            <c:CAF_fetchLookUpEquipmentTypes aura:id="fetchLookUpEquipmentTypes" />
+                        </div>
+                        -->
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:inputField
+                                required="true"
+                                fieldName="Commercial_asset_finance__c"
+                                label="Commercial asset finance"
+                                aura:id="commasset"
+                                value="{!v.Commercial_asset_finance__c}"
+                            />
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:inputField
+                                required="true"
+                                fieldName="Description__c"
+                                label="Description"
+                                aura:id="descriptions"
+                                value="{!v.Description__c}"
+                            />
+                        </div>
+                    </aura:if>
+                </div>
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField
+                            aura:id="yearFirstRegistered"
+                            required="true"
+                            fieldName="Year_First_Registered__c"
+                            label="Year First Registered"
+                            value="{!v.Year_First_Registered__c}"
+                        />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField aura:id="mileage" fieldName="Mileage__c" label="Mileage" value="{!v.Mileage__c}" />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField
+                            aura:id="registrationNumber"
+                            fieldName="Registration_Number__c"
+                            label="Registration Number"
+                            value="{!v.Registration_Number__c}"
+                        />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField
+                            aura:id="VINChassisNumber"
+                            fieldName="VIN_Chassis_Number__c"
+                            label="VIN/Chassis Number"
+                            value="{!v.VIN_Chassis_Number__c	}"
+                        />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField aura:id="engineNumber" fieldName="Engine_Number__c" label="Engine Number" value="{!v.Engine_Number__c}" />
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField aura:id="serialNumber" fieldName="Serial_Number__c" label="Serial Number" value="{!v.Serial_Number__c}" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </lightning:accordionSection>
+</aura:component>

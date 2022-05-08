@@ -1,0 +1,292 @@
+<!--
+    Unclaimed fund wizard component
+    @Author: Mbuyiseni Mbhokane
+    @Since: 20/10/2020
+-->
+<aura:component controller="UnclaimedFundsController" implements="flexipage:availableForRecordHome,force:hasRecordId" access="global">
+<!-- ATTRIBUTES-->
+<aura:attribute name="oppLineItems" type="List"/>
+<aura:attribute name="columns" type="List"/>
+<aura:attribute name="productColumns" type="List"/>
+<aura:attribute name="customerAccountDetails" type="List"/>
+<aura:attribute name="viewCustomerAccountDetails" type="List"/>
+<aura:attribute name="maxRowSelection" type="Integer" default="1"/>
+<aura:attribute name="recordId" type="String"/>
+<aura:attribute name="accountRecordId" type="String"/>
+<aura:attribute name="oppLineItemId" type="String"/>
+<aura:attribute name="selectedAccountNumber" type="String"/>
+<aura:attribute name="selectedProductType" type="String"/>
+<aura:attribute name="showSelectedDetails" type="Boolean" default="false"/>
+<aura:attribute name="showSavings" type="Boolean" default="false"/>
+<aura:attribute name="showCheque" type="Boolean" default="false"/>
+<aura:attribute name="showAccountHolds" type="Boolean" default="false"/>
+<aura:attribute name="showClientAccounts" type="Boolean" default="false"/>
+<aura:attribute name="showClientOtherAccounts" type="Boolean" default="false"/>
+<aura:attribute name="showScript" type="Boolean" default="false"/>
+<aura:attribute name="holdIndicator" type="String"/>
+<aura:attribute name="viewChequeAccountDetails" type="Map"/>
+<aura:attribute name="viewSavingsAccountDetails" type="Map"/>
+<aura:attribute name="caseRecord" type="Object"/>
+<aura:attribute name="caseRecordFields" type="Object"/>
+<aura:attribute name="recordError" type="String"/>
+<aura:attribute name="isSuccess" type="Boolean" default="false"/>
+<aura:attribute name="showSpinner" type="Boolean" default="false"/>
+<aura:attribute name="enableInfiniteLoading" type="Boolean" default="true"/>
+<aura:attribute name="loadMoreOffset" type="Integer" default="8"/>
+<aura:attribute name="closeAccountDetails" type="List"/>
+<aura:attribute name="tableData" type="List"/>
+<aura:attribute name="acctableData" type="List"/>
+<aura:attribute name="chequeAccountClosureDetails" type="List"/>
+
+<!--Get account closure details response attributes-->
+<aura:attribute name="closureAmount" type="String"/>
+<aura:attribute name="closeAccountNumber" type="String"/>
+<aura:attribute name="closeAccountName" type="String"/>
+<aura:attribute name="closureCurrentBalance" type="String"/>
+
+<!--Update account closure details response attributes-->
+<aura:attribute name="closureReason" type="String"/>
+<aura:attribute name="closedAccountNumber" type="String"/>
+<aura:attribute name="closedAccountBalance" type="String"/>
+<aura:attribute name="closedAccountAvailableBalance" type="String"/>
+<aura:attribute name="closedAccountStatus" type="String"/>
+
+<!--Table pagination attributes-->
+<aura:attribute name="pageSize" type="Integer" default="5" />
+<aura:attribute name="pageSizeNo" type="Integer" default="5" />
+<!--<aura:attribute name="pageSizeOptions" type="Integer[]" default="5,10,15,20" />
+<aura:attribute name="pageSizeNoOptions" type="Integer[]" default="5,10,15,20" />-->
+<aura:attribute name="currentPageNumber" type="Integer" default="1" />
+<aura:attribute name="currentPageNo" type="Integer" default="1" />
+<aura:attribute name="totalPages" type="Integer" default="1" />
+<aura:attribute name="totalNoPages" type="Integer" default="1" />
+
+<!--File Upload Attributes-->
+<aura:attribute name="filetype" type="List" default="['.png', '.jpg', '.jpeg','.pdf','.xlsx','.docx']" />
+<aura:attribute name="multiple" type="Boolean" default="true" />
+<aura:attribute name="disabled" type="Boolean" default="true" />
+<aura:attribute name="documentIds" type="List"/>
+
+<!--progress indicator Attributes-->
+<aura:attribute name="progressIndicatorFlag" type="String"/>
+<aura:attribute name="isStepOne" type="Boolean" default="true"/>
+<aura:attribute name="isStepTwo" type="Boolean" default="false"/>
+<aura:attribute name="isStepThree" type="Boolean" default="false"/>
+<aura:attribute name="isStepFour" type="Boolean" default="false"/>
+<aura:attribute name="isStepFive" type="Boolean" default="false"/>
+<!--/progress indicator Attributes-->
+
+<!--/ATTRIBUTES-->
+
+<!--HANDLER-->
+<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+<!--/HANDLER-->
+
+<!-- Loading Spinner-->
+<aura:if isTrue="{!v.showSpinner}">
+    <center class="isActivityLoading" style="z-index:99">  
+        <lightning:spinner aura:id="TheSpinner"  variant="brand" size="large" />
+    </center>
+</aura:if>
+
+<lightning:card>
+<!--Progress Indicator-->
+    <lightning:progressIndicator currentStep="{!v.progressIndicatorFlag}" type="base" variant="base">
+        <lightning:progressStep label="Client Accounts" value="stepOne"/>
+        <lightning:progressStep label="Account Closure" value="stepTwo"/>
+        <lightning:progressStep label="Account Closure Confirmation" value="stepThree"/>
+        <!--<lightning:progressStep label="Release Holds" value="stepFour"/>
+        <lightning:progressStep label="Close Account" value="stepFive"/>-->
+    </lightning:progressIndicator><br/>
+<!--/Progress Indicator-->
+
+
+<!--/ATTRIBUTES-->
+
+<force:recordData recordId="{!v.recordId}" aura:id="recordHandler"
+                  targetRecord="{!v.caseRecord}"
+                  targetFields="{!v.caseRecordFields}"
+                  targetError="{!v.recordError}"
+                  fields="Id, AccountId,Status"
+                  recordUpdated="{!c.handleRecordUpdated}"/>
+
+    <!--DataTable for related Accounts-->
+    <aura:if isTrue="{!v.isStepOne}">
+        <aura:if isTrue="{!v.showClientAccounts}">
+        <div class="slds-p-around_small slds-grid slds-grid_align-spread slds-grid_vertical-align-start">
+            <!--<div>
+                <lightning:select label="Number of records on page:" value="{!v.pageSize}" onchange="{!c.onPageRecordSizeChange}">
+                    <aura:iteration items="{!v.pageSizeNoOptions}" var="pageSizeNoOpt">
+                        <option text="{!pageSizeNoOpt}"></option>
+                    </aura:iteration>
+                </lightning:select>
+            </div>-->
+            <div>
+                <lightning:buttonIcon iconName="utility:left" onclick="{!c.onFirstPage}" alternativeText="First" title="First" disabled="{!v.currentPageNo == 1}" variant="bare" size="large"/>
+                <lightning:buttonIcon iconName="utility:chevronleft" onclick="{!c.onPrevPage}" alternativeText="Previous" title="Previous" disabled="{!v.currentPageNo == 1}" variant="bare" size="large"/>
+                <span class="slds-var-p-horizontal_x-small">
+                    Page {!(v.currentPageNo)} of {!(v.totalNoPages)}
+                </span>
+                <lightning:buttonIcon iconName="utility:chevronright" onclick="{!c.onNextPage}" alternativeText="Next" title="Next" disabled="{!v.currentPageNo == v.totalNoPages}" variant="bare" size="large"/>
+                <lightning:buttonIcon iconName="utility:right" onclick="{!c.onLastPage}" alternativeText="Last" title="Last" disabled="{!v.currentPageNo == v.totalNoPages}" variant="bare" size="large"/>
+            </div>
+        </div>
+
+        <lightning:datatable data="{!v.acctableData}"
+                            columns="{!v.productColumns}"
+                            keyField="Id"
+                            maxRowSelection="{!v.maxRowSelection}"
+                            onrowselection="{!c.handleSelection}"
+                            enableInfiniteLoading="{!v.enableInfiniteLoading}"
+                            loadMoreOffset="{!v.loadMoreOffset}"
+                            />
+                            <br/>
+                        </aura:if>
+
+    <!--Diplay message if there are no ACTIVE account-->
+<aura:if isTrue="{!v.showScript}">
+    <div class="slds-text-heading_medium slds-text-align_center slds-text-color_error slds-text-font_monospace">
+        The client doesn't have ACTIVE account(s) that can be closed.
+    </div>
+</aura:if>
+
+    <!--Data table to display other accounts that are linked to the client-->
+    <aura:if isTrue="{!v.showClientOtherAccounts}">
+    <div class="slds-p-around_small slds-grid slds-grid_align-spread slds-grid_vertical-align-start">
+        <!--<div>
+            <lightning:select label="Number of records on page:" value="{!v.pageSize}" onchange="{!c.onPageSizeChange}">
+                <aura:iteration items="{!v.pageSizeOptions}" var="pageSizeOpt">
+                    <option text="{!pageSizeOpt}"></option>
+                </aura:iteration>
+            </lightning:select>
+        </div>-->
+        <div>
+            <lightning:buttonIcon iconName="utility:left" onclick="{!c.onFirst}" alternativeText="First" title="First" disabled="{!v.currentPageNumber == 1}" variant="bare" size="large"/>
+            <lightning:buttonIcon iconName="utility:chevronleft" onclick="{!c.onPrev}" alternativeText="Previous" title="Previous" disabled="{!v.currentPageNumber == 1}" variant="bare" size="large"/>
+            <span class="slds-var-p-horizontal_x-small">
+                Page {!(v.currentPageNumber)} of {!(v.totalPages)}
+            </span>
+            <lightning:buttonIcon iconName="utility:chevronright" onclick="{!c.onNext}" alternativeText="Next" title="Next" disabled="{!v.currentPageNumber == v.totalPages}" variant="bare" size="large"/>
+            <lightning:buttonIcon iconName="utility:right" onclick="{!c.onLast}" alternativeText="Last" title="Last" disabled="{!v.currentPageNumber == v.totalPages}" variant="bare" size="large"/>
+        </div>
+    </div>
+
+    <lightning:datatable data="{!v.tableData}"
+                        columns="{!v.productColumns}"
+                        keyField="Id"
+                        hideCheckboxColumn="true"
+                        enableInfiniteLoading="{!v.enableInfiniteLoading}"
+                        loadMoreOffset="{!v.loadMoreOffset}"
+                        />
+                    </aura:if>
+    <!--/DataTable for related Accounts-->
+
+    <aura:if isTrue="{!not(empty(v.recordError))}">
+        <div class="recordError">
+            {!v.recordError}
+        </div>
+    </aura:if>
+
+    <div class="slds-p-around_large">
+        <lightning:button aura:id="viewAccount" label="Next" onclick="{!c.goToStepTwo}" variant="brand" disabled = "true" iconName="utility:forward" iconPosition="right"/>
+    </div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.isStepTwo}">
+
+        <!--<h1><center><b>Document Uploaded</b></center></h1><br/>-->
+
+        <h3 class="slds-section-title--divider slds-text-align_center">Account Closure Details</h3><br/>
+            <div class="slds-grid slds-gutters">
+                <!--FIRST COL-->
+                <div class="slds-col">
+                    <dl class="slds-list_horizontal slds-wrap slds-text-align_center">
+                        <dt class="slds-item_label  slds-truncate slds-text-title_bold" title="Closure Amount">ACCOUNT NAME:</dt>
+                        <dd class="slds-item_detail slds-truncate" title="Display Amount">{!v.closeAccountName}</dd>
+                        <dt class="slds-item_label  slds-truncate slds-text-title_bold" title="Account Number">CURRENT BALANCE: </dt>
+                        <dd class="slds-item_detail slds-truncate" title="Display Account No">{!v.closureCurrentBalance}</dd>
+                      </dl>
+                </div>
+                <!--SECOND COL-->
+                <div class="slds-col">
+                    <dl class="slds-list_horizontal slds-wrap">
+                        <dt class="slds-item_label slds-text-title_bold slds-truncate" title="First Label">ACCOUNT NUMBER:</dt>
+                        <dd class="slds-item_detail slds-truncate" title="Description for first label">{!v.closeAccountNumber}</dd>
+                        <dt class="slds-item_label slds-text-title_bold slds-truncate" title="Second Label">CLOSURE AMOUNT: </dt>
+                        <dd class="slds-item_detail slds-truncate" title="Description for second label">{!v.closureAmount}</dd>
+                      </dl>
+                </div>
+            </div> <br/>
+
+        <!--FILE UPLOAD COMPONENT-->
+        <h3 class="slds-section-title--divider slds-text-align_center">Document Upload</h3> <br/>
+        <div class="slds-p-around_large slds-align_absolute-center">
+            <lightning:fileUpload aura:id="fileId" 
+                name="fileUploader" 
+                label= "" 
+                multiple="true" 
+                accept="{!v.filetype}" 
+                disabled="false"   
+                recordId="{!v.recordId}" 
+                onuploadfinished="{!c.handleUploadFinished}" />
+        </div>
+        
+    <div class="slds-p-around_large">
+        <lightning:button label="Back" onclick="{!c.goBackToStepOne}" variant="brand" iconName="utility:back"/>
+        <lightning:button label="Next" onclick="{!c.goToStepThree}" variant="brand" disabled = "false" iconName="utility:forward" iconPosition="right"/>
+    </div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.isStepThree}">
+
+        <h3 class="slds-section-title--divider slds-text-align_center">Account Closure Confirmation</h3><br/>
+
+        <div class="slds-grid slds-gutters">
+            <!--FIRST COL-->
+            <div class="slds-col">
+                <dl class="slds-list_horizontal slds-wrap slds-text-align_center">
+                    <dt class="slds-item_label  slds-truncate slds-text-title_bold" title="Closure Amount">ACCOUNT NUMBER:</dt>
+                    <dd class="slds-item_detail slds-truncate" title="Display Amount">{!v.closedAccountNumber}</dd>
+                    <dt class="slds-item_label  slds-truncate slds-text-title_bold" title="Account Number">STATUS: </dt>
+                    <dd class="slds-item_detail slds-truncate" title="Display Account No">{!v.closedAccountStatus}</dd>
+                  </dl>
+            </div>
+            <!--SECOND COL-->
+            <div class="slds-col">
+                <dl class="slds-list_horizontal slds-wrap">
+                    <dt class="slds-item_label slds-text-title_bold slds-truncate" title="First Label">REASON:</dt>
+                    <dd class="slds-item_detail slds-truncate" title="Description for first label">{!v.closureReason}</dd>
+                    <dt class="slds-item_label slds-text-title_bold slds-truncate" title="Second Label">BALANCE: </dt>
+                    <dd class="slds-item_detail slds-truncate" title="Description for second label">{!v.closedAccountBalance}</dd>
+                  </dl>
+            </div>
+        </div><br/>
+        <!--Add the flow that will send out the email notification-->
+
+    <div class="slds-p-around_large">
+        <lightning:button label="Back" onclick="{!c.goBackToStepTwo}" variant="brand" iconName="utility:back"/>
+        <!--Start the process again-->
+        <lightning:button label="Submit" onclick="{!c.goToStepOne}" variant="brand" disabled = "false" iconName="utility:send" iconPosition="right"/>
+    </div>
+    </aura:if>
+
+    <!--<aura:if isTrue="{!v.isStepFour}">
+        <h1><center><b>Step Four</b></center></h1><br/>
+
+
+    <div class="slds-p-around_large">
+        <lightning:button label="Back" onclick="{!c.goBackToStepThree}" variant="brand" iconName="utility:back"/>
+        <lightning:button label="Next" onclick="{!c.goToStepFive}" variant="brand" disabled = "false" iconName="utility:forward" iconPosition="right"/>
+    </div>
+    </aura:if>
+
+    <aura:if isTrue="{!v.isStepFive}">
+        <h1><center><b>Step Five</b></center></h1><br/>
+
+    <div class="slds-p-around_large">
+        <lightning:button label="Back" onclick="{!c.goBackToStepFour}" variant="brand" iconName="utility:back"/>
+        <lightning:button label="Submit" onclick="" variant="brand" disabled = "false" iconName="utility:send" iconPosition="right"/>
+    </div>
+    </aura:if>-->
+</lightning:card>
+</aura:component>

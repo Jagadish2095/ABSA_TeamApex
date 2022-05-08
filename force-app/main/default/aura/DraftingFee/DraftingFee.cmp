@@ -1,0 +1,295 @@
+<aura:component controller="DraftingFeeController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    
+    <!--Initialization handler-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}"/>
+    <!-- <aura:handler event="force:refreshView" action="{!c.doInit}"/> -->
+    
+    <!--Declare Application Events Handlers-->
+    <aura:handler  event="c:clearBrWhenBankIsClear" action="{!c.clearAllBankAttribute}"/>    
+    
+    <!--Other Initializations-->
+    <aura:attribute name="latestApplication" type="Application__c" default="{sobjectType:'Application__c'}"/>
+    <aura:attribute name="paymentPreferenceTypeIsSet" type="boolean"/>
+    <aura:attribute name="bankDetailsValidated" type="boolean"/>
+    <aura:attribute name="bankDetailsPendingValidation" type="boolean" default="false"/>
+    <aura:attribute name="paymentPreferenceType" type="boolean"/>
+    <aura:attribute name="paymentPlan" type="Payment_Plan__c" default="{'sobjectType': 'Payment_Plan__c'}"/>
+    <aura:attribute name="selectedDraftingFee" type="String" default=""/>
+    <aura:attribute name="selectedPaymentAmount" type="Decimal"/>
+    <aura:attribute name="selectedPaymentMethod" type="String" default=""/>
+    <aura:attribute name="selectedPaymentReference" type="String" default=""/>
+    <aura:attribute name="selectedAccType" type="String" default=""/>
+    <aura:attribute name="selectedAccNumber" type="String" default=""/>
+    <aura:attribute name="selectedBankName" type="String" default=""/>
+    <aura:attribute name="selectedBankNameReadOnly" type="String" default=""/>
+    <aura:attribute name="selectedBranchName" type="String" default=""/>
+    <aura:attribute name="selectedBranchNameReadOnly" type="String" default=""/>
+    <aura:attribute name="selectedBranchCode" type="String" default=""/>
+    <aura:attribute name="disableRadioButtonGroup" type="boolean" default="true"/>
+    <aura:attribute name="disableDraftingFeeAmount" type="boolean" default="true"/>
+    <aura:attribute name="disableAmount" type="boolean" default="true"/>
+    <aura:attribute name="disableAccountType" type="boolean" default="false"/>
+    <aura:attribute name="disableReference" type="boolean" default="true"/>
+    <aura:attribute name="disablePaymentMethod" type="boolean" default="true"/>
+    <aura:attribute name="disableBranch" type="boolean" default="true"/>
+    <aura:attribute name="disableBank" type="boolean" default="true"/>
+    <aura:attribute name="disableBankAccountNumber" type="boolean" default="true"/>
+    <aura:attribute name="showBankName" type="boolean" default="true"/>
+    <aura:attribute name="showBankNameReadOnly" type="boolean" default="false"/>
+    <aura:attribute name="showBranchName" type="boolean" default="true"/>
+    <aura:attribute name="showBranchNameReadOnly" type="boolean" default="false"/>
+    <aura:attribute name="showSaveButton" type="boolean" default="false"/>
+    <aura:attribute name="showEditButton" type="boolean" default="false"/>
+    <aura:attribute name="showCancelButton" type="boolean" default="false"/>
+    <aura:attribute name="referenceFieldRequired" type="boolean" default="false"/>
+    <aura:attribute name="showBankDetails" type="boolean" default="true"/>
+    <aura:attribute name="showValidateButton" type="boolean" default="false"/>
+    <aura:attribute name="showSavePaymentPlanButton" type="boolean" default="false"/>
+    <aura:attribute name="draftingFeeOptions" type="List"/>
+    <aura:attribute name="draftingFeeDebitInstructionOptions" type="List"/>
+    <aura:attribute name="paymentMethodOptions" type="List"/>
+    <aura:attribute name="accTypeOptions" type="List"/>
+    <aura:attribute name="showCasaNotCompleted" type="boolean" default="false"/>
+    <aura:attribute name="showCasaCompleted" type="boolean" default="true"/>
+    <aura:attribute name="validMethodType" type="boolean" default="false"/>
+    <aura:attribute name="accountTypeRequired" type="boolean" default="false"/>
+    <!--CheckDigitVerification is used as a switch for validation for non AVS bank accounts. Can be on if required (true) or off if not required (false)-->
+    <aura:attribute name="CheckDigitVerification" type="boolean" default="true"/>
+    
+    <!--Declare Spinner-->
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <!--    <center style="z-index:99">-->
+    <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    <!--    </center>-->    
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Fee to be Waived', 'value': 'Fees Waived'},
+                                                        {'label': 'Fee for Estate Provider Plan', 'value': 'Fees for Estate Provider Plan'},
+                                                        {'label': 'Fee for Staff', 'value': 'Fees for Staff'},                                            
+                                                        {'label': 'Fee Payable', 'value': 'Fees Paid'}
+                                                        ]"/>    
+    <aura:if isTrue="{!v.showCasaNotCompleted}">
+        <lightning:layoutItem size="12" padding="around-small">
+            <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:close" alternativeText="Not Completed" /> CASA Screening needs to be completed before Drafting Fee can be captured.</p>
+        </lightning:layoutItem>
+    </aura:if>    
+    <aura:if isTrue="{!v.showCasaCompleted}">
+        <!--Display if preference is set to fees waived-->
+        <aura:if isTrue="{!v.paymentPreferenceTypeIsSet}">
+            <aura:if isTrue="{!v.paymentPreferenceType == 'Fees Waived'}">
+                <lightning:layoutItem size="12" padding="around-small">  
+                    <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> Drafting Fee preference has been set (Fees Waived).</p>
+                </lightning:layoutItem>           	
+            </aura:if>
+        </aura:if>        
+        <aura:if isTrue="{!v.paymentPreferenceTypeIsSet}">
+            <aura:if isTrue="{!v.paymentPreferenceType == 'Fees for Estate Provider Plan'}">
+                <lightning:layoutItem size="12" padding="around-small">  
+                    <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> Drafting Fee preference has been set (Estate Provider Plan).</p>
+                </lightning:layoutItem>   
+            </aura:if>
+        </aura:if>        
+        <aura:if isTrue="{!v.paymentPreferenceTypeIsSet}">
+            <aura:if isTrue="{!v.paymentPreferenceType == 'Fees for Staff'}">
+                <lightning:layoutItem size="12" padding="around-small">  
+                    <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> Drafting Fee preference has been set (EXEMPTED - STAFF).</p>
+                </lightning:layoutItem>
+            </aura:if>
+        </aura:if>        
+        <!--Display if preference is set to fees paid-->
+        <aura:if isTrue="{!v.paymentPreferenceTypeIsSet}">
+            <aura:if isTrue="{!v.paymentPreferenceType == 'Fees Paid'}">
+                <lightning:layoutItem size="12" padding="around-small">  
+                    <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> Drafting Fee preference has been set (Fees Paid).</p>
+                    <aura:if isTrue="{!v.bankDetailsValidated}">
+                        <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> Bank account details have been validated successfully.</p>
+                    </aura:if>
+                    <aura:if isTrue="{!v.bankDetailsPendingValidation}">
+                        <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:priority" alternativeText="Not Completed" disabled="{!v.showBankDetails}"/> Bank account details are pending validation.</p>
+                    </aura:if>
+                </lightning:layoutItem>
+            </aura:if>
+        </aura:if>        
+        <!--Capture drafting fee preference-->
+        <lightning:layout multipleRows="true">
+            <aura:if isTrue="{!v.paymentPreferenceTypeIsSet == false}">
+                <lightning:layoutItem padding="around-small" size="10">
+                    <lightning:radioGroup aura:id="paymentMethodRadio" name="radioButtonGroup" label="Please select a Drafting Fee" options="{! v.options }" value="{!v.paymentPreferenceType}" onchange="{!c.onChange}" disabled="{!v.disableRadioButtonGroup}"/>      
+                </lightning:layoutItem>	
+            </aura:if>
+        </lightning:layout>        
+        <!--Capture payment details-->
+        <lightning:layout multipleRows="true">
+            <aura:if isTrue="{!v.paymentPreferenceType == 'Fees Paid'}">
+                <!--Grid Start --> 
+                <!-- Payment Method -->
+                <div class="slds-col slds-size_6-of-12" >
+                    <span>
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:select aura:id="paymentPlanForm" name="PaymentMethod" label="Method" value="{!v.selectedPaymentMethod}" onchange="{!c.onPicklistPaymentMethodChange}" required="true" disabled="{!v.disablePaymentMethod}">
+                                <aura:iteration items="{!v.paymentMethodOptions}" var="item">
+                                    <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                    </span>
+                </div>                
+                <aura:if isTrue="{!v.validMethodType}">
+                    <!-- Payment Reference -->
+                    <aura:if isTrue="{!v.referenceFieldRequired}">
+                        <div class="slds-col slds-size_6-of-12">
+                            <span>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:input type="text" aura:id="paymentPlanForm" label="Reference" value="{!v.selectedPaymentReference}"  placeholder="Reference" required="{!v.referenceFieldRequired}" disabled="{!v.disableReference}"/>          
+                                </lightning:layoutItem>
+                            </span>
+                        </div>
+                    </aura:if>
+                    <!-- Account Type -->
+                    <aura:if isTrue="{!v.accountTypeRequired}">
+                        <div class="slds-col slds-size_6-of-12">
+                            <span>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:select aura:id="paymentPlanForm" name="AccountType" label="Account Type" value="{!v.selectedAccType}" onchange="{!c.onPicklistAccTypeChange}" required="true" disabled="{!v.disableAccountType}">
+                                        <aura:iteration items="{!v.accTypeOptions}" var="item">
+                                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </lightning:layoutItem>
+                            </span>
+                        </div>
+                    </aura:if>
+                    <!-- Drafting Fee Selection-->
+                    <div class="slds-col slds-size_12-of-12" >
+                        <span>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:select aura:id="paymentPlanForm" name="DraftingFee" label="Drafting Fee Amount (select Method first*)" value="{!v.selectedDraftingFee}" onchange="{!c.onDraftingFeeChange}" required="true" disabled="{!v.disableDraftingFeeAmount}">
+                                    <aura:if isTrue="{!v.selectedPaymentMethod == 'Branch Payment'}">
+                                        <aura:iteration items="{!v.draftingFeeOptions}" var="item">
+                                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                        </aura:iteration>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.selectedPaymentMethod == 'Debit Instruction'}">
+                                        <aura:iteration items="{!v.draftingFeeOptions}" var="item">
+                                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                        </aura:iteration>
+                                    </aura:if>
+                                </lightning:select>
+                            </lightning:layoutItem>
+                        </span>
+                    </div>
+                    <!-- Payment Amount -->
+                    <div class="slds-col slds-size_6-of-12">
+                        <span>
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <ui:inputCurrency aura:id="paymentPlanForm" label="Amount" value="{!v.selectedPaymentAmount}"  placeholder="Amount" required="true" disabled="{!v.disableAmount}"/>          
+                            </lightning:layoutItem>
+                        </span>
+                    </div>          
+                    <!--Bank Lookups Starts here -->
+                    <aura:if isTrue="{!v.showBankDetails}">
+                        <!-- Bank Name -->
+                        <aura:if isTrue="{!v.showBankName}">
+                            <div class="slds-col slds-size_12-of-12" padding="around-small" >
+                                <span>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <label class="slds-float_left" padding="around-small"><span style="color:red;" align="left">*</span>Select Bank Name </label>
+                                        <c:customLookUp  IconName="custom:custom17" selectedRecord="{!v.selectedBankName}" label=""/>
+                                    </lightning:layoutItem>
+                                </span>
+                            </div>
+                        </aura:if>                    
+                        <!-- Bank Name Read Only --> 
+                        <aura:if isTrue="{!v.showBankNameReadOnly}">
+                            <div class="slds-col slds-size_12-of-12">
+                                <span>
+                                    <lightning:layoutItem size="6" padding="around-small">
+                                        <lightning:input type="text" aura:id="paymentPlanForm" label="Select Bank Name" value="{!v.selectedBankNameReadOnly}"  placeholder="BankNameReadOnly" required="true" disabled="true"/>          
+                                    </lightning:layoutItem>
+                                </span>
+                            </div>
+                        </aura:if>                    
+                        <!--Branch Lookup Starts here -->
+                        <aura:if isTrue="{!v.showBranchName}">
+                            <div class="slds-col slds-size_12-of-12" padding="around-small" >
+                                <span>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <label class="slds-float_left" padding="around-small"><span style="color:red;" align="left">*</span>Select Branch Name </label>
+                                        <c:dependentCutomLookup dselectedBankName="{!v.selectedBankName}" IconName="custom:custom16" selectedRecord="{!v.selectedBranchName}" label=""/>
+                                    </lightning:layoutItem>
+                                </span>
+                            </div>
+                        </aura:if>                    
+                        <!-- Branch Name Read only -->
+                        <aura:if isTrue="{!v.showBranchNameReadOnly}">
+                            <div class="slds-col slds-size_12-of-12">
+                                <span>
+                                    <lightning:layoutItem size="6" padding="around-small">
+                                        <lightning:input type="text" aura:id="paymentPlanForm" label="Select Branch Name" value="{!v.selectedBranchNameReadOnly}"  placeholder="BranchNameReadOnly" required="true" disabled="true"/>          
+                                    </lightning:layoutItem>
+                                </span>
+                            </div>
+                        </aura:if>                    
+                        <!--Display Branch Code  -->
+                        <div class="slds-col slds-size_12-of-12"  >
+                            <span>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <label class="slds-float_left" padding="around-small">Branch Code Selected :</label>
+                                    <br/><a>{!v.selectedBranchCode}</a>
+                                </lightning:layoutItem>
+                            </span>
+                        </div>
+                        <!-- Account Number -->
+                        <div class="slds-col slds-size_6-of-12">
+                            <span>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:input type="text" aura:id="paymentPlanForm" label="Bank Account Number" value="{!v.selectedAccNumber}"  placeholder="Bank Account Number" required="true" disabled="{!v.disableBankAccountNumber}"/>       
+                                </lightning:layoutItem>
+                            </span>
+                        </div>
+                    </aura:if>
+                </aura:if>
+                <div class="slds-grid slds-wrap">
+                </div>
+            </aura:if>
+            <!--Save, Edit and Cancel Buttons-->
+            <lightning:layoutItem size="12" padding="around-small">
+                <!--Save Button-->
+                <aura:if isTrue="{!v.showSaveButton}">
+                    <lightning:button class="slds-m-top_small slds-float--right" iconName="utility:edit" variant="brand" type="edit" name="add" label="Save Drafting Fee" onclick="{!c.submitSave}"/>
+                </aura:if>
+                <!--Cancel Button-->
+                <aura:if isTrue="{!v.showCancelButton}">
+                    <lightning:button class="slds-m-top_small slds-float--left" iconName="utility:edit" variant="brand" type="edit" label="Cancel" onclick="{!c.submitCancel}"/>
+                </aura:if>
+                <!--Eddit Button-->
+                <aura:if isTrue="{!v.showEditButton}">
+                    <lightning:button class="slds-m-top_small slds-float--right" iconName="utility:edit" variant="brand" type="edit" name="add" label="Edit Drafting Fee" onclick="{!c.submitEdit}"/>
+                </aura:if>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+    <!-- Save Payment Button -->
+    <aura:if isTrue="{!v.showSavePaymentPlanButton}">                        
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem size="12">
+                            <h2 class="slds-section__title">Bank account details verified successfully.</h2>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="12" padding="around-small">
+                            <lightning:button class="slds-m-top_small slds-float--right" iconName="utility:add" variant="brand" type="submit" name="add" label="Save Drafting Fee Information" onclick="{!c.handleSubmitPaymentEvent}"/>
+                        </lightning:layoutItem>                                        
+                    </lightning:layout>
+                </div>
+            </div>
+        </section>  
+        <div class="slds-backdrop slds-backdrop_open"></div> 
+    </aura:if>
+</aura:component>

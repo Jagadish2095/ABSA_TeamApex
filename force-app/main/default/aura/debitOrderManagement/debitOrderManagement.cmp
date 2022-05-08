@@ -1,0 +1,408 @@
+<aura:component  controller="DebitOrderManagementController" implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes,force:hasRecordId" access="global" >
+    
+    <!--Declare Component Events Handlers-->  
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!--aura:handler event="force:refreshView" action="{!c.doInit}" /-->
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}"/>
+    
+    
+    <!--Declare Application Events Handlers--> 
+    <aura:handler  event="c:clearBrWhenBankIsClear" action="{!c.clearAllBankAttribute}" />
+    
+    <aura:registerEvent name="updateBankDebitOrder" type="c:updateBankDebitOrder"/>
+    
+    <!--created dateValidationError boolean attribute for show error msg on invalid selection date in past -->    
+    <aura:attribute name="dateValidationError" type="boolean" />
+    <aura:attribute name="futureDateValidationError" type="string" default="" />
+    <aura:attribute name="showFutureDateValidation" type="boolean" default="false"/>
+    <aura:attribute name="showInvalidDateSelected" type="boolean" default="false"/>
+    <!--created showDebitOrderDetail boolean attribute for show already/Existing captured Debit Order Details -->
+    <aura:attribute name="showDebitOrderDetail" type="boolean" default="false"/>
+    <!--created showValidateButton boolean attribute for validate New Captured Debit Order Details -->
+    <aura:attribute name="showValidateButton" type="boolean" default="true"/>
+    <!--created showNewDebitOrderButton boolean attribute capture New Captured Debit Order Details -->
+    <aura:attribute name="showNewDebitOrderButton" type="boolean" default="false"/>
+    
+    <!-- ## Bank And Branch Name/Code ## Created attribute to store lookup value as a string --> 
+    <aura:attribute name="selectedBankName" type="string" default=""/>
+    <aura:attribute name="selectedBranchName" type="string" default=""/>
+    <aura:attribute name="selectedBranchCode" type="string" default=""/>
+    
+    
+    <aura:attribute name="opportunity" type="Opportunity" 
+                    default="{ 'sobjectType': 'Opportunity' }"/>
+    <aura:attribute name="selectedAccType" type="String" />
+    <aura:attribute name="selectedPayMethod" type="String" />
+    <aura:attribute name="accTypeOptions" type="List" />
+    <aura:attribute name="selectedDebitDay" type="String" />
+    <aura:attribute name="debitDayOptions" type="List" />
+    <aura:attribute name="selectedSalaryDay" type="String" />
+    <aura:attribute name="salaryDayOptions" type="List" />
+    <aura:attribute name="selectedGrossMonthlyIncome" type="String" />
+    <aura:attribute name="GrossMonthlyIncomeOptions" type="List" />
+    <aura:attribute name="PaymentMethodOptions" type="List" />
+    <!-- Added to pass Opp Id from Flow for Direct Delivery Sales -->
+    <aura:attribute name="OpportunityIdFromFlow" type="String" access="global" />
+    <aura:attribute name="ProductNameFromFlow" type="String" access="global" />
+    
+    <aura:attribute name="message" type="string" default=""/>
+    
+    <aura:attribute name="accountData" type="Object"/>
+    <aura:attribute name="accountColumns" type="List"/>
+    
+    <aura:attribute name="showExistingAccounts" type="boolean" default="false"/>
+    <aura:attribute name="editAccount" type="boolean" default="false"/>
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="oppRecordType" type="String"/>
+    
+    <aura:attribute name="maxRowSelection" type="Integer" default="1"/>
+    <aura:attribute name="bankColumns" type="List"/>
+    <aura:attribute name="bankData" type="Object"/>
+    <aura:attribute name="selectedbanknumber" type="string"/>
+    <aura:attribute name="selbaName" type="string"/>
+    <aura:attribute name="selbranchname" type="string"/>
+    <aura:attribute name="selAccType" type="string"/>
+    <aura:attribute name="selbrcode" type="Integer"/>
+    <aura:attribute name="showBankButton" type="boolean" default="false"/>
+    <aura:attribute name="selectedCaptureResponse" type="String" />
+    <aura:attribute name="showBankTableDetails" type="boolean" default="false"/>
+    <aura:attribute name="showNewBankDetails" type="boolean" default="true"/>
+    <aura:attribute name="quoteId" type="string"/>
+    <aura:attribute name="showQuoteDetails" type="boolean" default="false"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    
+    <center style="z-index:99">
+        <div class="slds-is-relative">
+            <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+        </div>
+    </center>
+    
+    <aura:if isTrue="{!v.showDebitOrderDetail}">        
+        <aura:if isTrue="{!and(v.oppRecordType != 'Direct Delivery Sales Opportunity',v.oppRecordType != 'DD STI Opportunity')}">
+            <lightning:layoutItem padding="around-small" >
+                <lightning:icon iconName="custom:custom17" />
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem padding="horizontal-small">
+                <div class="page-section page-header">
+                    <h1 class="slds-text-heading--label">Debit Order</h1>
+                    <h2 class="slds-text-heading--medium">Debit Order Details</h2> 
+                </div>
+            </lightning:layoutItem>
+        <!-- BOXED AREA -->
+        <fieldset class="slds-box slds-theme--default slds-container--large">
+            <legend id="newDebitOrderForm" class="slds-text-heading--medium 
+                                                  slds-p-vertical--large">
+                Debit Order Information
+            </legend>
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="12">
+                    <lightning:recordViewForm recordId="{!v.recordId}" objectApiName="Opportunity">
+                        <div class="slds-grid">
+                            <div class="slds-col slds-size_6-of-12">
+                                
+                                <lightning:outputField fieldName="Debit_Order_Bank_Name__c" />    
+                                <lightning:outputField fieldName="Debit_Order_Branch_Name__c" />    
+                                <lightning:outputField fieldName="Debit_Order_Branch_Code__c" />  
+                                <lightning:outputField fieldName="Debit_Order_Account_Number__c" /> 
+                                
+                            </div>
+                            <div class="slds-col slds-size_6-of-12">                                   
+                                <lightning:outputField fieldName="Debit_Order_Account_Type__c" />    
+                                <lightning:outputField fieldName="Debit_Order_Date__c" />  
+                                <lightning:outputField fieldName="Debit_Order_Salary_Day__c" /> 
+                                
+                            </div>
+                        </div> 
+                        <fieldset class="slds-box slds-theme--default slds-container--small"> 
+                            <legend id="newDebitOrderForm" class="slds-text-heading--small 
+                                                                  slds-p-vertical--small">
+                                Commencement Date
+                            </legend>
+                            <lightning:outputField fieldName="Commencement_Date__c" /> 
+                        </fieldset>  
+                    </lightning:recordViewForm>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12">
+                    <lightning:button class="slds-m-top_small slds-float--right" iconName="utility:edit" variant="brand" type="edit" name="add" label="Edit Debit Order" onclick="{!c.updateDebitOrder}"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </fieldset>
+        </aura:if>
+         <aura:if isTrue="{!v.showQuoteDetails}">
+                  <fieldset class="slds-box slds-theme--default slds-container--large">
+                    <legend id="newDebitOrderForm" class="slds-text-heading--medium slds-p-vertical--large">Debit Order Information</legend>
+                     <lightning:layout multipleRows="true">
+                     	<lightning:layoutItem padding="around-small" size="12">
+                             <lightning:recordViewForm recordId="{!v.quoteId}" objectApiName="Quote">
+                             <div class="slds-grid">
+                             <div class="slds-col slds-size_6-of-12">
+                             <lightning:outputField fieldName="Debit_Order_Bank_Name__c" />    
+                             <lightning:outputField fieldName="Debit_Order_Branch_Name__c" />    
+                             <lightning:outputField fieldName="Debit_Order_Branch_Code__c" />  
+                             <lightning:outputField fieldName="Debit_Order_Account_Number__c" /> 
+                             </div>
+                             <div class="slds-col slds-size_6-of-12">                                   
+                                  	<lightning:outputField fieldName="Debit_Order_Account_Type__c" />
+   									<lightning:outputField fieldName="Debit_Order_Date__c" />  
+                                	<lightning:outputField fieldName="Debit_Order_Salary_Day__c" /> 
+                                    <lightning:outputField fieldName="Payment_Method__c" />
+                             </div>
+                             </div>
+                                <fieldset class="slds-box slds-theme--default slds-container--small"> 
+                                     <legend id="newQuoteDebitOrderForm" class="slds-text-heading--small 
+                                                                           slds-p-vertical--small">
+                                         Commencement Date
+                                     </legend>
+                                     <lightning:outputField fieldName="Commencement_Date__c" /> 
+                                 </fieldset>
+                             </lightning:recordViewForm>
+                             </lightning:layoutItem>
+                             <lightning:layoutItem size="12">
+                                   <lightning:button class="slds-m-top_small slds-float--right" iconName="utility:edit" variant="brand" type="edit" name="adds" label="Edit Debit Order" onclick="{!c.updateQuoteDebitOrder}"/>
+                             </lightning:layoutItem>
+                             <aura:if isTrue="{!or(v.oppRecordType == 'Direct Delivery Sales Opportunity',v.oppRecordType == 'DD STI Opportunity')}">
+         						<lightning:layoutItem size="6">
+                					<lightning:button class="slds-m-top_small slds-float--left" variant="brand" label="Previous" aura:id="BACK" onclick="{!c.handleNext}"/>
+         						</lightning:layoutItem>
+         						<lightning:layoutItem size="6">
+                					<lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Next" aura:id="NEXT" onclick="{!c.handleNext}"/>
+         						</lightning:layoutItem>
+    						 </aura:if>
+                        </lightning:layout>
+                      </fieldset>
+                 </aura:if>     
+                            
+        <!--New Debit Order Capture Form -->
+        <aura:set attribute="else">
+            <lightning:layout multipleRows="true" >
+               <aura:if isTrue="{!and(v.oppRecordType != 'Direct Delivery Sales Opportunity',v.oppRecordType != 'DD STI Opportunity')}">
+                    <lightning:layoutItem padding="around-small" >
+                        <lightning:icon iconName="custom:custom17" />
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="horizontal-small">
+                        <div class="page-section page-header">
+                            <h1 class="slds-text-heading--label">Debit Order</h1>
+                            <h2 class="slds-text-heading--medium">New Debit Order Capture</h2> 
+                        </div>
+                    </lightning:layoutItem>
+                </aura:if>
+                <!-- BOXED AREA -->
+                <fieldset class="slds-box slds-theme--default slds-container--large">
+                    <legend id="newDebitOrderForm" class="slds-text-heading--medium 
+                                                          slds-p-vertical--large">
+                        Add Debit Order Capture
+                    </legend>
+                    <!--Grid Start -->   
+                    <div class="slds-grid slds-wrap">
+                        <!--<aura:if isTrue="{!v.oppRecordType != 'Direct Delivery Sales Opportunity'}"> -->
+                            <div class="slds-col slds-size_12-of-12" padding="around-small" >
+                                <span>
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <legend id="newDebitOrderForm" class="slds-text-heading--small">
+                                            Client's Existing Absa Accounts
+                                        </legend>
+                                        <aura:if isTrue="{!v.showExistingAccounts}">
+                                            <lightning:datatable
+                                                      columns="{! v.accountColumns }"
+                                                      data="{! v.accountData }"
+                                                      keyField="id"
+                                                      maxRowSelection="1"
+                                                      onrowselection="{!c.updateSelectedAccount}"/>
+                                            <aura:set attribute="else">
+                                                <p>Client does not currently have any existing accounts with Absa, or the service may be down.</p>
+                                            </aura:set>
+                                        </aura:if>
+                                        <hr/>
+                                    </lightning:layoutItem>
+                                </span>
+                            </div> 
+                       <!-- </aura:if>-->
+                        <aura:if isTrue="{!or(v.oppRecordType == 'Direct Delivery Sales Opportunity',v.oppRecordType == 'DD STI Opportunity')}">
+                            <aura:if isTrue="{!v.showBankTableDetails}">
+                                <div class="slds-col slds-size_12-of-12" padding="around-small" >
+                                    <span>
+                                        <lightning:layoutItem size="12">
+                                            <legend id="newDebitOrderForm" class="slds-text-heading--small">
+                                                Client Existing Accounts from Quotes
+                                            </legend>
+                                            <lightning:datatable
+                                                    columns="{! v.bankColumns }"
+                                                    data="{! v.bankData }"
+                                                    keyField="id"
+                                                    maxRowSelection="1"
+                                                    onrowselection="{!c.gettheSelectedBank}"/>
+                                            <hr/>
+                                        </lightning:layoutItem>
+                                    </span> 
+                                </div>  
+                            </aura:if>
+                        </aura:if>
+                        <aura:if isTrue="{!v.showNewBankDetails}">
+                            <!--Bank Lookup Starts here -->
+                            <div class="slds-col slds-size_12-of-12" padding="around-small" >
+                                <span>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <label class="slds-float_left" padding="around-small"><span style="color:red;" align="left">*</span>Select Bank Name </label>
+                                        <c:customLookUp dselectedAccBankName="{!v.selectedBankName}"  IconName="custom:custom17" selectedRecord="{!v.selectedBankName}" label="" /> 
+                                    </lightning:layoutItem>
+                                </span>
+                            </div>  
+                            <!--Branch Lookup Starts here -->
+                            <div class="slds-col slds-size_12-of-12" padding="around-small" >
+                                <span>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <label class="slds-float_left" padding="around-small"><span style="color:red;" align="left">*</span>Select Branch Name </label>
+                                        <c:dependentCutomLookup dselectedBankName="{!v.selectedBankName}" IconName="custom:custom16" selectedRecord="{!v.selectedBranchName}"  label=""  />
+                                    </lightning:layoutItem>
+                                </span>
+                            </div>
+
+                            <!--Display Branch Code  -->
+                            <div class="slds-col slds-size_12-of-12"  >
+                                <span>
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <label class="slds-float_left" padding="around-small">Branch Code Selected :</label>
+                                        <br/><a>{!v.selectedBranchCode}</a>
+                                    </lightning:layoutItem>
+                                </span>
+                            </div> 
+                            <!-- Account Name -->
+                            <aura:if isTrue="false"> 
+                                <div class="slds-col slds-size_6-of-12">
+                                    <span>
+                                        <!--pattern="[0-9]*" messageWhenPatternMismatch=" Please try again using only numeric values" -->
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:input  aura:id="debitOrderForm" label="Account Name" value="{!v.opportunity.AccountId}"  placeholder="Bank Account Name" required="true"/>          
+                                        </lightning:layoutItem>
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <!-- Payment Method added by Divya-->
+                            <aura:if isTrue="{!or(v.oppRecordType == 'Direct Delivery Sales Opportunity',v.oppRecordType == 'DD STI Opportunity')}">
+                                <div class="slds-col slds-size_6-of-12">
+                                    <span>
+                                        <!--pattern="[0-9]*" messageWhenPatternMismatch=" Please try again using only numeric values" -->
+                                        <lightning:layoutItem size="6" padding="around-small">
+                                            <lightning:select aura:id="debitOrderForm" name="PaymentMethod" label="Payment Method" value="{!v.selectedPayMethod}" onchange="{!c.onPicklistPayMethodChange}" required="true">
+                                                <aura:iteration items="{!v.PaymentMethodOptions}" var="item">
+                                                    <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </lightning:layoutItem>
+                                    </span>
+                                </div>
+                            </aura:if>
+                            <!-- Account Type -->
+                            <div class="slds-col slds-size_6-of-12" >
+                                <span>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:select aura:id="debitOrderForm" name="AccountType" label="Account Type" value="{!v.selectedAccType}" onchange="{!c.onPicklistAccTypeChange}" required="true">
+                                            <aura:iteration items="{!v.accTypeOptions}" var="item">
+                                                <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </lightning:layoutItem>
+                                </span>
+                            </div>
+                            
+                            <!-- Debit Date  Not Need Now -->
+                            <div class="slds-col slds-size_6-of-12">
+                                <span>
+                                    <lightning:layoutItem size="6" padding="around-small">
+                                        <lightning:input aura:id="debitOrderForm" class="{! v.dateValidationError ? 'slds-has-error' : ''}" type="date" label="Debit Date"  value="{!v.opportunity.Debit_Order_Date__c}" placeholder="Debit Order Date" required="true" onchange="{!c.checkDebitDate}" />  
+                                        <aura:if isTrue="{!v.dateValidationError}">
+                                            <div class="slds-text-color_error slds-p-left_x-small">
+                                                Date must be in present or in future..
+                                            </div>
+                                            <aura:set attribute="else">
+                                                <div class="slds-text-color_error slds-p-left_x-small">
+                                                    {!v.futureDateValidationError} 
+                                                </div>
+                                            </aura:set>
+                                        </aura:if>
+                                    </lightning:layoutItem>
+                                </span>
+                            </div>
+                            
+                            <!-- Account Number -->
+                            <div class="slds-col slds-size_6-of-12">
+                                <span>
+                                    <!--pattern="[0-9]*" messageWhenPatternMismatch=" Please try again using only numeric values" -->
+                                    <lightning:layoutItem size="6" padding="around-small">
+                                        <lightning:input  aura:id="debitOrderForm" label="Existing Account Number" value="{!v.opportunity.Debit_Order_Account_Number__c}"  placeholder="Bank Account Number" required="true"/>          
+                                    </lightning:layoutItem>
+                                </span>
+                            </div>
+                            
+                            <!-- Salary Day -->
+                            <div class="slds-col slds-size_6-of-12">
+                                <span>                            
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:select aura:id="debitOrderForm" name="SalaryDay" label="Salary Day" value="{!v.selectedSalaryDay}" onchange="{!c.onPicklistSalaryDayChange}" required="true">
+                                            <aura:iteration items="{!v.salaryDayOptions}" var="item">
+                                                <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </lightning:layoutItem>
+                                </span>
+                            </div>
+                        </aura:if>
+                    </div>            
+                    
+                    <aura:if isTrue="{!v.showValidateButton}"> 
+                         <lightning:layoutItem size="12" padding="around-small">
+                               		<lightning:button class="slds-m-top_small slds-m-bottom_small slds-float--right" iconName="utility:check" variant="brand" type="validate" name="add" label="Validate Account" onclick="{!c.checkAccountNumber}"/>
+                         </lightning:layoutItem > 
+                         <aura:if isTrue="{!or(v.oppRecordType == 'Direct Delivery Sales Opportunity',v.oppRecordType == 'DD STI Opportunity')}">
+                              	 <lightning:layoutItem size="12" >
+                					<hr/>
+            					 </lightning:layoutItem>  
+                                 <lightning:layoutItem size="12">
+                					<lightning:button class="slds-m-top_small slds-float--left" variant="brand" label="Previous" aura:id="BACK" onclick="{!c.handleNext}"/>
+         						 </lightning:layoutItem>
+                             <aura:if isTrue="{!v.editAccount}">
+                             	 <lightning:layoutItem size="12">
+                               		<lightning:button class="slds-m-top_small slds-float--right" label="Cancel" onclick="{!c.cancelAndCloseTab}" variant="brand" aura:id="ibtnCancel" />
+                         		 </lightning:layoutItem>
+                             </aura:if>
+                         </aura:if>
+                    </aura:if>
+                    
+                    <aura:if isTrue="{!v.showNewDebitOrderButton}">
+                        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                            <div class="slds-modal__container">
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                    <lightning:layout multipleRows="true">
+                                        <lightning:layoutItem size="12">
+                                            <h2 class="slds-section__title">Verified Debit Order Details</h2>
+                                        </lightning:layoutItem>
+                                        
+                                        <aura:if isTrue="{!and(v.oppRecordType != 'Direct Delivery Sales Opportunity',v.oppRecordType != 'DD STI Opportunity')}">
+                                            <lightning:layoutItem size="12" padding="around-small">
+                                                <lightning:button class="slds-m-top_small slds-float--right" iconName="utility:add" variant="brand" type="submit" name="add" label="Submit Debit Order" onclick="{!c.submitDebitOrder}"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(v.oppRecordType == 'Direct Delivery Sales Opportunity',v.oppRecordType == 'DD STI Opportunity')}">
+                                            <lightning:layoutItem size="12" padding="around-small">
+                                                <lightning:button class="slds-m-top_small slds-float--right" iconName="utility:add" variant="brand" type="submit" name="add" label="Submit Debit Order" onclick="{!c.submitBankDebitOrder}"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                    </lightning:layout>
+                                </div>
+                            </div>
+                        </section>  
+                        <div class="slds-backdrop slds-backdrop_open"></div> 
+                    </aura:if>
+                </fieldset> 
+            </lightning:layout>  
+        </aura:set>
+    </aura:if>
+</aura:component>

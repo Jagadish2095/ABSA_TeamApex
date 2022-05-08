@@ -1,0 +1,70 @@
+<!--
+* Lightning Component  LookUpField
+*
+* @author  Simangaliso Mathenjwa : Absa
+* @version v1.0
+* @since   04 June 2020
+*
+-->
+
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName" access="global" controller="LookUpFieldController" >
+
+<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+<aura:attribute name="lookupSearchData" type="String" default="" description="Lookup Search Field Query custom matadata label to get the query string for records"/>
+<aura:attribute name="lookupSearchQuery" type="String" default="" description="To store a query received from Lookup Search Field Query custom matadata"/>
+<aura:attribute name="lookupSearchCondition" type="String" default="" description="Any additional conditions to the returned query string"/>
+<aura:attribute name="lookupSearchLimit" type="Integer" default="10" description="Used to set the records to be displayed on the lookup" />
+    
+<aura:attribute name="selectedRecord" type="sObject" default="{}" description="Will store the selected record"/>
+<aura:attribute name="recordIdString" type="String"/>
+<aura:attribute name="listOfRecords" type="List" description="This will Store returned list of records from server"/>
+<aura:attribute name="searchKeyword" type="String"/>
+    
+<aura:attribute name="icon_name" type="String" default=""/>
+<aura:attribute name="label" type="String" default="Service Group Search"/>
+<aura:attribute name="placeHolder" type="String" default ="Search Service Groups..."/>
+<aura:attribute name="message" type="String" default=""/> 
+    
+<aura:attribute name="showLoadingSpinner" type="boolean" default="false" />
+<aura:handler name="selected_record_event" event="c:SelectedRecordEvent" action="{!c.handleEvent}"/>
+    
+<aura:method name ="clearSelectionMethod" action="{!c.clearSelection}" />
+ 
+    
+<div onmouseleave="{!c.handleMouseLeave}" aura:id="search_result" class="slds-form-element slds-lookup slds-is-close" data-select="single">
+	<label class="slds-form-element__label" for="lookup-348">{!v.label}</label>
+    <!--For displaying search bar for the lookup-->
+    <div class="slds-form-element__control">
+
+    	<div class="slds-input-has-icon slds-input-has-icon--right">
+        <!-- This markup is for when an record is selected -->
+            <div aura:id="lookup_pill" class="slds-pill-container slds-hide">
+                <lightning:pill class="pillSize" label="{!v.selectedRecord.Name}" name="{!v.selectedRecord.Name}" onremove="{! c.clearSelection }">
+                    <aura:set attribute="media">
+                        <lightning:icon iconName="{!v.icon_name}" size="x-small" alternativeText="{!v.icon_name}"/>
+                    </aura:set>
+               	</lightning:pill>
+           	</div>
+            <div aura:id="lookup_field" class="slds-show">
+                <aura:if isTrue="{!v.showLoadingSpinner}">
+        		<lightning:spinner alternative-text="Loading" size="small" variant="brand" alternativeText="Processing"/>
+      			</aura:if>
+                <lightning:icon class="slds-input__icon slds-show" iconName="utility:search" size="x-small" alternativeText="search"/>
+                <span class="slds-icon_container  slds-combobox__input-entity-icon" title="record">
+                    <span class="slds-assistive-text"></span>
+                </span>
+                <ui:inputText click="{!c.handleMouseClick}" updateOn="keyup" keyup="{!c.handleKeyUp}" class="slds-lookup__search-input slds-input leftPaddingClass"
+                                  value="{!v.searchKeyword}" placeholder="{!v.placeHolder}"/>
+            </div>
+        </div>
+    </div>
+    <!--For Displaying typehead lookup result List-->
+    <ul style="min-height:40px;margin-top:0px !important" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds" role="listbox">
+         <center>{!v.message}</center>
+         <aura:iteration items="{!v.listOfRecords}" var="current_record">
+            <c:LookUpResult object_record="{!current_record}" icon_name="{!v.icon_name}"/>
+         </aura:iteration>
+    </ul>
+</div> 
+</aura:component>

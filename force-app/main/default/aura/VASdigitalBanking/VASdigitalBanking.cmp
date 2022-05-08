@@ -1,0 +1,190 @@
+<!--
+* Lightning Component for VAS digital banking
+*
+* @author  André Pietersen : ABSA (IQ Business)
+* @version v1.0
+* @since   2020-11-25
+*
+-->
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+	access="global"
+	controller="VASdigitalBankingController">
+
+	<aura:attribute name="opportunityId" type="string" />
+	<aura:attribute name="initialAnswerId" type="string" access="global" />
+	<aura:attribute name="productCode" type="String" />
+
+	<aura:attribute name="activeDigitalBankingSections" type="List" default="['DigitalBanking']" />
+	<aura:attribute name="digitalBankingSectionLabel" type="String" default="Digital Banking" />
+	<aura:attribute name="digitalBankingIconName" type="String" default="utility:rotate" />
+	<aura:attribute name="isDisabled" type="Boolean" default="true" />
+	<aura:attribute name="digitalBankingSelected" type="Boolean" default="false" />
+	<aura:attribute name="showServiceResponse" type="Boolean" default="false" />
+	<aura:attribute name="serviceResponse" type="String" />
+	<aura:attribute name="isStokvel" type="boolean" default="false" />
+
+	<aura:attribute name="showAuthSelection" type="Boolean" default="false" />
+	<aura:attribute name="showUserDetails" type="Boolean" default="false" />
+	<aura:attribute name="rvnCellphone" type="string" />
+	<aura:attribute name="username" type="string" />
+	<aura:attribute name="idNumber" type="string" />
+	<aura:attribute name="username1" type="string" />
+	<aura:attribute name="responseList" type="List" />
+
+	<aura:attribute name="relatedPartiesCount" type="string" default="0" />
+	<aura:attribute name="isMaintenanceAllow" type="Boolean" default="false"/>
+	<aura:attribute name="isNumberAuthUserNotValid" type="Boolean" default="true" />
+	<aura:attribute name="isMaintainSuccess" type="Boolean" default="false" />
+	<aura:attribute name="numberOfAuths" type="String" />
+	<aura:attribute name="additionalUsersValue" type="String" default="" />
+	<aura:attribute name="usersList" type="string[]" />
+	<aura:attribute name="usernames" type="string" />
+	<aura:attribute name="userOptions" type="List" />
+	<aura:attribute name="selectedUserIds" type="List" default="[]"/>
+	<aura:attribute name="selectUserComponents" type="List" default="[]"/>
+	<aura:attribute name="selectedUsers" type="List" default="[]"/>
+	<aura:attribute name="numberOfAuthOptions" type="List" />
+
+	<aura:attribute name="relatedUsers" type="List" />
+	<aura:attribute name="isLoading" type="Boolean" default="false" />
+	<aura:attribute name="limitation" type="String" default="100000" />
+	<aura:attribute name="users" type="List" default="[]" />
+	<aura:attribute name="isUsersInvalid" type="Boolean" default="true"/>
+<!--	<aura:attribute name="isPinPadOpen" type="Boolean" default="false" />-->
+<!--	<aura:attribute name="pinpadUserNumber" type="String" default="1" />-->
+<!--	<aura:attribute name="pinPadResponse" type="String" default="" />-->
+
+	<aura:handler name="init" value="{!this}" action="{!c.init}" />
+	<aura:handler name="selectUserStokvelEvent" event="c:vasUserSelectStokvelEvent" action="{!c.handleSelectUserEvent}"/>
+	<aura:handler name="getUserData" event="c:vasUserDataEvent" action="{!c.handleGetUserEvent}"/>
+	<aura:attribute name="productFamily" type="String" default="Cheque" />
+<!--	<aura:handler name="setPin" event="c:vasSetPinEvent" action="{!c.handlerSetPinEvent}"/>-->
+<!--	<aura:handler name="change" value="{!v.pinPadResponse}" action="{!c.pinPadComplete}" />-->
+<!--	<aura:handler name="closePinPad" event="c:vasClosePinPad" action="{!c.handleClosePinPad}"/>-->
+
+	<aura:registerEvent name="vasFulfilmentEvent" type="c:BranchVASfulfilmentIndEvent" />
+	<aura:registerEvent name="setUpSelectedUsersEvent" type="c:vasDigitalBankingSetUpEvent"/>
+
+	<div class="slds-box slds-theme_default slds-m-top_medium" aura:id="digitalBankingContainer">
+		<lightning:accordion
+			aura:id="accordionDigitalBanking"
+			allowMultipleSectionsOpen="true"
+			activeSectionName="{!v.activeDigitalBankingSections}">
+			<lightning:accordionSection name="DigitalBanking" label="{!v.digitalBankingSectionLabel}">
+				<aura:set attribute="actions">
+					<lightning:buttonIcon
+						iconName="{!v.digitalBankingIconName}"
+						disabled="{!v.isDisabled}"
+						size="large"
+						variant="bare"
+						onclick="{!c.handleDigitalBankingIconClick}"
+						alternativeText=""
+						title=""/>
+				</aura:set>
+				<aura:set attribute="body">
+					<aura:if isTrue="{!v.isLoading}">
+						<lightning:spinner size="medium" variant="brand" />
+					</aura:if>
+					<aura:if isTrue="{!v.digitalBankingSelected}">
+						<div class="slds-border_top slds-var-p-around_x-small">
+							<div class="slds-grid slds-m-bottom_x-small slds-m-top_x-small">
+								<div class="slds-col slds-size_6-of-12 slds-p-right_small">
+									<aura:if isTrue="{!not(v.isStokvel)}">
+										<div>
+											<lightning:select
+												name="numberOfAuths"
+												class="slds-m-right_xx-large"
+												required="true"
+												aura:id="numberOfAuths"
+												disabled="{!v.isMaintenanceAllow}"
+												label="Number of authorisations required?">
+												<option value="">Please select</option>
+												<option value="1">1</option>
+												<option value="2">2</option>
+											</lightning:select>
+										</div>
+									</aura:if>
+								</div>
+								<div class="slds-col slds-size_6-of-12" style="margin-top: auto">
+									<lightning:button
+										disabled="{!v.isMaintenanceAllow}"
+										label="Set up internet banking"
+										title="Set up internet banking"
+										onclick="{!c.handleSetupInternetBankingClick}"/>
+								</div>
+							</div>
+								<aura:if isTrue="{!v.isMaintenanceAllow}">
+									<div>
+										<aura:if isTrue="{!v.isStokvel}">
+											<div class="slds-size_12-of-12 slds-grid slds-m-top_x-small slds-m-bottom_x-small">
+												<div class="slds-col slds-size_6-of-12">
+													<lightning:input
+														class="slds-m-right_xx-large"
+														aura:id="relatedParties"
+														name="relatedParties"
+														disabled="true"
+														value="2"
+														label="Number of authorisations required" />
+												</div>
+												<div class="slds-col slds-size_6-of-12">
+													<lightning:input
+														aura:id="limitation"
+														name="limitation"
+														disabled="{!v.isStokvel}"
+														value="{!v.limitation}"
+														label="Limitation" />
+												</div>
+											</div>
+										</aura:if>
+										<div class="slds-size_12-of-12 slds-m-top_x-small slds-m-bottom_x-small">
+											<aura:iteration items="{!v.selectUserComponents}" var="userNumber">
+												<c:VASdigitalBankingUser
+													aura:id="digitalBankingUser"
+													selectedUserIds="{!v.selectedUserIds}"
+													userOptions="{!v.userOptions}"
+													isMaintainSuccess="{!v.isMaintainSuccess}"
+													isStokvel="{!v.isStokvel}"
+													userNumber="{!userNumber}"/>
+											</aura:iteration>
+										</div>
+										<aura:if isTrue="{!v.isStokvel}">
+											<lightning:layout aura:id="addAnotherUser">
+												<lightning:layoutItem size="12">
+													<div class="slds-m-top_small slds-m-bottom_x-small slds-m-right_xx-large slds-float_right">
+														<lightning:button label="Add another User" title="Add another User" onclick="{! c.addAnotherUser }" />
+													</div>
+												</lightning:layoutItem>
+											</lightning:layout>
+										</aura:if>
+										<lightning:layout>
+											<lightning:layoutItem size="12" aura:id="maintainUsers">
+												<div class="slds-m-top_small slds-m-bottom_x-small slds-m-right_xx-large slds-float_right">
+													<lightning:button
+														label="RVN and Limits activation"
+														onclick="{!c.handleMaintainUserDetails}"
+														disabled="{!and(v.isNumberAuthUserNotValid, v.isUsersInvalid)}"/>
+												</div>
+											</lightning:layoutItem>
+										</lightning:layout>
+									</div>
+								</aura:if>
+						</div>
+					</aura:if>
+					<aura:if isTrue="{! v.showServiceResponse }">
+						<div class="slds-m-top_x-small slds-m-bottom_x-small">
+							<p aura:id="responseText" class="error-color">{!v.serviceResponse}</p>
+						</div>
+					</aura:if>
+				</aura:set>
+			</lightning:accordionSection>
+		</lightning:accordion>
+	</div>
+<!--	<aura:if isTrue="{!v.isPinPadOpen}">-->
+<!--		<c:VASdigitalBankingPinPad-->
+<!--			isStokvel="{!v.isStokvel}"-->
+<!--			userNumber="{!v.pinpadUserNumber}"-->
+<!--			opportunityId="{!v.opportunityId}"-->
+<!--		/>-->
+<!--	</aura:if>-->
+</aura:component>

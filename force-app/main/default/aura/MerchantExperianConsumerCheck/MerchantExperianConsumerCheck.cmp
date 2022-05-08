@@ -1,0 +1,459 @@
+<!--Component for handling the Experian Consumer Service (MerchantExperianConsumerCheck) -->
+<!--@author  Diksha Wasekar-->
+<!--@since   2020-5-22-->
+<!--@Work Id: W-003962-->
+
+
+<aura:component controller="MerchantExperianConsumerCheckController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{! this }" action="{! c.doInit }"/>
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="opportunity" type="object" default=""/>
+    <aura:attribute name="activeSections" type="List" default="['experianCheck']" />
+    <aura:attribute name="experianResponseBean" type="Object"/>
+    <aura:attribute name="experianData" type="List"/>
+    <aura:attribute name="creditRiskCheckEntryData" type="Object" />
+    <aura:attribute name="experianFields" type="List"/>
+    <aura:attribute name="opportunityRecord" type="Object"/>
+    <aura:attribute name="creditRiskCheckRecord" type="Object" />
+    <aura:attribute name="selectedContact" type="String" />
+
+    <!-- Lightning Spinner -->
+    <center style="z-index:99">
+        <lightning:spinner aura:id="ltngSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="experianCheck" label="Experian Check ">
+            <lightning:layout multipleRows="true">
+
+                <force:recordData aura:id="opportunityForm"
+                                  fields="Approval_Status__c, Trigger_Approval_Process__c, Merchant_TransUnion_Inquiry_Passed__c, Merchant_Experian_Inquiry_Passed__c"
+                                  recordId="{!v.recordId}"
+                                  targetFields ="{!v.opportunityRecord}"/>
+
+                    <lightning:layoutItem padding="around-small" size="12" aura:id="experianCheckboxLayoutItem" >
+                        <lightning:input aura:id="experianCheckbox" type="checkbox" class="slds-float--left" name="submit" label="I agree to the Experian System terms &amp; conditions."  onchange="{!c.onCheck }"/>
+                    </lightning:layoutItem>
+
+                    <lightning:button class="slds-hide slds-align_absolute-center slds-m-top_xx-large" variant="brand" aura:id="experianBtn" label="Conduct Experian Inquiry " title="Brand action" onclick="{! c.callExperianCheck }" />
+
+
+                    <lightning:recordEditForm aura:id="opportunityEditForm"
+                                        objectApiName="Opportunity"
+                                        recordId="{!v.recordId}"
+                                        onsubmit="{!c.handleSubmit}"
+                                        onsuccess="{!c.handleSuccess}"
+                                        onerror="{!c.handleError}">
+                        <lightning:messages />
+                        <!--div class="{!if((and(not(empty(v.opportunityRecord.Approval_Status__c)), v.opportunityRecord.Trigger_Approval_Process__c == 'Experian Risk Check')), '', 'slds-hide')}">
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <div class="slds-grid slds-grid_align-spread">
+                                        Approval Status : <lightning:outputField fieldName="Approval_Status__c" aura:id="oppApprovalStatusOutput" variant="label-hidden"/>
+                                </div>
+                            </lightning:layoutItem>
+                        </div-->
+                        <lightning:inputField fieldName="Approval_Status__c" aura:id="oppApprovalStatusInput" class="slds-hide"/>
+                        <lightning:inputField fieldName="Merchant_Experian_Inquiry_Passed__c" aura:id="oppExperianPassedInput" class="slds-hide"/>
+                        <lightning:inputField fieldName="Trigger_Approval_Process__c" aura:id="oppTrigApprovalProcessInput" class="slds-hide"/>
+
+                        <!--div class="{!if((and(v.opportunityRecord.Merchant_TransUnion_Inquiry_Passed__c == true, v.opportunityRecord.Approval_Status__c == 'Rejected')), '', 'slds-hide')}">
+                            <lightning:layoutItem padding="horizontal-small" size="12">
+                                <div class="slds-grid slds-grid_align-spread">
+                                    Approval Status : <lightning:outputField fieldName="Approval_Status__c" aura:id="oppApprovalStatusOutput" variant="label-hidden"/>
+                                </div>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <lightning:button class="slds-align_absolute-center" variant="brand" aura:id="resubmitForApprovalBtn" label="Resubmit for Approval"  onclick="{!c.resubmitForApproval}" />
+                            </lightning:layoutItem>
+                        </div-->
+                    </lightning:recordEditForm>
+
+                    <div class="slds-hide slds-scrollable_y full-width" aura:id="resultsDiv">
+                        <lightning:datatable data="{! v.experianData }"
+                                            columns="{! v.experianFields }"
+                                            keyField=""
+                                            hideCheckboxColumn="true"
+                                            />
+                    </div>
+
+                    <aura:iteration items="{!v.experianData}" var="crc" indexVar="index">
+                        <lightning:layoutItem padding="around-small" size="12">
+                                View Experian Enquiry for   <a onclick="{!c.openCreditCheckModal}" data-index="{!index}">{!crc.Name +' '+ crc.Surname__c}.</a>
+                        </lightning:layoutItem>
+                    </aura:iteration>
+
+            </lightning:layout>
+        </lightning:accordionSection>
+    </lightning:accordion>
+
+    <div role="dialog" tabindex="-1" aria-labelledby="experianModalHeader" aura:id="experianModal" class="slds-modal slds-modal_large">
+        <div class="slds-modal__container" style="width: 65%;">
+            <force:recordData aura:id="creditRiskCheckFormExperian"
+                                        fields="Name, Credit_Score__c, Enquiry_Date__c, Operator_Name__c, Reference_Number__c, Surname__c, Title__c, Date_of_Birth__c, ID_Number__c, Address_Line_1__c, Address_Line_2__c,
+                                         Address_Line_3__c, Address_Line_4__c, Judgements__c, Notices__c, Defaults__c, ABSA_Enquiries__c, Other_Enquiries__c, Bank_Adv__c, Total_Enquiries__c,
+                                          Absa_Enquiries_in_the_last_30_Days__c, Other_Enquiries_in_the_last_30_Days__c, Absa_Enquiries_in_the_last_90_Days__c, Other_Enquiries_in_the_last_90_Days__c,
+                                           Absa_Enquiries_in_the_last_180_Days__c, Other_Enquiries_in_the_last_180_Days__c, Absa_Enquiries_in_the_last_1_Year__c, Other_Enquiries_in_the_last_1_Year__c,
+                                            Defaults_Recent_Date__c, Value_of_Defaults__c, Judgement_Value__c, Judgement_Highest_Value__c, Judgement_Highest_Value_Date__c, Judgement_Recent_Date__c, Judgement_Recent_Value__c,
+                                             Judgements_in_the_last_1_Year__c, Judgements_in_the_last_2_Years__c, Judgements_in_the_last_5_Years__c, PP_ID_Verified__c, Total_Payment_Profiles__c, No_of_Closed_Payment_Profiles__c,
+                                             PP_Dispute_Indicator__c, PP_Total_Monthly_Installment__c, Total_Current_Balance_of_Payment_Profile__c, No_of_Currently_Open_Payment_Profiles__c, Debt_Restructuring_Counselling__c"
+                                        recordId="{!v.selectedContact}"
+                                        targetFields ="{!v.creditRiskCheckRecord}"/>
+            <div class="slds-modal__header slds-text-heading_small">
+                Experian Enquiry for: {!v.creditRiskCheckRecord.Name +' '+ v.creditRiskCheckRecord.Surname__c}
+            </div>
+            <div class="slds-modal__content slds-p-around--medium">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Enquiry_Date__c}" label="Enquiry Date" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Credit_Score__c}" label="Credit Score" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Operator_Name__c}" label="Operator Name" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Reference_Number__c}" label="Experian Reference Number" readonly="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div class="slds-text-heading_small slds-border_top">
+                            <br/>Customer Details
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Title__c}" label="Title" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Name}" label="Name" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Surname__c}" label="Surname" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Date_of_Birth__c}" label="Birthdate" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:input value="{!v.creditRiskCheckRecord.ID_Number__c}" label="ID Number" readonly="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div class="slds-text-heading_small slds-border_top">
+                            <br/>Address 1
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Address_Line_1__c}" label="Line 1" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Address_Line_2__c}" label="Line 2" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Address_Line_3__c}" label="Line 3" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Address_Line_4__c}" label="Line 4" readonly="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div class="slds-text-heading_small slds-border_top">
+                            <br/>Summary
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Judgements__c}" label="Total Judgements Ever" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Notices__c}" label="Total Notices Ever" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Defaults__c}" label="Total Defaults Ever" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.ABSA_Enquiries__c}" label="Total Absa Enquiries Ever" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Other_Enquiries__c}" label="Total Other Enquiries Ever" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Bank_Adv__c}" label="Total Bank Adverses Ever" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Debt_Restructuring_Counselling__c}" label="Debt Restructuring/Counselling" readonly="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div class="slds-text-heading_small slds-border_top">
+                            <br/>Enquiries
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Total_Enquiries__c}" label="Total Enquiries" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.ABSA_Enquiries__c}" label="Total Absa Enquiries Ever" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Other_Enquiries__c}" label="Total Other Enquiries Ever" readonly="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Absa_Enquiries_in_the_last_30_Days__c}" label="Absa Enquiries in the last 30 days" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Absa_Enquiries_in_the_last_90_Days__c}" label="Absa Enquiries in the last 90 days" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Absa_Enquiries_in_the_last_180_Days__c}" label="Absa Enquiries in the last 180 days" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Absa_Enquiries_in_the_last_1_Year__c}" label="Absa Enquiries in the last 1 Year" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Other_Enquiries_in_the_last_30_Days__c}" label="Other Enquiries in the last 30 days" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Other_Enquiries_in_the_last_90_Days__c}" label="Other Enquiries in the last 90 days" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Other_Enquiries_in_the_last_180_Days__c}" label="Other Enquiries in the last 180 days" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Other_Enquiries_in_the_last_1_Year__c}" label="Other Enquiries in the last 1 Year" readonly="true"/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div class="slds-text-heading_small slds-border_top">
+                            <br/>Enquirers
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" size="4">
+                        <label> Record Date</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" size="4">
+                        <label> Subscriber</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" size="4">
+                        <label> Contact Name/Number</label>
+                    </lightning:layoutItem>
+                    <aura:iteration items="{!v.creditRiskCheckEntryData}" var="crcEntry">
+                        <aura:if isTrue="{!and(crcEntry.Credit_Risk_Check__c == v.selectedContact, crcEntry.Entry_Type__c == 'Enquirer')}">
+                            <lightning:layoutItem padding="horizontal-small" size="4">
+                                <lightning:input value="{!crcEntry.Date__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" size="4">
+                                <lightning:input value="{!crcEntry.Subscriber__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" size="4">
+                                <lightning:input value="{!crcEntry.Contact_Name_Number__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+                    </aura:iteration>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div class="slds-text-heading_small slds-border_top">
+                            <br/>Notices
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" size="4">
+                        <label> Notice Date</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" size="4">
+                        <label> Notice Type</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" size="4">
+                        <label> Plaintiff</label>
+                    </lightning:layoutItem>
+                    <aura:iteration items="{!v.creditRiskCheckEntryData}" var="crcEntry">
+                        <aura:if isTrue="{!and(crcEntry.Credit_Risk_Check__c == v.selectedContact, crcEntry.Entry_Type__c == 'Notice')}">
+                            <lightning:layoutItem padding="horizontal-small" size="4">
+                                <lightning:input value="{!crcEntry.Date__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" size="4">
+                                <lightning:input value="{!crcEntry.Type__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" size="4">
+                                <lightning:input value="{!crcEntry.Plaintiff__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+                    </aura:iteration>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div class="slds-text-heading_small slds-border_top">
+                            <br/>Defaults
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Defaults__c}" label="Total Defaults" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Defaults_Recent_Date__c}" label="Recent Date" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Value_of_Defaults__c}" label="Value of Defaults" readonly="true"/>
+                    </lightning:layoutItem>
+                </lightning:layout>
+
+                <lightning:layout>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Subscriber</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Subscriber Code</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Last Payment Due</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Overdue Amount</label>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <aura:iteration items="{!v.creditRiskCheckEntryData}" var="crcEntry">
+                    <aura:if isTrue="{!and(crcEntry.Credit_Risk_Check__c == v.selectedContact, crcEntry.Entry_Type__c == 'Default')}">
+                        <lightning:layout>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Subscriber__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Code__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Date__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Amount__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </aura:if>
+                </aura:iteration>
+
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div class="slds-text-heading_small slds-border_top">
+                            <br/>Judgements
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Judgements__c}" label="Total Judgements" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Judgement_Value__c}" label="Judgement Value" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Judgement_Highest_Value__c}" label="Judgement Highest Value" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Judgement_Highest_Value_Date__c}" label="Judgement Highest Value Date" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Judgement_Recent_Date__c}" label="Recent Date" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Judgement_Recent_Value__c}" label="Recent Value" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Judgements_in_the_last_1_Year__c}" label="Judgements in the last Year" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Judgements_in_the_last_2_Years__c}" label="Judgements in the last 2 Years" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Judgements_in_the_last_5_Years__c}" label="Judgements in the last 5 Years" readonly="true"/>
+                    </lightning:layoutItem>
+                </lightning:layout>
+
+                <!-- Below section is in it's own lightning:layout because we use flexibility="auto" to fit 7 Fields in the row.
+                So we need the multipleRows to be False [Default]-->
+                <lightning:layout>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Date</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Amount</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Nature</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Court Type</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Court Name</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Case No</label>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                        <label> Plaintiff</label>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <aura:iteration items="{!v.creditRiskCheckEntryData}" var="crcEntry">
+                    <aura:if isTrue="{!and(crcEntry.Credit_Risk_Check__c == v.selectedContact, crcEntry.Entry_Type__c == 'Judgement')}">
+                        <!-- Below section is in it's own lightning:layout because we use flexibility="auto" to fit 7 Fields in the row.
+                        So we need the multipleRows to be False [Default]-->
+                        <lightning:layout>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Date__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Amount__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Nature__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Court_Type__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Court_Name__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Case_No__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="horizontal-small" flexibility="auto">
+                                <lightning:input value="{!v.crcEntry.Plaintiff__c}" readonly="true"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </aura:if>
+                </aura:iteration>
+
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <div class="slds-text-heading_small slds-border_top">
+                            <br/>Payment Profile
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.PP_ID_Verified__c}" label="ID Verified" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Total_Payment_Profiles__c}" label="Total Payment Profiles" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.No_of_Closed_Payment_Profiles__c}" label="No of Closed Payment Profiles" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.No_of_Currently_Open_Payment_Profiles__c}" label="No of Currently Open Payment Profiles" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.Total_Current_Balance_of_Payment_Profile__c}" label="Total Current Balance of Payment Profile" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.PP_Total_Monthly_Installment__c}" label="Total Monthly Installment" readonly="true"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:input value="{!v.creditRiskCheckRecord.PP_Dispute_Indicator__c}" label="Dispute Indicator" readonly="true"/>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </div>
+            <div class="slds-modal__footer">
+                <lightning:button label="Close" onclick="{!c.closeCreditCheckModal}" />
+            </div>
+        </div>
+    </div>
+    <div class="slds-backdrop slds-backdrop--hide" aura:id="Modalbackdrop">
+    </div>
+</aura:component>

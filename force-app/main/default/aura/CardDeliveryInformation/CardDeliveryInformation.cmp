@@ -1,0 +1,141 @@
+<!--Lightning component for Card Delivery Information-->
+<!--@author  Chandra-->
+<!--@since   2022-03-09-->
+<!--@Work Id: W-015422-->
+
+<aura:component controller="EBDSVCardDeliveryDetailsController" 
+                implements="lightning:availableForFlowScreens,force:hasRecordId,flexipage:availableForAllPageTypes" 
+                access="global">
+    
+    
+    <!--Attribute Declaration-->
+    <aura:attribute name="isSelectedBranch" type="Boolean" />
+    <aura:attribute name="isSelectedFTF" type="Boolean" />
+    <aura:attribute name="isResAddSelected" type="Boolean" />
+    <aura:attribute name="isWorkAddSelected" type="Boolean" />
+    <aura:attribute name="isOtherSelected" type="Boolean" />
+    <aura:attribute name="bankName" type="String" />
+    <aura:attribute name="branchName" type="String" />
+    <aura:attribute name="branchCode" type="String" />
+    <aura:attribute name="addLine1" type="String" />
+    <aura:attribute name="addLine2" type="String" />
+    <aura:attribute name="addCountry" type="String" />
+    <aura:attribute name="addSuburb" type="String" />
+    <aura:attribute name="addCity" type="String" />
+    <aura:attribute name="addPostal" type="String" />
+    <aura:attribute name="cardCollectionMethod" type="String" />
+    
+    <!--Handler Declaration-->
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}" />
+    <aura:handler name="change" value="{!v.isSelectedBranch}" action="{!c.uncheckFTFCheckbox}"/>
+    <aura:handler name="change" value="{!v.isSelectedFTF}" action="{!c.uncheckBranchCheckbox}"/>
+    <aura:handler name="change" value="{!v.isResAddSelected}" action="{!c.uncheckWAandOtherCheckbox}"/>
+    <aura:handler name="change" value="{!v.isWorkAddSelected}" action="{!c.uncheckRSandOtherCheckbox}"/>
+    <aura:handler name="change" value="{!v.isOtherSelected}" action="{!c.uncheckWAandRSCheckbox}"/>
+    
+    <!--Body-->
+    <lightning:card title="Card Delivery Information">
+        
+        <div class="slds-m-left_medium">
+            <strong>Delivery Method:</strong>&nbsp;&nbsp;
+            <lightning:helptext content="The Customer will need to have their ID book onhand when their credit card is delivered." />
+        </div>
+        
+        <div class="slds-m-left_medium">
+            <lightning:input type="checkbox" label="Branch" name="branch" checked="{!v.isSelectedBranch}"/>
+        </div>
+        <div class="slds-m-left_medium">
+            <lightning:input type="checkbox" label="Face-to-Face" name="facetoface" checked="{!v.isSelectedFTF}"/>
+        </div>
+        
+        <!--Body for Branch Selection-->
+        <aura:if isTrue="{!v.isSelectedBranch}">
+            <!-- Bank Name -->
+            <div class="'slds-col slds-size_12-of-12" padding="around-small">
+                <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-float_left" padding="around-small"><span style="color: red" align="left">*</span>Bank Name </label>
+                    <c:customLookUp aura:id="customLookUpCmp" IconName="custom:custom17" selectedRecord="{!v.bankName}" />
+                </lightning:layoutItem>
+            </div>
+            <!-- Branch Name -->
+            <div class="slds-col slds-size_12-of-12" padding="around-small">
+                <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-float_left" padding="around-small"><span style="color: red" align="left">*</span>Branch Name </label>
+                    <c:dependentCutomLookup
+                                            aura:id="dependentCutomLookupCmp"
+                                            dselectedBankName="{!v.bankName}"
+                                            IconName="custom:custom16"
+                                            selectedRecord="{!v.branchName}"
+                                            />
+                </lightning:layoutItem>
+            </div>
+            <!-- Branch Code -->
+            <div class="slds-col slds-size_12-of-12" padding="around-small">
+                <lightning:layoutItem size="5" padding="around-small">
+                    <lightning:input
+                                     type="text"
+                                     aura:id="branchCodeField"
+                                     label="Branch Code"
+                                     value="{!v.branchCode}"
+                                     required="true"
+                                     disabled="true"
+                                     />
+                </lightning:layoutItem>
+            </div>
+        </aura:if>
+        
+        <!--Body for Face to Face Selection-->
+        <aura:if isTrue="{!v.isSelectedFTF}">
+            <p class="slds-m-left_medium slds-m-top_medium">
+                <strong>Please specify which address the card must be delivered to:</strong>
+            </p>
+            <div class="slds-m-left_medium">
+                <lightning:input type="checkbox" label="Residential Address" name="residentialAddress" checked="{!v.isResAddSelected}"/>
+            </div>
+            <div class="slds-m-left_medium">
+                <lightning:input type="checkbox" label="Work Address" name="workAddress" checked="{!v.isWorkAddSelected}"/>
+            </div>
+            <div class="slds-m-left_medium">
+                <lightning:input type="checkbox" label="Other" name="other" checked="{!v.isOtherSelected}"/>
+            </div>
+            
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="4">
+                    <lightning:input
+                                     type="text"
+                                     aura:id="addressline1"
+                                     name="AddressLine1"
+                                     label="Address Line1"
+                                     value="{! v.addLine1 }"
+                                     required="true"
+                                     />
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="4">
+                    <lightning:input
+                                     type="text"
+                                     aura:id="addressline2"
+                                     name="AddressLine2"
+                                     label="Address Line2"
+                                     value="{! v.addLine2 }"
+                                     />
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="4">
+                    <lightning:input type="text" aura:id="suburb" name="Suburb" label="Suburb" value="{! v.addSuburb }" required="true" />
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="4">
+                    <lightning:input type="text" aura:id="city" name="City" label="City" value="{! v.addCity }" required="true" />
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="4">
+                    <lightning:input type="text" aura:id="postal" name="Postal" label="Postal/Zip" value="{! v.addPostal }" required="true" />
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="4">
+                    <lightning:input type="text" aura:id="country" name="Country" label="Country" value="{! v.addCountry }" required="true" />
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:if>
+        
+        <div class="slds-m-left_medium">
+        <lightning:button variant="brand" label="Submit" onclick="{! c.handleSubmit }" />
+        </div>
+    </lightning:card>
+</aura:component>

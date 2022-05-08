@@ -1,0 +1,240 @@
+<aura:component Controller="WillRegistrationController" implements="force:appHostable,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <aura:attribute name="showValidated" type="boolean" default="false"/>
+    <aura:attribute name="showFinishedScreen" type="boolean" default="false"/>
+    <aura:attribute name="showPreviousValidationFailed" type="boolean" default="false"/>
+    <aura:attribute name="showRegistrationFailedError" type="boolean" default="false"/>
+    <aura:attribute name="showRegistrationStart" type="boolean" default="false"/>
+    <aura:attribute name="showWillAlreadyExist" type="boolean" default="false"/>
+    <aura:attribute name="showNewWillRegistration" type="boolean" default="true"/>
+        
+    <aura:attribute name="showError" type="Boolean" default="false"/>
+    <aura:attribute name="errorMessage" type="String" default=""/>
+    <aura:attribute name="errorFound" type="Boolean" default="false"/>
+    <aura:attribute name="errorList" type="List"/>
+    <aura:attribute name="activeSections" type="List" default="['A']"/>
+    <aura:attribute name="invalidMessages" type="String" default=""/>
+    <aura:attribute name="RegistrationErrorMessages" type="String" default=""/>
+    
+    <aura:attribute name="asset" type="Asset" default="{ 'sobjectType': 'Asset' }"/>
+    <aura:attribute name="opportunity" type="Opportunity" default="{ 'sobjectType': 'Opportunity' }"/>
+    <aura:attribute name="account" type="Account" default="{ 'sobjectType': 'Account' }"/>
+    <aura:attribute name="application" type="Application__c" default="{ 'sobjectType': 'Application__c' }"/>
+    <aura:attribute name="getResponse" type="string"/>
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    <article class="slds-card">
+        <div class="slds-card__header slds-grid">
+            <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <span class="slds-icon_container slds-icon-standard-account" title="Registration">
+                        <lightning:icon iconName="standard:record" alternativeText="Registration" />
+                        <span class="slds-assistive-text">Registration </span>
+                    </span>
+                </div>
+                <div class="slds-media__body">
+                    <h2 class="slds-card__header-title">
+                            <span>Registration Summary</span>                  
+                    </h2>
+                </div>
+            </header>
+        </div>
+        <div class="slds-card__body slds-card__body_inner">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12">
+                    <aura:if isTrue="{!v.errorFound}">
+                        <lightning:accordion
+                                             allowMultipleSectionsOpen="true"
+                                             activeSectionName="{! v.activeSections }">
+                            
+                            <lightning:accordionSection name="A" label="Registration Status">
+                                <ol class="slds-list--ordered">
+                                    <div class="slds-progress">
+                                        <ol class="slds-progress__list">
+                                            <aura:if isTrue="{!v.application.Will_Created_In_Will_System__c}">
+                                                <li class="slds-progress__item slds-is-completed">
+                                                    <button class="slds-button slds-button_icon slds-button_icon slds-progress__marker slds-progress__marker_icon" title="Step 1 - Completed">
+                                                        <lightning:icon class="slds-icon slds-icon slds-icon_xx-small" size="small" iconName="action:approval" />
+                                                        <span class="slds-assistive-text">Step 1 : Get Stock Service - Completed</span>
+                                                    </button>
+                                                </li>
+                                                <aura:set attribute="else">
+                                                    <li class="slds-progress__item">
+                                                        <button class="slds-button slds-button_icon slds-button_icon slds-progress__marker slds-progress__marker_icon" title="Step 1 - Not Completed">
+                                                            <span class="slds-assistive-text">Step 1 : Get Stock Service - Not Completed</span>
+                                                        </button>
+                                                    </li>  
+                                                </aura:set>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.application.Will_Created_In_Will_System__c}">
+                                                <li class="slds-progress__item slds-is-completed">
+                                                    <button class="slds-button slds-button_icon slds-button_icon slds-progress__marker slds-progress__marker_icon" title="Step 2 - Completed">
+                                                        <lightning:icon class="slds-icon slds-icon slds-icon_xx-small" size="small" iconName="action:approval" />
+                                                        <span class="slds-assistive-text">Step 2 :  Create Will In Salesforce - Completed</span>
+                                                    </button>
+                                                </li>
+                                                <aura:set attribute="else">
+                                                    <li class="slds-progress__item">
+                                                        <button class="slds-button slds-button_icon slds-button_icon slds-progress__marker slds-progress__marker_icon" title="Step 2 - Not Completed">
+                                                            <span class="slds-assistive-text">Step 2 :  Create Will In Salesforce - Not Completed</span>
+                                                        </button>
+                                                    </li>  
+                                                </aura:set>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.application.Will_Created_In_Will_System__c}">
+                                                <li class="slds-progress__item slds-is-completed">
+                                                    <button class="slds-button slds-button_icon slds-button_icon slds-progress__marker slds-progress__marker_icon" title="Step 3 - Completed">
+                                                        <lightning:icon class="slds-icon slds-icon slds-icon_xx-small" size="small" iconName="action:approval" />
+                                                        <span class="slds-assistive-text">Step 3 : Create Will in Will System - Completed</span>
+                                                    </button>
+                                                </li>
+                                                <aura:set attribute="else">
+                                                    <li class="slds-progress__item">
+                                                        <button class="slds-button slds-button_icon slds-button_icon slds-progress__marker slds-progress__marker_icon" title="Step 3 - Not Completed">
+                                                            <span class="slds-assistive-text">Step 3 : Create Will in Will System - Not Completed</span>
+                                                        </button>
+                                                    </li>  
+                                                </aura:set>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.application.Will_Created_In_Will_System__c}">
+                                                <li class="slds-progress__item slds-is-completed">
+                                                    <button class="slds-button slds-button_icon slds-button_icon slds-progress__marker slds-progress__marker_icon" title="Step 4 - Completed">
+                                                        <lightning:icon class="slds-icon slds-icon slds-icon_xx-small" size="small" iconName="action:approval" />
+                                                        <span class="slds-assistive-text">Step 4 : Update Will in Will System - Completed</span>
+                                                    </button>
+                                                </li>
+                                                <aura:set attribute="else">
+                                                    <li class="slds-progress__item">
+                                                        <button class="slds-button slds-button_icon slds-button_icon slds-progress__marker slds-progress__marker_icon" title="Step 4 - Not Completed">
+                                                            <span class="slds-assistive-text">Step 4 : Update Will in Will System - Not Completed</span>
+                                                        </button>
+                                                    </li>  
+                                                </aura:set>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.application.Will_Created_In_Will_System__c}">
+                                                <li class="slds-progress__item slds-is-completed">
+                                                    <button class="slds-button slds-button_icon slds-button_icon slds-progress__marker slds-progress__marker_icon" title="Step 5 - Completed">
+                                                        <lightning:icon class="slds-icon slds-icon slds-icon_xx-small" size="small" iconName="action:approval" />
+                                                        <span class="slds-assistive-text">Step 5 : Update Will in CIF System - Completed</span>
+                                                    </button>
+                                                </li>
+                                                <aura:set attribute="else">
+                                                    <li class="slds-progress__item">
+                                                        <button class="slds-button slds-button_icon slds-button_icon slds-progress__marker slds-progress__marker_icon" title="Step 5 - Not Completed">
+                                                            <span class="slds-assistive-text">Step 5 : Update Will in CIF System - Not Completed</span>
+                                                        </button>
+                                                    </li>  
+                                                </aura:set>
+                                            </aura:if>
+                                        </ol>
+                                        <div class="slds-progress-bar slds-progress-bar_x-small" aria-valuemin="0" aria-valuemax="100" aria-valuenow="75" role="progressbar">
+                                            <span class="slds-progress-bar__value" style="width:100%">
+                                                <span class="slds-assistive-text">Progress: 75%</span>
+                                            </span>
+                                        </div >
+                                    </div>
+                                </ol> 
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </aura:if>
+                </lightning:layoutItem>
+            </lightning:layout>
+            <aura:if isTrue="{!v.showPreviousValidationFailed}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12">
+                        <center style="z-index:99; height=150px">
+                            <p class="slds-float--left"  style="font-size:18px; margin-top:20px"><lightning:icon size="small" iconName="action:close" alternativeText="Not Completed" /> Please correct the previous step to go ahead with confirmation.</p>
+                            <br/><br/><br/><br/>
+                            <div class="outputTextArea">
+                                <ui:outputTextArea aura:id="oTextarea" value="{!v.invalidMessages}"/>
+                            </div>
+                        </center>            
+                    </lightning:layoutItem>           
+                </lightning:layout>
+            </aura:if>
+              <aura:if isTrue="{!v.showRegistrationFailedError}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12">
+                        <center style="z-index:99; height=150px">
+                            <p class="slds-float--left"  style="font-size:18px; margin-top:20px"><lightning:icon size="small" iconName="action:close" alternativeText="Not Completed" /> Please correct Registration Errors:</p>
+                            <br/><br/><br/><br/>
+                            <div class="outputTextArea">
+                                <ui:outputTextArea aura:id="oTextarea" value="{!v.RegistrationErrorMessages}"/>
+                            </div>
+                        </center>            
+                    </lightning:layoutItem>           
+                </lightning:layout>
+            </aura:if>
+            <aura:if isTrue="{!v.showRegistrationStart}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12">
+                        <center style="z-index:99; height=150px">
+                            <p class="slds-float--left"  style="font-size:18px; margin-top:20px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Not Completed" /> Registration :</p>
+                            <br/><br/><br/><br/>
+                            <div class="outputTextArea">
+                                <ui:outputTextArea aura:id="oTextarea" value="{!v.RegistrationErrorMessages}"/>
+                            </div>
+                        </center>            
+                    </lightning:layoutItem>           
+                </lightning:layout>
+            </aura:if>
+            <aura:if isTrue="{!v.showError}">
+                <!-- Show the message to ui -->
+                <div class="slds-notify slds-notify_toast slds-theme_error">
+                    <span class="slds-assistive-text">error</span>
+                    <div class="slds-notify__content">
+                        <h5 class="slds-text-heading_small slds-align_absolute-center">Error Message </h5>
+                        <br/>
+                        <p class="slds-align_absolute-center">{!v.errorMessage}</p>                
+                    </div>
+                </div>
+            </aura:if>
+            <aura:if isTrue="{!v.showValidated}">
+                <lightning:layout multipleRows="true">
+                    <h5 class="slds-text-heading_small slds-align_absolute-left"></h5>
+                    <aura:if isTrue="{!v.showNewWillRegistration}">
+                        <lightning:layoutItem size="12" class="slds-p-top_large">
+                            <lightning:button class="slds-float--right" variant="brand" label="Confirm Registration" onclick="{!c.callStockService}"/>
+                        </lightning:layoutItem>
+                        <aura:set attribute="else">
+                            <lightning:layoutItem size="12" class="slds-p-top_large">
+                                <lightning:button class="slds-float--right" variant="brand" label="Confirm " onclick="{!c.callWillRevision}"/>
+                            </lightning:layoutItem>
+                        </aura:set>
+                    </aura:if>
+                </lightning:layout>
+            </aura:if>
+             <aura:if isTrue="{!v.showWillAlreadyExist}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12">
+                        <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> <strong>Will Registration . </strong></p>            
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <b>Will Number :  </b> <strong><ui:outputText value="{!v.asset.SerialNumber}"/> Already Exist in the System</strong>
+                    </lightning:layoutItem> 
+                </lightning:layout>
+            </aura:if>
+            <aura:if isTrue="{!v.showFinishedScreen}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12">
+                        <p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> <strong>Will Registration Done. </strong></p>            
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <b>Will Number : </b> <strong><ui:outputText value="{!v.asset.SerialNumber}"/></strong>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </aura:if>
+        </div>
+    </article>
+</aura:component>

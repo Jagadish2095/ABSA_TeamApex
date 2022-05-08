@@ -1,0 +1,125 @@
+<!--
+  @description       :
+  @author            : Prudence Shirindzi : Absa
+  @last modified on  : 2021-11-22
+  @last modified by  : PaulJohn.duRand@absa.africa
+  Modifications Log
+  Ver   Date         Author                          Modification
+  1.0   2021-06-28   André Pietersen (IQ Business)   Initial Version
+  1.1   2021-08-16   André Pietersen (IQ Business)   Force deployment
+-->
+
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,force:hasSObjectName"
+	access="global"
+	controller="SwitchingController"
+>
+	<aura:attribute name="validate" type="Aura.Action" description="SwitchingLetterValidate" />
+	<aura:attribute name="opportunityId" type="String" />
+	<aura:attribute name="HideSpinner" type="boolean" default="true" />
+	<aura:attribute name="participatingDebitOrders" type="String[]" />
+	<aura:attribute name="nonParticipatingDebitOrders" type="String[]" />
+	<aura:attribute name="nonParticipatingSalarySwitch" type="String" />
+	<aura:attribute name="nonParticipatingSalarySwitchId" type="String" />
+	<aura:attribute name="showSwitchingHeader" type="Boolean" default="true" />
+	<aura:attribute name="processType" type="String" />
+	<aura:attribute name="availableActions" type="String[]" />
+
+	<aura:attribute name="showDialog" type="boolean" default="false" />
+	<aura:attribute name="headingDialog" type="string" default="attribute: heading" />
+	<aura:attribute name="messageDialog" type="string" default="attribute: message" />
+	<aura:handler name="init" value="{!this}" action="{!c.init}" />
+
+	<!-- Loading Spinner-->
+	<aura:if isTrue="{!v.HideSpinner}">
+		<center style="z-index: 99">
+			<lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+		</center>
+	</aura:if>
+	<!-- Header section -->
+	<Lightning:layout class="Header">
+		<lightning:layoutitem>
+			<p><lightning:icon iconName="action:approval" title="Approved" class="my-icon" /> Thank you for choosing Absa</p>
+		</lightning:layoutitem>
+	</Lightning:layout>
+	<!-- Header Section -->
+	<lightning:layout class="slds-align_absolute">
+		<lightning:layoutitem padding="around-medium" size="8">
+			<p class="slds-text-heading--medium" style="font-size: 26px">Application Successful</p>
+			<br />
+			<p style="font-size: 18px">The customer's account has successfully been opened.</p>
+		</lightning:layoutitem>
+	</lightning:layout>
+	<lightning:layout>
+		<lightning:layoutitem padding="around-medium" size="8">
+			<aura:if isTrue="v.showSwitchingHeader">
+				<legend style="font-size: 18px">
+					<b>Switching request</b>
+				</legend>
+				<br />
+			</aura:if>
+			<aura:if isTrue="{!not(empty(v.participatingDebitOrders))}">
+				<lightning:card title="Switching request/s successfully submitted" iconName="standard:task" class="my-icon">
+					<lightning:layoutitem padding="around-small">
+						<p style="font-size: 15px">We have submitted the following debit order change request/s and will keep you notified on the progress.</p>
+						<br />
+						<aura:iteration items="{!v.participatingDebitOrders}" var="debitO">
+							<p style="font-size: 15px">{!debitO}</p>
+						</aura:iteration>
+						<br />
+					</lightning:layoutitem>
+				</lightning:card>
+			</aura:if>
+			<br />
+			<br />
+			<aura:if isTrue="{!or(not(empty(v.nonParticipatingDebitOrders)), not(empty(v.nonParticipatingSalarySwitch)))}">
+				<lightning:card title="Self Switching Documentation" iconName="standard:task" class="my-icon">
+					<aura:set attribute="actions">
+						<aura:if isTrue="{!not(empty(v.nonParticipatingSalarySwitch))}">
+							<lightning:button label="Print" aura:id="switchIds" onclick="{!c.printLetter}" />
+						</aura:if>
+					</aura:set>
+					<lightning:layoutitem padding="around-small">
+						<aura:if isTrue="{!not(empty(v.nonParticipatingDebitOrders))}">
+							<p style="font-size: 15px">
+								The customer will need to contact the following non-participating service provider/s directly to change their debit orders.
+							</p>
+							<br />
+							<aura:iteration items="{!v.nonParticipatingDebitOrders}" var="debitO">
+								<p style="font-size: 15px">{!debitO}</p>
+							</aura:iteration>
+							<br />
+						</aura:if>
+						<aura:if isTrue="{!not(empty(v.nonParticipatingSalarySwitch))}">
+							<p style="font-size: 15px">The customer will need to contact their employer directly to facilitate their salary switch.</p>
+							<p style="font-size: 15px">{!v.nonParticipatingSalarySwitch}</p>
+						</aura:if>
+					</lightning:layoutitem>
+				</lightning:card>
+			</aura:if>
+		</lightning:layoutitem>
+	</lightning:layout>
+	<aura:if isTrue="{! v.showDialog }">
+		<c:BranchDialog showDialog="{! v.showDialog }" heading="{! v.headingDialog }" message="{! v.messageDialog }" />
+	</aura:if>
+	<lightning:layout>
+		<lightning:layoutItem padding="around-small" size="12">
+			<div>
+				<c:BranchFlowFooter
+					aura:id="branchFlowFooter"
+					availableActions="{! v.availableActions }"
+					navigateFlowEvent="{! c.handleNavigate }"
+				/>
+			</div>
+		</lightning:layoutItem>
+	</lightning:layout>
+
+	  <!-- Koketso added condition to redirect to opportunity record -->
+	  <aura:if isTrue="{!(v.processType == 'Voice Sales Product Onboarding' )}">
+        <lightning:layoutitem class="right-align" padding="around-small">
+            <footer class="slds-float_right">
+                <lightning:button variant="brand" label="Proceed to Generate Contract" title="Generate Contract" aura:id="btnRedirectToOpportunity" onclick="{!c.redirectToOpportunity}" />
+            </footer>
+        </lightning:layoutitem>
+    </aura:if>
+</aura:component>

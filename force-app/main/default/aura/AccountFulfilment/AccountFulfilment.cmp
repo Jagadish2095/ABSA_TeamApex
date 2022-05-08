@@ -1,0 +1,429 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @last modified on  : 2021-10-25
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+  Modifications Log 
+  Ver   Date         Author                               Modification
+  1.0   2021-07-30   ChangeMeIn@UserSettingsUnder.SFDoc   Initial Version
+-->
+<aura:component description="AccountFulfilment"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+                access="global" controller="AccountFulfilmentController"> 
+    
+    <aura:html tag="style">.toastMessage.forceActionsText{white-space : pre-line !important;}</aura:html>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="wasNotRiskProfiled" type="boolean" default="false"/>
+    <aura:attribute name="opportunityId" type="String"/>    
+    <aura:attribute name="productId" type="String" />
+    <aura:attribute name="clientCode" type="String" />
+    <aura:attribute name="riskRating" type="String" />
+    <aura:attribute name="salesConsultant" type="String"/>
+    <aura:attribute name="domicileBranchCode" type="String"/>
+    <aura:attribute name="brokerNumber" type="String"/>
+    <aura:attribute name="purposeOfAccount" type="String"/>
+    <aura:attribute name="accountName" type="String"/>
+    <aura:attribute name="accountType" type="String"/>
+    <aura:attribute name="sourceOfFunds" type="String" />
+    <aura:attribute name="brokerSource" type="String" />
+    <aura:attribute name="errorMessage" type="String" default="Attempting risk profiling" />
+    <aura:attribute name="errorupdate" type="String"  />
+    <aura:attribute name="maturityDate" type="String" />
+    <aura:attribute name="noticePeriod" type="String" />
+    <aura:attribute name="investTerm" type="String" />
+    <aura:attribute name="accountNumber" type="String" />
+    <aura:attribute name="interestPaymentDate" type="String" default="15" />
+    <aura:attribute name="percentageAvailableforWithdraw" type="String" default="50" />
+    <aura:attribute name="todayData" type="String" />
+    <aura:attribute name="sourceOfFundsList" type="List" />
+    <aura:attribute name="purposeOfAccountList" type="List" />
+    <aura:attribute name="brokerSourceList" type="List" />
+    <aura:attribute name="investmentTermList" type="List" />
+    <aura:attribute name="noticePeriodList" type="List" />
+    <aura:attribute name="initialAnswerId" type="String" default='SAVINGS_OR_INVESTMENT' />
+    <aura:attribute name="domicileBranch" type="String" />
+    <aura:attribute name="bankClearingCode" type="String" />
+    <aura:attribute name="productType" type="String" />
+    <aura:attribute name="customerName" type="String" />
+    <aura:attribute name="productCode" type="String" />
+    <aura:attribute name="riskProfileService" type="boolean" default="true"/>
+
+    <aura:attribute name="creditChannel" type="String"/>
+    <aura:attribute name="creditSource" type="String"/>
+    <aura:attribute name="debitReason" type="String"/>
+    <aura:attribute name="fraudIndicator" type="String" access="global" />
+    <aura:attribute name="fraudApplicationId" type="String" access="global"/>
+    <aura:attribute name="checkFraudStatus" type="Boolean" default="false" />
+    <aura:attribute name="interestPayoutOptionValue" type="String"/>
+    <aura:attribute name="monthlyInterestOptionValue" type="String"/>
+    
+    <aura:attribute name="interestPayoutOption" type="List" default = "[
+                                    {'label': 'Pay into this savings/investment account',
+                                     'value': 'currentAccount'},
+                                    {'label': 'Pay into another account', 'value': 'otherAccount'}]"/>
+
+ <aura:attribute name="monthlyInterestOption" type="List" default="[
+                                    {'label': 'Yes', 'value': 'Yes'},
+                                    {'label': 'No', 'value': 'No'}
+                                    ]"/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+    	<!--Modal : display fraud status message -->
+	<aura:if isTrue="{!v.checkFraudStatus}">
+		<!--###### MODAL BOX Start######-->
+		<section title="Fraud Status"
+				role="dialog"
+				tabindex="-1"
+				aria-labelledby="modal-heading-01"
+				aria-modal="true"
+				aria-describedby="modal-content-id-1"
+				class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+							iconName="utility:close"
+							onclick="{! c.closeConfirmModal }"
+							alternativeText="close"
+							variant="bare-inverse"
+							class="slds-modal__close"
+					 />
+                     <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Fraud Status</h2>
+			</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b>Fraud Refer </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Ok" title="Ok" onclick="{! c.closeModal }" />
+					
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+    <lightning:navigation aura:id="navService"  />
+    <aura:if isTrue="{!(v.wasNotRiskProfiled)}"> 
+        <div class="slds-box slds-align_absolute-center" style="width:75%">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="12">
+                    <b><h2 class="slds-section__title">Risk Profile</h2></b>
+                </lightning:layoutItem>
+                <table>
+                    <tr>
+                        <td>{!(v.errorMessage)}</td>
+                    </tr>
+                    <tr>
+                        <td><lightning:button variant="neutral" label="Retry Risk profiling" title="Retry Risk profiling" onclick="{! c.handleRiskprofileRetry }" /></td>
+                    </tr>
+                </table>
+            </lightning:layout>
+        </div>
+        <aura:set attribute="else">
+            <div class="slds-box slds-align_absolute-center" style="width:75%">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12">
+                        <b><h2 class="slds-section__title">Entity account details</h2></b>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div id="{! globalId + '_AccountName' }" class="slds-var-p-around_x-small">
+                            <label for="AccountName" >Account Name</label>
+                            <lightning:input aura:id="AccountName" 
+                                             name="AccountName"
+                                             value="{! v.accountName }"
+                                             variant="label-hidden"
+                                             required="false"
+                                             disabled="false"/>
+                        </div>
+                    </lightning:layoutItem>  
+                    <lightning:layoutItem padding="around-small" size="6"></lightning:layoutItem>
+                    <div style="display:none"> 
+                    <lightning:layoutitem padding="around-small" size="6" > 
+                        <div id="{! globalId + '_BrokerSource' }" class="slds-var-p-around_x-small">
+                            <label for="BrokerSource" >Broker Source</label>
+                            <lightning:select aura:id="BrokerSource"
+                                              name="BrokerSource"
+                                              label="" 
+                                              class="label-hidden"
+                                              value="{! v.brokerSource }"
+                                              required="false">
+                                <option value="">please select...</option>
+                                <aura:iteration items="{! v.brokerSourceList }" var="brokerSourceValue">
+                                    <option value="{!brokerSourceValue}" selected="{!brokerSourceValue==v.brokerSource}">{!brokerSourceValue}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </div>
+                    </lightning:layoutitem>
+                    <lightning:layoutitem padding="around-small" size="6" > 
+                        <div id="{! globalId + '_BrokerNumber' }" class="slds-var-p-around_x-small">
+                            <label for="BrokerNumber" >Broker Number</label>
+                            <lightning:input aura:id="BrokerNumber" 
+                                             name="BrokerNumber"
+                                             value="{! v.brokerNumber }"
+                                             variant="label-hidden"
+                                             
+                                             disabled="false"/>
+                        </div>
+                    </lightning:layoutitem>
+                </div>
+                    <lightning:layoutitem padding="around-small" size="6" > 
+                        <div id="{! globalId + '_SOF' }" class="slds-var-p-around_x-small">
+                            <label for="SOF" >Source of Funds</label>
+                            <lightning:select aura:id="SOF"
+                                              name="SOF"
+                                              label="" 
+                                              class="label-hidden"
+                                              value="{! v.sourceOfFunds }"
+                                              required="true" >   
+                                <option value="">please select...</option>
+                                <aura:iteration items="{! v.sourceOfFundsList }" var="sourceOfFunds">
+                                    <option value="{!sourceOfFunds}" selected="{!sourceOfFunds==v.sourceOfFunds}">{!sourceOfFunds}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </div>
+                    </lightning:layoutitem>
+                    <lightning:layoutitem padding="around-small" size="6">       
+                        <div id="{! globalId + '_PurposeOfAccount' }" class="slds-var-p-around_x-small">
+                            <label for="PurposeOfAccount" >Purpose Of Account</label>
+                            <lightning:select aura:id="PurposeOfAccount"
+                                              name="PurposeOfAccount"
+                                              label="" 
+                                              class="label-hidden"
+                                              value="{! v.purposeOfAccount }"
+                                              required="true" >   
+                                <option value="">please select...</option>
+                                <aura:iteration items="{! v.purposeOfAccountList }" var="purposeOfAccount">
+                                    <option value="{!purposeOfAccount}" selected="{!purposeOfAccount==v.purposeOfAccount}">{!purposeOfAccount}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </div>
+                    </lightning:layoutitem>
+                    
+ <!-- Account Activity starts -->
+
+                    <lightning:layoutItem size="12">
+                        <b><h2 class="slds-section__title">Expected account activity</h2></b>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <label for="creditChannel">How will the credits be received?</label>
+                        <div id="creditChannel" class="slds-var-p-around_x-small">
+                            <lightning:input aura:id="creditChannel" 
+                                             name="creditChannel"
+                                             value="{!v.creditChannel}"
+                                             variant="label-hidden"
+                                             required="true"
+                                             disabled="false"/>
+                        </div>
+                    </lightning:layoutItem><br/>
+<div style="display:none"> </div>
+                    <lightning:layoutItem padding="around-small" size="6">
+                      
+                    
+                         <label for="creditSource">Where will the credits be coming from?</label>
+                        <div id="creditSource" class="slds-var-p-around_x-small">
+                            <lightning:input aura:id="creditSource" 
+                                             name="creditSource"
+                                             value="{!v.creditSource}"
+                                             variant="label-hidden"
+                                             required="true"
+                                             disabled="false"/>
+                        </div>
+                    </lightning:layoutItem><br/>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <label for="debitReason">Reason for debits.</label>
+                        <div id="debitReason" class="slds-var-p-around_x-small">
+                            <lightning:input aura:id="debitReason" 
+                                             name="debitReason"
+                                             value="{!v.debitReason}"
+                                             variant="label-hidden"
+                                             required="true"
+                                             disabled="false"/>
+                        </div>
+                    </lightning:layoutItem><br/>
+
+                    <div style="display:none">
+                    <lightning:layoutItem padding="around-small" size="12"> 
+                    <lightning:radioGroup aura:id="interestPayoutGroup"
+                    type="radio"
+                    name="interestShare"
+                    label="Where does customer want earned interest/profit share paid?"
+                    options="{!v.interestPayoutOption}"
+                    value="{!v.interestPayoutOptionValue}"
+                    required="true"/><br/>
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="9"  >
+                    <lightning:radioGroup name="monthlyInterest"  aura:id="monthlyInterestGroup"
+                    label="Monthly Interest Pay?"
+                    value="{!v.monthlyInterestOptionValue}"
+                    required="false"
+                    options="{! v.monthlyInterestOption }"/><br/>
+                    </lightning:layoutItem>
+                    </div>
+                    <!-- Account Activity Ends -->
+                    <div style="display:none">
+
+                    <lightning:layoutItem size="12">
+                        <b><h2 class="slds-section__title">Entity product condition</h2></b>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div id="{! globalId + '_InvestTerm' }" class="slds-var-p-around_x-small">
+                            <label for="InvestTerm">Invest Term</label>
+                            <lightning:select aura:id="InvestTerm"
+                                              name="InvestTerm"
+                                              label="" 
+                                              class="label-hidden"
+                                              value="{! v.investTerm }"
+                                              required="true" >   
+                                <option value="">please select...</option>
+                                <aura:iteration items="{! v.investmentTermList }" var="investTerm">
+                                    <option value="{!investTerm}" selected="{!investTerm==v.investTerm}">{!investTerm}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </div>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div id="{! globalId + '_NoticePeriod' }" class="slds-var-p-around_x-small">
+                            <label for="NoticePeriod">Notice Period</label>
+                            <lightning:select aura:id="NoticePeriod"
+                                              name="NoticePeriod"
+                                              label="" 
+                                              class="label-hidden"
+                                              value="{! v.noticePeriod }"
+                                              required="true" >   
+                                <option value="">please select...</option>
+                                <aura:iteration items="{! v.noticePeriodList }" var="noticePeriod">
+                                    <option value="{!noticePeriod}" selected="{!noticePeriod==v.noticePeriod}">{!noticePeriod}</option>
+                                </aura:iteration>
+                            </lightning:select>
+                        </div>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div id="{! globalId + '_InterestPaymentDate' }" class="slds-var-p-around_x-small">
+                            <label for="InterestPaymentDate">Interest Payment Date</label>
+                            <lightning:slider aura:id="InterestPaymentDate" 
+                                              name="InterestPaymentDate"
+                                              value="{! v.interestPaymentDate }"
+                                              variant="label-hidden"
+                                             
+                                              step = "1"
+                                              min="1" 
+                                              max="31"/>
+                        </div>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div id="{! globalId + '_MaturityDate' }" class="slds-var-p-around_x-small">
+                            <label for="MaturityDate">Maturity Date</label>
+                            <lightning:input aura:id="MaturityDate" 
+                                             name="MaturityDate"
+                                             type="date"
+                                             value="{! v.maturityDate }"
+                                             variant="label-hidden"
+                                      
+                                             min="{! v.todayData }"
+                                             placeholder="please select..."
+                                             disabled="false"/>
+                        </div>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div id="{! globalId + '_PercentageAvailableforWithdraw' }" class="slds-var-p-around_x-small">
+                            <label for="PercentageAvailableforWithdraw">Percentage Available for Withdraw</label>
+                            <lightning:slider aura:id="PercentageAvailableforWithdraw" 
+                                              name="PercentageAvailableforWithdraw"
+                                              value="{! v.percentageAvailableforWithdraw }"
+                                              variant="label-hidden"
+                                           
+                                              step = "1"
+                                              min="0" 
+                                              max="100" />
+                        </div>
+                    </lightning:layoutItem>
+                    </div>
+                </lightning:layout>
+                
+            </div>
+        </aura:set>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.riskProfileService}"> 
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <div>
+                    <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                        availableActions="{! v.availableActions }" 
+                                        navigateFlowEvent="{! c.handleNavigate }"/>
+                </div>
+            </lightning:layoutItem> 
+        </lightning:layout>
+    </aura:if>
+    <div aura:id="Modalbox"  role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <lightning:buttonIcon iconName="utility:close"
+                                      onclick="{! c.closeModel }"
+                                      alternativeText="close"
+                                      variant="bare-inverse"
+                                      class="slds-modal__close"/>
+                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                    Congratulations, your Absa Account account has been opened. your account details are as follows:
+                </h2>
+            </header>
+            <center>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-align_absolute-center" style="height:10rem">
+                        <dl class="slds-list_horizontal slds-wrap">
+                            
+                            <dt class="slds-item_label slds-text-color_weak slds-truncate" title="First Label">Customer Name</dt>
+                            <dd class="slds-item_detail slds-truncate" title="Description for first label">{!v.customerName}</dd>
+                            
+                            <dt class="slds-item_label slds-text-color_weak slds-truncate" title="First Label">Product Type</dt>
+                            <dd class="slds-item_detail slds-truncate" title="Description for first label">{!v.productType}</dd>
+
+                            <dt class="slds-item_label slds-text-color_weak slds-truncate" title="First Label">Account Number</dt>
+                            <dd class="slds-item_detail slds-truncate" title="Description for first label"> {!v.accountNumber}</dd>
+                            
+                            <dt class="slds-item_label slds-text-color_weak slds-truncate" title="First Label">Domicile Branch</dt>
+                            <dd class="slds-item_detail slds-truncate" title="Description for first label"> {!v.domicileBranch}</dd>
+                            
+                            <dt class="slds-item_label slds-text-color_weak slds-truncate" title="First Label">Domicile Branch Code</dt>
+                            <dd class="slds-item_detail slds-truncate" title="Description for first label">{!v.domicileBranchCode}</dd>
+                            
+                            <dt class="slds-item_label slds-text-color_weak slds-truncate" title="First Label">Sales Consultant</dt>
+                            <dd class="slds-item_detail slds-truncate" title="Description for first label">{!v.salesConsultant}</dd>
+                            
+                            <dt class="slds-item_label slds-text-color_weak slds-truncate" title="First Label">Bank Clearing Code</dt>
+                            <dd class="slds-item_detail slds-truncate" title="Description for first label">{!v.bankClearingCode}</dd>
+                            <dt class="slds-item_label slds-text-color_weak slds-truncate" title="First Label"></dt>
+                            <dd class="slds-item_detail slds-truncate" title="Description for first label">
+                                <h2 class="slds-section__title" style="color: red">{!v.errorupdate}</h2></dd>
+                        </dl>
+                    </div>
+                </div>
+            </center>
+            <footer class="slds-modal__footer">
+                <lightning:button variant="brand"
+                                  label="Continue"
+                                  title="Continue"
+                                  onclick="{!c.submitDetails}"/>
+            </footer>
+        </div>
+    </div >
+    <div class="slds-backdrop" aura:id="Modalbackdrop"></div>    
+</aura:component>

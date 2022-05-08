@@ -1,0 +1,101 @@
+<!--
+* Lightning Component for  Application Financial Upload  for main Client and Principals
+*
+* @author  Saurabh : Absa
+* @version v1.0
+* @since   2020-09-15
+* @UserStory W:005850
+-->
+<aura:component
+    implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+    access="global" controller="ApplicationFinancialsUploadController">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="filetype" type="List" default="['.png', '.jpg', '.jpeg', '.pdf', '.doc', '.docx', '.docm','.xlsx']" />
+    <aura:attribute name="multiple" type="Boolean" default="true" />
+    <aura:attribute name="disabled" type="Boolean" default="true" />
+    <aura:attribute name="oppId" type="Id" />
+    <aura:attribute name="Account" type="object" />
+    <aura:attribute name="showFinancialUploadModal" type="Boolean" default="false" />
+    <aura:attribute name="isComparerativeYearsVisible" type="Boolean" default="false" />
+    <aura:attribute name="isButtonDisabled" type="Boolean" default="true" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    <div class="slds-grid slds-wrap slds-gutters_medium">
+        <div class="slds-col slds-size_6-of-12 slds-text-align_left">
+            <b> Financial Statements </b><br />
+            The following financial details were referenced in processing this application.
+        </div>
+        <div class="slds-text-align_right slds-col slds-size_6-of-12">
+            <lightning:button variant="brand" label="New Financial Statement" title="New Financial Statement"
+                onclick="{! c.navigateToFinancialStatement}" disabled="{!v.isButtonDisabled}" />
+            <lightning:button variant="brand" label="Request Financials" title="Request Financials"
+                onclick="{! c.openFinancialUploadModal}" disabled="{!v.isButtonDisabled}" />
+        </div>
+        <div class="slds-col slds-size_4-of-12 slds-text-align_left slds-p-top_large">
+            Client Name: <br />
+            <ui:outputText value="{!v.Account.Name}" /> <!-- replace later with acc Name and CIF -->
+        </div>
+        <div class="slds-col slds-size_4-of-12 slds-text-align_center slds-p-top_large">
+            Client Code: <br />
+            <ui:outputText value="{!v.Account.CIF__c}" />
+        </div>
+    </div>
+
+    <aura:if isTrue="{!v.isComparerativeYearsVisible}">
+        <lightning:card>
+            <c:ApplicationFinancialsDisplay recordId="{!v.Account.Id}" isComparerativeYearsVisible="{!v.isComparerativeYearsVisible}" />
+        </lightning:card>
+    </aura:if>
+
+    <aura:if isTrue="{!v.showFinancialUploadModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeFinancialUploadModal }"
+                        alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Request for Financials
+                        Statement Capture</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_4-of-12 slds-text-align_left slds-p-around_large">
+                            Client Name: <br />
+                            <ui:outputText value="{!v.Account.Name}" />
+                        </div>
+                        <div class="slds-col slds-size_4-of-12 slds-text-align_center slds-p-around_large">
+                            Client Code: <br />
+                            <ui:outputText value="{!v.Account.CIF__c}" />
+                        </div>
+                    </div>
+                    <p>
+                        <lightning:fileUpload label="Attchment Upload" name="Attchment Upload" multiple="true"
+                            accept="{!v.filetype}" recordId="{!v.Account.Id}"
+                            onuploadfinished="{!c.handleUploadFinished}" />
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-text-align_center  slds-col slds-size_8-of-12">
+                            <lightning:input type="checkbox" aura:id="checkbox"
+                                label="I attest that the information captured is accurate." onchange="{! c.showButton }"/>
+                        </div>
+
+                        <div class="slds-text-align_right  slds-col slds-size_4-of-12 slds-button_stretch slds-hide" aura:id="acceptButton">
+                            <lightning:button variant="brand" label="Accept" title="Accept"
+                                onclick="{! c.submitCapture}" />
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

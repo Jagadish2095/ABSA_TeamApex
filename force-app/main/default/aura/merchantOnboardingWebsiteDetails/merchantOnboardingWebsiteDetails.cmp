@@ -1,0 +1,108 @@
+<!--
+* Lightning Component for the Merchant Website Details (merchantOnboardingWebsiteDetails)
+*
+* @author  Tinashe Shoko
+* @version v1.0
+* @since   2020-07-09
+* @Modified by Jason Q 2020-09-30
+*
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="activeSections" type="List" default="['websiteDetails']" />
+
+    <!-- Parent Cmp Attribute Declaration -->
+    <aura:attribute name="cmpFormStatus" type="String" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+    <aura:attribute name="applicationProdMerchId" type="String" default=""/>
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['ipAddress','webDeveloperCompany','webDeveloperContact']"/>
+    <aura:attribute name="isShowSuccessToast" type="Boolean"/>
+    <aura:attribute name="errorMessage" type="String"/>
+    <aura:attribute name="oppProductId" type="String" default=""/>
+    <aura:attribute name="oppProductRecord" type="Object" />
+    <aura:attribute name="isEcommerceProduct" type="Boolean" default="false"/>
+
+    <!-- Method Declaration -->
+    <aura:method name="saveFormMethod" action="{!c.executeSaveFormMethod}" />
+
+    <aura:if isTrue="{!not(empty(v.oppProductId))}">
+        <force:recordData aura:id="oppProductRecordEditor"
+                          fields="Product2.Family"
+                          recordId="{!v.oppProductId}"
+                          targetFields ="{!v.oppProductRecord}"
+                          recordUpdated="{!c.oppProductRecordUpdated}"
+                          targetError="{!v.errorMessage}"
+                          mode="VIEW"/>
+    </aura:if>
+    <lightning:recordEditForm aura:id="appProdMerchForm"
+                               objectApiName="Application_Product_Merchant__c"
+                               recordId="{!v.applicationProdMerchId}"
+                               onload="{!c.handleLoad}"
+                               onsubmit="{!c.handleSubmit}"
+                               onsuccess="{!c.handleSuccess}"
+                               onerror="{!c.handleError}">
+
+        <lightning:inputField aura:id="appProdMerch_OppProdId" fieldName="Opportunity_Product_Id__c" class="slds-hide"/>
+
+        <aura:if isTrue="{!v.isEcommerceProduct}">
+
+            <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+                <lightning:accordionSection name="websiteDetails" label="Website Details">
+
+                    <!-- Display Lightning Data Service errors, if any -->
+                    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                        <div class="recordError">
+                            <br/>
+                            <h2 class="slds-section__title slds-text-align_left" style="color:red">{!v.errorMessage}</h2>
+                            <br/>
+                        </div>
+                    </aura:if>
+
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem size="6">
+                            <c:merchantOnboardingWebsiteURL recordId = "{!v.recordId}"
+                                                            objectApiName = "Opportunity"
+                                                            fieldName = "Website_URL__c"
+                                                            fileType = "Website"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6">
+                            <c:merchantOnboardingWebsiteURL recordId = "{!v.recordId}"
+                                                            objectApiName = "Opportunity"
+                                                            fieldName = "Site_Terms_Conditions_URL__c"
+                                                            fileType = "Site Terms and Conditions"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6">
+                            <c:merchantOnboardingWebsiteURL recordId = "{!v.recordId}"
+                                                            objectApiName = "Opportunity"
+                                                            fieldName = "Privacy_Policy_URL__c"
+                                                            fileType = "Privacy Policy"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6">
+                            <c:merchantOnboardingWebsiteURL recordId = "{!v.recordId}"
+                                                            objectApiName = "Opportunity"
+                                                            fieldName = "Refund_Policy_URL__c"
+                                                            fileType = "Refund Policy"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6">
+                            <c:merchantOnboardingWebsiteURL recordId = "{!v.recordId}"
+                                                            fileType = "Business Case"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="6">
+
+                            <lightning:inputField aura:id="ipAddress" fieldName="IP_Address__c" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" required="true" />
+                            <lightning:inputField aura:id="webDeveloperCompany" fieldName="Web_Developer_Company__c" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" required="true" />
+                            <lightning:inputField aura:id="webDeveloperContact" fieldName="Web_Developer_Contact_Name_Number__c" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" required="true" />
+
+                            <lightning:button aura:id="saveBtnForWebDetails" type="submit" label="Save" variant="brand" disabled="{!or(v.isFormReadOnly, v.isApprovalPending)}" class="slds-align_absolute-center slds-m-top_x-large" />
+
+                        </lightning:layoutItem>
+                    </lightning:layout>
+
+                </lightning:accordionSection>
+            </lightning:accordion>
+
+        </aura:if>
+    </lightning:recordEditForm>
+</aura:component>

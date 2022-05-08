@@ -1,0 +1,300 @@
+<aura:component controller="CaseOverrideController" implements="lightning:isUrlAddressable,lightning:hasPageReference,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName" access="global" >   
+
+    <aura:handler event="c:setClientInfo" action="{!c.setClientValue}"/>
+    <aura:handler event="c:setContactInfo" action="{!c.setContactValue}"/>
+    <aura:handler event="c:setProductInfo" action="{!c.setProductValue}"/>
+
+    <aura:attribute name="productList" type="Object" />
+    <aura:attribute name="caseTypeOption" type="List" default="[]"/>
+    <aura:attribute name="policyTable" type="Object"/>
+    <!--<aura:attribute name="currentList" type="Object" />
+    <aura:handler name="change"	value="{!v.pageNumber}"	action="{!c.renderPage}" />
+    <aura:attribute type="Integer" name="pageNumber" default="1" />
+    <aura:attribute type="Integer" name="maxPage" default="1" /> -->
+    <aura:attribute name="recordType" type = "String" default = "DD STI Case"/>
+    <aura:attribute name="policyColumnHeaders" type="List" />
+    <aura:attribute name="productProvider" type="String" />
+    <aura:attribute name="coverAmount" type="String" />
+    <aura:attribute name="outstandingAmount" type="String" />
+    <aura:attribute name="policyPremium" type="String" />
+    <aura:attribute name="policyInceptionDate" type="String" />
+    <aura:attribute name="policyNumber" type="String" />
+    <aura:attribute name="policyStatus" type="String" />
+
+    <aura:attribute name="isPolicySelected" type="Boolean" default="true"/>
+    <aura:attribute name="spinner" type="boolean" default="FALSE"/>
+
+    <aura:attribute name="caseTypeSelected" type="String" />
+
+
+    <aura:attribute name="caseRecordId" type="String" />
+    <aura:attribute name="accountId" type="String" />
+    <aura:attribute name="contactId" type="String" />
+	<aura:attribute name="recordTypeId" type="String" />
+
+    <aura:attribute name="isIwillResolve" type="Boolean" default="false"/>
+    <aura:attribute name="butonDisable" type="boolean" default="false"/>
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="showPolicies" type="boolean" default="false"/>
+	<aura:attribute name="showCaseFields" type="boolean" default="false"/>
+    <aura:attribute name="showCaseCancelFields" type="boolean" default="false"/>
+    <aura:attribute name="showAIPCaseQueryFields" type="boolean" default="false"/>
+    
+    <!--InIt handler-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+
+    <aura:attribute name="newCase" type="object"/>
+    <aura:attribute name="contactRecord" type="Contact" default="{
+                                                                    'SObjectType': 'Contact',
+                                                                    'FirstName': '',
+                                                                    'LastName': '',
+                                                                    'Email': '',
+                                                                    'Phone': ''
+                                                                    }"/>    
+<aura:attribute name="accountRecord" type="Account" default="{'sobjectType': 'Account',
+                                                                    'FirstName': '',
+                                                                    'LastName': '',
+                                                                    'Phone': '',
+                                                                    'CIF__c': '',
+                                                                    'RecordTypeId':'',
+                                                                    'Name' : '',
+                                                                    'isPersonAccount':'',
+                                                                    'PersonContactId' : ''
+                                                                    }"/>
+<aura:attribute name="serviceGroupRecord" type="Service_Group__c" default="{'sobjectType': 'Service_Group__c',
+                                                                               'Name': '',
+                                                                               'Queue__c': '',
+                                                                               'Id': ''
+                                                                               }"/>
+	<aura:attribute name="isIndvClient" type="Boolean"/>
+    <aura:attribute name="searchValue" type="String" />
+    <aura:attribute name="isNotValidSearchValue" type="boolean" default="true"/>
+    <lightning:workspaceAPI aura:id="workspace"/>
+
+    <aura:if isTrue="{!v.spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading...</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    
+    <div class="slds-grid slds-gutters" style="margin-bottom: 40px;">
+        <div class="slds-col slds-border_right" style="width: 8rem">
+            <!-- Client Finder Lightning Component with Attributes-->
+            <c:ClientFinder
+                            isCompactView="true"
+                            showCreateIndividualProspect="true" 
+                            showCreateBusinessProspect="true"
+                            showProductSelection="true"
+                            showContactSelection="true"
+                            showCaseHistory="true"
+                            showLeadHistory = "false"
+                            showParticipantSelection = "false"
+                            searchValue = "{!v.searchValue}"
+                            isNotValidSearchValue = "{!v.isNotValidSearchValue}"
+                            productPaginationList ="{!v.productList}"
+                            />
+        </div> 
+
+        <div class="slds-col .slds-border_left" style="width: 8rem" >
+            <lightning:card iconName="action:new_case" title="Case Information">
+                <div class="c-container" >
+                    <lightning:recordEditForm  aura:id="iCreateCase" objectApiName="Case" recordId="{!v.recordId}" recordTypeId="{!v.recordTypeId}"> 
+                        <lightning:layout>
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <lightning:inputField  aura:id="iSubject" fieldName="Subject" label="Subject" class="customRequired" value="{!v.newCase.Subject}" /> 
+                                <!--<label class="slds-form-element__label" for="ddIdNumber" style="font-size: 14px;font-weight: bold;">Comments</label>-->
+                                <lightning:inputField aura:id="iDescription" fieldName="Description" label="Description" value="{!v.newCase.Description}" class="customRequired"/>
+                                 <aura:if isTrue="{!v.recordType == 'AIP Case'}">
+									<label for="Origin" style="font-weight: bold;">Source<span class="required">*</span></label>
+									<lightning:inputField  aura:id="Origin" fieldName="Origin" label="Origin" value="{!v.newCase.Origin}" variant="label-hidden" />
+                                     <br/>
+									<label for="Category__c" style="font-weight: bold;">Category<span class="required">*</span></label>
+									<lightning:inputField  aura:id="Category__c" fieldName="Category__c" label="Type" value="{!v.newCase.Category__c}" variant="label-hidden" />
+                                    <br/>
+                                    <label for="DD_Sub_Category__c" style="font-weight: bold;">Sub Category<span class="required">*</span></label>
+									<lightning:inputField  aura:id="DD_Sub_Category__c" fieldName="DD_Sub_Category__c" label="Type" value="{!v.newCase.DD_Sub_Category__c}" variant="label-hidden" />
+                                    <aura:if isTrue="{!or(v.newCase.Category__c == 'Cancellation',v.newCase.Category__c == 'Claims')}">
+                                        <br/>
+                                        <label for="Client_Absa_Account_Number__c" style="font-weight: bold;">AVAF Number<span class="required">*</span></label>
+                                        <lightning:inputField  aura:id="Client_Absa_Account_Number__c" fieldName="Client_Absa_Account_Number__c" label="Client Absa Account Number" value="{!v.newCase.Client_Absa_Account_Number__c}" variant="label-hidden"/> 
+                                     </aura:if>
+                                <aura:set attribute = "else">
+									<lightning:inputField  aura:id="Origin" fieldName="Origin" label="Origin" value="{!v.newCase.Origin}" class="customRequired"/> 
+									<lightning:inputField  aura:id="Category__c" fieldName="Category__c" label="Source" value="{!v.newCase.Category__c}" class="customRequired" onchange="{!c.onCatChange}"/> 
+									<lightning:inputField  aura:id="DD_Sub_Category__c" fieldName="DD_Sub_Category__c" label="Source" value="{!v.newCase.DD_Sub_Category__c}" class="customRequired"/> 
+								</aura:set>
+								</aura:if>
+                                 <aura:if isTrue="{!v.showAIPCaseQueryFields}">
+                                     <br/>
+                                     
+                                     <aura:if isTrue ="{!and(and(and(v.newCase.Category__c != 'Claims', v.newCase.Category__c != 'Proof of insurance'),v.newCase.Category__c != 'Cancellation'),v.newCase.Category__c != 'Complaint')}">
+                                         <label class="slds-form-element__label" for="Related_Business_Area__c" style="font-size: 14px;font-weight: bold;">Area</label>
+                                         <lightning:inputField  aura:id="Related_Business_Area__c" fieldName="Related_Business_Area__c" label="Area" value="{!v.newCase.Related_Business_Area__c}" class="customRequired" variant="label-hidden"/>
+                                         <br/>
+                                     </aura:if>
+                                    <lightning:inputField  aura:id="Comments" fieldName="Comments__c" label="Area" style="font-size: 14px;font-weight: bold;" value="{!v.newCase.Comments__c}" /> 
+                                </aura:if>   
+                                
+                                <aura:if isTrue="{!v.showCaseFields}">
+                                    <label class="slds-form-element__label" for="ddclaimagentFirstName" style="font-size: 14px;font-weight: bold;">Claim Agent First Name</label>
+                                    <lightning:inputField  aura:id="Agent_Name__c" fieldName="Adviser_First_Name__c" label="Claim Agent Name" value="{!v.newCase.Adviser_First_Name__c}" variant="label-hidden"/> 
+                                    <label class="slds-form-element__label" for="ddclaimagentLastName" style="font-size: 14px;font-weight: bold;">Claim Agent Last Name</label>
+                                    <lightning:inputField  aura:id="Surname__c" fieldName="Adviser_Last_Name__c" label="Surname" value="{!v.newCase.Adviser_Last_Name__c}"  variant="label-hidden"/> 
+                                    <lightning:inputField  aura:id="Claim_Number__c" fieldName="Claim_Number__c" label="Claim Number" value="{!v.newCase.Claim_Number__c}" class="customRequired"/> 
+                                    <b><lightning:inputField  aura:id="Contact_Number__c" fieldName="Contact_Number__c" label="Contact Number" value="{!v.newCase.Contact_Number__c}"/></b>
+ 								</aura:if> 
+                               
+                                <aura:if isTrue="{!and(v.showCaseCancelFields,v.recordType != 'AIP Case')}">
+                                    <lightning:inputField  aura:id="STI_Alternative_Measures__c" fieldName="STI_Alternative_Measures__c" label="STI Alternative Measures" value="{!v.newCase.STI_Alternative_Measures__c}" class="customRequired"/> 
+                                    <!-- <label class="slds-form-element__label boldText" >I am confirming that i have tried to retain the client</label>
+                                    <lightning:inputField  aura:id="STI_Retain_Client__c" label="I am confirming that i have tried to retain the client" fieldName="STI_Retain_Client__c" value="{!v.newCase.STI_Retain_Client__c}" class="customRequired" variant="label-hidden" style="padding-left: 8px;!important"/> -->
+                                    <lightning:input class="boldText" type="checkbox" label="I am confirming that i have tried to retain the client" name="check1" onchange="{!c.checkConfirm}"/>
+                                    <!--  <lightning:inputField  aura:id="Outcome__c" fieldName="DD_Case_Outcome__c" label="Cancellation OutCome" value="{!v.newCase.DD_Case_Outcome__c}" class="customRequired"/>-->
+                                </aura:if>
+                                
+                                
+                                <aura:if isTrue="{!and(v.showCaseCancelFields,v.recordType == 'AIP Case')}">  
+                                        <lightning:inputField  aura:id="Status" fieldName="Status" label="Status" value="{!v.newCase.Status}" class="customRequired"/> 
+                                         <lightning:inputField  aura:id="Client_Absa_Account_Number__c" fieldName="Client_Absa_Account_Number__c" label="Client Absa Account Number" value="{!v.newCase.Client_Absa_Account_Number__c}" class="customRequired"/> 
+                                    	                   
+                                    	<lightning:inputField  aura:id="Reason" fieldName="Reason" label="Reason" value="{!v.newCase.Reason}" class="customRequired"/> 
+                                        <lightning:inputField  aura:id="Inception_Date_of_the_Policy__c" fieldName="Inception_Date_of_the_Policy__c" label="Inception Date of Policy" value="{!v.newCase.Inception_Date_of_the_Policy__c}" class="customRequired"/> 
+                                    </aura:if>    
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        
+                        <!-- <aura:if isTrue="{!v.recordType != 'AIP Case'}">-->
+                        <lightning:layout>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <lightning:inputField  aura:id="DD_Preferred_Communication_Method__c" fieldName="DD_Preferred_Communication_Method__c" value="{!v.newCase.DD_Preferred_Communication_Method__c}" label="Preferred Communication Method " class="customRequired"/>
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                                <!--<br/><lightning:inputField fieldName="Phone__c" aura:id="iPhone" value="{!v.newCase.Phone__c}"/>-->
+                                <lightning:inputField fieldName="Mobile__c" aura:id="iMobilePhone" value="{!v.newCase.Mobile__c}" class="boldText" />
+                                <lightning:inputField fieldName="Email__c" aura:id="iEmail" value="{!v.newCase.Email__c}" class="boldText"/> 
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                       <!--  </aura:if> -->
+                        <aura:if isTrue ="{!or(and(and(v.newCase.Category__c != 'Cancellation', v.newCase.Category__c != 'Proof of insurance'),v.recordType == 'AIP Case'),v.recordType == 'DD STI Case')}">
+                        <lightning:layout>
+                        <lightning:layoutItem class="left-align" padding="around-small" size="12">                             
+                             <lightning:layoutItem class="left-align slds-p-around_xx-small" size="12">
+                                    <lightning:button label="Get Policy Details" onclick="{!c.getPolicyDetails}" variant="brand" />
+                                </lightning:layoutItem>
+                        </lightning:layoutItem>
+                     </lightning:layout>
+                         <lightning:layout>
+                            <lightning:layoutItem padding="around-small" size="12">
+                              <!--  <lightning:inputField  aura:id="Comments__c" fieldName="Comments__c" label="Comments " class="customRequired"/>--> 
+                                <!--<lightning:inputField  aura:id="Status" fieldName="Status" label="Status" value="{!v.newCase.Status}" class="customRequired"/> -->
+                                <lightning:inputField  aura:id="Policy_Number__c" fieldName="Policy_Number__c" value="{!v.newCase.Policy_Number__c}" label="Policy Number" class="customRequired"/> 
+                                <!-- <aura:if isTrue="{!v.recordType != 'AIP Case'}"> -->
+                                <lightning:inputField  aura:id="Product_Provider__c" fieldName="Product_Provider__c" value="{!v.newCase.Product_Provider__c}" label="Product Provider" class="customRequired"/>                               
+                                <!--</aura:if>     -->
+                                 <aura:if isTrue="{!v.showAIPCaseQueryFields}">
+                                    <lightning:inputField  aura:id="Policy_Status__c" fieldName="Policy_Status__c" label="Policy Status" style="font-size: 14px;font-weight: bold;" value="{!v.newCase.Policy_Status__c}"/>	
+                                 </aura:if>                                   
+                            </lightning:layoutItem>
+                            </lightning:layout>
+                        </aura:if>  
+                        <!-- Custom Buttons -->
+                    <lightning:layout>
+                        <lightning:layoutItem class="right-align" padding="around-small" size="12">
+                             <lightning:button label="I will Resolve" onclick="{!c.saveAndNavigateToCase}" variant="brand" disabled="{!v.butonDisable}" />
+                             <lightning:button label="Cancel" onclick="{!c.openModel}" variant="brand" aura:id="ibtnCancel" disabled="{!v.butonDisable}"/>
+                        </lightning:layoutItem>
+                     </lightning:layout>
+                    </lightning:recordEditForm>
+                </div>
+            </lightning:card>
+        </div>
+    </div>
+
+    <aura:if isTrue="{!v.isOpen}">
+        <!--###### MODAL BOX Start######--> 
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div style="width:80px">
+                <div class="slds-modal__container">
+                    <!-- ###### MODAL BOX HEADER Start ######-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Cancel new Case</h2>
+                    </header>
+                    <!--###### MODAL BOX BODY Part Start######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p>
+                            Changes made will not be saved, are you sure you want to cancel?
+                        </p>
+                    </div>
+                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeModel }"/>
+                        <lightning:button variant="brand"
+                                          label="Confirm"
+                                          title="Confirm"
+                                          onclick="{! c.cancelAndCloseTab }"/>
+                    </footer>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+    </aura:if>
+    <aura:if isTrue="{!v.showPolicies}">
+        <!--###### MODAL BOX Start######-->
+        <ltng:require styles="{!$Resource.ModalWidthCSS}"/>
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open" >
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Select a policy</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-scrollable--y">
+                <lightning:datatable
+                        aura:id="policyDataTable"
+                        columns="{! v.policyColumnHeaders }"
+                        data="{! v.policyTable }"
+                        keyField="id"
+                        maxRowSelection="1"
+                        onrowselection="{! c.updateSelectedPolicy }"/>
+                </div>
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+
+                    <!--<c:pagination currentPageNumber="{!v.pageNumber}"
+                                  maxPageNumber="{!v.maxPage}"/> -->
+                    <lightning:button variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeModel }"/>
+                    <lightning:button variant="brand"
+                                      label="Confirm"
+                                      title="Confirm"
+                                      onclick="{! c.setPolicyDetails }"
+                                      disabled="{!v.isPolicySelected}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->
+    </aura:if>
+</aura:component>

@@ -1,0 +1,255 @@
+<!--This is the Mobile Top Up Component-->
+<!--@author: Kabelo Aphane-->
+<!--@Created Date: 2021-04-20-->
+<!--@Updated Date: 2021-04-22 Koketso Mpshane-->
+<!--@WorkID: W-008311-->
+<aura:component
+	controller="MobileTopUpController"
+	implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,lightning:availableForFlowScreens"
+	access="global"
+>
+	<!--Attribute Declaration-->
+	<aura:attribute name="serviceProvidersData" type="Map" />
+	<aura:attribute name="serviceProviderRechargeValues" type="List" default="[]" />
+	<aura:attribute name="serviceProviderID" type="String" />
+	<aura:attribute name="recipientName" type="String" />
+	<aura:attribute name="cellphoneNumber" type="String" />
+	<aura:attribute name="serviceProvider" type="String" />
+	<aura:attribute name="rechargeType" type="String" />
+	<aura:attribute name="rechargeAmountDetail" type="String" />
+	<aura:attribute name="serviceProviderOptions" type="List" default="[]" />
+	<aura:attribute name="rechargeTypeOptions" type="List" default="[]" />
+	<aura:attribute name="rechargeAmountOptions" type="List" default="[]" />
+	<aura:attribute name="caseNumber" type="String" />
+	<aura:attribute name="cifCode" type="String" />
+	<aura:attribute name="showConfirmSubmission" type="Boolean" default="false" />
+	<aura:attribute name="isOwnAmount" type="Boolean" default="false" />
+	<aura:attribute name="ownAmount" type="String" />
+	<aura:attribute name="purchaseAmount" type="String" />
+	<aura:attribute name="showSaveAsBeneficiary" type="Boolean" default="true" />
+	<aura:attribute name="saveAsBeneficiary" type="Boolean" default="false" />
+	<aura:attribute name="allowBeneficiarySave" type="Boolean" default="false" />
+	<aura:attribute name="benDescription" type="String" />
+	<aura:attribute name="showBeneficiariesTable" type="Boolean" default="false" />
+	<aura:attribute name="showBeneficiariesResults" type="Boolean" default="false" />
+	<aura:attribute name="beneficiaryList" type="List" />
+	<aura:attribute name="beneficiaryListColumns" type="List" />
+	<aura:attribute name="caseIdFromFlow" type="String" access="global" />
+	<aura:attribute name="selectedAccountTypeFromFlow" type="String" access="global" />
+	<aura:attribute name="selectedAccountNumberFromFlow" type="String" access="global" />
+	<aura:attribute name="errorMessage" type="String" default="" />
+	<aura:attribute name="showSpinner" type="Boolean" default="false" />
+
+	<!--Handler Declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<!--Error Message-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<ui:message title="Error" severity="error" closable="true"> {!v.errorMessage} </ui:message>
+	</aura:if>
+
+	<!--Get case record values-->
+	<lightning:recordEditForm aura:id="caseEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}" onload="{!c.handleCaseLoad}">
+		<lightning:inputField aura:id="caseNumberField" fieldName="CaseNumber" class="slds-hide" />
+		<lightning:inputField aura:id="cifField" fieldName="CIF__c" class="slds-hide" />
+	</lightning:recordEditForm>
+
+	<div class="slds-card__body slds-card__body_inner">
+		<article class="slds-card slds-card_boundary">
+			<!-- Lightning Spinner -->
+			<aura:if isTrue="{!v.showSpinner}">
+				<lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+			</aura:if>
+			<div class="slds-card__body slds-card__body_inner">
+				<b><ui:outputText value="Mobile Recharge" /></b>
+				<br />
+				<lightning:layout>
+					<lightning:layoutItem padding="around-small" size="10">
+						<lightning:input label="Recipient Name (Optional)" aura:id="fRecipient" value="{!v.recipientName}" />
+						<lightning:input label="Cellphone Number" aura:id="fCellphone" value="{!v.cellphoneNumber}" required="true" />
+						<lightning:select
+							label="Service Provider"
+							aura:id="fServiceProvider"
+							value="{!v.serviceProvider}"
+							required="true"
+							onchange="{!c.handleServiceProviderChange}"
+						>
+							<option text="Select network" value="" />
+							<aura:iteration items="{!v.serviceProviderOptions}" var="item">
+								<option text="{!item.label}" value="{!item.value}" />
+							</aura:iteration>
+						</lightning:select>
+						<lightning:select
+							label="Recharge Type"
+							aura:id="fRechargeType"
+							value="{!v.rechargeType}"
+							required="true"
+							onchange="{!c.handleRechargeTypeChange}"
+							disabled="true"
+						>
+							<option text="Select type" value="" />
+							<aura:iteration items="{!v.rechargeTypeOptions}" var="item">
+								<option text="{!item.label}" value="{!item.value}" />
+							</aura:iteration>
+						</lightning:select>
+						<lightning:select
+							label="Amount"
+							aura:id="fRechargeAmount"
+							value="{!v.rechargeAmountDetail}"
+							required="true"
+							onchange="{!c.handleRechargeAmountChange}"
+							disabled="true"
+						>
+							<option text="Select amount" value="" />
+							<aura:iteration items="{!v.rechargeAmountOptions}" var="item">
+								<option text="{!item.label}" value="{!item.value}" />
+							</aura:iteration>
+						</lightning:select>
+						<aura:if isTrue="{!v.isOwnAmount}">
+							<lightning:input label="Enter own amount" aura:id="fOwnAmount" value="{!v.ownAmount}" />
+						</aura:if>
+						<div class="slds-m-top_small">
+							<c:ChargeTransaction aura:id="chargeTransactionCmp" caseIdFromParentCmp="{!v.caseIdFromFlow}" />
+						</div>
+						<aura:if isTrue="{!v.showSaveAsBeneficiary}">
+							<div class="slds-form-element slds-m-top_large slds-float_none" aura:id="ivrCheckBox">
+								<div class="slds-form-element__label">Save as IVR beneficiary</div>
+								<label class="slds-checkbox_toggle slds-grid">
+									<ui:inputCheckbox aura:id="saveBeneficiary" value="{!v.saveAsBeneficiary}" change="{!c.toggleSaveAsBeneficiary}" />
+									<span id="checkbox-toggle-15" class="slds-checkbox_faux_container" aria-live="assertive">
+										<span class="slds-checkbox_faux"></span>
+									</span>
+								</label>
+							</div>
+						</aura:if>
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="1">
+						<br />
+						<a onclick="{!c.handleShowBeneficiaries}">
+							<lightning:icon iconName="utility:adduser" class="slds-icon slds-icon_small" size="small" alternativeText="Select Beneficiary" />
+							<span class="slds-assistive-text">Select Beneficiary</span>
+						</a>
+					</lightning:layoutItem>
+				</lightning:layout>
+				<!-- Add beneficiary details layout-->
+				<aura:if isTrue="{!v.saveAsBeneficiary}">
+					<lightning:layout>
+						<lightning:layoutItem padding="around-small" size="5">
+							<lightning:input label="Description" aura:id="fBenDescription" value="{!v.benDescription}" required="true" />
+							<lightning:input label="Service Provider" aura:id="fBenProvider" value="{!v.serviceProvider}" required="true" disabled="true" />
+						</lightning:layoutItem>
+						<lightning:layoutItem padding="around-small" size="5">
+							<lightning:input label="Cellphone Number" aura:id="fBenCellphone" value="{!v.cellphoneNumber}" required="true" disabled="true" />
+							<br />
+							<lightning:button
+								variant="brand-outline"
+								label="Save Beneficiary"
+								title="Save Beneficiary"
+								aura:id="btnSaveBeneficiary"
+								onclick="{!c.handleSaveBeneficiary}"
+							/>
+						</lightning:layoutItem>
+					</lightning:layout>
+				</aura:if>
+				<!-- Add beneficiary details layout-->
+				<lightning:layout>
+					<lightning:layoutItem padding="around-small" size="10">
+						<aura:if isTrue="{!v.showBeneficiariesResults}">
+							<aura:if isTrue="{!v.showBeneficiariesTable}">
+								<b><ui:outputText value="IVR Mobile Beneficiaries" /></b>
+								<br /><br />
+								<ui:outputText value="Choose a beneficiary" />
+								<div style="height: 300px">
+									<lightning:datatable
+										aura:id="beneficiaryDataTable"
+										data="{!v.beneficiaryList}"
+										columns="{!v.beneficiaryListColumns}"
+										keyField="ivrPaymentNo"
+										maxRowSelection="1"
+										onrowselection="{! c.handleBeneficiarySelection }"
+									/>
+									<br />
+									<lightning:button
+										label="Cancel Selection"
+										variant="brand-outline"
+										aura:id="btnCancelBenSelection"
+										onclick="{!c.deselectBeneficiaryRow}"
+									/>
+								</div>
+								<aura:set attribute="else">
+									<ui:message title="Data not found" severity="info" closable="true">No beneficiaries found for this client</ui:message>
+								</aura:set>
+							</aura:if>
+						</aura:if>
+					</lightning:layoutItem>
+				</lightning:layout>
+				<!-- Custom Buttons -->
+				<lightning:layout>
+					<lightning:layoutItem class="right-align" padding="around-small" size="12">
+						<footer class="slds-float_right">
+							<lightning:button variant="brand" label="Submit" title="Submit" aura:id="btnSubmit" onclick="{!c.handleSubmit}" />
+						</footer>
+					</lightning:layoutItem>
+				</lightning:layout>
+				<aura:if isTrue="{!v.showConfirmSubmission}">
+					<!--CONFIRMATION MODAL BOX Start-->
+					<section
+						role="dialog"
+						tabindex="-1"
+						aria-labelledby="modal-heading-01"
+						aria-modal="true"
+						aria-describedby="modal-content-id-1"
+						class="slds-modal slds-fade-in-open"
+					>
+						<div class="slds-modal__container">
+							<header class="slds-modal__header">
+								<lightning:buttonIcon
+									iconName="utility:close"
+									onclick="{! c.cancelSubmission }"
+									alternativeText="close"
+									variant="bare-inverse"
+									class="slds-modal__close"
+								/>
+								<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Mobile Top-Up</h2>
+							</header>
+							<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+								<!-- Lightning Spinner -->
+								<aura:if isTrue="{!v.showSpinner}">
+									<lightning:spinner class="spins" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+								</aura:if>
+								<p><b>Are you sure you want to continue with mobile top up?</b></p>
+								<br />
+								<label class="slds-form-element__control slds-size--1-of-2">
+									<span class="slds-form-element__helper"> <b>Cellphone Number: </b><ui:outputText value="{!v.cellphoneNumber}" /> </span>
+								</label>
+								<label class="slds-form-element__control slds-size--1-of-2">
+									<span class="slds-form-element__helper"> <b>Service Provider: </b><ui:outputText value="{!v.serviceProvider}" /> </span>
+								</label>
+								<label class="slds-form-element__control slds-size--1-of-2">
+									<span class="slds-form-element__helper"> <b>Recharge Type: </b><ui:outputText value="{!v.rechargeType}" /> </span>
+								</label>
+								<label class="slds-form-element__control slds-size--1-of-2">
+									<span class="slds-form-element__helper"
+										><b>Amount: </b>
+										<aura:if isTrue="{!not(empty(v.purchaseAmount))}">
+											<ui:outputText value="{!'R' + v.purchaseAmount}" />
+											<aura:set attribute="else">
+												<ui:outputText value="{!'R' + v.ownAmount}" />
+											</aura:set>
+										</aura:if>
+									</span>
+								</label>
+							</div>
+							<footer class="slds-modal__footer">
+								<lightning:button variant="neutral" label="Cancel" title="Cancel" aura:id="bCancelSubmit" onclick="{!c.cancelSubmission}" />
+								<lightning:button variant="brand" label="Confirm" title="Confirm" aura:id="bConfirmSubmit" onclick="{!c.confirmSubmission}" />
+							</footer>
+						</div>
+					</section>
+					<div class="slds-backdrop slds-backdrop_open"></div>
+					<!-- CONFIRMATION MODAL BOX END-->
+				</aura:if>
+			</div>
+		</article>
+	</div>
+</aura:component>

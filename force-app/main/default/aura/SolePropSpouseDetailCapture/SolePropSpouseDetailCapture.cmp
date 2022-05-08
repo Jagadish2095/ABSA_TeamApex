@@ -1,0 +1,122 @@
+<!--
+* W-003818 Lightning Component for Credit application to capture spouse details for sole prop
+* @author  Almas Aleem: Absa
+* @version v1.0
+* @since   2020-07-09
+*
+-->
+<aura:component access="global"
+                controller="SolePropSpouseDetailCaptureController"
+                implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId">
+
+    <!--Attribute Decleration -->
+    <aura:attribute name="recordId" type="Id" />  <!--Opportunity Id-->
+    <aura:attribute name="showLoading" type="Boolean" default ="false" />
+    <aura:attribute name="showRemainFields" type="Boolean" default ="false"/>
+    <aura:attribute name="isSpouseContributing" type="Boolean" />
+    <aura:attribute name="isUnderDebtCounselling" type="Boolean" />
+    <aura:attribute name="enableRemove" type="Boolean" default="false"/>
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="spouseAccount" type="Map" />
+
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+	<aura:registerEvent name="creditOriginationEvent" type="c:creditOriginationEvent"/>
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showLoading}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="large" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    <!-- Spinner end-->
+
+    <div class="c-container">
+        <lightning:layout multipleRows="true" >
+            <lightning:layoutItem size="6" class="productHeader">
+                <h3>Info about Spouse</h3>
+                <p>Please complete spouse details below </p>
+            </lightning:layoutItem>
+
+            <lightning:layoutItem size="6" class="slds-p-top_large ">
+            </lightning:layoutItem>
+
+            <lightning:layoutItem size="6" class="productHeader">
+                <lightning:radioGroup name="spouseradioButtonGroup"
+                                      label="Will your spouse or co-habitor (person living with you) contribute towards repayment of the facility?"
+                                      options="{!v.options}"
+                                      value="{!v.isSpouseContributing}"
+                                      onchange="{!c.onRadioChange}"
+                                      type="button"/>
+            </lightning:layoutItem>
+
+            <aura:if isTrue="{!v.showRemainFields}">
+                <lightning:layoutItem size="6" class="slds-p-top_large">
+                    <p>Under Debt Counselling</p>
+                    <lightning:radioGroup name="dbtCnsBtnGrp"
+                                      label=""
+                                      options="{!v.options}"
+                                      value="{!v.isUnderDebtCounselling}"
+                                      onchange="{!c.onRadioChange}"
+                                      variant="label-hidden"
+                                      aura:id="isUndrDbtCns"
+                                      type="button"/>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" class="slds-p-top_large">
+                    <div style=" width: 65% !important;">
+                        <p>Surname</p>
+                        <lightning:input type="text" value="{!v.spouseAccount.lastName}" variant="label-hidden" required="true" />
+                    </div>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" class="slds-p-top_large">
+                    <div style=" width: 65% !important;">
+                        <p>First Name</p>
+                        <lightning:input type="text" value="{!v.spouseAccount.firstName}" variant="label-hidden" required="true" />
+                    </div>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" class="slds-p-top_large">
+                    <div style=" width: 65% !important;">
+                        <p>Date of Birth</p>
+                        <lightning:input type="date" value="{!v.spouseAccount.dateOfBirth}" variant="label-hidden" required="true"/>
+                    </div>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" class="slds-p-top_large">
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" class="slds-p-top_large">
+                    <div style=" width: 65% !important;">
+                        <p>ID Type</p>
+                        <lightning:select name="idType" required="true" variant="label-hidden" value="{!v.spouseAccount.idType}">
+                            <option value="">choose one...</option>
+                            <option value="SA Identity Document" selected="{!v.spouseAccount.idType=='SA Identity Document'}">SA Identity Document</option>
+                            <option value="Passport" selected="{!v.spouseAccount.idType=='Passport'}">Passport</option>
+                        </lightning:select>
+                    </div>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" class="slds-p-top_large">
+                    <div style=" width: 65% !important;">
+                        <p>ID/Passport Number</p>
+                        <lightning:input type="text" value="{!v.spouseAccount.idPassNum}" variant="label-hidden" required="true"/>
+                    </div>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" class="slds-p-top_large">
+                    <lightning:button variant="brand" label="Save and Validate" onclick="{!c.submitSpouseAccount}"/>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" class="slds-p-top_large">
+                </lightning:layoutItem>
+
+                <aura:if isTrue="{!v.enableRemove}">
+                    <lightning:layoutItem size="6" class="slds-p-top_large">
+                        <lightning:button label="Remove Spouse" variant="destructive" onclick="{!c.delinkSpouseAcc}"/>
+                    </lightning:layoutItem>
+                </aura:if>
+            </aura:if>
+        </lightning:layout>
+    </div>
+</aura:component>

@@ -1,0 +1,301 @@
+<!--
+* Lightning Component for  Application Financial Display Account
+*
+* @author  Englarmerdge Mongwe: Absa
+* @version v1.0
+* @since   2020-09-15
+* @UserStory W-003766
+-->
+<aura:component access="global" controller="ApplicationFinancialInformation"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:attribute name="recordId" type="Id" />
+
+    <aura:attribute name="finStatInfo" type="Map[]" />
+    <aura:attribute name="finStatBalSheetInfo" type="Map[]" />
+    <aura:attribute name="finStatIncomeStatInfo" type="Map[]" />
+    <aura:attribute name="finStatFinNeedsInfo" type="Map[]" />
+    <aura:attribute name="finStatProfRatiosInfo" type="Map[]" />
+    <aura:attribute name="finStatOperRatiosInfo" type="Map[]" />
+    <aura:attribute name="finStatDebtCapKeyRatioInfo" type="Map[]" />
+    <aura:attribute name="isComparerativeYearsVisible" type="Boolean" default="false" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem size="12" padding="around-small">
+            <table class="slds-table slds-table_cell-buffer slds-var-m-top_small">
+                <thead>
+                    <tr class="headerTableRow">
+                        <th scope="col" colspan="5" class="headerColumnL">
+                            <div class="slds-truncate" title="BalanceSheet">Statement Info</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="slds-var-m-top_small slds-line-height_reset">
+                        <td class="tdWidth headerColumnR">
+                            <div class="slds-truncate" title="empty"></div>
+                        </td>
+                        <td class="td2Width headerColumnR">
+                            <div class="slds-truncate" title="Forecast"><b>Forecast</b></div>
+                        </td>
+                        <td class="td2Width headerColumnR">
+                            <div class="slds-truncate" title="Year1"><b>Year 3</b></div>
+                        </td>
+                        <td class="td2Width headerColumnR">
+                            <div class="slds-truncate" title="Year2"><b>Year 2</b></div>
+                        </td>
+                        <td class="td2Width headerColumnR">
+                            <div class="slds-truncate" title="Year3"><b>Year 1</b></div>
+                        </td>
+                    </tr>
+                    <aura:iteration items="{!v.finStatInfo}" var="fin">
+                        <tr>
+                            <td class="tdWidth">
+                                <div class="slds-truncate" title="SectionItem">{!fin.SectionItem}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Forecast">{!fin.Forecast}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year1">{!fin.Year3}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year2">{!fin.Year2}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year3">{!fin.Year1}</div>
+                            </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+            <table class="slds-table slds-table_cell-buffer slds-var-m-top_small">
+                <thead>
+                    <tr class="slds-var-m-top_small slds-line-height_reset">
+                        <th scope="col" colspan="5" class="headerColumnL">
+                            <div class="slds-truncate" title="BalanceSheet">Balance Sheet</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.finStatBalSheetInfo}" var="fin">
+                        <tr>
+                            <aura:if isTrue="{!fin.IsTotal}">
+                                <td class="tdWidth total">
+                                    <div class="slds-truncate" title="SectionItem"><b>{!fin.SectionItem}</b></div>
+                                </td>
+                                <td class="td2Width inputColumnR">
+                                    <div class="slds-truncate" title="Forecast"><b>{!fin.Forecast}</b></div>
+                                </td>
+                                <td class="td2Width inputColumnR">
+                                    <div class="slds-truncate" title="Year1"><b>{!fin.Year3}</b></div>
+                                </td>
+                                <td class="td2Width inputColumnR">
+                                    <div class="slds-truncate" title="Year2"><b>{!fin.Year2}</b></div>
+                                </td>
+                                <td class="td2Width inputColumnR">
+                                    <div class="slds-truncate" title="Year3"><b>{!fin.Year1}</b></div>
+                                </td>
+                                <aura:set attribute="else">
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate slds-cell-wrap" title="SectionItem">{!fin.SectionItem}</div>
+                                    </td>
+                                    <td class="td2Width inputColumnR">
+                                        <div class="slds-truncate" title="Forecast">{!fin.Forecast}</div>
+                                    </td>
+                                    <td class="td2Width inputColumnR">
+                                        <div class="slds-truncate" title="Year1">{!fin.Year3}</div>
+                                    </td>
+                                    <td class="td2Width inputColumnR">
+                                        <div class="slds-truncate" title="Year2">{!fin.Year2}</div>
+                                    </td>
+                                    <td class="td2Width inputColumnR">
+                                        <div class="slds-truncate" title="Year3">{!fin.Year1}</div>
+                                    </td>
+                                </aura:set>
+                            </aura:if>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+            <table class="slds-table slds-table_cell-buffer slds-var-m-top_small">
+                <thead>
+                    <tr class="slds-var-m-top_small slds-line-height_reset">
+                        <th scope="col" colspan="5" class="headerColumnL">
+                            <div class="slds-truncate" title="BalanceSheet">Income Statement</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.finStatIncomeStatInfo}" var="fin">
+                        <tr>
+                            <aura:if isTrue="{!fin.IsTotal}">
+                                <td class="tdWidth total">
+                                    <div class="slds-truncate" title="SectionItem"><b>{!fin.SectionItem}</b></div>
+                                </td>
+                                <td class="td2Width inputColumnR">
+                                    <div class="slds-truncate" title="Forecast"><b>{!fin.Forecast}</b></div>
+                                </td>
+                                <td class="td2Width inputColumnR">
+                                    <div class="slds-truncate" title="Year1"><b>{!fin.Year3}</b></div>
+                                </td>
+                                <td class="td2Width inputColumnR">
+                                    <div class="slds-truncate" title="Year2"><b>{!fin.Year2}</b></div>
+                                </td>
+                                <td class="td2Width inputColumnR">
+                                    <div class="slds-truncate" title="Year3"><b>{!fin.Year1}</b></div>
+                                </td>
+                                <aura:set attribute="else">
+                                    <td class="tdWidth">
+                                        <div class="slds-truncate" title="SectionItem">{!fin.SectionItem}</div>
+                                    </td>
+                                    <td class="td2Width inputColumnR">
+                                        <div class="slds-truncate" title="Forecast">{!fin.Forecast}</div>
+                                    </td>
+                                    <td class="td2Width inputColumnR">
+                                        <div class="slds-truncate" title="Year1">{!fin.Year3}</div>
+                                    </td>
+                                    <td class="td2Width inputColumnR">
+                                        <div class="slds-truncate" title="Year2">{!fin.Year2}</div>
+                                    </td>
+                                    <td class="td2Width inputColumnR">
+                                        <div class="slds-truncate" title="Year3">{!fin.Year1}</div>
+                                    </td>
+                                </aura:set>
+                            </aura:if>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+            <table class="slds-table slds-table_cell-buffer slds-var-m-top_small">
+                <thead>
+                    <tr class="slds-var-m-top_small slds-line-height_reset">
+                        <th scope="col" colspan="5" class="headerColumnL">
+                            <div class="slds-truncate" title="FinancingNeeds">Financing Needs(Cashflow Based)</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.finStatFinNeedsInfo}" var="fin">
+                        <tr>
+                            <td class="tdWidth">
+                                <div class="slds-truncate" title="SectionItem">{!fin.SectionItem}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Forecast">{!fin.Forecast}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year1">{!fin.Year3}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year2">{!fin.Year2}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year3">{!fin.Year1}</div>
+                            </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+            <table class="slds-table slds-table_cell-buffer slds-var-m-top_small">
+                <thead>
+                    <tr class="slds-var-m-top_small slds-line-height_reset">
+                        <th scope="col" colspan="5" class="headerColumnL">
+                            <div class="slds-truncate" title="ProfitabilityRatios">Profitability Ratios</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.finStatProfRatiosInfo}" var="fin">
+                        <tr>
+                            <td class="tdWidth">
+                                <div class="slds-truncate" title="SectionItem">{!fin.SectionItem}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Forecast">{!fin.Forecast}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year1">{!fin.Year3}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year2">{!fin.Year2}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year3">{!fin.Year1}</div>
+                            </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+            <table class="slds-table slds-table_cell-buffer slds-var-m-top_small">
+                <thead>
+                    <tr class="slds-var-m-top_small slds-line-height_reset">
+                        <th scope="col" colspan="5" class="headerColumnL">
+                            <div class="slds-truncate" title="OperatingRatios">Operating Ratios</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.finStatOperRatiosInfo}" var="fin">
+                        <tr>
+                            <td class="tdWidth">
+                                <div class="slds-truncate" title="SectionItem">{!fin.SectionItem}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Forecast">{!fin.Forecast}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year1">{!fin.Year3}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year2">{!fin.Year2}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year3">{!fin.Year1}</div>
+                            </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+            <table class="slds-table slds-table_cell-buffer slds-var-m-top_small">
+                <thead>
+                    <tr class="slds-var-m-top_small slds-line-height_reset">
+                        <th scope="col" colspan="5" class="headerColumnL">
+                            <div class="slds-truncate" title="DebtCapacity">Debt Capacity Key Ratios Required</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.finStatDebtCapKeyRatioInfo}" var="fin">
+                        <tr>
+                            <td class="tdWidth">
+                                <div class="slds-truncate" title="SectionItem">{!fin.SectionItem}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Forecast">{!fin.Forecast}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year1">{!fin.Year3}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year2">{!fin.Year2}</div>
+                            </td>
+                            <td class="td2Width inputColumnR">
+                                <div class="slds-truncate" title="Year3">{!fin.Year1}</div>
+                            </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

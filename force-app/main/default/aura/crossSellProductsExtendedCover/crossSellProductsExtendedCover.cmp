@@ -1,0 +1,234 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" controller="CrossSellProductsController" access="global">
+    <!--quoteeditattrib-->
+    <aura:attribute name="showQuoteEdit" type="boolean" default="false"/>
+    <aura:attribute name="updateQuoteScreenClose" type="boolean" default="false"/>
+    
+    <aura:attribute name="opportunityDetails" type="Opportunity" default="{sobjectType:'Opportunity'}"/>
+    <aura:attribute name="opportunityDetailsDummy" type="Opportunity" default="{sobjectType:'Opportunity'}"/>
+    <aura:attribute name="OppPrtyDetails" type="Opportunity_Party__c" default="{'sobjectType':'Opportunity_Party__c'}"/>
+    <aura:attribute name="OppPrtyDetailsExisting" type="object[]" />
+    <aura:attribute name="showGuarantorFields" type="boolean" default="false"  />
+    <aura:attribute name="showEditButton" type="boolean" default="false"  />
+    <aura:attribute name="readOnlyFields" type="boolean" default="false"  />
+    <aura:attribute name="isQuoteDone" type="boolean" default="false"  />
+    <aura:attribute name="showPhotoFields" type="boolean" default="false"  />
+    <aura:attribute name="showInvalidScreen" type="boolean" default="false" />
+    <aura:attribute name="quoteStatus" type="String" />
+    <aura:attribute name="WithoutAdditionalCoverPremium" type="Double" default=""  />
+    <aura:attribute name="WithAdditionalCoverPremium" type="Double" default=""  />
+    <aura:attribute name="StaffWithoutAdditionalCoverPremium" type="Double" default=""  />
+    <aura:attribute name="StaffWithAdditionalCoverPremium" type="Double" default=""  />
+    <aura:attribute name="WithoutAdditionalCoverCommission" type="Double" default=""  />
+    <aura:attribute name="WithAdditionalCoverCommission" type="Double" default=""  />
+    <aura:attribute name="PhotoFinishPremiumLbl" type="String" default="Premium : R0.00"/>
+    <aura:attribute name="StaffPhotoFinishPremiumLbl" type="String" default="Commission : R0.00"/>
+    <aura:attribute name="PhotoFinishPremium" type="Double" default="0.00"/>
+    <aura:attribute name="StaffPhotoFinishPremium" type="Double" default="0.00"/>
+    <aura:attribute name="opportunityPartyId" type="String" /> 
+    
+    <aura:attribute name="activeSections" type="List" default="['A','B']" />
+    
+    <!--# Flow Attribute -->
+    <aura:attribute name="selectedProductFromFlow" type="String" />
+    <aura:attribute name="QuoteFromFlow" type="String"  />
+    <aura:attribute name="OpportunityFromFlow" type="String" default="0061x00000JEjS2AAL" />
+    
+    <aura:registerEvent name="navigateFlowEvent" type="c:navigateFlowEvt"/>
+    <aura:attribute name="availableActions" type="String[]" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="large"/>
+        </div>
+    </aura:if>
+    
+    <h3 class="slds-section__title">
+        <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Client Information</span>
+    </h3>
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="around-small" size="6">
+            <label class="magnifyLabel" for="iIdNumber"><b>Client Name : </b></label>
+            <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Person_Account_Last_Name__c}"/>
+            
+            <!-- <lightning:outputField fieldName="Person_Account_Last_Name__c" variant="label-hidden" />-->
+        </lightning:layoutItem>
+        
+        <lightning:layoutItem padding="around-small" size="6">
+            <label class="magnifyLabel" for="text-input-id-1" id="inline-text-label"><b>Account Number : </b></label>
+            <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.AVAF_Account_Number__c}"/>
+            <!-- <lightning:outputField fieldName="DD_Vehicle_Description__c" />-->
+        </lightning:layoutItem>
+        
+        <lightning:layoutItem padding="around-small" size="6">
+            <label class="magnifyLabel" for="text-input-id-1" id="inline-text-label"><b>Vehicle  Description : </b></label>
+            <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Vehicle_Description__c}"/>
+            <!-- <lightning:outputField fieldName="DD_Vehicle_Description__c" />-->
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="6">
+            <label class="magnifyLabel" for="iIdNumber"><b>Contract Start Date :</b></label>
+            <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Contract_Start_Date__c}"/>
+            
+            <!--<lightning:outputField fieldName="DD_Contract_Start_Date__c" />-->
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="6">
+            <label class="magnifyLabel" for="iIdNumber"><b>Outstanding Term : </b></label>
+            <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Outstanding_Term__c}"/>
+            
+            <!--<lightning:outputField fieldName="DD_Interest_Rate__c" />
+            --> </lightning:layoutItem>
+        
+        <lightning:layoutItem padding="around-small" size="6">
+            <label class="magnifyLabel" for="iIdNumber"><b>Interest Rate : </b></label>
+            <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Interest_Rate__c}"/>
+            
+            <!--<lightning:outputField fieldName="DD_Interest_Rate__c" />
+            --> </lightning:layoutItem>
+        
+        <lightning:layoutItem padding="around-small" size="6">
+            <label class="magnifyLabel" for="iIdNumber"><b>Balance : </b></label>
+            <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Outstanding_Capital__c}"/>
+            
+            <!--   <lightning:outputField fieldName="DD_Monthly_Instalment__c" />
+        --> </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="6">
+            <label class="magnifyLabel" for="iIdNumber"><b>Staff Member: </b></label>
+            <ui:outputCheckbox  aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Absa_Staff_Member__c}"/>            
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+    <!--<lightning:recordEditForm recordId="{!v.OpportunityFromFlow}" objectApiName="Opportunity"  >-->
+    <h3 class="slds-section__title">
+        <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Sale Information</span>
+    </h3>
+    
+    <lightning:layout multipleRows="true">
+        <table>
+            <div class="slds-grid">
+                <div class="slds-col slds-size_4-of-12"></div>
+                <div class="slds-col slds-size_4-of-12">
+                    <label class="magnifyLabel" for="text-input-id-1" id="inline-text-label"><b>Without Additional Cover </b></label>
+                </div>
+                <div class="slds-col slds-size_4-of-12">
+                    <label class="magnifyLabel" for="text-input-id-1" id="inline-text-label"><b>With Additional Cover </b></label>
+                </div>
+            </div>
+            <div class="slds-grid">
+                <div class="slds-col slds-size_4-of-12">
+                    <label class="magnifyLabel" for="text-input-id-1" id="inline-text-label"><b>Extended Cover Premium </b></label>
+                </div>
+                <aura:if isTrue="{!v.opportunityDetails.Absa_Staff_Member__c}">
+                    <div class="slds-col slds-size_4-of-12">
+                        <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.StaffWithoutAdditionalCoverPremium}"/>
+                    </div>
+                    <div class="slds-col slds-size_4-of-12">
+                        <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.StaffWithAdditionalCoverPremium}"/>  
+                    </div>
+                    <aura:set attribute="else">
+                        <div class="slds-col slds-size_4-of-12">
+                            <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.WithoutAdditionalCoverPremium}"/>
+                        </div>
+                        <div class="slds-col slds-size_4-of-12">
+                            <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.WithAdditionalCoverPremium}"/>  
+                        </div>
+                    </aura:set>
+                </aura:if>
+            </div><br/>
+            <div class="slds-grid">
+                <div class="slds-col slds-size_4-of-12">
+                    <label class="magnifyLabel" for="text-input-id-1" id="inline-text-label"><b>Commission </b></label>
+                </div>
+                <div class="slds-col slds-size_4-of-12">
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.WithoutAdditionalCoverCommission}"/>
+                </div>
+                <div class="slds-col slds-size_4-of-12">
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.WithAdditionalCoverCommission}"/>  
+                </div>
+            </div>
+        </table>
+        <aura:if isTrue="{!v.opportunityDetails.Absa_Staff_Member__c}">
+            <lightning:layoutItem padding="around-small" size="12">
+                <lightning:select aura:id="DD_Additional_Cover_Selected__c" class="photolabel"  name="DD_Additional_Cover_Selected__c"  label="May i also interest you in cover that we have, which covers chips,dents and scratches for an additional R27.74" value="{!v.opportunityDetails.DD_Additional_Cover_Selected__c}" disabled="{!v.readOnlyFields}" required="true"  >
+                    <option value="">--Choose an Item--</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </lightning:select>
+            </lightning:layoutItem>
+            <aura:set attribute="else">
+                <lightning:layoutItem padding="around-small" size="12">
+                    <lightning:select aura:id="DD_Additional_Cover_Selected__c" class="photolabel"  name="DD_Additional_Cover_Selected__c"  label="May i also interest you in cover that we have, which covers chips,dents and scratches for an additional R30.26" value="{!v.opportunityDetails.DD_Additional_Cover_Selected__c}" disabled="{!v.readOnlyFields}" required="true"  >
+                        <option value="">--Choose an Item--</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </lightning:select>
+                </lightning:layoutItem>
+            </aura:set>
+        </aura:if>
+    </lightning:layout><br/>
+    <!--h3 class="slds-section__title">
+        <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Photo Finish Premium section</span>
+    </h3>
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="around-small" size="5">
+            <lightning:select aura:id="grantDetailsForm" class="photolabel"  name="photofinsih"  label="Did the client opt for the additional photo Finish" value="{!v.opportunityDetails.DD_PhotoFinishSelected__c}" disabled="{!v.readOnlyFields}" required="true" onchange="{!c.showPhotoFields}" >
+                <option value="">Choose an Item</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </lightning:select>
+        </lightning:layoutItem> 
+    </lightning:layout-->
+    <aura:if isTrue="{!v.showPhotoFields}">
+        <lightning:layout multipleRows="true">
+            <aura:if isTrue="{!v.opportunityDetails.Absa_Staff_Member__c}">
+                <lightning:layoutItem padding="around-small" size="4">
+                    <label class="magnifyLabel" for="iIdNumber"><b>Photo Finish Premium For Staff </b></label>
+                    <ui:outputText  aura:id="text-input-id-1" class="field" value="{!v.StaffPhotoFinishPremium}"/>
+                </lightning:layoutItem>
+                <aura:set attribute="else">
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <label class="magnifyLabel" for="iIdNumber"><b>Photo Finish Premium </b></label>
+                        <ui:outputText  aura:id="text-input-id-1" class="field" value="{!v.PhotoFinishPremium}"/>
+                    </lightning:layoutItem>
+                </aura:set>
+            </aura:if>
+        </lightning:layout>
+    </aura:if>
+    <br/>
+    <br/>
+    <lightning:recordEditForm aura:id="iCreateOpportunity" objectApiName="Opportunity" recordId="{!v.OpportunityFromFlow}">
+            <lightning:layout>
+               <lightning:layoutItem padding="around-small" size="12">
+                     <lightning:inputField class="magnifyLabel" fieldName="Quote_Outcome__c" aura:id="Quote_Outcome__c" value="{!v.opportunityDetails.Quote_Outcome__c}" disabled="{!v.readOnlyFields}" required="true"/>
+                   <aura:if isTrue="{!v.isQuoteDone}">
+                       <lightning:input  class="magnifyLabel"  label="Quote Outcome Reason" aura:id="Last_Name__c" value="{!v.opportunityDetails.Quote_Outcome_Reason__c}" disabled="{!v.readOnlyFields}" /> 
+                   <aura:set attribute="else">
+                     <lightning:inputField class="magnifyLabel" fieldName="Quote_Outcome_Reason__c" aura:id="Quote_Outcome_Reason__c" value="{!v.opportunityDetails.Quote_Outcome_Reason__c}" disabled="{!v.readOnlyFields}" />
+                   </aura:set>
+                   </aura:if>
+               </lightning:layoutItem>
+        </lightning:layout>
+    </lightning:recordEditForm>
+    <div class="slds-float_right" style ="display: inline-block;">
+        <div >
+            <aura:if isTrue="{!v.showEditButton}">
+                <lightning:button  variant="brand" label="Edit Quote" aura:id="edit" onclick="{!c.handleEdit}"/>
+                <aura:set attribute="else">
+                    <lightning:button  variant="brand" label="Cancel" aura:id="edit" onclick="{!c.handleCancel}"/>
+                </aura:set>
+            </aura:if>
+            <!--<lightning:button  variant="brand" label="Previous" aura:id="BACK" onclick="{!c.handleChangePrev}"/>-->
+            <aura:if isTrue="{!v.isQuoteDone}">
+                <aura:if isTrue="{!v.showQuoteEdit ==false}">
+                    <lightning:button variant="brand" label="Next" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+                </aura:if>                
+                <aura:set attribute="else">
+                <lightning:button variant="brand" label="Quote" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+                </aura:set>
+            </aura:if>
+        </div>
+    </div>
+    <br/>
+    <br/>
+</aura:component>

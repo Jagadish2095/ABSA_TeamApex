@@ -1,0 +1,80 @@
+<!--
+  @description ABSA Life Products Component
+  @author  Brian Maswanganyi(ABSA)
+  @since 2021-08-10
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome" 
+                access="global" controller="BranchAbsaLifeFulfillmentController">
+    
+    <aura:handler name="absaLifeProductSelectionEvent" event="c:AbsaLifeProductSelectionEvent" action="{!c.handleProductSelectionEvent}"/> 
+    
+    <aura:attribute name="opportunityId" type="string"/>
+    <aura:attribute name="isIntergratedFlow" type="Boolean"/>
+    <aura:attribute name="showConfirmDialog" type="Boolean" default="False"/>
+    <aura:attribute name="validationErrors" type="Map"/>
+    
+	<aura:attribute name="absaListProducts" type="List"/>
+    
+    <aura:attribute name="opportunityLineItemId" type="string"/>
+    <aura:attribute name="productToCapture" type="String"/>
+    <aura:attribute name="flowAction" type="String"/>
+    <aura:attribute name="CanNavigate" type="Boolean" default="False"/>
+    
+    <aura:registerEvent name="absaLifeProductSelectionEvent" type="c:AbsaLifeProductSelectionEvent"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    <lightning:card title="">
+        <lightning:accordion aura:id="accordionAbsaLife"
+                             allowMultipleSectionsOpen="true">
+             
+            <aura:iteration items="{! v.absaListProducts }" var="product">
+                <c:BranchAbsaLifeProducts productName='{!product.productName}'
+                                          isProductSelected='{!product.isSelected}'
+                                          isProductFulfilled="{!product.isFuifilled}"
+                                          productDescription='{!product.description}'
+                                          productDisclosures='{!product.disclosures}'/>
+      
+            </aura:iteration>
+        </lightning:accordion>        
+    </lightning:card>  
+    <aura:if isTrue="{!v.showConfirmDialog}">
+            <!--Modal Box Start-->
+        <div role="dialog" class="slds-modal slds-fade-in-open ">
+            <div class="slds-modal__container">
+                <!--Modal Box Header Start-->
+                <header class="slds-modal__header">
+                    <h1 class="slds-text-heading--medium">Confirmation</h1>
+                </header>
+                <!--Modal Box Header End-->
+                    
+                <!--Modal Box Content Start-->
+                <div class="slds-modal__content slds-p-around--medium">
+
+                    <aura:iteration items="{! v.validationErrors.errors }" var="error">
+                        <p>{!error}</p>
+                    </aura:iteration>
+                    <center><b>{!v.validationErrors.message}</b></center>
+                </div>
+                <!--Modal Box Content End-->
+                    
+                <!--Modal Box Button Start-->
+                <footer class="slds-modal__footer">
+                    <lightning:button name='No' label='No' onclick='{!c.handleConfirmDialogNo}'/>
+                    <lightning:button variant="brand" name='Yes' label='Yes' onclick='{!c.handleConfirmDialogYes}'/>
+                </footer>
+                <!--Modal Box Button End-->
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+        </aura:if>
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="horizontal-small" size="12">
+            <div>
+                <aura:if isTrue="{!(v.CanNavigate)}">
+                <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                    availableActions="{! v.availableActions }" 
+                                    navigateFlowEvent="{! c.handleNavigate }" />
+                </aura:if>
+            </div>
+        </lightning:layoutItem> 
+    </lightning:layout>
+</aura:component>

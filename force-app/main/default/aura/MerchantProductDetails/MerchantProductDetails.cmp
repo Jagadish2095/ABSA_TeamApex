@@ -1,0 +1,167 @@
+<!--
+* Lightning Component for Onboarding Merchant Product Details (MerchantProductDetails)
+*
+* @author  Jason Quevauvilliers
+* @version v1.0
+* @since   2020-04-02
+*
+-->
+<aura:component access="global"
+                controller="MerchantProductDetailsController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}"/>
+
+    <!-- Parent Cmp Attribute Declaration -->
+    <aura:attribute name="cmpFormStatus" type="String" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="applicationProductMerchant" type="Application_Product_Merchant__c" default="{sobjectType:'Application_Product_Merchant__c'}"/>
+    <aura:attribute name="activeSections" type="List" default="['ProductInfo']" />
+    <aura:attribute name="options_CSP__c" type="List" />
+    <aura:attribute name="options_Group_ID__c" type="List" />
+    <aura:attribute name="options_Configuration__c" type="List" />
+    <aura:attribute name="options_Communication_Required__c" type="List" />
+    <aura:attribute name="applicationProdMerchId" type="String" default=""/>
+    <aura:attribute name="applicationProdMerchCsp" type="String" default=""/>
+    <aura:attribute name="appProdMerchRecord" type="Object" />
+    <aura:attribute name="recordSaveError" type="String" />
+    <aura:attribute name="productDeviceTypeName" type="String" />
+    <aura:attribute name="communicationRequiredIsDisabled" type="Boolean" default="true" />
+    <aura:attribute name="isLoaded" type="Boolean" default="false" />
+    <aura:attribute name="productClassificationPopulated" type="Boolean" default="false" />
+    <aura:attribute name="isFormPopulated" type="Boolean" default="false" />
+    <aura:attribute name="isShowSuccessToast" type="Boolean" />
+    <aura:attribute name="selectOptionFields" type="List" default="['CSP__c', 'Group_ID__c', 'Configuration__c', 'Communication_Required__c']" />
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['appProdMerchGroupId', 'appProdMerchConfiguration', 'appProdMerchCommunicationRequired', 'appProdMerchTerminalBatchTime', 'appProdMerchTerminalUpdateTime']" />
+    <aura:attribute name="errorMessage" type="String" default="" />
+    <aura:attribute name="cspDisabled" type="Boolean" default="true" /> <!-- Story W-004983 - Tinashe Shoko-->
+
+    <!-- Method Declaration -->
+    <aura:method name="saveFormMethod" action="{!c.executeSaveFormMethod}" />
+
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="ProductInfo" label="Product Details" >
+
+        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+            <div class="recordError">
+                <br/>
+                <h2 class="slds-section__title slds-text-align_left" style="color:red">{!v.errorMessage}</h2>
+                <br/>
+            </div>
+        </aura:if>
+
+        <aura:if isTrue="{!v.isFormPopulated}">
+            <force:recordData aura:id="recordEditor"
+                                        fields="CSP__c, Group_ID__c, Configuration__c, Communication_Required__c, Header_Text_Row_1__c, Header_Text_Row_2__c, Header_Text_Row_3__c, Terminal_Batch_Time__c, Terminal_Update_Time__c, PYC__c, PYC_Rebate__c"
+                                        recordId="{!v.applicationProdMerchId}"
+                                        targetError="{!v.recordSaveError}"
+                                        targetFields ="{!v.appProdMerchRecord}"
+                              			targetRecord ="{!v.applicationProductMerchant}"
+                                        mode="EDIT"/>
+        </aura:if>
+
+            <br/>
+            <lightning:layout multipleRows="true">
+
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="productDeviceType" name="deviceType" label="Device Type" value="{!v.productDeviceTypeName}" style="width:100%" readonly="true"/>
+                </lightning:layoutItem>
+
+                <!-- Gray out for Simplex Products-->
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:select aura:id="appProdMerchCSP" name="appProdMerchCSP" label="Communication Service Provider(CSP)/Payment Gateway" value="{!v.appProdMerchRecord.CSP__c}" disabled="{!v.cspDisabled}"><!-- disabled="{!v.isFormReadOnly}"-->
+                        <aura:iteration items="{!v.options_CSP__c}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!equals(item.value,v.applicationProductMerchant.fields.CSP__c.displayValue)}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:select aura:id="appProdMerchGroupId" name="groupId" label="Group ID" value="{!v.appProdMerchRecord.Group_ID__c}" required="true" disabled="{!v.isFormReadOnly}">
+                        <aura:iteration items="{!v.options_Group_ID__c}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.appProdMerchRecord.Group_ID__c}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+
+                <!-- Only mandatory for desktop devices, e.g. Desktop X4 -->
+                <lightning:layoutItem padding="around-small" size="6" aura:id="appProdMerchCommunicationRequiredDiv"><!-- appProdMerchCommunicationRequired -->
+                    <lightning:select aura:id="appProdMerchCommunicationRequired" name="appProdMerchCommunicationRequired" label="Communication Required" value="{!v.appProdMerchRecord.Communication_Required__c}" required="{!not(v.communicationRequiredIsDisabled)}" disabled="{!or(v.communicationRequiredIsDisabled, v.isFormReadOnly)}">
+                        <aura:iteration items="{!v.options_Communication_Required__c}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.appProdMerchRecord.Communication_Required__c}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:select aura:id="appProdMerchConfiguration" name="configuration" label="Configuration" value="{!v.appProdMerchRecord.Configuration__c}" required="true" disabled="{!v.isFormReadOnly}">
+                        <aura:iteration items="{!v.options_Configuration__c}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.value==v.appProdMerchRecord.Configuration__c}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="6" aura:id="appProdMerchTerminalBatchTimeDiv">
+                    <div class="slds-grid slds-grid_align-spread">
+                        <lightning:input aura:id="appProdMerchTerminalBatchTime" name="terminalBatchTime" type="time" label="Terminal Settlement Time" value="{!v.appProdMerchRecord.Terminal_Batch_Time__c}" style="width:100%" required="true" disabled="{!v.isFormReadOnly}"/>
+                        <lightning:helptext content="The time the terminal will settle the batch of transactions"/>
+                    </div>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-grid slds-grid_align-spread">
+                        <lightning:input aura:id="appProdMerchHdrTxtRow1" name="hdrTxtRow1" label="Header Text Row 1 (19 characters)" value="{!v.appProdMerchRecord.Header_Text_Row_1__c}" style="width:100%" disabled="{!v.isFormReadOnly}"/>
+                        <lightning:helptext content="Example of Header Row 1:&quot;Welcome to&quot;"/>
+                    </div>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="6" aura:id="appProdMerchTerminalUpdateTimeDiv">
+                    <div class="slds-grid slds-grid_align-spread">
+                        <lightning:input aura:id="appProdMerchTerminalUpdateTime" name="terminalUpdateTime" type="time" label="Terminal Update Time" value="{!v.appProdMerchRecord.Terminal_Update_Time__c}" style="width:100%" required="true" disabled="{!v.isFormReadOnly}"/>
+                        <lightning:helptext content="The time the terminal will be updated"/>
+                    </div>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="6" aura:id="appProdMerchHdrTxtRow2Div">
+                    <div class="slds-grid slds-grid_align-spread">
+                        <lightning:input aura:id="appProdMerchHdrTxtRow2" name="hdrTxtRow2" label="Header Text Row 2 (19 characters)" value="{!v.appProdMerchRecord.Header_Text_Row_2__c}" style="width:100%" disabled="{!v.isFormReadOnly}"/>
+                        <lightning:helptext content="Example of Header Row 2:&quot;Louize's Boutique&quot;"/>
+                    </div>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="3">
+                    <!--div class="slds-grid slds-grid_align-spread"-->
+                        <lightning:input aura:id="appProdMerchPYC" name="pyc" type="checkbox" label="Pay in your Currency (PYC)" checked="{!v.appProdMerchRecord.PYC__c}" disabled="{!v.isFormReadOnly}"/>
+                        <!--lightning:helptext content="Pay in Your Currency"/-->
+                    <!--/div-->
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="3">
+                    <aura:if isTrue="{!v.appProdMerchRecord.PYC__c}" >
+                        <!--div class="slds-grid slds-grid_align-spread"-->
+                        <lightning:input aura:id="appProdMerchPYCRebate" readonly="true" name="pycRebate" label="Pay in Your Currency (PYC) Rebate %" value="{!v.appProdMerchRecord.PYC_Rebate__c}"/>
+                        <!--lightning:helptext content="Pay in Your Currency Rebate"/-->
+                        <!--/div-->
+                	</aura:if>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem padding="around-small" size="6" aura:id="appProdMerchHdrTxtRow3Div">
+                    <div class="slds-grid slds-grid_align-spread">
+                        <lightning:input aura:id="appProdMerchHdrTxtRow3" name="hdrTxtRow3" label="Header Text Row 3 (19 characters)" value="{!v.appProdMerchRecord.Header_Text_Row_3__c}" style="width:100%" disabled="{!v.isFormReadOnly}"/>
+                        <lightning:helptext content="Example of Header Row 3:&quot;Thank you&quot;"/>
+                    </div>
+                </lightning:layoutItem>
+
+            </lightning:layout>
+            <lightning:button label="Save" variant="brand" onclick="{!c.handleSaveRecord}" disabled="{!or(empty(v.applicationProdMerchId),v.isFormReadOnly)}" class="slds-align_absolute-center slds-m-top_xx-large"/>
+            <!--lightning:button label="Reload" variant="brand" onclick="{!c.reloadRec}" class="slds-align_absolute-center slds-m-top_xx-large"/-->
+
+        </lightning:accordionSection>
+    </lightning:accordion>
+
+</aura:component>

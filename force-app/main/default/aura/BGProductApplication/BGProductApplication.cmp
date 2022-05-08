@@ -1,0 +1,716 @@
+<!--
+* Lightning Component for Bank Guarantee Sanctioning
+*
+* @author  Himani Joshi
+* @version v1.0
+* @since   2021-09-06
+
+-->
+<aura:component access="global" 
+              implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable"
+                controller="BGProductApplicationController">
+	<aura:attribute name="prodWrap" type="Object" />
+    <aura:attribute name="appProdId" type="Id"/>
+    <aura:attribute name="newWitnesses" type="Integer" default="0"/>
+    <aura:attribute name="newFields" type="Integer" default="0"/>
+    <!-- Radiobutton -->
+    <aura:attribute name="options" type="List" default="[
+    {'label': 'Yes', 'value': 'option1'},
+    {'label': 'No', 'value': 'option2'}
+    ]"/>
+    <aura:attribute name="yesChecked" type="Boolean" default="false"/>
+    <aura:attribute name="countriesList" type="List"/>
+    <aura:attribute name="noChecked" type="Boolean" default="false"/>
+    <aura:attribute name="JBCCChecked" type="Boolean" default="false"/>
+    <!--aura:attribute name="BIDChecked" type="Boolean" default="false"/-->
+    <!--aura:attribute name="PERFORMANCEChecked" type="Boolean" default="false"/-->
+    <aura:attribute name="PROPERTYChecked" type="Boolean" default="false"/>
+    <aura:attribute name="OTHERChecked" type="Boolean" default="false"/>
+    <aura:attribute name="displayDescription" type="Boolean" default="false"/>
+    <aura:attribute name="fieldsFor4012" type="Boolean" default="false"/>
+    <aura:attribute name="fieldsFor4013" type="Boolean" default="false"/>
+    <aura:attribute name="radioGrpValue" type="String" />
+    <!--aura:handler name="init" value="{!this}" action="{!c.onGuaranteeTypeChange}"/-->
+    <p style="margin:10px !important">Complete Agreements</p>
+    <lightning:select aura:id="selected" name="selected" onchange="{! c.onAgreementCompleteChange }">
+        <option value="">choose one...</option>
+        <option value="Absa 4012">Absa 4012</option>
+        <option value="Absa 4013">Absa 4013</option>
+        </lightning:select>
+    <aura:if isTrue="{!v.fieldsFor4012}">
+    <lightning:accordion allowMultipleSectionsOpen="true" aura:id="Accordion">
+         <lightning:accordionSection name="moreinfor" label="New account including contract details">
+        <lightning:accordionSection name="Product Details" label="Product Details">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Date</p>
+                    <lightning:input class="fontClass"  value="{!v.prodWrap.proddate}" type="date"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Applicants Reference</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.appReference}"/>
+                </lightning:layoutItem>
+                <!--lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">CASA Reference</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.casaReference}" disabled="true"/>
+                </lightning:layoutItem-->
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Client Representative 1</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.clientRep1}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Client Representative 1</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.clientRep2}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Capacity1</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.capacity1}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Capacity2</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.capacity2}"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+             </lightning:accordionSection>
+             <lightning:accordionSection name="Guarantee Details" label="Guarantee Details">
+                 <lightning:layout multipleRows="true">
+                 <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee to be issued on behalf of</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.guaranteeIssued}"/>
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee credit approval amount</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.guaranteeCredit}"/>
+                </lightning:layoutItem>
+                 </lightning:layout>
+             </lightning:accordionSection>
+             <lightning:accordionSection name="Guarantee Type" label="Guarantee Type">
+                 <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Type of Guarantee</p>
+                    <lightning:select aura:id="select" name="select" onchange="{! c.onGuaranteeTypeChange }" value="{!v.prodWrap.guaranteeType}">
+        <option value="">choose one...</option>
+        <option value="JBCC CONSTRUCTION GUARANTEE">JBCC CONSTRUCTION GUARANTEE</option>
+        <option value="BID BOND/TENDER GUARANTEE">BID BOND/TENDER GUARANTEE</option>
+        <option value="PERFORMANCE GUARANTEE">PERFORMANCE GUARANTEE</option>
+        <option value="PROPERTY GUARANTEE">PROPERTY GUARANTEE</option>
+        <option value="OTHER">OTHER</option>
+    </lightning:select>
+                </lightning:layoutItem>
+                 <aura:if isTrue="{!v.JBCCChecked}">
+                     <lightning:layout multipleRows="true">
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee Amount</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.Amount}"/>
+                </lightning:layoutItem>
+                   <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Expiry date of guarantee</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.expiryDate}" type="date"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Expiry event</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.expiryEvent}"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Contract Number</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.contractNo}"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Debit bank charges account number</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.debitAccNo}"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee Amount</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.guaranteeAmount}"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                             <p style="margin:10px !important">3 month escape clause if no expiry date</p>
+                          <lightning:select aura:id="select1" name="select1"  value="{!v.prodWrap.escapeClause}">
+        <option value="">choose one...</option>
+        <option value="">Yes</option>
+        <option value="">No</option>
+        </lightning:select>
+                         </lightning:layoutItem>
+                       <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                          <p style="margin:10px !important">Guarantee to be issued</p>
+                           <lightning:select aura:id="select2" name="select2" value="{!v.prodWrap.guaranteeIssued1}">
+        <option value="">choose one...</option>
+        <option value="In writing">In writing</option>
+        <option value="Original Guarantee to be returned to applicant for delivery to the beneficiary">Original Guarantee to be returned to applicant for delivery to the beneficiary</option>
+        </lightning:select>
+                         </lightning:layoutItem>
+                           <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                               <p style="margin:10px !important">Description of goods/works</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.goodsDescription}"/>
+                </lightning:layoutItem>
+                     </lightning:layout>
+                 </aura:if>
+                 <aura:if isTrue="{!v.PROPERTYChecked}">
+                     <lightning:layout multipleRows="true">
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee Amount</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.Amount}"/>
+                </lightning:layoutItem>
+                   <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Expiry date of guarantee</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.expiryDate}" type="date"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Expiry event</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.expiryEvent}"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Contract Number</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.contractNo}"/>
+                </lightning:layoutItem>
+                          <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Debit bank charges account number</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.debitAccNo}"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Interest Rate</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.interestRate}"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                             <p style="margin:10px !important">Interest to be calculated</p>
+                          <lightning:select aura:id="select2" name="select2" value="{!v.prodWrap.calculateInterest}">
+        <option value="">choose one...</option>
+        <option value="Prime Plus Interest">Prime Plus Interest</option>
+        <option value="Prime Minus Interest">Prime Minus Interest</option>
+        <option value="Plus Interest">Plus Interest</option>
+        <option value="Minus Interest">Minus Interest</option>
+        </lightning:select>
+                         </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee from date</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.guaranteeDate}" type="date"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee to date</p>
+          <lightning:select aura:id="select2" name="select2"  value="{!v.prodWrap.guaranteeToDate}">
+        <option value="">choose one...</option>
+              <option value="">Date of payment</option>
+              <option value="">Date of Registration</option>
+              <option value="">Customized date</option>
+        </lightning:select>  
+                         </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Date</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.interestDate}" type="date"/>
+                </lightning:layoutItem>
+                     
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                       <p style="margin:10px !important">That the following transactions have been completed</p>  
+                     <lightning:select aura:id="select3" name="select3"  onchange="{! c.onCompletedTransactions}" value="{!v.prodWrap.completedTransactions}">
+        <option value="">choose one...</option>
+        <option value="Cancellation of all existing bonds over">Cancellation of all existing bonds over</option>
+        <option value="Registration of the transfer of the above mentioned propery in the name of">Registration of the transfer of the above mentioned propery in the name of</option>
+        <option value="Register of CCMB(1st/2nd/3rd)over">Register of CCMB(1st/2nd/3rd)over</option>
+        <option value="The payment of this guarantee is limited to">The payment of this guarantee is limited to</option>
+        <option value="Interest is being calculated with both days inclusive">Interest is being calculated with both days inclusive</option>
+        <option value="Other">Other</option>
+    </lightning:select>
+                </lightning:layoutItem>
+                     <aura:if isTrue="{!v.displayDescription}">
+                         
+                        <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Description</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.description}"/>
+                </lightning:layoutItem> 
+                         
+                     </aura:if>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee Amount</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.guaranteeAmount}"/>
+                </lightning:layoutItem>
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                             <p style="margin:10px !important">3 month escape clause if no expiry date</p>
+                          <lightning:select aura:id="select1" name="select1"  value="{!v.prodWrap.escapeClause}">
+        <option value="">choose one...</option>
+        <option value="">Yes</option>
+        <option value="">No</option>
+        </lightning:select>
+                         </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                          <p style="margin:10px !important">Guarantee to be issued</p>
+                            <lightning:select aura:id="select2" name="select2" label="Guarantee to be issued" value="{!v.prodWrap.guaranteeIssued1}">
+        <option value="">choose one...</option>
+        <option value="In writing">In writing</option>
+        <option value="Original Guarantee to be returned to applicant for delivery to the beneficiary">Original Guarantee to be returned to applicant for delivery to the beneficiary</option>
+        </lightning:select>
+                         </lightning:layoutItem> 
+                         <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                               <p style="margin:10px !important">Description of goods/works</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.goodsDescription}"/>
+                </lightning:layoutItem>
+                         
+                        <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                               <p style="margin:10px !important">Property Guarantee Amount</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.propGuaranteeAmount}"/>
+                </lightning:layoutItem>
+                
+        <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Payable fee of bank charges at</p>
+            <lightning:input class="fontClass" value="{!v.prodWrap.bankFees}"/>
+            </lightning:layoutItem>                 
+                         
+               <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                               <p style="margin:10px !important">Upon receipt of written advice from:</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.writtenAdvice}"/>
+                </lightning:layoutItem>          
+                         
+                         
+                     </lightning:layout>
+                 </aura:if>
+             </lightning:accordionSection>
+             <lightning:accordionSection name="Beneficiary Details" label="Beneficiary Details">
+                  <table>
+                <tr>
+                    <td>
+                        Add a new Beneficiary
+                    </td>
+                    <td rowspan="2">
+                        <lightning:button label="Add a New Beneficiary" variant="brand" onclick="{!c.addNewBeneficiary}"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td></td>
+                </tr>
+            </table>
+                 <aura:iteration items="{!v.prodWrap.variablemap}" var="vData">
+                           <lightning:layout multipleRows="true">
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Full name of beneficiary including reg number</p>
+                                      <lightning:input class="fontClass" value="{!vData.beneficiaryName}"/>
+                                        </lightning:layoutItem>
+                                        
+                                        <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Clearing code</p>
+                                       <lightning:input class="fontClass" value="{!vData.clearingCode}"/>
+                                        </lightning:layoutItem>
+                                        
+                                  <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Address line 1</p>
+                                      <lightning:input class="fontClass" value="{!vData.addressLine1}"/>
+                                        </lightning:layoutItem>
+                                    
+                                    <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Account Number</p>
+                                      <lightning:input class="fontClass" value="{!vData.accountNo}"/>
+                                        </lightning:layoutItem>
+                                   
+                                        <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Country</p>
+                                      <lightning:select aura:id="select2" name="{!vData.Id}" value="{!vData.country}">
+                                              <option value="">choose one...</option>
+                                          <aura:iteration items="{!v.countriesList}" var="c1">
+                                                <option value="{!c1}">{!c1}</option>  
+                                          </aura:iteration>
+                                          <!--option value="">choose one...</option>
+                                                <option value="Afghanistan">Afghanistan</option>
+                                                <option value="Aland Islands">Aland Islands</option>
+                                                <option value="Albania">Albania</option>
+                                                <option value="Algeria">Algeria</option>
+                                                <option value="American Samoa">American Samoa</option>
+                                                <option value="Andorra">Andorra</option>
+                                                <option value="Angola">Angola</option>
+                                                <option value="Anguilla">Anguilla</option>
+                                                <option value="Antarctica">Antarctica</option>
+                                                <option value="Antigua and Barbuda">Antigua and Barbuda</option>
+                                                <option value="Argentina">Argentina</option>
+                                                <option value="Armenia">Armenia</option>
+                                                <option value="Aruba">Aruba</option-->
+        </lightning:select> 
+                                        </lightning:layoutItem>
+                                    
+                                        <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Account Type</p>
+                                       <lightning:input class="fontClass" value="{!vData.accountType}"/>
+                                        </lightning:layoutItem>                                        
+                                    
+                                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Suburb</p>
+                                       <lightning:input class="fontClass" value="{!vData.suburb}"/>
+                                        </lightning:layoutItem>
+                                        
+                                        <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Postal code</p>
+                                       <lightning:input class="fontClass" value="{!vData.postalCode}"/>
+                                        </lightning:layoutItem>
+                                
+                     </lightning:layout>
+                   </aura:iteration>
+             </lightning:accordionSection>
+            <lightning:accordionSection name="Pricing secured and unsecured" label="Pricing secured and unsecured">
+             <lightning:radioGroup
+        aura:id="radioGrp"
+        name="radioButtonGroup"
+        label="Is this property guarantee related to a AgriLoan and/or Term Loan"
+        options="{! v.options }"
+        value="{! v.radioGrpValue }"
+        onchange="{! c.handleChange }"
+        type="button"
+        variant="label-inline"
+        style="display:inline-block !important"
+    />
+                 <aura:if isTrue="{!v.yesChecked}">
+                     <lightning:layout multipleRows="true">
+                   <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Extensions to term</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.termExtension}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Cancellations</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.cancellations}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Increases in amount</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.amountIncrease}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Amendments other than increases</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.amendments}"/>
+                </lightning:layoutItem>
+                      <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Re-issuing of guarantees</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.reIssueGuarantees}"/>
+                </lightning:layoutItem>
+                      <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Claims under guarantees issued</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.claims}"/>
+                </lightning:layoutItem>
+                      <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Local Document Product Waived Amount</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.waivedAmount}"/>
+                </lightning:layoutItem>
+                     </lightning:layout>
+                 </aura:if>
+                 <aura:if isTrue="{!v.noChecked}">
+                     <lightning:layout multipleRows="true">
+                     
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Extensions to term</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.termExtension}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Cancellations</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.cancellations}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Increases in amount</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.amountIncrease}"/>
+                </lightning:layoutItem>
+                     
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Amendments other than increases</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.amendments}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Re-issuing of guarantees</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.reIssueGuarantees}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Claims under guarantees issued</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.claims}"/>
+                </lightning:layoutItem>
+                     </lightning:layout>
+                     <table>
+                <tr>
+                    <td>
+                         
+                    </td>
+                    <td  class="slds-align_absolute-center" style="height:5rem">
+                        <lightning:button label="Add " variant="brand" onclick="{!c.addNewFields}"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td></td>
+                </tr>
+            </table>
+                     <aura:iteration items="{!v.prodWrap.additionalFields}" var="vData">
+                         <lightning:layout multipleRows="true">
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Minimum amount recoverable on subsequent six(6)month periods,or part thereof</p>
+                    <lightning:input class="fontClass" value="{!vData.minAmount}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Minimum amount recoverable on establishment</p>
+                    <lightning:input class="fontClass" value="{!vData.establishmentAmount}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Percentage fee due on establishment and for first six(6)months or part there of</p>
+                    <lightning:input class="fontClass" value="{!vData.dueFeesFirstSixMonths}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Percentage fees due for second and subsequent six(6)months period,or part thereof</p>
+                    <lightning:input class="fontClass" value="{!vData.dueFeesSecondSixMonths}"/>
+                </lightning:layoutItem>
+                         </lightning:layout>
+                     </aura:iteration>
+                     
+                 </aura:if>
+                     
+             </lightning:accordionSection>
+             <lightning:accordionSection name="Source of funds" label="Source of funds">
+                 <lightning:layout multipleRows="true">
+                 <!--lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Client code</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.clientCode}"/>
+                </lightning:layoutItem-->
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Source of funds</p>
+          <lightning:select aura:id="funds" name="funds" value="{!v.prodWrap.sourceOfFunds}">
+        <option value="">choose one...</option>
+             <option value="Allowance">Allowance</option>
+              <option value="Bonus">Bonus</option>
+              <option value="Commission">Commission</option>
+              <option value="Development Funding">Development Funding</option>
+              <option value="Donation / Gift">Donation / Gift</option>
+              <option value="Donations">Donations</option>
+              <option value="Grants">Grants</option>
+              <option value="Inheritance">Inheritance</option>
+              <option value="Insurance Claim">Insurance Claim</option>
+              <option value="Investments">Investments</option>
+              <option value="Maintenance / Alimony">Maintenance / Alimony</option>
+              <option value="Money Service Business">Money Service Business</option>
+              <option value="Pay Day Lenders">Pay Day Lenders</option>
+              <option value="Pension">Pension</option>
+              <option value="Retirement Annuity">Retirement Annuity</option>
+              <option value="Salary / Wages">Salary / Wages</option>
+              <option value="Sale Of Business">Sale Of Business</option>
+              <option value="Sale Of Property">Sale Of Property</option>
+              <option value="Sale Of Vehicle">Sale Of Vehicle</option>
+              <option value="Social Grant">Social Grant</option>
+              <option value="Tax Regate">Tax Regate</option>
+              <option value="Trade Finance">Trade Finance</option>
+              <option value="Trading Income - Sales">Trading Income - Sales</option>
+              <option value="Trading Income - Services">Trading Income - Services</option>
+              <option value="Winnings">Winnings</option>	
+        </lightning:select>  
+                         </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Was the clients explanation of source of income satisfactory</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.explanation}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Comments on explanation given for source of income</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.explanationComments}"/>
+                </lightning:layoutItem>
+                 </lightning:layout>
+             </lightning:accordionSection>
+            
+        <lightning:accordionSection name="Source of Income" label="Source of Income">
+                 <lightning:layout multipleRows="true">
+                 <!--lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Client code</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.clientCodeIncome}"/>
+                </lightning:layoutItem-->
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Source of Income</p>
+          <lightning:select aura:id="funds" name="funds" value="{!v.prodWrap.sourceOfIncome}">
+        <option value="">choose one...</option>
+              <option value="Retirement Annuity">Retirement Annuity</option>
+              <option value="Sale of Property">Sale of Property</option>
+              <option value="Sale of Vehicle">Sale of Vehicle</option>
+              <option value="Sale of Business">Sale of Business</option>
+              <option value="Tax Rebate">Tax Rebate</option>
+              <option value="Winnings">Winnings</option>
+              <option value="Trading Income- Sales">Trading Income- Sales</option>
+              <option value="Development Funding">Development Funding</option>
+              <option value="Trade Finance">Trade Finance</option>
+              <option value="Pay Day Lenders">Pay Day Lenders</option>
+              <option value="Grant">Grant</option>
+              <option value="Donation">Donation</option>
+                         </lightning:select>
+                     </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="Office Use" label="Office Use">
+                 <lightning:layout multipleRows="true">
+                 <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Email Address</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.emailAddress}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">For attention of</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.forAttentionOf}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Credit Approval<b></b></p>
+                         <p style="margin:10px !important">Amount Approved</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.approvedAmount}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Authorised By</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.authorisedBy}"/>
+                </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Signature Verification<b></b></p>
+                         <p style="margin:10px !important">Signatures Verified by</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.signaturesVerified}"/>
+                </lightning:layoutItem>
+                     
+            </lightning:layout>
+        </lightning:accordionSection>
+              <lightning:button variant="brand" type="submit" name="save" label="Save" aura:id="decisionbutton" onclick="{!c.saveProduct}"/>
+        </lightning:accordionSection>
+         <lightning:button variant="brand" type="submit" name="Generate" label="Generate 4012" aura:id="decisionbutton1" onclick="{!c.click402}"/>
+<lightning:button variant="brand" type="submit" name="Download" label="Download 4012" aura:id="decisionbutton2" onclick="{!c.download}"/>
+    </lightning:accordion>
+    </aura:if>
+    <aura:if isTrue="{!v.fieldsFor4013}">
+    <lightning:accordion allowMultipleSectionsOpen="true" aura:id="Accordion">
+         <lightning:accordionSection name="moreinfor" label="Amendment to an existing guarantee">
+        <lightning:accordionSection name="Product Details" label="Product Details">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Business Unit Address</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.busAddress}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Amendment Application date</p>
+                    <lightning:input class="fontClass" type="date" value="{!v.prodWrap.appDate}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee Number</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.guaranteeNo}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Original guarantee issue date</p>
+                    <lightning:input class="fontClass" type="date" value="{!v.prodWrap.guaranteeIssueDate}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee amount</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.guarAmount}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">In favour of (existing beneficiary) </p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.existingBeneficiary}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Guarantee amendment instructions</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.amendmentInstructions}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Account number to be debited with related bank charges</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.relatedBankCharges}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Authorised signatory on behalf of the client</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.authorisedSignatory}"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+             </lightning:accordionSection>
+             <lightning:accordionSection name="Source of Funds" label="Source of Funds">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Account number</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.accountNumber}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+                    <p style="margin:10px !important">Account type</p>
+                    <lightning:input class="fontClass" value="{!v.prodWrap.accountType}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Source of funds</p>
+          <lightning:select aura:id="funds1" name="funds1" value="{!v.prodWrap.sourceOfFundsAmendment}">
+        <option value="">choose one...</option>
+             <option value="Allowance">Allowance</option>
+              <option value="Bonus">Bonus</option>
+              <option value="Commission">Commission</option>
+              <option value="Development Funding">Development Funding</option>
+              <option value="Donation / Gift">Donation / Gift</option>
+              <option value="Donations">Donations</option>
+              <option value="Grants">Grants</option>
+              <option value="Inheritance">Inheritance</option>
+              <option value="Insurance Claim">Insurance Claim</option>
+              <option value="Investments">Investments</option>
+              <option value="Maintenance / Alimony">Maintenance / Alimony</option>
+              <option value="Money Service Business">Money Service Business</option>
+              <option value="Pay Day Lenders">Pay Day Lenders</option>
+              <option value="Pension">Pension</option>
+              <option value="Retirement Annuity">Retirement Annuity</option>
+              <option value="Salary / Wages">Salary / Wages</option>
+              <option value="Sale Of Business">Sale Of Business</option>
+              <option value="Sale Of Property">Sale Of Property</option>
+              <option value="Sale Of Vehicle">Sale Of Vehicle</option>
+              <option value="Social Grant">Social Grant</option>
+              <option value="Tax Regate">Tax Regate</option>
+              <option value="Trade Finance">Trade Finance</option>
+              <option value="Trading Income - Sales">Trading Income - Sales</option>
+              <option value="Trading Income - Services">Trading Income - Services</option>
+              <option value="Winnings">Winnings</option>	
+        </lightning:select>  
+                         </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Was the clients explanation of source of funds satisfactory</p>
+          <lightning:select aura:id="selecta" name="selecta" value="{!v.prodWrap.satisfactoryExplanation}">
+        <option value="">choose one...</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+        </lightning:select>  
+                         </lightning:layoutItem> 
+                <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Comments on explanation given for source of funds</p>
+            <lightning:input class="fontClass" value="{!v.prodWrap.explanationCommentsAmendment}"/>
+                         </lightning:layoutItem> 
+                 </lightning:layout>
+             </lightning:accordionSection>
+             <lightning:accordionSection name="Source of Income" label="Source of Income">
+                 <!--lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Client code</p>
+            <lightning:input class="fontClass" value="{!v.prodWrap.clientCodeAmendment}"/>
+                         </lightning:layoutItem--> 
+                   <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Source of Income</p>
+          <lightning:select aura:id="selectd" name="selectd" value="{!v.prodWrap.sourceOfIncomeAmendment}">
+        <option value="">choose one...</option>
+              <option value="Retirement Annuity">Retirement Annuity</option>
+              <option value="Sale of Property">Sale of Property</option>
+              <option value="Sale of Vehicle">Sale of Vehicle</option>
+              <option value="Sale of Business">Sale of Business</option>
+              <option value="Tax Rebate">Tax Rebate</option>
+              <option value="Winnings">Winnings</option>
+              <option value="Trading Income- Sales">Trading Income- Sales</option>
+              <option value="Development Funding">Development Funding</option>
+              <option value="Trade Finance">Trade Finance</option>
+              <option value="Pay Day Lenders">Pay Day Lenders</option>
+              <option value="Grant">Grant</option>
+              <option value="Donation">Donation</option>
+              
+        </lightning:select>  
+                         </lightning:layoutItem>
+             </lightning:accordionSection>
+                 <lightning:accordionSection name="Source of Wealth" label="Source of Wealth">
+                 <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Source Of Wealth</p>
+            <lightning:input class="fontClass" value="{!v.prodWrap.sourceOfWealth}"/>
+                         </lightning:layoutItem> 
+                 </lightning:accordionSection>
+                 <lightning:accordionSection name="Office Use" label="Office Use">
+                     <p style="margin:10px !important">Completed By</p>
+                 <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">First name and Surname</p>
+            <lightning:input class="fontClass" value="{!v.prodWrap.firstName}"/>
+                         </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Signature and Employee number </p>
+            <lightning:input class="fontClass" value="{!v.prodWrap.signatureEmpNo}"/>
+                         </lightning:layoutItem> 
+                 </lightning:accordionSection>
+                 <lightning:accordionSection name="Checked By" label="Checked By">
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">First name and Surname </p>
+            <lightning:input class="fontClass" value="{!v.prodWrap.firstName1}"/>
+                         </lightning:layoutItem>
+                     <lightning:layoutItem size="6" class="productHeader" padding="horizontal-small">
+            <p style="margin:10px !important">Signature and Employee number </p>
+            <lightning:input class="fontClass" value="{!v.prodWrap.signatureEmpNo1}"/>
+                         </lightning:layoutItem>
+                 </lightning:accordionSection>
+             
+        </lightning:accordionSection>
+        <lightning:button variant="brand" type="submit" name="save" label="Save" aura:id="decisionbutton" onclick="{!c.saveProduct}"/>
+        </lightning:accordion>
+    </aura:if>
+   
+</aura:component>

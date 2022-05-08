@@ -1,0 +1,243 @@
+<!--
+* Lightning Component for selecting the proof of payment of a beneficiary to resend proof of payment
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2021-03-25
+*
+-->
+
+<aura:component
+	controller="BeneficiaryPaymentHistoryApex"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+	access="global"
+>
+	<lightning:workspaceAPI aura:id="workspace" />
+	<!--DBOOYSEN. W-008831-->
+
+	<!--Handler Declaration-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+	<aura:handler name="selectedBeneficiaryEvt" event="c:SelectedBeneficiaryEvent" action="{!c.handleSelectBeneficiaryEvent}" />
+
+	<!--Attribute Declaration-->
+	<aura:attribute name="caseIdFromFlow" type="String" access="global" />
+	<aura:attribute name="isBusinessAccountFromFlow" type="String" access="global" />
+	<aura:attribute name="caseAccountIdFromFlow" type="String" access="global" />
+	<aura:attribute name="selectedPaymentString" type="String" access="global" />
+	<aura:attribute name="selectedBeneficiaryEft" type="String" access="global" />
+	<aura:attribute name="selectedBeneficiaryName" type="String" access="global" />
+	<aura:attribute name="selectedBeneficiary" type="Object" />
+	<aura:attribute name="data" type="Object" />
+	<aura:attribute name="filteredData" type="Object" />
+	<aura:attribute name="columns" type="List" />
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="keyword" type="String" />
+	<aura:attribute name="showBeneficiarySelection" type="Boolean" default="true" />
+	<aura:attribute name="showModal" type="Boolean" default="false" />
+	<aura:attribute name="isModalSpinner" type="Boolean" default="false" />
+	<aura:attribute name="clientEmailAddress" type="String" />
+	<aura:attribute name="isFormReadOnly" type="Boolean" default="false" />
+	<aura:attribute name="errorMessageModal" type="String" />
+
+	<!--Start of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+	<aura:handler name="change" value="{!v.clientIDnVObjectParent}" action="{!c.handleObjectChange}" />
+	<aura:attribute name="clientIDnVObjectParent" type="Map" default="{}" />
+	<aura:attribute name="allowClientIDnVPolling" type="Boolean" default="false" />
+	<aura:attribute name="clientCifCodeParent" type="Boolean" default="false" />
+
+	<aura:if isTrue="{!v.allowClientIDnVPolling}">
+		<c:ClientIDnVPolling clientIDnVObject="{!v.clientIDnVObjectParent}" cifCodeFromParentCmp="{!v.clientCifCodeParent}" />
+	</aura:if>
+
+	<lightning:recordEditForm
+		aura:id="caseEditFormIDnV"
+		objectApiName="Case"
+		recordId="{!v.caseIdFromFlow}"
+		onload="{!c.handleCaseLoadIDnV}"
+		onsuccess="{!c.handleCaseSuccessIDnV}"
+	>
+		<lightning:inputField aura:id="statusFieldIDnV" fieldName="Status" class="slds-hide" />
+		<lightning:inputField aura:id="serviceGroupFieldIDnV" fieldName="sd_Service_Group__c" class="slds-hide" />
+		<lightning:inputField aura:id="clientCIFFieldIDnV" fieldName="Client_CIF_Number__c" class="slds-hide" />
+		<lightning:inputField aura:id="caseNumberFieldIDnV" fieldName="CaseNumber" class="slds-hide" />
+	</lightning:recordEditForm>
+	<!--End of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+
+	<article style="position: relative">
+		<!-- Spinner -->
+		<aura:if isTrue="{!v.isSpinner}">
+			<lightning:spinner variant="brand" alternativeText="Busy" class="slds-align_absolute-center" />
+		</aura:if>
+
+		<!-- Beneficiary and Beneficiary payment sections -->
+		<aura:if isTrue="{!v.showBeneficiarySelection}">
+			<!-- Beneficiary selection embedded component. Displayed if showBeneficiarySelection is true-->
+			<c:BeneficiarySelection clientAccountIdFromFlow="{!v.caseAccountIdFromFlow}" />
+			<!-- Else section for aura:if-->
+			<aura:set attribute="else">
+				<!-- Beneficiary payment selection section. Displayed if showBeneficiarySelection is false-->
+				<lightning:layout multipleRows="true">
+					<lightning:layoutItem padding="around-small" size="6">
+						<lightning:input label="Beneficiary IVR" readonly="true" value="{!v.selectedBeneficiary.ivrNominate}" />
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="6">
+						<lightning:input label="Beneficiary Name" readonly="true" value="{!v.selectedBeneficiary.instrRefName}" />
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="4">
+						<lightning:input label="Bank" readonly="true" value="{!v.selectedBeneficiary.targetInstCode}" />
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="4">
+						<lightning:input label="Branch Code" readonly="true" value="{!v.selectedBeneficiary.targetClrCode}" />
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="4">
+						<lightning:input label="Account Number" readonly="true" value="{!v.selectedBeneficiary.targetAccount}" />
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="6">
+						<lightning:input
+							label="Reference Filter"
+							type="search"
+							value="{!v.keyword}"
+							onchange="{!c.searchTable}"
+							placeholder="Filter Search"
+							fieldLevelHelp="Filters on Reference"
+							disabled="{!v.isFormReadOnly}"
+						/>
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="2">
+						<lightning:input
+							aura:id="fromDate"
+							label="From Date"
+							type="date"
+							dateStyle="short"
+							onchange="{!c.filterDate}"
+							disabled="{!v.isFormReadOnly}"
+						/>
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="2">
+						<lightning:input
+							aura:id="endDate"
+							label="End Date"
+							type="date"
+							dateStyle="short"
+							onchange="{!c.filterDate}"
+							disabled="{!v.isFormReadOnly}"
+						/>
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="2">
+						<div class="slds-p-top_large">
+							<lightning:button label="Reset Date" variant="neutral" onclick="{!c.resetDate}" disabled="{!v.isFormReadOnly}" />
+						</div>
+					</lightning:layoutItem>
+
+					<div style="height: 250px">
+						<lightning:datatable
+							columns="{!v.columns}"
+							data="{!v.filteredData}"
+							keyField="instrNumber"
+							maxRowSelection="1"
+							onrowselection="{!c.rowSelected}"
+							enableInfiniteLoading="true"
+							loadMoreOffset="20"
+							hideCheckboxColumn="{!v.isFormReadOnly}"
+						/>
+					</div>
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:button
+							aura:id="sendBeneficiaryPaymentsListBtn"
+							title="This action sends the beneficiary payments list"
+							label="Send Beneficiary Payments List"
+							variant="brand"
+							onclick="{!c.openModal}"
+							class="slds-float_left"
+							disabled="{!v.isFormReadOnly}"
+						/>
+						<lightning:button
+							aura:id="chooseAnotherBeneficiaryBtn"
+							label="Choose Another Beneficiary"
+							variant="brand"
+							onclick="{!c.chooseNewBeneficiary}"
+							class="slds-float_left"
+							disabled="{!v.isFormReadOnly}"
+						/>
+						<lightning:button
+							aura:id="nextBtn"
+							label="Next"
+							onclick="{!c.navigateToComponent}"
+							variant="brand"
+							class="slds-float_right"
+							disabled="{!v.isFormReadOnly}"
+						/>
+					</lightning:layoutItem>
+				</lightning:layout>
+			</aura:set>
+		</aura:if>
+
+		<!-- Account record Edit Form -->
+		<lightning:recordEditForm
+			aura:id="accountEditFormModal"
+			objectApiName="Account"
+			recordId="{!v.caseAccountIdFromFlow}"
+			onload="{!c.handleAccountLoadModal}"
+		>
+			<!-- Hidden Field(s) -->
+			<lightning:inputField aura:id="personEmailFieldModal" fieldName="PersonEmail" class="slds-hide" />
+			<lightning:inputField aura:id="activeEmailFieldModal" fieldName="Active_Email__c" class="slds-hide" />
+		</lightning:recordEditForm>
+		<!-- Case record Edit Form -->
+		<lightning:recordEditForm aura:id="caseEditFormModal" objectApiName="Case" recordId="{!v.caseIdFromFlow}" onsuccess="{!c.handleCaseSuccessModal}">
+			<!-- Hidden Field(s) -->
+			<lightning:inputField aura:id="caseStatusFieldModal" fieldName="Status" class="slds-hide" />
+		</lightning:recordEditForm>
+		<aura:if isTrue="{!v.showModal}">
+			<!-- Modal - Send Beneficiary Payment History -->
+			<div role="dialog" tabindex="-1" aria-labelledby="modalHeader" aura:id="sendBeneficiaryPaymentHistoryModal" class="slds-modal slds-modal_large">
+				<div class="slds-modal__container" style="width: 50%">
+					<div class="slds-modal__header slds-text-heading_small">Send Beneficiary Payment History</div>
+					<div class="slds-modal__content slds-p-around--medium" style="overflow: initial">
+						<aura:if isTrue="{!v.isModalSpinner}">
+							<lightning:spinner variant="brand" alternativeText="Busy" class="slds-align_absolute-center" />
+						</aura:if>
+						<!-- Error Message -->
+						<aura:if isTrue="{!not(empty(v.errorMessageModal))}">
+							<div class="recordError" style="word-wrap: break-word">
+								<br />
+								<h2 class="slds-section__title" style="color: red">{!v.errorMessageModal}</h2>
+								<br />
+							</div>
+						</aura:if>
+						<lightning:layout multipleRows="true">
+							<lightning:layoutItem padding="around-small" size="6">
+								<lightning:input
+									aura:id="clientEmailAddressField"
+									type="email"
+									name="email"
+									label="Client Email Address"
+									value="{!v.clientEmailAddress}"
+									required="true"
+									disabled="{!v.isFormReadOnly}"
+								/>
+							</lightning:layoutItem>
+						</lightning:layout>
+					</div>
+					<div class="slds-modal__footer">
+						<div class="slds-float_right">
+							<lightning:button
+								aura:id="sendEmailCloseCaseBtn"
+								label="Send Email &amp; Close Case"
+								onclick="{!c.sendEmailCloseCase}"
+								variant="brand"
+							/>
+							<lightning:button aura:id="closeModalBtn" label="Close Modal View" onclick="{!c.closeModal}" variant="brand" />
+                        </div>
+                        <div class="slds-float_left">
+                            <c:ChargeTransaction aura:id="chargeTransactionCmp" caseIdFromParentCmp="{!v.caseIdFromFlow}" />
+                        </div>
+                    </div>
+				</div>
+			</div>
+			<!-- Modal Back Drop -->
+			<div class="slds-backdrop slds-backdrop--hide" aura:id="Modalbackdrop"></div>
+			<!-- Modal Definitions End -->
+		</aura:if>
+	</article>
+</aura:component>

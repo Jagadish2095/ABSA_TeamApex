@@ -1,0 +1,134 @@
+<!--
+    * Lightning Component for Term Loans Quality Validator (COVID 19)
+    * 
+    * @author  Himanshu Nimje
+    * @version v1.0
+    * @since   2020-11-25
+    * @UserStory W-007816
+    -->
+
+
+<aura:component access="global" controller="TermLoansQualityValidator"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable">
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    
+    <aura:attribute type="Boolean" name="agreeToTerms" default="false" />
+    <aura:attribute type="Boolean" name="disableBtn" default="false" />
+    <aura:attribute name="selectedOption" type="String" default="Accepted"/>
+    <aura:attribute name="comments" type="String" />
+    <aura:attribute name="decisionOutcomeOptions" type="List" default="[
+                                                                       {'label': 'Accepted', 'value': 'Accepted'} ,
+                                                                       {'label': 'Rejected', 'value': 'Rejected'}
+                                                                       ]"/>
+    <!--approver and queue attributes -->
+    <aura:attribute name="caseStatus" type="String"/>  
+    <aura:attribute name="defaultApprover" type="String"/>
+    <aura:attribute name="UserName" type="String" default=""/>
+    <aura:attribute name="approver" type="string"/>
+    <aura:attribute name="storeResponse" type="String" default=""/>
+    
+    <aura:attribute name="activeSections" type="List" default="['Contract For Review', 'Quality Validation Decision']" />
+    
+    <aura:handler name="init" value="this" action="{!c.doInit}"/>
+    <!--aura:handler event="force:refreshView" action="{!c.doInit}" /-->
+    
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    
+    <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections }">
+        <lightning:accordionSection name="Contract For Review"  label="Contract For Review">
+            <lightning:layout multipleRows="true" >
+                <lightning:layoutItem size="12">
+                </lightning:layoutItem>
+                
+                <c:DocumentUploaderBlock recordId = "{!v.recordId}"
+                                         objectApiName = "Opportunity"
+                                         fieldName = "Covid_Contract_URL__c"
+                                         fileType = "Absa 7040 EX - COVID-19 Contract"
+                                         />
+                
+            </lightning:layout>  
+        </lightning:accordionSection>
+        
+        <lightning:accordionSection name="Quality Validation Decision"  label="Quality Validation Decision">
+            <lightning:layout multipleRows="true" >
+                <lightning:layoutItem size="12">
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6">
+                    <lightning:radioGroup name="decisionButton"
+                                          label="Decision"
+                                          options="{!v.decisionOutcomeOptions }"
+                                          value="{!v.selectedOption }"
+                                          aura:id="selectedOption"
+                                          onchange="{!c.decisionChanged}"
+                                          type="button"
+                                          /> 
+                </lightning:layoutItem>
+                
+                <br/><br/>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input  aura:id="comments" type="string"  label="Comments"  value="{!v.comments}" required="true" />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <aura:if  isTrue="{!(v.selectedOption == 'Rejected')}">    
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:select name="details" label="Reason" aura:id="reasons" required="true">
+                                    <option value="Address on site visit and application differs">Address on site visit and application differs</option>
+                                    <option value="Site visit incomplete">Site visit incomplete</option>
+                                    <option value="ITC enquiry outstanding">ITC enquiry outstanding</option>
+                                    <option value="Experian checks outstanding">Experian checks outstanding</option>
+                                    <option value="Incorrect MCC code assign">Incorrect MCC code assign</option>
+                                    <option value="MATCH enquiry outstanding">MATCH enquiry outstanding</option>
+                                    <option value="Exposure calculation marix outstanding">Exposure calculation marix outstanding</option>
+                                    <option value="Source of funds outstanding">Source of funds outstanding</option>
+                                    <option value="Outdated forms used">Outdated forms used</option>
+                                    <option value="Resolution Outstanding">Resolution Outstanding</option>
+                                    <option value="Others (Please specify in comment box)">Others (Please specify in comment box)</option>
+                                </lightning:select>
+                            </span>
+                        </div>
+                    </aura:if>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <aura:if  isTrue="{!(v.selectedOption == 'Accepted')}">  
+                        <b>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    Default Approver/Submitter : <ui:outputText  aura:id="approver" value="{!v.defaultApprover}" />  
+                                </span>
+                            </div>
+                        </b>
+                    </aura:if>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="12" padding="around-small">
+                    <div class="slds-col slds-size_2-of-2">
+                        <span>
+                            <aura:if  isTrue="{!(v.selectedOption == 'Accepted')}">  
+                                <ui:inputCheckbox class="slds-float--left" label="&nbsp; I understand that this decision will be recorded and the Banker notified to proceed." aura:id="iAcceptCheckA" change="{!c.showBtn}"/>
+                                <aura:set attribute="else">
+                                    <ui:inputCheckbox class="slds-float--left" label="&nbsp; I understand that this decision will be recorded and the Flight Center Consultant notified." aura:id="iAcceptCheckR" change="{!c.showBtn}"/>
+                                </aura:set>
+                            </aura:if>
+                            <aura:if isTrue="{!v.agreeToTerms}">
+                                <span>
+                                    <lightning:button variant="brand" class="slds-align_absolute-center slds-m-top_xx-large"
+                                                      label="Submit Decision" disabled="{!v.disableBtn}" onclick="{!c.submit}" />
+                                </span>
+                            </aura:if>
+                        </span>
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>  
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

@@ -1,0 +1,90 @@
+<aura:component
+    implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+    controller="STIFileUploadController">
+
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="docId" type="String" />
+    <aura:attribute name="documentlist" type="String[]" />
+    <aura:attribute name="documenttype" type="String" />
+    <aura:attribute name="files" type="ContentDocument[]" />
+    <aura:attribute name="isFileUpload" type="Boolean" default="false" />
+    <aura:attribute name="investmentDocumentTypes" type="List"
+                    default="--None--,Application,Broker appointment letter,FNA,Fund Fact Sheet(s),Quotation,Record of Advice,Risk Profile,Source of funds,Proof of Address,Proof of Identity" />
+    <aura:attribute name="documentTypes" type="String[]"
+        default="--None--,Quote - Draft,Quote - Final,Record of Advice,FAIS,Invoice" />
+    <aura:attribute name="uploadFormats" type="List"
+        default="['.jpg','.jpeg','.png','.pdf','.msg','.xls','.doc','.Ppt','.xlsx','.docx','.Pptx','.zip','.txt','.wav','.aac','.m4a','.mp3','.wma','.csv']" />
+
+    <!--<aura:handler name="init" value="{!this}" action="{!c.doInit}" />-->
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <aura:attribute name="oppRecord" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="Name,RecordType.Name,Sub_Status__c"
+                      targetFields="{!v.oppRecord}"
+                      targetError="{!v.recordLoadError}"
+                      recordUpdated="{!c.doInit}"
+                      />
+    <div class="slds-box">
+        <lightning:accordion aura:id="accordion" allowMultipleSectionsOpen="true">
+            <lightning:accordionSection name="files" label="Upload Files">
+                <aura:if isTrue="{!v.showSpinner}">
+                    <div class="slds-p-horizontal--small slds-size--1-of-1">
+                        <div class="slds-p-horizontal--small slds-size--1-of-1 isActivityLoading">
+                            <lightning:spinner variant="brand" size="small"/>
+                        </div>
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.oppRecord.RecordType.Name =='Investment Opportunity'}">
+                    <c:SelectDocumentTypes DocTypes="{!v.investmentDocumentTypes}" recordId="{!v.recordId}"/>
+                </aura:if>
+                <div class="slds-grid">
+                    <div class="slds-col slds-size--5-of-12">
+                        <lightning:select aura:id="select" name="Document Type" label="Select a Document Type"
+                                          required="true" onchange="{!c.onDocTypeChange }">
+                            <aura:if isTrue="{!v.oppRecord.RecordType.Name =='Investment Opportunity'}">
+                                <aura:iteration items="{!v.investmentDocumentTypes}" var="DT">
+                                    <option text="{!DT}" value="{!DT}"></option>
+                                </aura:iteration>
+                                <aura:set attribute="else">
+                                    <aura:iteration items="{!v.documentTypes}" var="DT">
+                                        <option text="{!DT}" value="{!DT}"></option>
+                                    </aura:iteration>
+                                </aura:set>
+                            </aura:if>
+                        </lightning:select>
+                    </div><br></br>
+                    <aura:renderIf isTrue="{!v.documenttype}">
+                        &nbsp; &nbsp; <div class="slds-col slds-size---of-12">
+                            <lightning:fileUpload label="" multiple="false" accept="{!v.uploadFormats}"
+                                recordId="{!v.recordId}" onuploadfinished="{!c.UploadFinished}" />
+                        </div>
+                    </aura:renderIf>
+                </div><br></br>
+                <aura:renderIf isTrue="{!v.isFileUpload}">
+                    <table class="slds-table slds-table--bordered">
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Document Type</th>
+                                
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.files}" var="f">
+                                <tr>
+                                    <td>{!f.Title}</td>
+                                    <td>{!f.Description}</td>
+                                   
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </aura:renderIf>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </div>
+</aura:component>

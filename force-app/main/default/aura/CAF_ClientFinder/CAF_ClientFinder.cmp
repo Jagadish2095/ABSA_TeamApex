@@ -1,0 +1,1569 @@
+<!--
+* Lightning Component for Client Finder
+*
+* @author  Tracy de Bruin : CloudSmiths
+* @version v1.0
+* @since   2018-07-20
+*
+-->
+
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global"  controller="ClientFinderExt">
+    <aura:unescapedHtml value="{!v.cssStyle}"/>
+    
+    <lightning:workspaceAPI aura:id="workspace"/>
+    
+    <!-- Parameters used to determine what functionality to Show/Hide -->
+    <aura:attribute type="Boolean" name="isCompactView" default="false" description="Indicator to show Compact Client column results"/>
+    <aura:attribute type="Boolean" name="showCreateIndividualProspect" default="false" description="Determine whether to show the Create New Individual Prospect Button and its functionality"/>
+    <aura:attribute type="Boolean" name="showCreateBusinessProspect" default="false" description="Determine whether to show the Create New Business Prospect Button and its functionality"/>
+    <aura:attribute type="Boolean" name="showCreateBusinessProspectOnboarding" default="false" description="Determine whether to show the Create New Business Prospect Button and its functionality"/>
+    <aura:attribute type="Boolean" name="showCreateIndividualProspectOnboarding" default="false" description="Determine whether to show the Create New Business Prospect Button and its functionality"/>
+    <aura:attribute type="Boolean" name="showBranchCreateIndividualProspectOnboarding" default="false" description="Determine whether to show the Create New Individual Prospect Button and its functionality"/>
+    <aura:attribute type="Boolean" name="isSelectionConfermed" default="false" description="Selection Confermation"/>
+    <aura:attribute type="Boolean" name="isConsentSelected" default="false" description="Selection Consent"/>
+    
+    <aura:attribute type="Boolean" name="showProductSelection" default="false" description="Determine whether to show the Products related to the selected Client and ability to select one"/>
+    <aura:attribute type="Boolean" name="showParticipantSelection" default="false" description="Determine whether to show the Participants related to the selected Client"/>
+    <aura:attribute type="Boolean" name="showNewCaseCreation" default="false" description="Determine whether to show the Proceed to Case Creation Buttont"/>
+    <aura:attribute type="Boolean" name="showNewProductOnboarding" default="false" description="Determine whether to show the Product onboarding process for branches"/>
+    
+    <!-- TdB - In Progress - Contact attribute/paramter not working as yet-->
+    <aura:attribute type="Boolean" name="showContactSelection" default="false" description="Determine whether to show the Contact search and creation section"/>
+    <aura:attribute type="Boolean" name="showCaseHistory" default="false" description="Determine whether to show the 5 most recent Cases linked to the Client"/>
+    <aura:attribute type="Boolean" name="showLeadHistory" default="false" description="Determine whether to show the 5 most recent Leads linked to the Client"/>
+    <aura:attribute type="Boolean" name="showCreateNewCase" default="false" description="Determine whether to show the Create New Case Button and its functionality"/>
+    <aura:attribute type="Boolean" name="showCreateRelatedParty" default="false" description="Determine whether to show the Create Related Party Button and its functionality"/>
+    <aura:attribute type="String" name="parentId" default="" description="Parent Id for the Related Party functionality"/>
+    <!-- Register Events -->
+    <aura:registerEvent name="setAttribute" type="c:setClientInfo"/>
+    <aura:registerEvent name="setContact" type="c:setContactInfo"/>
+    <aura:registerEvent name="setParticipant" type="c:setParticipantInfo"/>
+    <aura:registerEvent name="setProduct" type="c:setProductInfo"/>
+    <aura:registerEvent name="navigate" type="c:navigateToFlowCmp"/>
+    
+    <!-- Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.validateSearchLimit}"/>
+    <!-- TdB - In Progress - Contact attribute/paramter not working as yet-->
+    <!--<aura:handler name="change" value="{!v.contactId}" action="{!c.logContactId}"/> 
+    <aura:handler name="change" value="{!v.contactRecord}" action="{!c.logNewContact}"/>-->
+    <aura:handler name="init" value="{!this}" action="{!c.getColumnHeaders}" />
+    <aura:handler name="init" value="{!this}" action="{!c.getClientRecordType}" />
+    <aura:attribute name="businessProspectRecordTypeId" type="String" />
+    <aura:attribute name="individualProspectRecordTypeId" type="String" />
+    <aura:attribute name="Onboardingselection" type="String" />
+    <aura:attribute name="jobname" type="List" />
+    <aura:attribute name="consentOptions" type="List" default="[
+                                                              {'label': 'Yes', 'value': 'Yes'},
+                                                              {'label': 'No', 'value': 'No'}
+                                                              ]"/>
+    <aura:attribute name="consentVal" type="string" /> 
+    <!--Handler Declaration-->
+    <aura:handler name="selectedJobEvent" event="c:selectedJobEvent" action="{!c.setClientSelected}"/>
+     
+    <!-- Attributes -->
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="isLimitReached" type="Boolean" default="true"/>
+    <aura:attribute name="isNewClientCreated" type="Boolean" />
+    <aura:attribute name="currentCount" type="Integer"/>
+    <aura:attribute name="clientSearchLimit" type="Integer" />
+    <aura:attribute name="searchLimitMsg" type="String" default="{!'*Minimum search requirement must be met - ' + v.clientSearchLimit + ' search attempts'}"/>
+    <aura:attribute name="searchTypeValue" type="String" />
+    <aura:attribute name="salesforceSearchLabel" type="String" />
+    <aura:attribute name="searchTypeList" type="String[]" />
+    <aura:attribute name="accountsReturned" type="Object[]" />
+    <aura:attribute name="participantsReturned" type="Object[]" />
+    <aura:attribute name="relatedAccountId" type="String" />
+    <aura:attribute name="searchTypeSelected" type="String"/> 
+    <aura:attribute name="accountId" type="String" />
+    <aura:attribute name="contactId" type="String" />
+    <aura:attribute name="isPersonAccount" type="Boolean" default="false"/> 
+    <aura:attribute name="isBusinessAccount" type="Boolean" default="false"/>
+    <aura:attribute name="isBusinessAccountOnboarding" type="Boolean" default="false"/>
+    <aura:attribute name="isIndividualAccountOnboarding" type="Boolean" default="false"/>
+    <aura:attribute name="isprocessOnboarding" type="Boolean" default="false"/>
+    <aura:attribute name="isAccountInSalesforce" type="Boolean"  default="false"/>
+    <aura:attribute name="isNewCaseCreation" type="Boolean" default="false"/>
+    <aura:attribute name="isNewCreditOpportunity" type="Boolean" default="false"/>
+    <aura:attribute name="isNewSPMOpportunity" type="Boolean" default="false"/>
+    <aura:attribute name="isNewCPFOpportunity" type="Boolean" default="false"/> 
+    <aura:attribute name="isNewProductOpportunity" type="Boolean" default="false"/>
+    <aura:attribute name="relatedCases" type="Object"/>
+    <aura:attribute name="relatedCasesColumns" type="List"/>
+    <aura:attribute name="relatedLeads" type="Object"/>
+    <aura:attribute name="relatedLeadsColumns" type="List"/>
+    <aura:attribute name="isCreateContact" type="boolean" default="false"/>
+    <aura:attribute name="isAccountsFound" type="boolean" default="false"/>
+    <aura:attribute name="isCIFSearch" type="boolean" default="false"/>
+    <aura:attribute name="isNotValidSearchValue" type="boolean" default="true"/>
+    <aura:attribute name="contactRecord" type="Contact" default="{'sobjectType': 'Contact'}"/>   
+    <aura:attribute name="accountSelected" type="Account" default="{'sobjectType': 'Account',
+                                                                   'Id': '',
+                                                                   'Salutation' : '',
+                                                                   'PersonTitle' : '',
+                                                                   'FirstName': '',
+                                                                   'LastName': '',
+                                                                   'Phone': '',
+                                                                   'PersonMobilePhone': '',
+                                                                   'PersonEmail': '',
+                                                                   'CIF__c': '',
+                                                                   'Source__c': '',
+                                                                   'RecordTypeId':'',
+                                                                   'Name' : '',
+                                                                   'isPersonAccount':'',
+                                                                   'PersonContactId' : '',
+                                                                   'Client_Type__c' : ''
+                                                                   }"/>
+    <!--<aura:attribute name="newAccount" type="Account" default="{'sobjectType': 'Account'}"/>  -->
+    <aura:attribute name="newBusinessProspect" type="Account" default="{'sobjectType': 'Account'}"/>  
+    <aura:attribute name="newIndivProspect" type="Account" default="{'sobjectType': 'Account'}"/>
+    <aura:attribute name="ClearIndivProspect" type="Account" default="{'sobjectType': 'Account'}"/>
+    <aura:attribute name="newBusinessProspectOnboarding" type="Account" default="{'sobjectType': 'Account'}"/> 
+    <aura:attribute name="clientSearchResultColumns" type="List"/>
+    <aura:attribute name="maxRowSelection" type="Integer" default="1" access="private"/>
+    <aura:attribute name="selectedClientRow" type="List" access="private"/>  
+    <aura:attribute name="clientDetailsBean" type="Object" access="private"/>
+    <aura:attribute name="MDMclientDetailsBean" type="Object" access="private"/>
+    <aura:attribute name="isRelatedContent" type="Boolean" default="false" />
+    <aura:attribute name="accountContactRelation" type="AccountContactRelation" default="{'sobjectType': 'AccountContactRelation'}"/>
+    <aura:attribute name="hanisResponse" type="HanisValidate_Resp_IB_v1"/>
+    <aura:attribute name="CPBResponse" type="CPBValidate_Resp_IB_v1"/>
+    <aura:attribute type="Boolean" name="showAddRelatedParty" default="false"/>
+    <aura:attribute name="roleOptions" type="List"/>
+    <aura:attribute name="selectedRole" type="List"/>
+    <aura:attribute name="designationOptions" type="List"/>
+    <aura:attribute name="ProcessName" type="String" default=""/> <!-- 20200312: Prashant Jain and Tinashe Shoko: Added for Merchant Onboarding -->
+    <aura:attribute name="searchByNameResultOption" type="List"/>
+    <aura:attribute name="searchByNameOptionSelected" type="String"/>
+    <aura:attribute name="showSearchByNameCIFSection" type="Boolean" default="false" /> 
+    
+    <aura:Attribute name="isEmployed" type="boolean" default="false"/>
+    <aura:attribute name="isUpdateRelatedParty" type="boolean" default="false"/>
+    <aura:attribute name="editedAccountId" type="String" default=""/>
+    <aura:attribute name="editedAccount" type="Account" default="{'sobjectType': 'Account'}"/>
+    
+    <!-- Product Attributes -->
+    <aura:attribute name="productData" type="Object" access="private"/>
+    <aura:attribute name="productColumns" type="List"/>  
+    <aura:attribute name="productSelected" type="Object" access="private"/>
+    
+    <!--Participant Attributes-->
+    <aura:attribute name="clientParticipantsBean" type="Object" access="private"/>
+    <aura:attribute name="participantData" type="Object" access="private"/>
+    <aura:attribute name="participantSelected" type="Object" access="private"/>
+    <aura:attribute name="isParticipantDetail" type="Boolean" default="false" /> 
+    
+    <!-- Pagination Attributes for Product-->
+    <aura:attribute name="productPaginationList" type="Object"/>
+    <aura:attribute name="productStartPage" type="Integer" default="0" />
+    <aura:attribute name="productEndPage" type="Integer" default="0"/>
+    <aura:attribute name="productTotalRecords" type="Integer" default="0"/>
+    <aura:attribute name="productPageSize" type="Integer" default="5"/>
+    
+     <!-- Contact Attributes -->
+    <aura:attribute name="contactData" type="Object[]" default="[]"/>
+    <aura:attribute name="contactFilteredData" type="Object[]" default="[]"/>
+    <aura:attribute name="contactFilterValue" type="String" />
+    <aura:attribute name="contactColumns" type="List"/>  
+    <aura:attribute name="contactSelected" type="Object" access="private"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="searchValue" type="String" />
+     <!-- Real time filtering based on changes to the Contact filter text -->
+    <!-- <aura:handler name="change" value="{!v.contactFilterValue}" action="{!c.updateContactFilter}" /> -->
+    
+    <aura:attribute name="newCase" type="Object"/>
+	<aura:attribute name="newCaseField" type="Object"/>
+	<aura:attribute name="newCaseError" type="String"/>    
+    <aura:attribute name="developerName" type="String" default="Service_Request"/>
+    <aura:attribute name="sObjectName" type="String" default="Case"/>
+    <aura:attribute name="countryValuesArray" type="String[]"/>
+    <aura:attribute name="countryValuesArray_NEW" type="Object[]"/> 
+    <aura:attribute name="countryOfCitizenShip" type="String[]" />
+    <aura:attribute name="clientTypeVal" type="String" /> <!--Chandra 08252020  against 4746--> 
+    
+    <aura:attribute name="primaryEntityId" type="String" />  <!--Chandra 07142020  against 4945-->
+	<aura:attribute name="showEntityTypeSelection" type="boolean" default="false"/> <!--Manoj-09102020 - W-005633 New Design for Single Button New Prospect-->
+    <aura:attribute name="processTypeP" type="String" /><!--Manoj-6067-Lite Onboarding Manual Capture-->
+    <aura:attribute name="parentRelationshipId" type="String" />
+    
+    <!--SPM attributes Added by Diksha 9/21/2020-->
+    <aura:attribute name="isModalOpenforPM" type="boolean" default="false"/> <!-- Diksha for SPM selection of PM-->
+    <aura:attribute name="selectedPm" type="string" />
+    <aura:attribute name="pmList" type="User[]" />
+    <aura:attribute name="loggedinUserProfile" type="string" />
+     <!--Using LDS to create case record-->
+    <force:recordData aura:id="caseRecordCreator"
+                      layoutType="FULL"
+                      fields="AccountId,Subject,Status,RecordType,Type,Type__c,Subtype__c,Product__c,sd_Service_Group__c,sd_Service_Group_Type_Id__c,sd_Original_Service_Group__c,sd_Original_Service_Queue__c,sd_Service_Level_Id__c,sd_Service_Group_Id__c,BusinessHoursId,sd_Response_Email_Address__c"
+                      targetRecord="{!v.newCase}"
+                      targetFields ="{!v.newCaseField}"
+                      targetError="{!v.newCaseError}"
+                      />
+     <aura:attribute name="recordLoadError" type="String"/>
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.parentId}"
+                      fields="Client_Type__c"
+                      targetFields="{!v.accountParentRecord}"
+                      targetError="{!v.recordLoadError}"
+                      />
+    
+    <!-- Loading Spinner-->
+    <center style="z-index:99">  
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" />
+    </center>
+    
+    <!-- Client Component-->
+    <lightning:card aura:id="clientFinderId" iconName="action:new_account" title="Client Finder">
+        <!-- Client Search -->
+        <div class="c-container">
+            <lightning:layout multipleRows="true">
+                
+                <lightning:layoutItem padding="around-small">
+                    <!-- Search type -->
+                    <lightning:select class="select-auto-width" aura:id="iSearchType" label="" onchange="{!c.setSearchType}"> 
+                        <aura:iteration items="{!v.searchTypeList}" var="searchItem" indexVar="index"> 
+                            <option value="{!vsearchItem}" text="{!searchItem}"></option>
+                        </aura:iteration> 
+                    </lightning:select>
+                </lightning:layoutItem>
+            	
+                <lightning:layoutItem padding="around-small">
+                    <!-- Search value -->
+                    <lightning:input aura:id="iSearchValue" value="{!v.searchValue}" type="text" placeholder="Search value" label="" onchange="{!c.validateSearchValueLength}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small">
+                    <lightning:button variant="brand" class="slds-m-top--medium" disabled="{!v.isNotValidSearchValue}" aura:id="btnCifSearch"  label="Search" onclick="{!c.searchClient}" iconName="utility:search"/>
+                </lightning:layoutItem> 
+                <lightning:layoutItem padding="around-small" size="12">
+                    <!-- Create New Individual Prospect Button -->
+                    <aura:if isTrue="{!v.showCreateIndividualProspect || v.showCreateBusinessProspect || v.showCreateBusinessProspectOnboarding || v.showCreateIndividualProspectOnboarding || v.showCreateRelatedParty || v.showBranchCreateIndividualProspectOnboarding}">
+                        <aura:if isTrue="{!v.showCreateIndividualProspect}">
+                            <lightning:button variant="brand" disabled="{!v.isLimitReached}"  aura:id="btnCreateNewIndividualProspect" label="New Individual Prospect" iconName="action:new_person_account" iconPosition="left" onclick="{!c.showNewIndividualProspectModal}"/>
+                        </aura:if>
+                        <aura:if isTrue="{!v.showBranchCreateIndividualProspectOnboarding}">
+                            <lightning:button variant="brand" disabled="{!v.isLimitReached}"  aura:id="btnCreateBranchNewIndividualProspect" label="New Individual Prospect" iconName="action:new_person_account" iconPosition="left" onclick="{!c.showNewBranchIndividualProspectModal}"/>
+                        </aura:if>
+                        <!-- Create New Business Prospect Button -->
+                        <aura:if isTrue="{!v.showCreateBusinessProspect}">
+                            <lightning:button variant="brand" disabled="{!v.isLimitReached}"  aura:id="btnCreateNewBusinessProspect" label="New Business Prospect" iconName="action:new_account" iconPosition="left" onclick="{!c.showNewBusinessProspectModal}"/>
+                        </aura:if>
+                        
+                        <!-- Create New Business Prospect Button Onboarding --> <!-- 20200312: Prashant Jain and Tinashe Shoko: extra parameter to check if it is Merchant Onboarding and handle accordingly-->
+                        <!--Commented by Manoj 09102020-W005633 
+                        <aura:if isTrue="{!and(v.showCreateBusinessProspectOnboarding, or(v.isprocessOnboarding, v.ProcessName=='MerchantOnboarding'|| and(v.ProcessName=='SPMOnboarding',!v.isNewSPMOpportunity)))}">
+                            <lightning:button variant="brand" disabled="{!v.isLimitReached}"  aura:id="btnCreateNewBusinessProspectOnboarding" label="New Business Prospect" iconName="action:new_account" iconPosition="left" onclick="{!c.navigateToOnbOardingClientDetails}"/>
+                        </aura:if>
+                        -->
+                        
+                        <!--Create New Prospect Single button for Onboarding Manoj-09102020-W005633-->
+                        <aura:if isTrue="{!and(v.showCreateBusinessProspectOnboarding, or(v.isprocessOnboarding, v.ProcessName=='MerchantOnboarding'|| and(v.ProcessName=='SPMOnboarding',!v.isNewSPMOpportunity)|| and(v.ProcessName=='CPFOnboarding',!v.isNewCPFOpportunity)))}">
+                            <lightning:button variant="brand" disabled="{!v.isLimitReached}"  aura:id="btnCreateNewProspectOnboarding" label="New Prospect" iconName="action:new_account" iconPosition="left" onclick="{!c.selectOnboardingEntity}"/>
+                        </aura:if>
+                        
+                        <!-- Create New Individual Prospect Button Onboarding --> <!-- 20200312: Prashant Jain and Tinashe Shoko: extra parameter to check if it is Merchant Onboarding and handle accordingly-->
+                        <aura:if isTrue="{!and(v.showCreateIndividualProspectOnboarding, or(v.isprocessOnboarding, v.ProcessName=='MerchantOnboarding'|| and(v.ProcessName=='SPMOnboarding',!v.isNewSPMOpportunity)))}">
+                            <!-- TdB - Hide New Individual Prospect button for now and use Sole prop
+                             <aura:if isTrue="{!v.ProcessName=='MerchantOnboarding'}">  if it is merchant onboarding then the button label should be New Sole Prospect - W-004021 - Tinashe Shoko 17-03-2020 -->
+                            <!--Commented by Manoj 09102020-W005633
+                             <lightning:button variant="brand" disabled="{!v.isLimitReached}"  aura:id="btnCreateNewIndivProspectOnboarding" label="New Sole Proprietor Prospect" iconName="action:new_account" iconPosition="left" onclick="{!c.navigateToOnbOardingIndvDetails}"/>
+                                -->
+                            <!--<aura:set attribute="else">
+                                    <lightning:button variant="brand" disabled="{!v.isLimitReached}"  aura:id="btnCreateNewIndivProspectOnboarding" label="New Individual Prospect" iconName="action:new_account" iconPosition="left" onclick="{!c.navigateToOnbOardingIndvDetails}"/>
+                                </aura:set>
+                            </aura:if>-->
+                        </aura:if>
+                        
+                        <!-- Create New Related Party Button Onboarding -->
+                        <aura:if isTrue="{!v.showCreateRelatedParty}">
+                            <lightning:button variant="brand" disabled="{!v.isLimitReached}" aura:id="btnCreateNewRelatedParty" label="New Related Party" iconName="action:new_account" iconPosition="left" onclick="{!c.selectClientType}"/>
+                        </aura:if>
+                        <aura:if isTrue="{!v.showCreateRelatedParty}">
+                            <!--<lightning:button variant="brand" disabled="{!(!v.isPersonAccount)}" aura:id="btnCreateAddRelatedParty" label="Add Related Party" iconName="action:new_account" iconPosition="left" onclick="{!c.showNewRelatedPartyModal}"/>-->
+                            <lightning:button variant="brand" disabled="{!(!v.isPersonAccount)}" aura:id="btnCreateAddRelatedParty" label="Add Related Party" iconName="action:new_account" iconPosition="left" onclick="{!c.handleAddUpdateRealtedparty}"/>
+                        </aura:if>
+                        
+                        <aura:if isTrue="{!v.isLimitReached}">
+                            <span>
+                                <p>{!v.searchLimitMsg}</p>
+                            </span>
+                        </aura:if>
+                    </aura:if>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </div>
+        
+        <aura:if isTrue="{!v.showSearchByNameCIFSection}"> 
+            <!--Search by Name dropdown -->
+            <div class="c-container"> 
+                <lightning:layout multipleRows="true">
+                    <!--Fields-->
+                    <lightning:layoutItem padding="around-small">
+                        <lightning:select aura:id="searchByNameCIF" label="Select CIF to view additional details" name="searchByNameCIF" onchange="{! c.callGoldenSources}">
+                            <option value="None" text="--- None ---"></option>
+                            <aura:iteration items="{!v.searchByNameResultOption}" var="eachResult">
+                                <option  value="{!eachResult.value}" >{!eachResult.label}</option>
+                            </aura:iteration>
+                        </lightning:select> 
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </div>
+        </aura:if>
+        
+        <!-- Client search results -->
+        <div aura:id="ClientResultTable" class="slds-grid slds-gutters slds-hide">
+            <div class="slds-col slds-size_3-of-3" >
+                <h3 class="slds-section__title">
+                    <button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action customSectionButton">
+                        <span class="slds-truncate" title="Participants">Client Search Results</span>
+                    </button>
+                </h3>
+                <lightning:datatable class="table-ClientResult" 
+                                     data="{! v.accountsReturned}" 
+                                     columns="{! v.clientSearchResultColumns }" 
+                                     keyField="Id"
+                                     onrowselection="{!c.setClientSelected}"
+                                     maxRowSelection="{!v.maxRowSelection}"
+                                    
+									 aura:id="clientSearchdataTable"/>   
+            </div>
+        </div>
+        
+        <br/>
+        <!-- Client Basic Info - Individual Account Branch -->
+        <aura:if isTrue="{!and(v.isPersonAccount, v.showBranchCreateIndividualProspectOnboarding)}"> 
+            <div class="slds-p-horizontal--small">
+                <table style="width:100%">
+                    <tr>
+                        <td colspan="2" style="width:100%">
+                            <h3 class="slds-section__title">
+                                <button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action slds-truncate">
+                                    <span class="slds-truncate" title="Participants">Individual Client Information</span>
+                                </button>
+                            </h3>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="width:40%"> 
+                            <b><label class="slds-form-element__label" for="firstName">Name: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.Salutation + ' ' + v.accountSelected.FirstName + ' ' + v.accountSelected.LastName}"  aura:id="Name"/> <br/>  
+                        </td>
+                        <td style="width:60%">
+                            <b><label class="slds-form-element__label" for="cifNo">CIF Number: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.CIF__c}"  aura:id="cifNo"/> <br/>  
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                            <b><label class="slds-form-element__label" for="idNo">ID Number: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.ID_Number__pc}"  aura:id="idNo"/> <br/>  
+                        </td>
+                        <td style="width:60%">
+                            <b><label class="slds-form-element__label" for="mobileNo">Mobile Phone: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.PersonMobilePhone}"  aura:id="mobilePhone"/> <br/>  
+                        </td>
+                    </tr> 
+					<tr>
+                        <td style="width:100%"></td>
+                    </tr>                    
+                    <tr>
+                        <td style="width:100%" class="slds-form-element__label">
+                                <lightning:radioGroup name="radioGroupConsent"
+                                                      label="I confirm that I have asked the customer permission to contact them on the above mentioned number 
+                                						should they not be able to complete their application and the customer said :"
+                                                      options="{! v.consentOptions }"
+                                                      value="{! v.consentVal }"
+                                                      type="radio"
+                                                      required="true"
+                                                      onchange="{! c.confirmSelection }"
+                                                      />
+                           
+                        </td>
+                    
+                    </tr>
+                </table> 
+                <br/>
+            </div>
+        </aura:if> 
+		
+        <!-- Client Basic Info - Individual Account-->
+        <aura:if isTrue="{!and(v.isPersonAccount, (v.showBranchCreateIndividualProspectOnboarding==false))}">
+        <!--<aura:if isTrue="{!v.isPersonAccount}"> -->
+            <div class="slds-p-horizontal--small">
+                <table style="width:100%">
+                    <tr>
+                        <td colspan="2" style="width:100%">
+                            <h3 class="slds-section__title">
+                                <button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action slds-truncate">
+                                    <span class="slds-truncate" title="Participants">Individual Client Information</span>
+                                </button>
+                            </h3>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="width:40%"> 
+                            <b><label class="slds-form-element__label" for="firstName">Name: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.Salutation + ' ' + v.accountSelected.FirstName + ' ' + v.accountSelected.LastName}"  aura:id="Name"/> <br/>  
+                        </td>
+                        <td style="width:60%">
+                            <b><label class="slds-form-element__label" for="cifNo">CIF Number: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.CIF__c}"  aura:id="cifNo"/> <br/>  
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                            <b><label class="slds-form-element__label" for="idNo">ID Number: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.ID_Number__pc}"  aura:id="idNo"/> <br/>  
+                        </td>
+                        <td style="width:60%">
+                            <b><label class="slds-form-element__label" for="commMethod">Preferred Communication Method: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.Communication_Method__c}"  aura:id="commMethod"/> <br/>  
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                            <b><label class="slds-form-element__label" for="mobileNo">Mobile Phone: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.PersonMobilePhone}"  aura:id="mobilePhone"/> <br/>  
+                        </td>
+                        <td style="width:60%">
+                            <b><label class="slds-form-element__label" for="homePhone">Home Phone: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.PersonHomePhone}"  aura:id="homePhone"/> <br/>  
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                            <b><label class="slds-form-element__label" for="workPhone">Work Phone: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.Phone}"  aura:id="workPhone"/> <br/>  
+                        </td>
+                        <td style="width:60%">
+                            <b><label class="slds-form-element__label" for="emailAddress">Email: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.PersonEmail}"  aura:id="emailAddress"/> <br/>  
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="width:100%">
+                            <h3 class="slds-section__title">
+                                <button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action customSubSectionButton">
+                                    <span class="slds-truncate" title="Participants">Additional Information</span>
+                                </button>
+                            </h3>
+                        </td>
+                        
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                            <b> <label class="slds-form-element__label" for="physicalAddress">Physical Address: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.ShippingStreet}"  aura:id="physicalAddress"/> <br/>  
+                            <ui:outputText value="{!v.accountSelected.ShippingCity}"  aura:id="physicalAddress"/> <br/>  
+                            <ui:outputText value="{!v.accountSelected.ShippingPostalCode}"  aura:id="physicalAddress"/> <br/>  
+                        </td>
+                        <td style="width:60%">
+                            <b><label class="slds-form-element__label" for="postalAddress">Residential Address: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.BillingStreet}" aura:id="postalAddress" /> <br/>  
+                            <ui:outputText value="{!v.accountSelected.BillingCity}"/> <br/>  
+                            <ui:outputText value="{!v.accountSelected.BillingPostalCode}"/> <br/>  
+                            <ui:outputText value="{!v.accountSelected.BillingCountry}"/> <br/>
+                        </td>
+                    </tr>
+                </table> 
+                <br/>
+            </div>
+        </aura:if> 
+
+        <!--    
+ <lightning:button variant="brand"  label="{!v.jobname.Service_Type__r.Name}" title="Brand action" onclick="{! c.handleClick }" />
+        -->
+
+        <!-- Client Basic Info - Business Account -->
+        <aura:if isTrue="{!v.isBusinessAccount}"> 
+            
+            <div class="slds-p-horizontal--small">
+                <table style="width:100%">
+                    <tr >
+                        <td colspan="2" style="width:100%">
+                            <h3 class="slds-section__title">
+                                <button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action customSubSectionButton">
+                                    <span class="slds-truncate" title="Participants">Business Client Information</span>
+                                </button>
+                            </h3>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                            <b><label class="slds-form-element__label" for="Name">Name: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.Name}"  aura:id="Name"/><br/> 
+                        </td>
+                        <td style="width:60%">
+                            <b><label class="slds-form-element__label" for="cifNo">CIF Number: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.CIF__c}"  aura:id="cifNo"/><br/> 
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                            <b><label class="slds-form-element__label" for="workPhone">Work Phone: </label> </b>  <br/>  
+                            <ui:outputText value="{!v.accountSelected.Phone}"  aura:id="workPhone"/><br/> 
+                        </td>
+                        <td style="width:60%">
+                            <b><label class="slds-form-element__label" for="commMethod">Preferred Communication Method: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.Communication_Method__c}"  aura:id="commMethod"/><br/> 
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="width:100%">
+                            <h3 class="slds-section__title">
+                                <button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action customSubSectionButton">
+                                    <span class="slds-truncate" title="Participants">Additional Information</span>
+                                </button>
+                            </h3>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                            <b><label class="slds-form-element__label" for="physicalAddress">Physical Address: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.ShippingStreet}"  aura:id="physicalAddress"/> <br/>  
+                            <ui:outputText value="{!v.accountSelected.ShippingCity}"  aura:id="physicalAddress"/> <br/>  
+                            <ui:outputText value="{!v.accountSelected.ShippingPostalCode}"  aura:id="physicalAddress"/> <br/>  
+                        </td> 
+                        <td style="width:60%">
+                            <b><label class="slds-form-element__label" for="postalAddress">Postal Address: </label> </b> <br/>  
+                            <ui:outputText value="{!v.accountSelected.BillingStreet}" aura:id="postalAddress" /> <br/>  
+                            <ui:outputText value="{!v.accountSelected.BillingCity}"/> <br/>  
+                            <ui:outputText value="{!v.accountSelected.BillingPostalCode}"/> <br/>   
+                        </td>
+                    </tr>
+                </table>
+                <br/>
+            </div>
+            
+        </aura:if> 
+        
+        <div aura:id="ClientOnBoardingbutton" class="slds-grid slds-gutters" style ="text-align: center;display: block;" >
+            <aura:if isTrue="{or!(v.isBusinessAccountOnboarding , v.isNewSPMOpportunity,v.isNewCPFOpportunity)}"> 
+                <lightning:button variant="brand" 
+                                  label="Proceed to New-To-Bank Onboarding"
+                                  title="proceed"
+                                  onclick="{! c.navigateToOnbOardingClientDetails}"/> 
+            </aura:if>
+            
+        </div>
+        <div aura:id="ClientIndividualOnBoardingbutton" class="slds-grid slds-gutters" style ="text-align: center;display: block;" >
+            <aura:if isTrue="{or(!v.isIndividualAccountOnboarding, v.isNewSPMOpportunity,v.isNewCPFOpportunity)}"> 
+                 <aura:if isTrue="{!v.accountSelected.CIF__c == null}"> 
+                <lightning:button variant="brand" 
+                                  label="Proceed to New-To-Bank Onboarding"
+                                  title="proceed"
+                                  onclick="{! c.navigateToOnbOardingIndvDetails}"/> 
+                     <aura:set attribute="else">
+                          <lightning:button variant="brand" 
+                                  label="Proceed to Client"
+                                  title="proceed"
+                                  onclick="{! c.navigateToClient}"/>
+                     </aura:set>
+                </aura:if>
+            </aura:if>
+        </div>
+        
+        <!--TdB - Onboard new Product Existing Customer -->
+        <div aura:id="iProductOnBoardingbutton" class="slds-grid slds-gutters" style ="text-align: center;display: block;" >
+            <aura:if isTrue="{!and(v.ProcessName == 'NewProductOnboarding',v.jobname.Process_Type__c == 'Existing Customer')}"> 
+                <aura:if isTrue="{!and(v.isNewProductOpportunity, v.accountSelected.CIF__c != null)}"> 
+                    <lightning:button variant="brand" 
+                                      label="Proceed to Onboard New Product"
+                                      title="proceed"
+                                      onclick="{! c.navigateToOnboardingBigForm}"/> 
+                </aura:if> 
+            </aura:if>
+            
+        </div>
+        
+        <div aura:id="CreateNewCaseButton" class="slds-grid slds-gutters" style ="text-align: center;display: block;" > 
+            <aura:if isTrue="{!and(v.showNewCaseCreation, v.isNewCaseCreation)}">
+                <lightning:button variant="brand" 
+                                  label="Proceed to Create New Case"
+                                  title="proceed"
+                                  onclick="{! c.handleComponentEvent}"/> 
+            </aura:if> 
+        </div>
+        
+        <lightning:layoutItem padding="around-small" size="12">
+        <div aura:id="StartOnboardingButton" class="slds-grid slds-gutters"   > 
+            <aura:if isTrue="{!and(v.isSelectionConfermed,v.showNewProductOnboarding)}">
+                <lightning:flow aura:id="flowData" />
+                <lightning:layoutItem padding="around-small" size="6">
+                <lightning:button variant="brand" 
+                                  label="Start Product Onboarding"
+                                  title="proceed"
+                                  onclick="{! c.handleStartProductOnboarding}"/> 
+                </lightning:layoutItem>
+            </aura:if>
+        </div>
+       </lightning:layoutItem>
+        
+         <!--TdB - Credit Product Creation -->
+        <div aura:id="NewCreditOpportunity" class="slds-grid slds-gutters" style ="text-align: center;display: block;" > 
+            <aura:if isTrue="{!and(v.ProcessName=='NewCreditProduct', v.isNewCreditOpportunity)}">
+                <lightning:button variant="brand" 
+                                  label="Proceed to New Credit Product"
+                                  title="proceed"
+                                  onclick="{! c.createCreditOpportunity}"/>
+            </aura:if>
+        </div>
+         <!--TdB - Credit Covid 19 Product Creation Almas Aleem-->
+        <div aura:id="CovidOpportunity" class="slds-grid slds-gutters" style ="text-align: center;display: block;" > 
+            <aura:if isTrue="{!and(v.ProcessName=='NewCreditProduct(Covid-19)', v.isNewCreditOpportunity)}">
+                <lightning:button variant="brand" 
+                                  label="Proceed to New Credit Product"
+                                  title="proceed"
+                                  onclick="{! c.createCovidOpportunity}"/>
+            </aura:if>
+        </div>
+        
+        <!-- 11/30/2020 Diksha CPF Opp Creation -->
+        <div aura:id="NewCPFOpportunity" class="slds-grid slds-gutters" style ="text-align: center;display: block;" > 
+            <aura:if isTrue="{!and(v.ProcessName=='CPFOnboarding', v.isNewCPFOpportunity)}">
+                <lightning:button variant="brand" 
+                                  label="Proceed to New CPF Opportunity"
+                                  title="proceed"
+                                  onclick="{! c.createCPFOpportunity}"/>
+            </aura:if>
+        </div>
+  
+        <!--Diksha - SPM Opp Creation -->
+        <div aura:id="NewSPMOpportunity" class="slds-grid slds-gutters" style ="text-align: center;display: block;" > 
+            <aura:if isTrue="{!and(v.ProcessName=='SPMOnboarding', v.isNewSPMOpportunity)}">
+                <lightning:button variant="brand" 
+                                  label="Proceed to SPM Opportunity"
+                                  title="proceed"
+                                  onclick="{! c.createSPMOpportunity}"/>
+                
+                <div class="slds-m-around_xx-large">
+                    <!--Use aura:if tag to display/hide popup based on isModalOpen value-->  
+                    <aura:if isTrue="{!v.isModalOpenforPM}">
+                        
+                        <!-- Modal/Popup Box starts here-->
+                        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                            <div class="slds-modal__container">
+                                <!-- Modal/Popup Box Header Starts here-->
+                                <header class="slds-modal__header">
+                                    <lightning:buttonIcon iconName="utility:close"
+                                                          onclick="{! c.closeModel }"
+                                                          alternativeText="close"
+                                                          variant="bare-inverse"
+                                                          class="slds-modal__close"/>
+                                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Modal/PopUp Box</h2>
+                                </header>
+                                <!--Modal/Popup Box Body Starts here-->
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                    <lightning:select aura:id="pmid" label="Portfolio Manager / Financial Advisor" value="{!v.selectedPm}" >
+                                        <option aura:id="pmNone" value="" text="---None---"/> 
+                                        <aura:iteration items="{!v.pmList}" var="pm">
+                                            <option value="{!pm.value}" text="{!pm.Name}" selected="{!v.selected}"/>  
+                                        </aura:iteration>
+                                    </lightning:select>                         
+                                </div>
+                                <!--Modal/Popup Box Footer Starts here-->
+                                <footer class="slds-modal__footer">
+                                    <lightning:button variant="neutral"
+                                                      label="Cancel"
+                                                      title="Cancel"
+                                                      onclick="{! c.closeModel }"/>
+                                    <lightning:button variant="brand"
+                                                      label="OK"
+                                                      title="OK"
+                                                      onclick="{!c.submitDetails}"/>
+                                </footer>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </aura:if>
+                </div>
+            </aura:if>
+        </div>
+        <!-- Related Content -->
+        <aura:if isTrue="{!v.isRelatedContent}">
+            <!-- Participant Details --> 
+            <aura:if isTrue="{!v.showParticipantSelection}">
+                <aura:if isTrue="{!and(v.isBusinessAccount, v.isCIFSearch)}">
+                        <lightning:card>
+                            <aura:set attribute="title">
+                                <lightning:icon iconName="action:new_person_account" size="xx-small"/>
+                                Participants
+                            </aura:set>
+                            <lightning:datatable
+                                                 data="{!v.participantData}"
+                                                 columns="{!v.clientSearchResultColumns}"
+                                                 keyField="Id"
+                                                 onrowselection="{!c.setParticipantSelection}"
+                                                 maxRowSelection="{!v.maxRowSelection}"
+                                                 aura:id="clientParticipantsDataTable"/>
+                        </lightning:card>
+                    <!-- Participant Basic Info --> 
+                    <aura:if isTrue="{!v.isParticipantDetail}">
+                        <div class="slds-p-horizontal--small">
+                            <table style="width:100%">
+                                <tr>
+                                    <td colspan="2" style="width:100%">
+                                        <h3 class="slds-section__title">
+                                            <button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action customSubSectionButton">
+                                                <span class="slds-truncate" title="Participants">Participant Information</span>
+                                            </button>
+                                        </h3>
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <td style="width:40%"> 
+                                        <b><label class="slds-form-element__label" for="firstName">Name: </label> </b> <br/>  
+                                        <ui:outputText value="{!v.participantSelected.Salutation + ' ' + v.participantSelected.FirstName + ' ' + v.participantSelected.LastName}"  aura:id="Name"/> <br/>  
+                                    </td>
+                                    <td style="width:60%">
+                                        <b><label class="slds-form-element__label" for="mobileNo">Mobile Phone: </label> </b> <br/>  
+                                        <ui:outputText value="{!v.participantSelected.PersonMobilePhone}"  aura:id="mobilePhone"/> <br/>
+                                        
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width:40%">
+                                        <b><label class="slds-form-element__label" for="idNo">ID Number: </label> </b> <br/>  
+                                        <ui:outputText value="{!v.participantSelected.ID_Number__pc}"  aura:id="idNo"/> <br/>  
+                                    </td>
+                                    <td style="width:60%">
+                                        <b><label class="slds-form-element__label" for="homePhone">Home Phone: </label> </b> <br/>  
+                                        <ui:outputText value="{!v.participantSelected.PersonHomePhone}"  aura:id="homePhone"/> <br/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width:40%">
+                                        <b> <label class="slds-form-element__label" for="physicalAddress">Physical Address: </label> </b> <br/>  
+                                        <ui:outputText value="{!v.participantSelected.ShippingStreet}"  aura:id="physicalAddress"/> <br/>  
+                                        
+                                    </td>
+                                    <td style="width:60%">
+                                        <b><label class="slds-form-element__label" for="workPhone">Work Phone: </label> </b> <br/>  
+                                        <ui:outputText value="{!v.participantSelected.Phone}"  aura:id="workPhone"/> <br/>  
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width:40%">
+                                        <ui:outputText value="{!v.participantSelected.ShippingCity}"  aura:id="physicalAddress"/> <br/>  
+                                        <ui:outputText value="{!v.participantSelected.ShippingPostalCode}"  aura:id="physicalAddress"/> <br/> 
+                                        
+                                    </td>
+                                    <td style="width:60%">
+                                        
+                                    </td>
+                                </tr>
+                            </table> 
+                            <br/>
+                        </div>   
+                    </aura:if> 
+                </aura:if>
+            </aura:if>
+            
+            <!-- Product Details --> 
+            <aura:if isTrue="{!v.showProductSelection}">
+                <aura:if isTrue="{!and(or(v.isBusinessAccount || v.isPersonAccount), v.isCIFSearch)}">
+                     <lightning:card>
+                        <aura:set attribute="title">
+                            <lightning:icon iconName="action:add_file" size="xx-small"/>
+                            Products
+                        </aura:set>
+                    <lightning:datatable
+                                         data="{!v.productPaginationList}"
+                                         columns="{!v.productColumns}"
+                                         keyField="Id"
+                                         hideCheckboxColumn="false"
+                                         onrowselection="{!c.setProductSelection}"
+                                         maxRowSelection="{!v.maxRowSelection}"
+                                         aura:id="clientProductDataTable"/>
+                    
+                    <lightning:layout horizontalAlign="center">
+                        <lightning:layoutItem >
+                            <lightning:button label="Previous" disabled="{!v.productStartPage == 0}"  
+                                              onclick="{!c.previousProduct}" variant="base"
+                                              iconName='utility:back'/>
+                            &nbsp; &nbsp; &nbsp;
+                            <lightning:button label="Next" disabled="{!v.productEndPage >= v.productTotalRecords}" 
+                                              onclick="{!c.nextProduct}" variant="base"
+                                              iconName='utility:forward' iconPosition='right'/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    </lightning:card>
+                </aura:if> 
+            </aura:if> 
+            
+            <!-- TdB - In Progress - Contact attribute/parameter not working as yet -->
+            <!-- Contact Details --> 
+             <aura:if isTrue="{!v.showContactSelection}">
+                <aura:if isTrue="{!v.isBusinessAccount}">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <lightning:icon iconName="action:new_contact" size="xx-small"/>
+                            Contacts
+                        </aura:set>
+                        <aura:set attribute="actions">
+                            <lightning:layout horizontalAlign="end">
+                            <lightning:layoutItem >
+                                <lightning:input aura:id="iContactFiltere" onchange="{!c.updateContactFilter}" value="{!v.contactFilterValue}" label="Search" variant="label-hidden" type="search" placeholder="Search Contact list..."/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem >
+                                &nbsp;<lightning:button label="New Contact" iconName="utility:add" onclick="{!c.showNewContactModal}"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        </aura:set> 
+                        <lightning:datatable
+                                             data="{!v.contactFilteredData}"
+                                             columns="{!v.contactColumns}"
+                                             keyField="Id"
+                                             hideCheckboxColumn="false"
+                                             onrowselection="{!c.setContactSelection}"
+                                             maxRowSelection="{!v.maxRowSelection}"
+                                             aura:id="clientContactDataTable"/>
+                    </lightning:card>
+                    <br/>
+                </aura:if> 
+            </aura:if> 
+            
+            <!-- Case related List --> 
+            <aura:if isTrue="{!v.showCaseHistory}">
+                <aura:if isTrue="{!v.isBusinessAccount || v.isPersonAccount}">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <lightning:icon iconName="action:new_case" size="xx-small"/>
+                            Cases
+                        </aura:set>
+                    <lightning:datatable data="{! v.relatedCases }" 
+                                         columns="{! v.relatedCasesColumns }" 
+                                         keyField="Id"
+                                         hideCheckboxColumn="true"/>
+                    </lightning:card>
+                </aura:if> 
+            </aura:if> 
+            
+            <!-- Leads related List --> 
+            <aura:if isTrue="{!v.showLeadHistory}">
+                <aura:if isTrue="{!v.isBusinessAccount || v.isPersonAccount}">
+                     <lightning:card > 
+                        <aura:set attribute="title">
+                            <lightning:icon iconName="action:new_lead" size="xx-small"/>
+                            Leads
+                        </aura:set>
+                    <lightning:datatable data="{! v.relatedLeads}" 
+                                         columns="{! v.relatedLeadsColumns}" 
+                                         keyField="Id"
+                                         hideCheckboxColumn="true"/>
+                    </lightning:card>
+                </aura:if> 
+            </aura:if>
+            
+        </aura:if>
+        
+    </lightning:card>
+    
+    <!-- Create New Individual Prospect Client Modal -->
+    <aura:attribute name="isCreateIndividualProspect" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.isCreateIndividualProspect}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeNewIndividualProspectModel}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="customSectionButton">Create Individual Prospect Client</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <lightning:recordEditForm  aura:id="iCreateIndvClient" objectApiName="Account" recordId="{!v.recordId}">                      
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Client Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="Name"/>
+                                    </div>
+                                    <lightning:inputField aura:id="iClientSalutation" fieldName="Salutation" value="{!v.newIndivProspect.Salutation}" class="customRequired"/>
+                                    <lightning:inputField aura:id="iClientFirstName" fieldName="FirstName" value="{!v.newIndivProspect.FirstName}"/>
+                                    <lightning:inputField aura:id="iClientLastName" fieldName="LastName" value="{!v.newIndivProspect.LastName}" class="customRequired"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="iClientIdNo" fieldName="ID_Number__pc" value="{!v.newIndivProspect.ID_Number__pc}"/> 
+                                    <lightning:inputField aura:id="iClientCreationReason" fieldName="Client_Creation_Reason__c" value="{!v.newIndivProspect.Client_Creation_Reason__c}" class="customRequired"/> 
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Contact Details</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="iClientPersonMobilePhone" fieldName="PersonMobilePhone" value="{!v.newIndivProspect.PersonMobilePhone}"/>
+                                    <lightning:inputField aura:id="iClientPersonHomePhone" fieldName="PersonHomePhone" value="{!v.newIndivProspect.PersonHomePhone}"/>
+                                    <lightning:inputField aura:id="iClientPhone" fieldName="Phone" value="{!v.newIndivProspect.Phone}" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="iClientEmail" fieldName="PersonEmail" value="{!v.newIndivProspect.PersonEmail}" /> 
+                                  <!--  <lightning:inputField aura:id="iClientCommunicationMethod" fieldName="Communication_Method__c" value="{!v.newIndivProspect.Communication_Method__c}"/> -->
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Address Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="BillingAddress"/>
+                                    </div>
+                                    <lightning:inputField fieldName="BillingStreet" aura:id="iClientBillingStreet" value="{!v.newIndivProspect.BillingStreet}"/>
+                                    <lightning:inputField fieldName="BillingCity" aura:id="iClientBillingCity" value="{!v.newIndivProspect.BillingCity}"/>
+                                    <lightning:inputField fieldName="BillingPostalCode" aura:id="iClientBillingPostalCode" value="{!v.newIndivProspect.BillingPostalCode}"/>
+                                    <lightning:inputField fieldName="BillingState" aura:id="iClientBillingState" value="{!v.newIndivProspect.BillingState}"/>
+                                    <lightning:inputField fieldName="BillingCountry" aura:id="iClientBillingCountry" value="{!v.newIndivProspect.BillingCountry}"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel" 
+                                      title="Cancel"
+                                      onclick="{! c.closeNewIndividualProspectModel }"/>
+                    <lightning:button variant="brand" 
+                                      label="Create Prospect"
+                                      title="Save"
+                                      onclick="{! c.createClient }"/> 
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if> 
+    <!--khaliq added   -->
+    <!-- Create New Individual Prospect Client Modal for Branch -->
+    <aura:attribute name="isCreateBranchIndividualProspect" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.isCreateBranchIndividualProspect}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeNewBranchIndividualProspectModel}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="customSectionButton">Create Individual Prospect Client</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <lightning:recordEditForm  aura:id="iCreateBranchIndvClient" objectApiName="Account" recordId="{!v.recordId}">                      
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Client Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="Name"/>
+                                    </div>
+                                    <!--<label for="FirstName" >Customer First Name</label>-->
+                                    <!-- <lightning:inputField aura:id="iClientTitle" label="Title" fieldName="Titles__pc" value="{!v.newIndivProspect.Titles__pc}" class="customRequired"/>  -->
+                                    <lightning:inputField aura:id="iClientFirstName" fieldName="FirstName" value="{!v.newIndivProspect.FirstName}" class="customRequired"/>
+                                    <lightning:inputField aura:id="iClientLastName" label="Customer Last Name" fieldName="LastName" value="{!v.newIndivProspect.LastName}" class="customRequired"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <!--<lightning:input type="tel" label="Phone" name="PersonMobilePhone" pattern="[0]{1}[678]{1}[0-9]{8}" value="{!v.newIndivProspect.PersonMobilePhone}" class="customRequired"/>-->
+                                    <lightning:inputField aura:id="iClientIdNo"  label="Customer South African ID Number"  fieldName="ID_Number__pc" value="{!v.newIndivProspect.ID_Number__pc}" class="customRequired"/>                                 	
+                                    <lightning:inputField aura:id="iClientPersonMobilePhone" fieldName="PersonMobilePhone" value="{!v.newIndivProspect.PersonMobilePhone}" class="customRequired"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>  
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel" 
+                                      title="Cancel"
+                                      onclick="{! c.closeNewBranchIndividualProspectModel }"/>
+                    <lightning:button variant="brand" 
+                                      label="Create Prospect"
+                                      title="Save"
+                                      onclick="{! c.createClient }"/> 
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if> 
+    <!-- End Create New Individual Prospect Client Modal for Branch -->
+    <!-- Create New Business Prospect Client Modal -->
+    <aura:attribute name="isCreateBusinessProspect" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.isCreateBusinessProspect}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeNewBusinessProspectModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Create Business Prospect Client</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <lightning:recordEditForm  aura:id="iCreateIndvClient" objectApiName="Account" recordId="{!v.recordId}" recordTypeId="{!v.businessProspectRecordTypeId}">                      
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Client Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="Name"/>
+                                    </div>
+                                    <lightning:inputField aura:id="iBusinessName" fieldName="Name" value="{!v.newBusinessProspect.Name}" class="customRequired"/>
+                                    <lightning:inputField aura:id="iBusinessRegistrationNo" fieldName="Registration_Number__c" value="{!v.newBusinessProspect.Registration_Number__c}"/>
+                                    <lightning:inputField aura:id="iBusinessRegistrationNo" fieldName="Client_Type__c" value="{!v.newBusinessProspect.Client_Type__c}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="iBusinessCreationReason" fieldName="Client_Creation_Reason__c" value="{!v.newBusinessProspect.Client_Creation_Reason__c}" class="customRequired"/> 
+                                    <lightning:inputField aura:id="iClientCommunicationMethod" fieldName="Communication_Method__c" value="{!v.newBusinessProspect.Communication_Method__c}"/> 
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Address Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="BillingAddress"/>
+                                    </div>
+                                    <lightning:inputField fieldName="BillingStreet" aura:id="iBusinessBillingStreet" value="{!v.newBusinessProspect.BillingStreet}"/>
+                                    <lightning:inputField fieldName="BillingCity" aura:id="iBusinessBillingCity" value="{!v.newBusinessProspect.BillingCity}"/>
+                                    <lightning:inputField fieldName="BillingPostalCode" aura:id="iBusinessBillingPostalCode" value="{!v.newBusinessProspect.BillingPostalCode}"/>
+                                    <lightning:inputField fieldName="BillingState" aura:id="iBusinessBillingState" value="{!v.newBusinessProspect.BillingState}"/>
+                                    <lightning:inputField fieldName="BillingCountry" aura:id="iBusinessBillingCountry" value="{!v.newBusinessProspect.BillingCountry}"/>
+                                </lightning:layoutItem>
+                                
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="BillingAddress"/>
+                                    </div>
+                                    <lightning:inputField fieldName="ShippingStreet" aura:id="iBusinessShippingStreet" value="{!v.newBusinessProspect.ShippingStreet}"/>
+                                    <lightning:inputField fieldName="ShippingCity" aura:id="iBusinessShippingCity" value="{!v.newBusinessProspect.ShippingCity}"/>
+                                    <lightning:inputField fieldName="ShippingPostalCode" aura:id="iBusinessShippingPostalCode" value="{!v.newBusinessProspect.ShippingPostalCode}"/>
+                                    <lightning:inputField fieldName="ShippingState" aura:id="iBusinessShippingState" value="{!v.newBusinessProspect.ShippingState}"/>
+                                    <lightning:inputField fieldName="ShippingCountry" aura:id="iBusinessShippingCountry" value="{!v.newBusinessProspect.ShippingCountry}"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel" 
+                                      title="Cancel"
+                                      onclick="{!c.closeNewBusinessProspectModel}"/>
+                    <lightning:button variant="brand" 
+                                      label="Create Prospect"
+                                      title="Save"
+                                      onclick="{!c.createClient}"/> 
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    <!-- Create New Business Prospect Client Modal Onboarding End-->
+    <!-- New Contact Modal -->  
+    <aura:if isTrue="{!v.isCreateContact}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeNewContactModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Create Contact</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <lightning:recordEditForm aura:id="iCreateContact" objectApiName="Contact" recordId="{!v.contactRecordId}" > 
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Contact Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="Name"/>
+                                    </div>
+                                    <lightning:inputField fieldName="Salutation" aura:id="iSalutation" value="{!v.contactRecord.Salutation}" class="customRequired"/>
+                                    <lightning:inputField fieldName="FirstName" aura:id="iFirstName" value="{!v.contactRecord.FirstName}" class="customRequired"/>
+                                    <lightning:inputField fieldName="LastName" aura:id="iLastName" value="{!v.contactRecord.LastName}"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField fieldName="Email" aura:id="iEmail" value="{!v.contactRecord.Email}"/>
+                                    <lightning:inputField fieldName="Phone" aura:id="iPhone" value="{!v.contactRecord.Phone}"/>
+                                    <lightning:inputField fieldName="MobilePhone" aura:id="iMobilePhone" value="{!v.contactRecord.MobilePhone}"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Address Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="MailingAddress"/>
+                                    </div>
+                                    <lightning:inputField fieldName="MailingStreet" aura:id="iMailingStreet" value="{!v.contactRecord.MailingStreet}"/>
+                                    <lightning:inputField fieldName="MailingCity" aura:id="iMailingCity" value="{!v.contactRecord.MailingCity}"/>
+                                    <lightning:inputField fieldName="MailingPostalCode" aura:id="iMailingPostalCode" value="{!v.contactRecord.MailingPostalCode}"/>
+                                    <lightning:inputField fieldName="MailingState" aura:id="iMailingState" value="{!v.contactRecord.MailingState}"/>
+                                    <lightning:inputField fieldName="MailingCountry" aura:id="iMailingCountry" value="{!v.contactRecord.MailingCountry}"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:recordEditForm> 
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel" 
+                                      title="Cancel"
+                                      onclick="{! c.closeNewContactModal }"/>
+                    <lightning:button variant="brand" 
+                                      label="{!v.isAccountInSalesforce == false ? 'Create Client and Contact in Salesforce' : 'Create Contact in Salesforce'}"
+                                      title="Save"
+                                      onclick="{! c.validateContact }"/> 
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    <!--W-004914 - Manoj 07022020 - Selecting Client Group, Client Type when creating Related Party-->
+    <lightning:overlayLibrary aura:id="overlayLib" />
+	<aura:handler event="c:clientTypeEvent" action="{!c.relatedPartyTemplate}"/>
+    
+    <!-- Create New Related Party Modal -->
+    <aura:attribute name="isCreateRelatedParty" type="boolean" default="false"/>
+	<aura:if isTrue="{!v.isCreateRelatedParty}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container slds-modal__content_large">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeNewRelatedPartyModal}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Create Related Party</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p> 
+                       <lightning:recordEditForm recordTypeId="{!v.individualProspectRecordTypeId}" aura:id="iCreateIndvClient" objectApiName="Account" recordId="{!v.recordId}"> 
+                           <!--Newly commented by Rajesh for Popup issue-->  
+                           <!--<lightning:recordEditForm  aura:id="iCreateIndvClient" objectApiName="Account">-->
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Related Party Role Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField aura:id="iClientIdNo" fieldName="ID_Number__pc" value="{!v.newIndivProspect.ID_Number__pc}" class="customRequired"/>
+                                   <!-- <lightning:inputField aura:id="iClientIdtype" fieldName="ID_Type__pc" value="{!v.newIndivProspect.ID_Type__pc}"/>-->
+                                    <lightning:select name="ID Type" value="{!v.newIndivProspect.ID_Type__pc}" label="ID Type" required="true" >
+                                        <option value="">--Select--</option>
+                                        <option value="SA Identity Document">SA Identity Document</option>
+                                        <option value="Passport">Passport</option>
+                                        <option value="Temporary ID Document">Temporary ID Document</option>
+                                        <option value="CIF">CIF</option>
+                                    </lightning:select>
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <lightning:dualListbox name="iRoles"
+                                                               label= "Roles:" 
+                                                               sourceLabel="Available"
+                                                               selectedLabel="Selected"
+                                                               fieldLevelHelp="Select all applicable Roles"
+                                                               options="{!v.roleOptions}"
+                                                               value="{!v.selectedRole}"
+                                                               onchange="{! c.handleChange }" /><!--handleChange added by chandra dated 02/08/2020-->
+                                </lightning:layoutItem>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Client Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="Name"/>
+                                    </div>
+                                    <lightning:inputField aura:id="iClientPersonTitle" fieldName="PersonTitle" value="{!v.newIndivProspect.PersonTitle}" class="customRequired"/>
+                                    <lightning:inputField aura:id="iClientInitials" fieldName="Initials__pc" value="{!v.newIndivProspect.Initials__pc}"/>
+                                    <lightning:inputField aura:id="iClientFirstName" fieldName="FirstName" value="{!v.newIndivProspect.FirstName}"/>
+                                    <lightning:inputField aura:id="iClientLastName" fieldName="LastName" value="{!v.newIndivProspect.LastName}" class="customRequired"/>
+                                    <aura:if isTrue="{!v.processTypeP!='Lite Onboarding'}">	<!--Manoj-6073-Lite Onboarding Manual Capture Individual-->
+                                        <lightning:inputField aura:id="iClientPersonBirthdate" fieldName="PersonBirthdate" value="{!v.newIndivProspect.PersonBirthdate}" class="customRequired"/>
+                                    </aura:if>
+                                    <lightning:inputField aura:id="iCountryOfResidence" fieldName="Country_of_Residence__c" value="{!v.newIndivProspect.Country_of_Residence__c}" class="customRequired"/> 
+                                
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                  <!--  <lightning:inputField aura:id="iClientCreationReason" fieldName="Client_Creation_Reason__c" value="{!v.newIndivProspect.Client_Creation_Reason__c}" class="customRequired"/> -->
+                               	<!--	<lightning:inputField aura:id="iGender" fieldName="Gender__pc" value="{!v.newIndivProspect.Gender__pc}" class="customRequired"/> -->
+                                    <lightning:input aura:id="iSharePercentage" cname="SharePercentage" label="Share Percentage" formatter="percent-fixed" onchange="{!c.handleSharePercentChange}" disabled="true"/><!--Add disabled to disable this field on load on screen by chandra-->
+                                     <lightning:select name="UBO" disabled="true" label="UBO" class="slds-hide" aura:id="uboFld" ><!--Add slds-hide to removed this field from screen by chandra--> 
+                                        <option value="No">No</option>
+                                        <option value="Yes">Yes</option>
+                                    </lightning:select>
+                                    <aura:if isTrue="{!v.processTypeP!='Lite Onboarding'}">		<!--Manoj-6073-Lite Onboarding Manual Capture Individual-->
+                                        <lightning:select aura:id="selectedDesignationId" label="Designation" name="Designation" >
+                                            <option value="" text="- NONE -" />
+                                            <aura:iteration items="{!v.designationOptions}" var="designation">
+                                                <option  value="{!designation}" >{!designation}</option>
+                                            </aura:iteration>
+                                        </lightning:select> 
+                                        <lightning:select name="Gender" value="{!v.newIndivProspect.Gender__pc}" label="Gender" required="true">
+                                            <option value="">--Select--</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option> 
+                                        </lightning:select> 
+                                    </aura:if> 
+                                    <!--Added by rajesh-->
+                                    <!-- <lightning:inputField fieldName="Country_of_Birth__pc" value="{!v.newIndivProspect.Country_of_Birth__pc}" class=""/>-->
+                                    <lightning:select name="Country of Birth" value="{!v.newIndivProspect.Country_of_Birth__pc}" label="Country of Birth" class="customRequired" >
+                                        <option value="">--Select--</option>
+                                        <aura:iteration items="{!v.countryValuesArray_NEW}" var="item">
+                                            <option value="{!item.value}">{!item.label}</option>
+                                        </aura:iteration>
+                                        
+                                    </lightning:select>
+                                    
+                                    <aura:if isTrue="{!v.processTypeP!='Lite Onboarding'}">	
+                                        <lightning:inputField fieldName="Country_Passport_Issued__pc" aura:id="iCountryPassportIssued"  value="{!v.newIndivProspect.Country_Passport_Issued__pc}" />
+                                        <lightning:inputField fieldName="Date_Issued__pc" aura:id="iCountryDateIssued"  value="{!v.newIndivProspect.Date_Issued__pc}" />
+                                        <lightning:inputField fieldName="Communication_Language__pc" aura:id="iCommunicationLanguage"  value="{!v.newIndivProspect.Communication_Language__pc}" class="customRequired"/>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.processTypeP=='Lite Onboarding'}">
+                                        <lightning:inputField fieldName="Client_Type__pc" aura:id="iClientTypeV"  value="{!v.newIndivProspect.Client_Type__pc}" />
+                                        <lightning:inputField fieldName="Marital_Status__pc" aura:id="iMaritalStatus"  value="{!v.newIndivProspect.Marital_Status__pc}" />
+                                        <lightning:inputField fieldName="Marital_Contract_Type__pc" aura:id="iMaritalContractType"  value="{!v.newIndivProspect.Marital_Contract_Type__pc}" />
+                                    </aura:if>
+                                    <!--<lightning:select name="Country of Citizenship" value="{!v.newIndivProspect.Country_of_Citizenship__c}" label="Country of Citizenship" class="customRequired" >
+                                        <option value="">Select</option>
+                                        <aura:iteration items="{!v.countryValuesArray_NEW}" var="item">
+                                            <option value="{!item.value}">{!item.label}</option>
+                                        </aura:iteration>
+                                        
+                                    </lightning:select>-->
+                                       <!-- <lightning:inputField fieldName="Country_of_Citizenship__c" value="{!v.newIndivProspect.Country_of_Citizenship__c}" class=""/> -->
+                                </lightning:layoutItem>
+                                
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="9">
+                                    <lightning:dualListbox aura:id="selectGenre"
+                                                           name="Country of Citizenship"
+                                                           required="true"
+                                                           label="Country of Citizenship"
+                                                           sourceLabel="Available Country"
+                                                           selectedLabel="Selected Country"
+                                                           options="{!v.countryValuesArray_NEW }"
+                                                           value="{!v.countryOfCitizenShip}"
+                                                           onchange="{! c.handleChangeCountryOfCitzn }"
+                                                           />
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <aura:if isTrue="{!v.processTypeP!='Lite Onboarding'}">		<!--Manoj-6073-Lite Onboarding Manual Capture Individual-->
+                                <h3 class="slds-section__title">
+                                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Contact Details</span>
+                                </h3>
+                                <lightning:layout>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                      <!--  <lightning:inputField aura:id="iClientPersonMobilePhone" fieldName="PersonMobilePhone" value="{!v.newIndivProspect.PersonMobilePhone}" />
+                                        <lightning:inputField aura:id="iClientPersonHomePhone" fieldName="PersonHomePhone" value="{!v.newIndivProspect.PersonHomePhone}"/>-->
+                                        <label for="iClientPhone">Phone</label>
+                                        <lightning:inputField aura:id="iClientPhone" variant="label-hidden" fieldName="Phone" value="{!v.newIndivProspect.Phone}" label="Phone" class="customRequired" />
+                                        <lightning:inputField aura:id="iClientPersonMobilePhone" fieldName="PersonMobilePhone" value="{!v.newIndivProspect.PersonMobilePhone}" label="MobilePhone" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:inputField aura:id="iClientEmail" fieldName="PersonEmail" value="{!v.newIndivProspect.PersonEmail}" class="customRequired" /> 
+                                      <!--  <lightning:inputField aura:id="iClientCommunicationMethod" fieldName="Communication_Method__c" value="{!v.newIndivProspect.Communication_Method__c}"/> -->
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                               
+                                <!-- TdB - Occupation START-->
+                                <h3 class="slds-section__title">
+                                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Occupation Details</span>
+                                </h3>
+                                <lightning:layout multipleRows="true">
+                                    <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >
+                                        <lightning:inputField aura:id="iOccupationStatus" fieldName="Occupation_Status__pc" value="{!v.newIndivProspect.Occupation_Status__pc}" class="customRequired"/>
+                                    </lightning:layoutItem>
+                                    <!--<aura:if isTrue="{!v.isEmployed}">-->
+                                        <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                                            <lightning:inputField fieldName="Occupation__pc" value="{!v.newIndivProspect.Occupation__pc}" />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >
+                                            <lightning:inputField fieldName="Occupation_Category__pc"  value="{!v.newIndivProspect.Occupation_Category__pc}" />
+                                        </lightning:layoutItem>
+                                    	<lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >
+                                        	<lightning:inputField fieldName="Occupation_Level__pc"  value="{!v.newIndivProspect.Occupation_Level__pc}" />
+                                    	</lightning:layoutItem>
+                                        <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >
+                                            <lightning:inputField fieldName="Employer_Name__pc"  value="{!v.newIndivProspect.Employer_Name__pc}" />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >
+                                            <lightning:inputField fieldName="Employer_Sector__pc"  value="{!v.newIndivProspect.Employer_Sector__pc}" />
+                                        </lightning:layoutItem>
+                                    <!--</aura:if>-->
+                                </lightning:layout>
+                                
+                                <br />
+                                <!--Occupation End-->
+                               
+                                 <!--</lightning:recordEditForm>-->
+                                <h3 class="slds-section__title">
+                                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Address Information</span>
+                                </h3>
+                                <lightning:layout>
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <div style="display:none">
+                                            <!--Newly commented by Rajesh for Popup issue-->
+                                            <!--<lightning:inputField fieldName="BillingAddress"/>-->
+                                        </div>
+                                        <lightning:inputField required="true" fieldName="BillingStreet" aura:id="iClientBillingStreet" value="{!v.newIndivProspect.BillingStreet}"/>
+                                        <lightning:inputField required="true" fieldName="BillingCity" aura:id="iClientBillingCity" value="{!v.newIndivProspect.BillingCity}" />
+                                        <lightning:inputField required="true" fieldName="BillingPostalCode" aura:id="iClientBillingPostalCode" value="{!v.newIndivProspect.BillingPostalCode}" />
+                                        <!--<lightning:inputField required="true" fieldName="BillingState" aura:id="iClientBillingState" value="{!v.newIndivProspect.BillingState}" />-->
+                                        <lightning:inputField required="true" fieldName="BillingCountry" aura:id="iClientBillingCountry" value="{!v.newIndivProspect.BillingCountry}"/>
+                                        <lightning:input type="text" required="true" name="Billing Suburb" label="Billing Suburb" value="{!v.newIndivProspect.Maiden_Name__pc}" />
+    
+                                    </lightning:layoutItem>
+                                </lightning:layout>
+                            </aura:if>
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeNewRelatedPartyModal }"/>
+                    <lightning:button variant="brand"
+                                      label="Create Related Party"
+                                      title="Save"
+                                      onclick="{! c.createRelatedParty }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>  
+    
+    <!--Update Related Party-->
+    <aura:if isTrue="{!v.isUpdateRelatedParty}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container slds-modal__content_large">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeEditRelatedPartyModal}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Update Related Party</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p> 
+                        <lightning:recordEditForm onload="{!handleUpdateRelatedPartyLoad}" recordTypeId="{!v.individualProspectRecordTypeId}" aura:id="editRelatedParty" objectApiName="Account" ><!--recordId="{!v.editedAccountId}"--> 
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Related Party Role Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="12">
+                                    <lightning:inputField fieldName="ID_Number__pc" value="{!v.editedAccount.ID_Number__pc}" class="customRequired"/>
+                                    <lightning:select name="ID Type" value="{!v.editedAccount.ID_Type__pc}" label="ID Type" required="true" >
+                                        <option value="">--Select--</option>
+                                        <option value="SA Identity Document">SA Identity Document</option>
+                                        <option value="Passport">Passport</option>
+                                        <option value="Temporary ID Document">Temporary ID Document</option>
+                                        <option value="CIF">CIF</option>
+                                    </lightning:select>
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <lightning:dualListbox name="iRoles"
+                                                               label= "Roles:" 
+                                                               sourceLabel="Available"
+                                                               selectedLabel="Selected"
+                                                               fieldLevelHelp="Select all applicable Roles"
+                                                               options="{!v.roleOptions}"
+                                                               value="{!v.selectedRole}"
+                                                               onchange="{! c.handleRoleChange }" /><!--handleChange added by chandra dated 23/07/2020-->
+                                </lightning:layoutItem>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Client Information</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <div style="display:none">
+                                        <lightning:inputField fieldName="Name"/>
+                                    </div>
+                                    <lightning:inputField aura:id="iClientPersonTitle" fieldName="PersonTitle" value="{!v.editedAccount.PersonTitle}" class="customRequired"/>
+                                    <lightning:inputField aura:id="iClientInitials" fieldName="Initials__pc" value="{!v.editedAccount.Initials__pc}"/>
+                                    <lightning:inputField aura:id="iClientFirstName" fieldName="FirstName" value="{!v.editedAccount.FirstName}"/>
+                                    <lightning:inputField aura:id="iClientLastName" fieldName="LastName" value="{!v.editedAccount.LastName}" class="customRequired"/>
+                                    <lightning:inputField aura:id="iClientPersonBirthdate" fieldName="PersonBirthdate" value="{!v.editedAccount.PersonBirthdate}" class="customRequired"/>
+                                   <lightning:inputField aura:id="iCountryOfResidence" fieldName="Country_of_Residence__c" value="{!v.editedAccount.Country_of_Residence__c}" class="customRequired"/>  
+                                    
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:input aura:id="editSharePercent" cname="SharePercentage" label="Share Percentage" formatter="percent-fixed"  onchange="{!c.handleSharePercentChange}" disabled="true"/><!--Add disabled to disable this field on load on screen by chandra-->
+                                    <lightning:select aura:id="selectedDesignationId" label="Designation" name="Designation" >
+                                        <option value="" text="- NONE -" />
+                                        <aura:iteration items="{!v.designationOptions}" var="designation">
+                                            <option  value="{!designation}" >{!designation}</option>
+                                        </aura:iteration>
+                                    </lightning:select> 
+                                    <lightning:select name="Gender" value="{!v.editedAccount.Gender__pc}" label="Gender" required="true">
+                                        <option value="">--Select--</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option> 
+                                    </lightning:select> 
+                                    <lightning:select name="Country of Birth" value="{!v.editedAccount.Country_of_Birth__pc}" label="Country of Birth" class="customRequired" >
+                                        <option value="">--Select--</option>
+                                        <aura:iteration items="{!v.countryValuesArray_NEW}" var="item">
+                                            <option value="{!item.value}">{!item.label}</option>
+                                        </aura:iteration>
+                                        
+                                    </lightning:select>
+                                    <lightning:inputField fieldName="Country_Passport_Issued__pc" aura:id="iCountryPassportIssued" value="{!v.editedAccount.Country_Passport_Issued__pc}"/>
+                                    <lightning:inputField fieldName="Date_Issued__pc" aura:id="iCountryDateIssuedEdit" value="{!v.editedAccount.Date_Issued__pc}"/>
+                                     <lightning:inputField fieldName="Communication_Language__pc" aura:id="iCommunicationLanguage"  value="{!v.editedAccount.Communication_Language__pc}" class="customRequired"/>
+                                </lightning:layoutItem>
+                                
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="9">
+                                    <lightning:dualListbox aura:id="selectGenre"
+                                                           name="Country of Citizenship"
+                                                           required="true"
+                                                           label="Country of Citizenship"
+                                                           sourceLabel="Available Country"
+                                                           selectedLabel="Selected Country"
+                                                           options="{!v.countryValuesArray_NEW }"
+                                                           value="{!v.countryOfCitizenShip}"
+                                                           onchange="{! c.handleChangeCountryOfCitzn }"
+                                                           />
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Contact Details</span>
+                            </h3>
+                            <lightning:layout>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <label for="iClientPhone">Phone</label>
+                                    <lightning:inputField aura:id="iClientPhone" variant="label-hidden" fieldName="Phone" value="{!v.editedAccount.Phone}" label="Phone" class="customRequired" />
+                                    <lightning:inputField aura:id="iClientPersonMobilePhone" fieldName="PersonMobilePhone" value="{!v.editedAccount.PersonMobilePhone}" label="MobilePhone" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:inputField aura:id="iClientEmail" fieldName="PersonEmail" value="{!v.editedAccount.PersonEmail}" class="customRequired" /> 
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            
+                            <!-- TdB - Occupation START-->
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Occupation Details</span>
+                            </h3>
+                            <lightning:layout multipleRows="true">
+                                <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >
+                                    <lightning:inputField aura:id="iOccupationStatus" fieldName="Occupation_Status__pc" value="{!v.editedAccount.Occupation_Status__pc}" class="customRequired"/>
+                                </lightning:layoutItem>
+                                <!--<aura:if isTrue="{!v.isEmployed}">-->
+                                    <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                                        <lightning:inputField fieldName="Occupation__pc" value="{!v.editedAccount.Occupation__pc}" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >
+                                        <lightning:inputField fieldName="Occupation_Category__pc"  value="{!v.editedAccount.Occupation_Category__pc}" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >
+                                        <lightning:inputField fieldName="Occupation_Level__pc"  value="{!v.editedAccount.Occupation_Level__pc}" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >
+                                        <lightning:inputField fieldName="Employer_Name__pc"  value="{!v.editedAccount.Employer_Name__pc}" />
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >
+                                        <lightning:inputField fieldName="Employer_Sector__pc"  value="{!v.editedAccount.Employer_Sector__pc}" />
+                                    </lightning:layoutItem>
+                                <!--</aura:if>-->
+                            </lightning:layout>
+                            
+                            <br />
+                            <!--Occupation End-->
+                            
+                            <h3 class="slds-section__title">
+                                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Address Information</span>
+                           </h3>
+                           <!--BUSINESS ADDRESS START-->
+                           <c:OnboardingClientBusAdd isFromEditRelatedParty="true" aura:id="addressComp"/>
+                           <!--BUSINESS ADDRESS END-->
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeEditRelatedPartyModal }"/>
+                    <lightning:button variant="brand"
+                                      label="Update Related Party"
+                                      title="Save"
+                                      onclick="{! c.updateRelatedParty }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>  
+	<!--Manoj-09102020 - W-005633 New Design for Single Button New Prospect-->
+    <aura:if isTrue="{!v.showEntityTypeSelection}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container slds-modal__content_large" style="width: 70%; !important">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeEntityTypeSelection}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Entity Selection</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" style="overflow: initial;">
+                    <p> 
+                        <lightning:recordEditForm objectApiName="Account"
+                                                  aura:id="recordNewAccount"
+                                                  recordId="{!v.recordId}"
+                                                  recordTypeId="{!v.businessProspectRecordTypeId}">
+                            <lightning:layout multipleRows="true">
+                                <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                                    <lightning:inputField fieldName="Client_Group__c" aura:id="clientGroupId" required="true"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                                    <lightning:inputField fieldName="Client_Type__c" aura:id="clientTypeId" required="true"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                                    <lightning:inputField fieldName="Place_of_Residence__c" aura:id="placeOfResidenceId" required="true"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeEntityTypeSelection }"/>
+                    <lightning:button variant="brand"
+                                      label="Select Client Type"
+                                      title="Save"
+                                      onclick="{! c.selectEntityType }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>  
+</aura:component>

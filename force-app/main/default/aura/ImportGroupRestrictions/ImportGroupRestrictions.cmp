@@ -1,0 +1,109 @@
+<aura:component controller="ROTImportRestrictionController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <!-- Attributes -->
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="importRestrictionColumns" type="List" />
+    <aura:attribute name="restrictionGrpData" type="Object" />
+    <aura:attribute name="restrictionGrpDataCopy" type="Object" />
+    <aura:attribute name="CIF" type="String"/>
+    <aura:attribute name="caseId" type="String"/>
+    <aura:attribute name="options" type="List" default="[{'label': 'Current', 'value': 'Current'},{'label': 'All', 'value': 'All'},]"/>
+    <aura:attribute name="selectedRecords" type="Object" />
+    <aura:attribute name="selectedRows" type="List"/>
+    <aura:attribute name="currentSelected" type="List"/>
+    <aura:attribute name="toggledIds" type="List"/>
+    <aura:attribute name="body" type="String"/>
+    <aura:attribute name="showConfirmationModal" type="Boolean" default="false"/>
+    
+    <!-- Import Restrictions Modal Start -->
+    <aura:if isTrue="{!!v.showConfirmationModal}">
+        <div >
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container" style="max-width: 80rem !important; width:80% !important;">
+                    <!-- Modal Header -->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close" class="slds-modal__close" size="large" variant="bare-inverse"  alternativeText="Close" onclick="{! c.closeModal }"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"><b>Import Existing Group Restrictions</b></h2>
+                    </header>
+                    <!-- Main Body of Modal -->
+                    <div class="slds-modal__content sldsp-around_medium outerBox" id="modal-content-id-1">
+                        
+                        <!-- Spinner -->
+                        <aura:if isTrue="{!v.showSpinner}">
+                                <lightning:spinner alternativeText="Loading" size="medium" class="" />
+                        </aura:if>
+                        
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <lightning:input type="text" label="Customer Key" value="{!v.CIF}" class="slds-size_6-of-12" disabled="true"/>
+                            </lightning:layoutItem>
+                            <aura:if isTrue="">
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:combobox name="effectiveState"  aura:id="effectiveState" label="Effective State" value="Current" options="{! v.options }"  class="slds-size_6-of-12"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:input type="text" aura:id="entityId" label="Entity Id"  class="slds-size_6-of-12" />
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <lightning:input type="text" aura:id="entityDesc" label="Entity Description" class="slds-size_6-of-12"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="12" padding="around-small">
+                                    <lightning:button class="slds-float--right" variant="brand" label="Search" title="Search" onclick="{! c.handleSearch }" />
+                                </lightning:layoutItem>
+                            </aura:if>
+                            <lightning:layoutItem size="12" padding="around-small">
+                                <lightning:treeGrid columns="{! v.importRestrictionColumns }"
+                                                    data="{! v.restrictionGrpData }"
+                                                    keyField="SchemeNodeID"
+                                                    selectedRows="{! v.selectedRows }"
+                                                    onrowselection="{! c.updateSelectedRows }"
+                                                    aura:id="importRestrictionTable"
+                                                    ontoggle="{! c.onToggle}"
+                                                    />
+                                
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        
+                    </div>
+                    <!-- Footer of Modal -->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="brand" label="Import" title="Import" onclick="{! c.handleImport }" />
+                        <lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.closeModal }" />   
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+        
+        <aura:set attribute="else">
+            <!-- Confirmation Modal Start-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close" onclick="{!c.closeConfirmModal}" alternativeText="close" variant="bare-inverse" class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"><b>Import Existing Group Restrictions</b></h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p>
+                            <center><b> {!v.body} </b></center>
+                        </p>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <aura:if isTrue="{!not(empty(v.selectedRecords))}">
+                            <lightning:button variant="brand" label="Yes" title="Yes" onclick="{!c.confirmImport}"/>
+                            <lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeConfirmModal }" />
+                            <aura:set attribute="else">
+                                <center><lightning:button variant="brand" label="Ok" title="Ok" onclick="{! c.closeConfirmModal }" /></center>
+                            </aura:set>
+                        </aura:if>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+            <!-- Confirmation Modal End-->
+        </aura:set>
+    </aura:if>
+    <!-- Import Restrictions Modal End -->
+</aura:component>

@@ -1,0 +1,577 @@
+<!--
+* Lightning Component for Fulfillment -Term Loans  Quotations and Agreements ::: NON-SCORED
+* 
+* @author  Himanshu Nimje
+* @version v1.0
+* @since   2020-11-17
+* @UserStory W-007430,W-007431
+-->
+
+<aura:component access="global" controller="TermLoansQuotationsCtrOpp"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable,force:hasSObjectName">
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <aura:attribute name="recordId" type="Id" /> <!--opp Id-->
+    <!--<aura:attribute name="opportunity" type="Opportunity" default="{sobjectType:'Opportunity'}"/> -->
+    <!--<aura:attribute name="appProduct" type="Application_Product__c" default="{sobjectType:'Application_Product__c'}"/>-->
+    <aura:attribute name="appProduct" type="object" />
+    <aura:attribute name="activeSections" type="List" default="['QuotesAndAgreementsInput', 'QuotesAndAgreementsOutput']" />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="isContDtError" type="boolean" default="false" />
+    <aura:attribute name="contDtError" type="String" default="" />
+    <aura:attribute name="loanAmount" type="Integer"  />
+    <aura:attribute name="contractTerm" type="Integer" />
+    <aura:attribute name="contractDate" type="Date" />
+    <aura:attribute name="dateoffirstinstalment" type="Date" />
+    <aura:attribute name="serviceFee" type="Integer" default="69" />
+    <aura:attribute name="initiationFeetobeChargedUpfront" type="Integer"   default="0"/>
+    <aura:attribute name="primeRate" type="Integer" />
+    <aura:attribute name="marginPercentage" type="Integer" />
+    <aura:attribute name="maxRateType" type="String" default="UNSECURED CREDIT TRANSACTIONS"/>
+    <aura:attribute name="empowermentFundCode" type="Integer" />
+    <aura:attribute name="quoteNumber" type="String" />
+    <aura:attribute name="optionRepaymentFrequency" type="Object" />
+    <aura:attribute name="selectedRepaymentFrequency" type="String" />
+    <aura:attribute name="optionSkipMonths" type="Object" />
+    <aura:attribute name="selectedSkipMonths" type="String" />
+    <aura:attribute name="optionCreditLifeRequired" type="List" default="[
+                                                                         {'label': 'YES', 'value': 'YES'},
+                                                                         {'label': 'NO', 'value': 'NO'}
+                                                                         ]"/>
+    <aura:attribute name="selectedCreditLifeRequired" type="String" default="NO"/>
+    <aura:attribute name="optionInitiationFeePaymentMethod" type="Object" />
+    <aura:attribute name="selectedInitiationFeePaymentMethod" type="String" /> 
+    <aura:attribute name="optionDebitOrder" type="List" default="[
+                                                                         {'label': 'YES', 'value': 'YES'},
+                                                                         {'label': 'NO', 'value': 'NO'}
+                                                                         ]"/>
+    <aura:attribute name="selectedDebitOrder" type="String" default="YES"/>
+    <aura:attribute name="optionRateAboveorBelow" type="Object" />
+    <aura:attribute name="selectedRateAboveorBelow" type="String" />
+    <aura:attribute name="optionTermLoanType" type="Object" />
+    <aura:attribute name="selectedTermLoanType" type="String" />
+    <aura:attribute name="optionComplexStructure" type="List" default="[
+                                                                         {'label': 'YES', 'value': 'YES'},
+                                                                         {'label': 'NO', 'value': 'NO'}
+                                                                         ]"/>
+    <aura:attribute name="selectedComplexStructure" type="String" default="NO"/>
+    <aura:attribute name="optionInterestRateType" type="Object" />
+    <aura:attribute name="selectedInterestRateType" type="String" />
+    <aura:attribute name="optionLoanPurposes" type="Object" />
+    <aura:attribute name="selectedLoanPurposes" type="String" />
+    <aura:attribute name="PenaltyInterestRate" type="String" /> 
+    <aura:attribute name="respObjData" type="Object"  />
+    
+    <aura:attribute name="showDefSkipmonths" type="Boolean" default="false"/>
+    <aura:attribute name="InputandOuput" type="string" />
+    <aura:attribute name="recordtype" type="string" />
+    <aura:attribute name="sObjectName" type="String" />
+     <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    
+    <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections }">
+        <aura:if isTrue="{!v.InputandOuput == 'both'}">
+        <lightning:accordionSection name="QuotesAndAgreementsInput"  label="Quote/Contract Inputs">
+            <lightning:layout multipleRows="true" >
+                <lightning:layoutItem size="12">
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input aura:id="quoteForm" type="number" formatter="currency" step="0.01" label="Loan Amount" value="{!v.loanAmount}" required="true" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input aura:id="quoteForm" type="number"  label="Contract Term" value="{!v.contractTerm}" placeholder="Enter No. of Months" required="true"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input  aura:id="quoteForm" 
+                                     name="date" type="date" 
+                                     class="{! v.isContDtError ? 'slds-has-error' : ''}"  
+                                     label="Contract Date" 
+                                     value="{!v.contractDate}" 
+                                     placeholder="Contract Date" 
+                                     required="true" 
+                                     onchange="{!c.checkContractDt}" />
+                    <aura:if isTrue="{!v.isContDtError}">
+                        <div class="slds-text-color_error slds-p-left_x-small">
+                            Date must be in present or 4 days in future..
+                        </div>
+                        <aura:set attribute="else">
+                            <div class="slds-text-color_error slds-p-left_x-small">
+                                {!v.contDtError} 
+                            </div>
+                        </aura:set>
+                    </aura:if>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input  aura:id="quoteForm" type="date"  label="Date of first Instalment" value="{!v.dateoffirstinstalment}" required="true" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="quoteForm"  label="Repayment Frequency" class="dynamic" onchange="{!c.onPickListRepayFreqChange}"  value="{!v.selectedRepaymentFrequency}" required="true" >
+                        <aura:iteration items="{!v.optionRepaymentFrequency}" var="RF">
+                            <option class="{!RF.class}" text="{!RF.label}" value="{!RF.value}" selected="{!RF.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <aura:if isTrue="{!v.showDefSkipmonths}">
+                         <b><p>Skip Months :</p></b>
+                    <ui:outputText   value="{!v.selectedSkipMonths}"  />
+                      <aura:set attribute="else">
+                    <lightning:select   label="Skip Months" class="dynamic" value="{!v.selectedSkipMonths}" >
+                        <aura:iteration items="{!v.optionSkipMonths}" var="SM">
+                            <option class="{!SM.class}" text="{!SM.label}" value="{!SM.value}" selected="{!SM.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                        </aura:set>
+                    </aura:if>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input  aura:id="quoteForm" type="number" formatter="currency" step="0.01" label="Service Fee"  value="{!v.serviceFee}" required="true" />
+                </lightning:layoutItem>    
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input  aura:id="quoteForm" type="number" formatter="currency" step="0.01" label="Initiation Fee to be Charged Upfront"  value="{!v.initiationFeetobeChargedUpfront}"  />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:radioGroup name="radioCreditLifeRequired"
+                                          aura:id="quoteForm"
+                                          label="Credit Life Required"
+                                          options="{! v.optionCreditLifeRequired }"
+                                          value="{! v.selectedCreditLifeRequired }"
+                                          type="button"
+                                          />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="quoteForm"  label="Initiation Fee Payment Method" class="dynamic" value="{!v.selectedInitiationFeePaymentMethod}" required="true" >
+                        <aura:iteration items="{!v.optionInitiationFeePaymentMethod}" var="IFPM">
+                            <option class="{!IFPM.class}" text="{!IFPM.label}" value="{!IFPM.value}" selected="{!IFPM.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:radioGroup name="radioDebitOrder"
+                                          aura:id="quoteForm"
+                                          label="Debit Order"
+                                          options="{! v.optionDebitOrder }"
+                                          value="{! v.selectedDebitOrder }"
+                                          type="button"
+                                          required="true"
+                                          />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input   type="number" formatter="percent-fixed" step="0.01" label="Prime Rate"  value="{!v.primeRate}" readonly="true" />
+                </lightning:layoutItem> 
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input  aura:id="quoteForm" type="number" formatter="percent-fixed" step="0.01" label="Margin %"  value="{!v.marginPercentage}" required="true" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="quoteForm"  label="Rate Above or Below" class="dynamic" value="{!v.selectedRateAboveorBelow}" required="true" >
+                        <aura:iteration items="{!v.optionRateAboveorBelow}" var="RAB">
+                            <option class="{!RAB.class}" text="{!RAB.label}" value="{!RAB.value}" selected="{!RAB.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="quoteForm"  label="Term Loan Type" class="dynamic" value="{!v.selectedTermLoanType}" required="true" >
+                        <aura:iteration items="{!v.optionTermLoanType}" var="TLT">
+                            <option class="{!TLT.class}" text="{!TLT.label}" value="{!TLT.value}" selected="{!TLT.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:radioGroup name="radioUseComplexStructure"
+                                          aura:id="quoteForm"
+                                          label="Use Complex Structure"
+                                          options="{! v.optionComplexStructure }"
+                                          value="{! v.selectedComplexStructure }"
+                                          type="button"
+                                          required="true"
+                                          />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="quoteForm"  label="Interest Rate Type" class="dynamic" value="{!v.selectedInterestRateType}" required="true" >
+                        <aura:iteration items="{!v.optionInterestRateType}" var="IRT">
+                            <option class="{!IRT.class}" text="{!IRT.label}" value="{!IRT.value}" selected="{!IRT.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <lightning:select aura:id="quoteForm"  label="Loan Purposes" class="dynamic" value="{!v.selectedLoanPurposes}" required="true" >
+                        <aura:iteration items="{!v.optionLoanPurposes}" var="LP">
+                            <option class="{!LP.class}" text="{!LP.label}" value="{!LP.value}" selected="{!LP.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>               
+                <lightning:layoutItem size="6" padding="around-small">
+                    <b><p>Max Rate Type :</p></b>
+                    <ui:outputText  value="{!v.maxRateType}"  />
+                    <!--Lightning:input  aura:id="quoteForm" type="number"  label="Max Rate Type"  value="{!v.maxRateType}"  /-->
+                </lightning:layoutItem> 
+                <lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input  type="number"  label="Empowerment Fund Code"  value="{!v.empowermentFundCode}"  />
+                </lightning:layoutItem> 
+                <lightning:layoutItem size="6" padding="around-small">
+                     <b><p>Quote Number :</p></b>
+                    <ui:outputText    value="{!v.quoteNumber}"  />
+                </lightning:layoutItem> 
+                
+                
+                
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Calculate" variant="brand" onclick="{!c.calculate}" />
+                </lightning:layoutItem>
+                
+                
+            </lightning:layout>
+        </lightning:accordionSection>
+        
+        </aura:if>
+        <aura:if isTrue="{!or(v.InputandOuput == 'both', v.InputandOuput == 'onlyoutput')}">
+            
+        <lightning:accordionSection name="QuotesAndAgreementsOutput"  label="Quote/Contract Outputs">
+         
+              
+            <lightning:layout multipleRows="true">
+                
+                <lightning:layoutItem size="6" >
+                    <b><p>Credit life Benefit Details :</p></b>
+                    <ui:outputText value="{!v.respObjData.outputCreditlifeBenefitDetails}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                     <b> <p>Date Last Instalment :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputDateLastInstalment}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                     <b> <p>Regular Capital And Interest Instalment Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputRegularCapitalAndInterestInstalmentAmount}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                     <b> <p>Date Last Capital AndInterest Instalment :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputDateLastCapitalAndInterestInstalment}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                     <b> <p>Term Loan Type :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTermLoanType}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                     <b> <p>Credit life Net Premium :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputCreditlifeNetPremium}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                    <b>  <p>Number Of Capital And Interest Instalments :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputNumberOfCapitalAndInterestInstalments}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                     <b> <p>Surety Info :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputSuretyInfo}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Interest And Fees Credit life :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputInterestAndFeesCreditlife}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Credit life Policy Fee :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputCreditlifePolicyFee}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Other Conditions :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputOtherConditions}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Highest Interest Only Instament Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputHighestInterestOnlyInstamentAmount}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Scheme Type :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputSchemeType}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Total Instalment Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalInstalmentAmount}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Settlement Indicator :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputSettlementIndicator}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                   <b> <p>Total Cost Of Credit:</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalCostOfCredit}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Product Code :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputProductCode}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Payment Method Description :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputPaymentMethodDescription}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>NCA Indicator :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputNCAIndicator}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Credit Life :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputCreditLife}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Empowerment Code :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputEmpowermentCode}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                   <b> <p>Date First Interest Only Instalment :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputDateFirstInterestOnlyInstalment}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p> Credit life Premium :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputCreditlifePremium}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Max Rate Type :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputMaxRateType}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Total Amount Repay:</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalAmountRepay}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Complex Structure Indicator :</p></b>
+                     <ui:outputText value="{!v.respObjData.outpuComplexStructureIndicator}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>SMS Info Required Indicator :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputSMSInfoRequiredIndicator}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                  <b>  <p>Version Number :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputVersionNumber}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Total Credit Life :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalCreditLife}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Rate Factor Sign :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputRateFactorSign}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Application Number :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputApplicationNbr}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Credit life Scheme Code :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputCreditlifeSchemeCode}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                  <b>  <p>Credit life Commission :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputCreditlifeCommission}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                  <b>  <p>Visible Credit Limit Indicator :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputVisibleCreditLimitIndicator}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Initiation Fee :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputInitiationFee}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                  <b>  <p>Security Request Indicator :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputSecurityRequestIndicator}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                  <b>  <p>Total All Instalment Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalAllInstalmentAmount}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                  <b>  <p>Skip Payments Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputSkipPaymentsAmount}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>output Agreement Type :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputAgreementType}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Settlement Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputSettlementAmount}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                  <b>  <p>Broken Period Indicator:</p></b>
+                     <ui:outputText value="{!v.respObjData.outputBrokenPeriodIndicator}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                  <b>  <p>NLR Reference Number :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputNLRReferenceNbr}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Loan Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputLoanAmount}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Number Of Instalments :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputNumberOfInstalments}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                <b>    <p>Effective Interest Rate :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputEffectiveInterestRate}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Number Of Interest Only Instalments :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputNumberOfInterestOnlyInstalments}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Final Instalment Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputFinalInstalmentAmount}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Credit life Busness Indicator :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputCreditlifeBusnessIndicator}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Rate Factor Value:</p></b>
+                     <ui:outputText value="{!v.respObjData.outputRateFactorValue}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Total Service Fee :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalServiceFee}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                  <b>  <p>Service Fee :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputServiceFee}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                 <b>   <p>Regular Instalment Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputRegularInstalmentAmount}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                <b>    <p>Broken Period Instalment Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputBrokenPeriodInstalmentAmount}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                <b>    <p>Quote Number :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputQuoteNbr}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                <b>    <p>Scheme Code :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputSchemeCode}"/> 
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" >
+                <b>    <p>Contract Date :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputContractDate}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Total Interest Only Instalment Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalInterestOnlyInstalmentAmount}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Channel Quote Created :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputChannelQuoteCreated}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Rate Type :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputRateType}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Total Settlement Amount :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalSettlementAmount}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Total Interest And Capital Instalment Amount:</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalInterestAndCapitalInstalmentAmount}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Purpose Of Loan Code :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputPurposeOfLoanCode}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Number Of Skip Payments :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputNumberOfSkipPayments}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Skip Months :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputSkipMonths}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Initiation Fee Payment Method :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputInitiationFeePaymentMethod}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Date Last Interest Only Instalment :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputDateLastInterestOnlyInstalment}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Total Finance Charges :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalFinanceCharges}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Instalment Including Credit life :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputInstalmentIncludingCreditlife}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                 <b>   <p>Account Type :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputAccountType}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                <b>    <p>Instalment Frequency Description :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputInstalmentFrequencyDescription}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Date First Instalment :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputDateFirstInstalment}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Cost Of Credit Multiple :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputCostOfCreditMultiple}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Date First Capital And Interest Instalment :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputDateFirstCapitalAndInterestInstalment}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Payment Method :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputPaymentMethod}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                     <b>   <p>Total Amount Deferred :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputTotalAmountDeferred}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                  <b>  <p>Instalment Frequency :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputInstalmentFrequency}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                     <b> <p>Credit life Request Indicator :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputCreditlifeRequestIndicator}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                     <b>  <p>Credit life Scheme Number:</p></b>
+                     <ui:outputText value="{!v.respObjData.outpuCreditlifeSchemeNbr}"/> 
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" >
+                     <b>   <p>Number Of Regular Instalments :</p></b>
+                     <ui:outputText value="{!v.respObjData.outputNumberOfRegularInstalments}"/> 
+                </lightning:layoutItem>
+
+                <!--lightning:layoutItem size="6" padding="around-small">
+                    <Lightning:input  aura:id="quoteForm" type="number" formatter="percent-fixed" step="0.01" label="Penalty interest rate"  value="{!v.PenaltyInterestRate}"  />
+                </lightning:layoutItem> 
+                
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:button class="slds-float_right" label="Generate Document" variant="brand" onclick="{!c.generateQuote}" />
+                </lightning:layoutItem-->
+            </lightning:layout>
+            
+        </lightning:accordionSection>
+        </aura:if>
+    </lightning:accordion> 
+    <aura:if isTrue="{!v.InputandOuput == 'both'}">
+    <c:QuotesAgreementsAdditionalDetailsOpp recordId="{!v.recordId}" securityReq="{!v.respObjData.outputSecurityRequestIndicator}" contractDate="{!v.contractDate}" selectedTermLoanType="{!v.selectedTermLoanType}" selectLoanPurposes="{!v.selectedLoanPurposes}"></c:QuotesAgreementsAdditionalDetailsOpp>
+    </aura:if>
+    
+</aura:component>

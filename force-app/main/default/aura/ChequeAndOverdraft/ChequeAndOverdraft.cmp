@@ -1,0 +1,223 @@
+<!--
+* Lightning Component for Cheque and Overdraft Section
+*
+* @author  Englarmerdge Mongwe
+* @version v1.0
+* @since   2020-07-10
+* @updated : W-011314 Saurabh 2021/04/23
+-->
+
+<aura:component access="global" controller="ChequeAndOverdraftController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:registerEvent name="creditOriginationEvent" type="c:creditOriginationEvent"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <!--Custom Lookup Attributes-->
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="selectedTab" type="String" />
+    <aura:attribute name="modRecordId" type="Id" />
+    <aura:attribute name="showConfirmDialog" type="boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="pickListOptions" type="Map" />
+    <aura:attribute name="chequeAccData" type="Object" />
+    <aura:attribute name="conductData" type="Object" />
+    <aura:attribute name="primaryConductData" type="Object" />
+    <aura:attribute name="additionalConductData" type="Object" />
+    <aura:attribute name="additionalConductSelected" type="String" />
+    <aura:attribute name="primaryConductSelected" type="Object" />
+    <aura:attribute name="isFacilityDisabled" type="Boolean" default="false" />
+    <aura:attribute name="isAddConductDisabled" type="Boolean" default="false" />
+    <aura:attribute name="isProceedDisabled" type="Boolean" default="true" />
+    <aura:attribute name="isModalVisble" type="Boolean" default="false" />
+    <aura:attribute name="isActiveAccountAvailable" type="Boolean" default="true" />
+    <aura:attribute name="isActiveAccountSelection" type="Boolean" default="false" />
+    <aura:attribute name="isActiveSelectedAccountDetails" type="Boolean" default="false" />
+    <aura:attribute name="isActiveAddConductDetails" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOtherOverdraftPurpose" type="Boolean" default="false" />
+    <aura:attribute name="isCurChqAndOvrD" type="Boolean" default="false" />
+    <aura:attribute name="isNewChqAndOvrD" type="Boolean" default="false" />
+    <aura:attribute name="facilityAccounts" type="Map[]" />
+    <aura:attribute name="newChequeAccounts" type="Map[]" />
+    <aura:attribute name="combinedFacChqAndOvrDft" type="Map[]" />
+    <aura:attribute name="numberOfAccountsSelected" type="integer" default="0" />
+    <aura:attribute name="conductAccOnly" type="boolean" default="false"/><!--added by Saurabh for W-012285 -->
+
+    <!--Custom Lookup Attributes, Fields-->
+    <aura:attribute name="clientFullName" type="String" />
+    <aura:attribute name="accountNo" type="String" />
+    <aura:attribute name="availBal" type="String" />
+    <aura:attribute name="overdraftType" type="String" />
+    <aura:attribute name="currentOverdraftLimit" type="String" />
+    <aura:attribute name="ovrdrftExpryDate" type="String" />
+    <aura:attribute name="reviewDate" type="String" />
+    <aura:attribute name="yesNo" type="String" />
+    <aura:attribute name="empowermentFund" type="String" />
+    <aura:attribute name="accountHold" type="String" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    <!--aura:if isTrue="{!v.isActiveSelectedAccountDetails}"-->
+        <lightning:accordion allowMultipleSectionsOpen="true">
+            <lightning:accordionSection name="ChequeAndOverdraft" label="Cheque And Overdraft">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12">
+                        <p><b>Account Selection for Facility</b></p>
+                    </lightning:layoutItem>
+                    <aura:if isTrue="{!v.isActiveAccountAvailable}">
+                        <lightning:layoutItem size="12" padding="around-small">
+                            <p>No Existing Cheque Accounts found, please proceed to open a new Cheque account with linked Overdraft!</p>
+                        </lightning:layoutItem>
+                    </aura:if>
+                    <aura:if isTrue="{!v.isActiveAccountSelection}">
+                        <lightning:layoutItem size="12" flexibility="auto" padding="around-small">
+                            <lightning:overlayLibrary aura:id="overlayLib" />
+                            <p>Select the cheque accounts to be added for the facility, plus (1) primary account or (1) additional conduct account (Additional should be different from the primary if more than 1 cheque account is available).</p>
+                            <p>Cheque Accounts</p>
+                            <table class="slds-table slds-table_cell-buffer">
+                                <thead>
+                                    <tr class="slds-var-m-top_small slds-line-height_reset">
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="AccountNameNumber">Account Name (Number)</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="AccountType">Account Type</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="AccountBalance">Account Balance</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="CurrentODLimit">Current OD Limit</div>
+                                        </th>
+                                        <th scope="col" class="slds-cell-wrap">
+                                            <div class="slds-truncate" title="FacilityAccount">Facility <br />Account</div>
+                                        </th>
+                                        <th scope="col" class="slds-cell-wrap">
+                                            <div class="slds-truncate" title="PrimaryConduct">Primary <br />Conduct</div>
+                                        </th>
+                                        <th scope="col" class="slds-cell-wrap">
+                                            <div class="slds-truncate" title="AdditionalConduct">Additional <br />Conduct</div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:if isTrue="{!v.isModalVisble}">
+                                        <c:ModalChequeAccountDetails aura:id="chqDetails" recordId="{!v.modRecordId}" chequeAccData="{!v.chequeAccData}" />
+                                    </aura:if>
+                                    <aura:iteration items="{!v.chequeAccData}" var="cad">
+                                        <tr>
+                                            <td>
+                                                <div class="popover1" >
+                                                    <a id="{!cad.SevAccountNameNumber}" onclick="{!c.handleShowModal}">{!cad.SevAccountNameNumber}</a>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <ui:outputText value="{!cad.SevAccountType}" />
+                                            </td>
+                                            <td>
+                                                <ui:outputText value="{!cad.SevAccountBalance}" />
+                                            </td>
+                                            <td>
+                                                <ui:outputText value="{!cad.SevCurrentODLimit}" />
+                                            </td>
+                                            <td>
+                                                <ui:inputCheckbox aura:Id="facilityAccount" text="{!cad.ItemId}" name="chkFacilityAccount" change="{!c.onCheckedFacility}" disabled="{!v.isFacilityDisabled}"/>
+                                            </td>
+                                            <td>
+                                                <ui:inputRadio aura:Id="primaryConduct" text="{!cad.ItemId}" name="radPrimaryConduct" change="{!c.onRadioChangePrimary}" />
+                                            </td>
+                                            <td>
+                                                <ui:inputRadio aura:Id="additionalConductAcc" text="{!cad.ItemId}" name="radAdditionalConduct" change="{!c.onRadioChangeAdditional}" disabled="{!v.isAddConductDisabled}" /> <!--Changing the auraId as it was coming undefined-->
+                                            </td>
+                                        </tr>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="12" padding="around-small">
+                            <lightning:button label="Proceed with selected accounts" variant="brand" onclick="{!c.proceedWithSelectedAccs}" disabled="{!v.isProceedDisabled}" class="slds-var-m-top_small slds-float_right" />
+                        </lightning:layoutItem>
+                        <!-- Saurabh W:11314 Adding a button to remove selected Facility Acc and Conduct -->
+                        <lightning:layoutItem size="12" padding="around-small">
+                            <lightning:button label="Delete selected Cheque accounts" variant="brand" onclick="{!c.handleConfirmDialog}" disabled="{!v.isProceedDisabled}" class="slds-var-m-bottom_small slds-float_right" />
+                        </lightning:layoutItem>
+                        <!--End -->
+                    </aura:if>
+                </lightning:layout>
+            </lightning:accordionSection>
+            <aura:if isTrue="{!v.isActiveSelectedAccountDetails}">
+                <lightning:accordionSection name="FacilityAccountsDetails" label="{!'Facility Accounts (' + v.numberOfAccountsSelected +')'}">
+                    <aura:iteration items="{!v.facilityAccounts}" var="item">
+                        <c:FacilityAccounts aura:id="idfacilityAccounts" accItem="{!item}" selOptions="{!v.pickListOptions}" />
+                    </aura:iteration>
+                </lightning:accordionSection>
+                <lightning:accordionSection name="PrimaryConductDetails" label="Primary Conduct">
+                    <c:ClientConductDetails aura:id="idClientConductDetails" recordId="{!v.recordId}" conItem="{!v.primaryConductData}"/>
+                </lightning:accordionSection>
+                <aura:if isTrue="{!v.isActiveAddConductDetails}">
+                    <lightning:accordionSection name="AdditionalConductDetails" label="Additional Conduct">
+                        <c:ClientConductDetails aura:id="idClientConductDetails" recordId="{!v.recordId}" conItem="{!v.additionalConductData}"/>
+                    </lightning:accordionSection>
+                </aura:if>
+            </aura:if>
+            <lightning:accordionSection name="NewAccountsDetails" label="{!v.newChequeAccounts == null ? 'New Accounts (0)' : 'New Accounts (' + v.newChequeAccounts.length + ')'}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <p><b>Add a new Cheque Account with Overdraft Facility</b></p>
+                        <p>Add all relevant account details</p>
+                        <lightning:icon iconName="utility:help_center" size="xx-small" variant="error" alternativeText="Help Guide" title="Help" />
+                        <lightning:formattedUrl value="./servlet/servlet.FileDownload?file=015300000000xvU" label="Need Help?" tooltip="Download help guide" />
+                    </lightning:layoutItem>
+                    <aura:iteration items="{!v.newChequeAccounts}" var="nChqAccItem">
+                        <c:NewChequeAccount aura:id="idNewCheqAndOvrDft" accItem="{!nChqAccItem}" selOptions="{!v.pickListOptions}" newChequeAccounts="{!v.newChequeAccounts}" />
+                    </aura:iteration>
+                    <lightning:layoutItem size="12" padding="around-small">
+                        <lightning:button class="slds-float_right" label="Add a New Account" variant="brand" onclick="{!c.addNewAccount}" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    <!--/aura:if-->
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem size="12" padding="around-small">
+            <lightning:button class="slds-float_right" label="Save and Validate" variant="brand"
+                onclick="{!c.saveChqAndOverdraft}" />
+        </lightning:layoutItem>
+    </lightning:layout>
+        <!-- Delete Modal Start  -->
+    <div class="slds-m-around_xx-large">
+       <aura:if isTrue="{!v.showConfirmDialog}">
+            <!--Modal Box Start-->
+            <div role="dialog" class="slds-modal slds-fade-in-open ">
+                <div class="slds-modal__container">
+                    <!--Modal Box Header Start-->
+                    <header class="slds-modal__header">
+                        <h1 class="slds-text-heading--medium">Confirmation</h1>
+                    </header>
+                    <!--Modal Box Header End-->
+
+                    <!--Modal Box Content Start-->
+                    <div class="slds-modal__content slds-p-around--medium">
+                        <center><b>Are you sure you want to delete and reset this Section?</b></center>
+                        <p> Note : This action can not be reverted once confirmed, You will have to select and proceed with facility again. </p>
+                    </div>
+                    <!--Modal Box Content End-->
+
+                    <!--Modal Box Button Start-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button name='No' label='No' onclick='{!c.handleConfirmDialogNo}'/>
+                        <lightning:button variant="brand" name='Yes' label='Yes' onclick='{!c.handleConfirmDialogYes}'/>
+                    </footer>
+                    <!--Modal Box Button End-->
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop--open"></div>
+        </aura:if>
+    </div>
+   <!-- Delete Modal End -->
+</aura:component>

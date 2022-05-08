@@ -1,0 +1,145 @@
+<!--Lightning cmp for Avaf Partner Banking Details (AvafPartnerBankingDetails)
+    Author: Jason Q
+    Date : 2020/11/05
+-->
+<aura:component
+    controller="AvafDebitOrderDetailsController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+    access="global"
+>
+    <!--Handler Declaration-->
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+    <!--Global Attributes Declaration-->
+    <aura:attribute name="partnerNumberFromFlow" type="String" access="global" />
+    <aura:attribute name="avafGetBankDetailsRespFromFlow" type="String" access="global" />
+    <!-- Attributes Declaration-->
+    <aura:attribute name="data" type="Object[]" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute
+        name="accTypeOptions"
+        type="List"
+        default="[{ id: 0, label: '-- None --', selected: true },{ id: 1, label: 'Cheque' },{ id: 2, label: 'Savings'}]"
+    />
+    <aura:attribute name="selectedAccTypeValue" type="String" />
+    <aura:attribute name="bankAccNumber" type="String" />
+    <aura:attribute name="branchNumber" type="String" />
+    <aura:attribute name="isSpinner" type="Boolean" default="false" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="modalErrorMessage" type="String" />
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+            <br />
+        </div>
+    </aura:if>
+
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="around-small" size="12">
+            <h2 style="font-weight: bold; font-size: large">Partner Banking Details</h2>
+        </lightning:layoutItem>
+
+        <!-- Partner Banking Details -->
+        <lightning:datatable keyField="id" data="{! v.data }" columns="{! v.columns }" hideCheckboxColumn="true" />
+
+        <lightning:layoutItem padding="around-small" size="12">
+            <div class="slds-float_right">
+                <lightning:button
+                    aura:id="nextBtn"
+                    variant="brand-outline"
+                    name="View Debit Order Details"
+                    label="View Debit Order Details"
+                    onclick="{!c.navigateNext}"
+                    disabled="{!v.isFormReadOnly}"
+                />
+                <lightning:button
+                    aura:id="openModalBtn"
+                    variant="brand"
+                    name="Add New Banking Details"
+                    label="Add New Banking Details"
+                    onclick="{!c.openModal}"
+                    disabled="{!v.isFormReadOnly}"
+                />
+            </div>
+        </lightning:layoutItem>
+    </lightning:layout>
+    <!-- Modal - Add Partner Banking Details -->
+    <div role="dialog" tabindex="-1" aria-labelledby="modalHeader" aura:id="addPartnerBankingDetailsModal" class="slds-modal slds-modal_large">
+        <div class="slds-modal__container" style="width: 50%">
+            <div class="slds-modal__header slds-text-heading_small">Add Partner Banking Details</div>
+            <div class="slds-modal__content slds-p-around--medium" style="overflow: initial">
+                <!-- Error Message -->
+                <aura:if isTrue="{!not(empty(v.modalErrorMessage))}">
+                    <div class="recordError">
+                        <br />
+                        <h2 class="slds-section__title" style="color: red">{!v.modalErrorMessage}</h2>
+                        <br />
+                    </div>
+                </aura:if>
+                <!-- Modal Body -->
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="around-small" size="2">
+                        <lightning:input aura:id="bankCountryField" label="Bank Country" readonly="true" value="ZA" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:select
+                            name="Account Type"
+                            label="Account Type"
+                            aura:id="accountTypeField"
+                            value="{!v.selectedAccTypeValue}"
+                            required="true"
+                            disabled="{!v.isFormReadOnly}"
+                        >
+                            <aura:iteration items="{!v.accTypeOptions}" var="option">
+                                <option text="{!option.label}" value="{!option.id}" selected="{!option.selected}" />
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="4">
+                        <lightning:input
+                            aura:id="bankAccNumberField"
+                            label="Bank Account Number"
+                            value="{!v.bankAccNumber}"
+                            required="true"
+                            disabled="{!v.isFormReadOnly}"
+                        />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="3">
+                        <lightning:input
+                            aura:id="branchNumberField"
+                            label="Branch Number"
+                            value="{!v.branchNumber}"
+                            required="true"
+                            disabled="{!v.isFormReadOnly}"
+                        />
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </div>
+            <div class="slds-modal__footer">
+                <div class="slds-float_right">
+                    <!-- Modal Buttons -->
+                    <lightning:button aura:id="closeModalBtn" name="Close" label="Close" onclick="{!c.closeModal}" />
+                    <lightning:button
+                        aura:id="addPartnerBtn"
+                        variant="brand"
+                        name="Add"
+                        label="Add"
+                        onclick="{!c.handleAddPartnerBankingDetails}"
+                    />
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Back Drop -->
+    <div class="slds-backdrop slds-backdrop--hide" aura:id="Modalbackdrop"></div>
+    <!-- Modal Definitions End -->
+</aura:component>

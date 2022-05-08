@@ -1,0 +1,70 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="SubmitDocumentsController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <aura:attribute name="emailOptions" type="List"/>
+    <aura:attribute name="selectedEmail" type="String"/>
+    
+    <aura:attribute name="showAlternativeEmail" type="boolean" default="false"/>
+    <aura:attribute name="alternativeEmail" type="String"/>
+    
+    <aura:attribute name="showPolicyNotCompleted" type="boolean" default="false"/>
+    
+    <aura:attribute name="emailStatus" type="boolean" default="false"/>
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showPolicyNotCompleted == false}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <h2 class="slds-section__title">Send Documents (T and C's, ROA, Quote) </h2>
+            </lightning:layoutItem>
+            
+            <aura:if isTrue="{!v.emailStatus}">
+                <p style="color:green; width:100%"><lightning:icon size="xx-small" iconName="utility:smiley_and_people"/>&nbsp; An email has already been successfully sent to the client</p>
+                <aura:set attribute="else">
+                    <p style="color:red; width:100%"><lightning:icon size="xx-small" iconName="utility:error" variant="error"/>&nbsp; No email has not been sent to the client yet</p>
+                </aura:set>
+            </aura:if>
+            
+            <lightning:layoutItem padding="around-small" size="8">
+                <lightning:select aura:id="emailSelect" name="SelectEmail" label="Select Email" value="{!v.selectedEmail}" onchange="{!c.onPicklistEmailChange}" required="true">
+                    <aura:iteration items="{!v.emailOptions}" var="item">
+                        <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                    </aura:iteration>
+                </lightning:select>
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem size="1">
+            </lightning:layoutItem>
+            
+            <lightning:layoutItem padding="around-small" class="slds-m-top_large" size="3">
+                <ui:inputCheckbox aura:id="completedCheckbox" class="slds-float--right" label="Use Alternative Email?" change="{!c.onCompletedCheck}"/>
+            </lightning:layoutItem>
+            
+            <aura:if isTrue="{!v.showAlternativeEmail}">
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:input aura:id="altEmail" value="{!v.alternativeEmail}" label="Alternative Email" type="email" required="true"/>
+                </lightning:layoutItem>
+            </aura:if>
+            
+            <lightning:layoutItem size="12">
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Email Documents" onclick="{!c.emailDocs}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showPolicyNotCompleted}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <center style="z-index:99; height=150px">
+                    <p style="font-size:18px; margin-top:20px"><lightning:icon size="small" iconName="action:close" alternativeText="Not Completed" /> No Policy Number exists. Please insert one before the final documents can be sent to the client!</p>
+                </center>            
+            </lightning:layoutItem>           
+        </lightning:layout>
+    </aura:if>
+</aura:component>

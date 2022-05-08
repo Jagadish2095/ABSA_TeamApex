@@ -1,0 +1,398 @@
+<aura:component implements="lightning:availableForFlowScreens,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" controller = "FeesAndInterestRefundController" >
+    
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentFeesLookUpEvent" action="{!c.handleRefundTransactionEvent}"/>
+    <aura:handler name="selectedDependentRecordEvent" event="c:refundLookUpEvent" action="{!c.handleRefundReason}"/>
+    
+    
+    <!--# CASE ATTRIBUTE -->
+    <aura:attribute name="domicileBranch" type="String" />
+    <aura:attribute name="subLedger" type="String" />
+    <aura:attribute name="journalMode" type="String" />
+    <aura:attribute name="refundDescription" type="String" />
+    <aura:attribute name="refundMotivation" type="String" />
+    <aura:attribute name="itemReference" type="String" />
+    <aura:attribute name="amount" type="String" />
+    <aura:attribute name="transactionType" type="string" default=""/>
+    <aura:attribute name="refundProductType" type="String" />
+    <aura:attribute name="glAccountNumber" type="String" />
+    <aura:attribute name="internalProduct" type="String" />
+    <aura:attribute name="typeGroupClass" type="String" />
+    <aura:attribute name="vatable" type="String" />
+    <aura:attribute name="statementNarrative" type="String" />
+    <aura:attribute name="transactionTypeId" type="String" /> 
+    <aura:attribute name="refundReason" type="String" default="" />
+    <aura:attribute name="refundReasonId" type="String" /> 
+    <aura:attribute name="category" type="String" /> 
+    <aura:attribute name="reasonGroup" type="String" /> 
+    <aura:attribute name="productTypeId" type="String" /> 
+    
+    <aura:attribute name="refundProductList" type="List" />
+    <aura:attribute name="responseList" type="List" />
+    
+    <aura:attribute name="requestLogDate" type="date" />
+    <aura:attribute name="effectiveJournalDate" type="date" />    
+    <aura:attribute name="refundRangeDateFrom" type="date" />
+    <aura:attribute name="refundRangeDateTo" type="date" /> 
+    
+    
+    <aura:attribute name="effectiveJournalDateError" type="boolean" />
+     <aura:attribute name="requestLogDateError" type="boolean" />
+     <aura:attribute name="refundRangeDateFromError" type="boolean" />
+     <aura:attribute name="refundRangeDateToError" type="boolean" />
+    
+    <aura:attribute name="selectedTransactionType" type="string" default=""/>
+    
+    <aura:attribute name="selectedLookUpRecord" type="sObject" default="{}"/>
+    
+    
+    <!--# DOCUMENT VALIDATION ATTRIBUTE -->
+    
+    <aura:attribute name="proofBankingAccount" type="String" />
+    <aura:attribute name="rootCauseAnalysisForm" type="String" />
+    <aura:attribute name="feeChargedBankStatement" type="String" />
+    <aura:attribute name="interestChargedBankStatement" type="String" />
+    <aura:attribute name="validatedFeeCalculations" type="String" />
+    <aura:attribute name="interestCalculationPDFDocument" type="String" />
+     <aura:attribute name="bankingFacilityLetter" type="String" />
+    <aura:attribute name="operationalRiskEventForm" type="String" />
+    <aura:attribute name="riskEventNumber" type="String" />
+    <aura:attribute name="incidentNumber" type="String" />
+    <aura:attribute name="fraudForm" type="String" />
+    <aura:attribute name="legalCollectionsForm" type="String" />
+    <aura:attribute name="supportedApprovals" type="String" />
+    <aura:attribute name="motivationClientInterest" type="String" />  
+    <aura:attribute name="deedSettlement" type="String" />
+    <aura:attribute name="other" type="String" />   
+    
+    <aura:attribute name="showRootCauseAnalysis" type="boolean" default="false" /> 
+    <aura:attribute name="showRootFeeCharge" type="boolean" default="false" /> 
+    <aura:attribute name="showRootInterestCharge" type="boolean" default="false" />  
+    <aura:attribute name="showITincidentNumber" type="boolean" default="false" /> 
+    <aura:attribute name="showFraudForm" type="boolean" default="false" />
+     <aura:attribute name="showLegal" type="boolean" default="false" />
+    
+    <!--# FLOW ATTRIBUTE -->
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" access="global"/>
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"  />
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    <aura:attribute name="comments" type="String" />
+    <aura:attribute name="recordId" type="String" access="global"/>
+    
+    <aura:attribute name="SeletedAccountNumber" type="string" default=""/>
+    <aura:attribute name="product" type="string" default=""/>
+    
+    <aura:attribute name="showRefundDetails" type="boolean" default="false" /> 
+    <aura:attribute name="showUploadDetails" type="boolean" default="false" /> 
+    <aura:attribute name="showNextButton" type="boolean" default="false" />
+    <aura:attribute name="showValidateButton" type="boolean" default="false" />
+    
+    <!--# UPLOAD DOCUMENT ATTRIBUTE -->
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>    
+    <aura:attribute name="dataAudit" type="Object"/>
+    <aura:attribute name="columnsAudit" type="List"/>
+    <aura:attribute name="fileType" type="String"/>
+    <aura:attribute name="picklistValues" type="Object"/>
+
+    
+
+
+
+<!-- Upload Option  -->
+<aura:if isTrue="{!v.showSpinner}">
+    <div class="slds-spinner_container">
+        <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+    </div>
+</aura:if>
+
+
+<lightning:card iconName="log_event" >        
+    <div class="c-container"> 
+        <aura:if isTrue="{!v.showRefundDetails}">
+            <h3 class="slds-section__title">
+                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Account Details </span>
+            </h3> 
+            
+            
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="selectedAccountNumberId" label="Account Number" disabled="true" value="{!v.SeletedAccountNumber}" required="true"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="productId" label="Product" disabled="true" value="{!v.product}" required="true"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    
+                        <lightning:input class="{! v.dateValidationError ? 'slds-has-error' : ''}"
+                                         type="date"
+                                         label="Request Log Date"
+                                         value="{!v.requestLogDate}"
+                                         name="date"
+                                         onchange="{!c.requestLogDate}"
+                                         required="true"
+                                         />
+                        
+                        <aura:if isTrue="{!v.requestLogDateError}">
+                            <div class="slds-text-color_error slds-p-left_x-small">
+                                Date must be in future..
+                            </div>
+                        </aura:if>    
+                    
+                </lightning:layoutItem>
+                
+            </lightning:layout><br/>
+            
+            <h3 class="slds-section__title">
+                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Transaction Details </span>
+            </h3> 
+            
+            <lightning:layout multipleRows="true">
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:select value="{!v.refundProductType}" class="select-auto-width" aura:id="refundProductTypeId" 
+                                      label="Select the Product" required="true" onchange="{!c.onRefundTypeChange}">
+                        <option value="">--None--</option>
+                       <aura:iteration items="{!v.refundProductList}" var="prod" indexVar="key">
+                            <option value="{!prod}">{!prod}</option>
+                        </aura:iteration>
+                    </lightning:select> 
+                   
+                </lightning:layoutItem>  
+                
+                <lightning:layoutItem padding="around-small" size="6">
+
+                    <label class="slds-float_left" padding="around-small"><span style="color:red;" align="left">*</span>Select Transaction Type  </label>
+                    <c:dependentFeesLookUp dselectedProductType="{!v.productTypeId}" IconName="custom:custom16" selectedRecord="{!v.transactionType}"  label=""  aura:id="TransactionTypeSearch"/>     
+                </lightning:layoutItem> 
+                                
+                <lightning:layoutItem padding="around-small" size="6">
+                    
+                    <label class="slds-float_left" padding="around-small"><span style="color:red;" align="left">*</span>Select Reason </label>
+                    <c:refundLookUp dselectedReasonGroup="{!v.internalProduct}" selectedRecord="{!v.refundReason}"  label=""  aura:id="branchSearch"/>     
+                </lightning:layoutItem> 
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="refundAmountId" label="Total Refund Amount" value="{!v.amount}"  required="true"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="statementNarrativetId" label="Statement narrative (FBSS)" disabled="true"  value="{!v.statementNarrative}" required="true"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="internalProducttId" label="Internal Product" disabled="true"  value="{!v.internalProduct}" required="true"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="typeGrouptId" label="Type Group" value="{!v.typeGroupClass}" disabled="true"  required="true"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="vatableId" label="Vatable"  value="{!v.vatable}" disabled="true" required="true"  />
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="GLAccountNumberId" label="GL Account Number" disabled="true"  value="{!v.glAccountNumber}" required="true"  />
+                </lightning:layoutItem>
+
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    
+                        <lightning:input class="{! v.dateValidationError ? 'slds-has-error' : ''}"
+                                         type="date"
+                                         label="Refund range date - From"
+                                         value="{!v.refundRangeDateFrom}"
+                                         name="date"
+                                         onchange="{!c.refundRangeDateFromUpdate}" 
+                                         required="true"/>
+                        
+                        <aura:if isTrue="{!v.refundRangeDateFromError}">
+                            <div class="slds-text-color_error slds-p-left_x-small">
+                                Date must be in future..
+                            </div>
+                        </aura:if>    
+                    
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                   
+                        <lightning:input class="{! v.dateValidationError ? 'slds-has-error' : ''}"
+                                         type="date"
+                                         label="Refund range date - To"
+                                         value="{!v.refundRangeDateTo}"
+                                         name="date"
+                                         onchange="{!c.onRefundRangeDateTo}" 
+                                         required="true"/>
+                        
+                        <aura:if isTrue="{!v.refundRangeDateToError}">
+                            <div class="slds-text-color_error slds-p-left_x-small">
+                                Date must be in future..
+                            </div>
+                        </aura:if>    
+                   
+                </lightning:layoutItem>
+                
+                                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="itemReferenceId" label="Item Reference" value="{!v.itemReference}"  required="true"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:textarea name="input3" label="Refund Description" value="{!v.refundDescription}" placeholder="type here..." required="true"/>
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <lightning:textarea name="input3" label="Refund motivation" value="{!v.refundMotivation}" placeholder="type here..." required="true"/>
+                </lightning:layoutItem>
+            </lightning:layout><br/>
+            
+            
+            
+            <h3 class="slds-section__title">
+                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Middle Office Details </span>
+            </h3>
+            
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="domicileBranchId" label="Client Domicile Branch" value="{!v.domicileBranch}" required="true"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="subLedgerId" label="Sub Ledger" value="{!v.subLedger}" required="true"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                    <ui:inputText aura:id="journalModeId" label="Journal Mode"  value="{!v.journalMode}" required="true"  />
+                </lightning:layoutItem>
+                
+                <lightning:layoutItem padding="around-small" size="6">
+                   
+                        <lightning:input class="{! v.dateValidationError ? 'slds-has-error' : ''}"
+                                         type="date"
+                                         label="Effective Date for Journal"
+                                         value="{!v.effectiveJournalDate}"
+                                         name="date"
+                                         onchange="{!c.onEffectiveJournalDate}"
+                                         required="true"/>
+                        
+                        <aura:if isTrue="{!v.effectiveJournalDateError}">
+                            <div class="slds-text-color_error slds-p-left_x-small">
+                                Date must be in future..
+                            </div>
+                        </aura:if>    
+                  
+                </lightning:layoutItem>
+                
+            </lightning:layout> 
+        </aura:if>
+        
+        <aura:if isTrue="{!v.showNextButton}">
+            <lightning:layoutItem padding="around-small" size="12">
+                <lightning:button  aura:id="submitButtonValidate" variant="brand"  class="slds-m-top_small slds-float--right" label="Next" onclick="{!c.onNext}" />
+            </lightning:layoutItem>
+        </aura:if>
+        <br/><br/>
+        
+
+        <aura:if isTrue="{!v.showUploadDetails}">
+            <h3 class="slds-section__title">
+                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Upload Documents </span>
+            </h3>
+            <br/><br/>
+            <lightning:layoutItem padding="around-small" size="6"> 
+                <!-- Show the message to ui -->
+                <div >
+                    <span class="slds-assistive-text"></span>
+                    <div class="slds-notify__content">
+                        <h5 class="slds-text-heading_small slds-align_absolute-right">Document Required</h5>
+                        <br/>
+                       <b> 
+                           * Motivation: Client Interest / Cost Reimbursement Request<br/>
+                           
+                           * Proof of banking account<br/>
+                           
+                               <aura:if isTrue="{!v.showRootCauseAnalysis}">
+                                   * Root Cause Analysis Form<br/>
+                                   * Operational Risk Event Form<br/>
+                                   * Risk Event Number<br/>
+                               </aura:if>
+
+                               <aura:if isTrue="{!v.showRootFeeCharge}">
+                                   * Bank Statement(s) showing erroneous fee charges<br/>
+                                   * Validated Fee Calculations <br/>
+                               </aura:if>
+
+                               <aura:if isTrue="{!v.showRootInterestCharge}">
+                                   * Bank Statement(s) showing erroneous interest charges<br/>
+                                   * Interest Calculation PDF Document"<br/>
+                               </aura:if>
+                           
+                           <aura:if isTrue="{!v.showITincidentNumber}">
+                               * IT incident Number<br/>
+                           </aura:if>
+                           
+                           <aura:if isTrue="{!v.showFraudForm}">
+                               * Fraud Form<br/>
+                           </aura:if>
+                           
+                           <aura:if isTrue="{!v.showLegal}">
+                               * Legal Collections Form/Agreement<br/>
+                               * Supported Approvals<br/><br/>
+                           </aura:if>
+                           
+                           <!-- Optional doc -->
+                           Deed of Settlement(Optional)<br/>
+                           
+                           Other(Optional)
+                           
+                        </b>              
+                    </div>
+                </div> 
+            </lightning:layoutItem>
+            <br/><br/><br/>
+            
+            <lightning:accordion allowMultipleSectionsOpen="true" >
+                <c:CaseManagementDocument recordId="{!v.recordId}" objectName = "Case"/>
+                
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">View Uploaded Documents</span>
+                </h3>
+                <!-- Document list -->
+                <article aura:id="gridContainer" class="slds-card slds-card_boundary">
+                    <lightning:card  iconName="standard:document" class="slds-m-left_small">
+                        <aura:set attribute="actions">
+                            <lightning:button label="Refresh" disabled="{!v.isRefresh}" onclick="{!c.refreshDocuments}" aura:id="refreshBtn"/>
+                        </aura:set>
+                        <lightning:datatable
+                                             columns="{! v.columnsAudit }"
+                                             data="{! v.dataAudit }"
+                                             keyField="id"
+                                             onrowaction="{!c.handleRowAction}"
+                                             hideCheckboxColumn="true"
+                                             minColumnWidth="100"/>
+                    </lightning:card>
+                </article>
+                
+            </lightning:accordion> 
+            
+            
+            <lightning:layoutItem padding="around-small" size="12">
+                <aura:if isTrue="{!v.showValidateButton}">
+                    <!--<lightning:button  aura:id="submitButtonNext" variant="brand" disabled = "true"  label="Next" onclick="{!c.onNext}" />
+					-->
+                    <lightning:button  aura:id="submitButtonValidate" variant="brand" class="slds-m-top_small slds-float--right" label="Validate Documents" onclick="{!c.validate}" />
+                </aura:if>
+            </lightning:layoutItem><br/><br/>
+        </aura:if>
+        
+    </div>
+</lightning:card>
+
+
+
+
+
+
+</aura:component>

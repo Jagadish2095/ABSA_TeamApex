@@ -1,0 +1,149 @@
+<!--
+* Lightning Component for Fulfillment of Product Application
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2021-01-06
+* @updated Almas Aleem
+* @updated 2021-05-06
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global"
+                controller="GenerateQuoteController" >
+
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="AddresseeOptions"  type="List" />
+    <aura:attribute name="AddresseetitleOptions"  type="List" />
+    <aura:attribute name="facilityWrap" type="Object" />
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <lightning:accordion aura:id="accordion">
+        <lightning:accordionSection name="FacilitiesIncluded" label="Facilities Included">
+            <lightning:layout multipleRows="true" >
+                <lightning:layoutItem size="6" padding="around-large">
+                    <lightning:radioGroup name="Is this a general banking facility"
+                                          label="Is this a general banking facility"
+                                          options="{!v.options}"
+                                          onchange="{!c.onRadioChange}"
+                                          value="{!v.facilityWrap.generalBankingFacility}"
+                                          type="button"
+                                          disabled="true"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-large">
+                    <table class="slds-table slds-table_cell-buffer">
+                        <thead>
+                            <tr class="slds-var-m-top_small slds-line-height_reset">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="ProductName">Product Name</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="ProductType">Product Type</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="AccountNumber">Account Number</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="UniqueProductId">Unique Product Id</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Limit">Limit</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.facilityWrap.appPrdLst}" var="rec">
+                                <tr class="slds-hint-parent">
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!rec.productName}</div>
+                                    </td>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!rec.productType}</div>
+                                    </td>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!rec.accountNumber}</div>
+                                    </td>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!rec.uniqueProductId}</div>
+                                    </td>
+                                    <td data-label="">
+                                        <div class="slds-truncate" title=" ">{!rec.limitValue}</div>
+                                    </td>
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-large">
+                    <lightning:input name="totalFacility" readonly="true" value="{!v.facilityWrap.totalFacilityCount}" label="Total Facility" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-large">
+                    <lightning:input name="totalLimit" readonly="true" value="{!v.facilityWrap.totalLimitValue}" label="Total Limit" />
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="FacilitiesGeneralInfo" label="Facilities General Information">
+            <lightning:layout multipleRows="true" >
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p style="margin:5px !important;">Addressee</p>
+                    <lightning:select class="fontClass" aura:id="Addresseeselected" name="Addressee" value="{!v.facilityWrap.Addressee}"  onchange="{!c.addressChange}">
+                        <aura:iteration items="{!v.AddresseeOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p style="margin:5px !important;">Other:</p>
+                        <lightning:input class="fontClass" value="{!v.facilityWrap.AddresseeOther}" name="AddresseeOther" onchange="{!c.addressChange}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p style="margin:5px !important;">Addressee title</p>
+                    <lightning:select class="fontClass" aura:id="Addresseetitleselected" name="AddresseeTitle" value="{!v.facilityWrap.Addresseetitle}" onchange="{!c.addressChange}" >
+                        <aura:iteration items="{!v.AddresseetitleOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p><b>Fees:</b></p>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:input name="Review fee type" readonly="true" value="{!v.facilityWrap.reviewFeeType}" label="Review fee type:" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:input name="Review fee value" readonly="true" value="{!v.facilityWrap.reviewFeeValue}" label="Review fee value:" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:input name="Unutilised facility fee" readonly="true" value="{!v.facilityWrap.unutilisedFacilityFee}" label="Unutilised facility fee:" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="12" padding="around-small">
+                    <lightning:input name="Monthly Service fee" readonly="true" value="{!v.facilityWrap.monthlyServiceFee}" label="Monthly Service fee:" />
+                </lightning:layoutItem>
+
+                 <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Review Date</p>
+                    <lightning:input class="fontClass" type="date" value="{!v.facilityWrap.reviewDate}" />
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="Documents" label="Documents">
+            <lightning:layout multipleRows="true" >
+                <lightning:layoutItem size="6" padding="around-large">
+                    <c:documentStub documenttemplate= "ABSA 6157 EX - OD Facility Letter"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-large">
+                    <lightning:radioGroup name="Signed"
+                                          label="Signed"
+                                          options="{!v.options}"
+                                          onchange="{!c.onRadioChange}"
+                                          type="button"
+                                          value="{!v.facilityWrap.signed}"/>
+                    <lightning:input type="date" name="Date" label="Date" value="{!v.facilityWrap.signedDate}" onchange="{!c.onDateChange}"/>
+                </lightning:layoutItem>
+            </lightning:layout>
+            <lightning:button variant="brand" type="submit" name="save" label="Save" aura:id="decisionbutton" onclick="{!c.saveFacility}"/>
+        </lightning:accordionSection>
+    </lightning:accordion>
+
+</aura:component>

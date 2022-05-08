@@ -1,0 +1,168 @@
+<aura:component controller="ChequeAndOverdraftController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <aura:attribute name="recordId" type="Id" />
+
+    <!--Custom Lookup Attributes-->
+    <aura:attribute name="conItem" type="Object" />
+    <aura:attribute name="conData" type="Object" />
+    <aura:attribute name="accountNameNumber" type="String" />
+    <aura:attribute name="chequeProductType" type="String" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    <!--aura:iteration items="{!v.chequeConductData}" var="item">
+        <lightning:accordionSection name="{!item.ConductType + 'Details' }" label="{!item.ConductType}"-->
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Account Name (Number)</p>
+                    <ui:outputText value="{!v.accountNameNumber}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Cheque Product type</p>
+                    <ui:outputText value="{!v.chequeProductType}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Balance</p>
+                    <ui:outputText value="{!v.conData.Balance__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Date Opened</p>
+                    <ui:outputText value="{!v.conData.Date_Opened__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Excess</p>
+                    <ui:outputText value="{!v.conData.Excess_Amount__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Date Last within limit</p>
+                    <ui:outputText value="{!v.conData.Date_Last_Within_Limit__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Overdraft type</p>
+                    <ui:outputText value="{!v.conData.Overdraft_Type__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Expiry date</p>
+                    <ui:outputText value="{!v.conData.Expiry_Date__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Date Last Overdraft Captured</p>
+                    <ui:outputText value="{!v.conData.Date_Last_Overdraft_Captured__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Reduction Amount</p>
+                    <ui:outputText value="{!v.conData.Reduction_Amount__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Payment date</p>
+                    <ui:outputText value="{!v.conData.Payment_Date__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Once Off Reduce Amount</p>
+                    <ui:outputText value="{!v.conData.Once_Off_Reduce_Amount__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Once Off Reduce Date</p>
+                    <ui:outputText value="{!v.conData.Once_Off_Reduce_Date__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>RD CHQS Curr year</p>
+                    <ui:outputText value="{!v.conData.RD_CHQS_Current_Year__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>RD ChQS Prev year</p>
+                    <ui:outputText value="{!v.conData.RD_CHQS_Previous_Year__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>RD Days Curr Month</p>
+                    <ui:outputText value="{!v.conData.RD_CHQS_Current_Month__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>RD Days 12 Months</p>
+                    <ui:outputText value="{!v.conData.RD_Days_12_Months__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Unauth OD 12 Months</p>
+                    <ui:outputText value="{!v.Unauth_OD_12_Months__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Date Of Last RD</p>
+                    <ui:outputText value="{!v.conData.Date_Of_Last_RD__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Days Since Last Credit</p>
+                    <ui:outputText value="{!v.conData.Days_Since_Last_Credit_Date__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Amount Last Credit</p>
+                    <ui:outputText value="{!v.conData.Amount_Last_Credit__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Date Of Last Credit</p>
+                    <ui:outputText value="{!v.conData.Date_Of_Last_Credit__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Amount Of Last Debit</p>
+                    <ui:outputText value="{!v.conData.Amount_Of_Last_Debit__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Date Of Last Debit</p>
+                    <ui:outputText value="{!v.conData.Date_Of_Last_Debit__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Year Before Last T/O</p>
+                    <ui:outputText value="{!v.conData.Year_Before_Last_T_O__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Date LST within limit</p>
+                    <ui:outputText value="{!v.conData.Date_LST_Within_Limit__c}" />
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6">
+                    <p><b>Current Year</b></p>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6">
+                    <p><b>Previous Year</b></p>
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Current Credit T/O</p>
+                    <ui:outputText value="{!v.conData.Current_Credit_T_O__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Previous Credit T/O</p>
+                    <ui:outputText value="{!v.conData.Previous_Credit_T_O__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Current Highest Balance</p>
+                    <ui:outputText value="{!v.conData.Current_Highest_Balance__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Previous Highest Balance</p>
+                    <ui:outputText value="{!v.conData.Previous_Highest_Balance__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Current Lowest Balance</p>
+                    <ui:outputText value="{!v.conData.Current_Lowest_Balance__c}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" padding="around-small">
+                    <p>Previous Lowest Balance</p>
+                    <ui:outputText value="{!v.conData.Previous_Lowest_Balance__c}" />
+                </lightning:layoutItem>
+            </lightning:layout>
+        <!--/lightning:accordionSection>
+    </aura:iteration-->
+</aura:component>

@@ -1,0 +1,149 @@
+<!-- Lightning cmp for Stop/Reverse Debit Order
+         Author: Srikanth  
+         Date : 05/04/2020  -->
+
+
+<aura:component controller="RequestInfoOnFlexiReserveController" implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <!-- filter variables -->
+    <aura:attribute name="clientAccountId" type="String" access="global"  />
+    <aura:attribute name="response" type="object" access="global"/>
+    <aura:attribute name="accountInfoResponse" type="object" access="global"/>
+    <aura:attribute name="accountNHInfoResponse" type="object" access="global"/>
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    <aura:attribute name="selectedAccountNumber" type="String" />
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="prodTypesList" type="List" />
+    <aura:attribute name="accNumList" type="List" />
+    
+    <aura:attribute name="validSelection" type="Boolean" default="false"/> 
+    
+    <aura:attribute name="caseRecord" type="Object"/>
+     <force:recordData aura:id="recordLoader" recordId="{!v.recordId}" fields="Id,Account.Name" targetFields="{!v.caseRecord}" />
+     
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+   
+    <lightning:card title="">
+        <h3 class="slds-section__title">
+            <span class="slds-truncate slds-button slds-section__title-action" title="Information On Flexi Reserve" >Information On Flexi Reserve</span>
+        </h3> 
+        <lightning:layout multipleRows="true">
+            
+            <lightning:layoutItem padding="around-small" size="12">
+                  <lightning:input type="text"  class="select-auto-width" aura:id="myProductselection" 
+                                      	disabled="true" label="Select the Product Type" value="{!v.selectedProductValue}"></lightning:input>
+              </lightning:layoutItem>   
+            <lightning:layoutItem padding="around-small" size="12">
+                   <lightning:input type="text"  value="{!v.selectedAccountNumber}" class="select-auto-width" aura:id="myAccountselection" 
+                                     disabled="true" label="Select the Account"></lightning:input>
+               
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="12">
+                <aura:if isTrue="{!v.validSelection}" >  
+                    <lightning:button aura:id="submitButton" variant="brand" label="Submit" title="Submit" onclick="{!c.onAccountSubmit}"/>
+                </aura:if>
+                </lightning:layoutItem>
+        </lightning:layout>
+        
+        <aura:if isTrue="{!v.accountInfoResponse != null}" >  
+            
+            <article class="slds-card">
+                <div class="slds-card__header slds-grid">
+                    <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                        <div class="slds-media__figure">
+                            <span class="slds-icon_container slds-icon-standard-account" title="account">
+                                <lightning:icon iconName="standard:account" alternativeText="Account" title="Account"  class="slds-icon slds-icon_small" />
+                                <span class="slds-assistive-text">Account</span>
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <h2 class="slds-card__header-title">
+                                <a href="javascript:void(0);" class="slds-card__header-link slds-truncate" title="Accounts">
+                                    <span>Accounts</span>
+                                </a>
+                            </h2>
+                            
+                           <!-- <h1>Private Banking Home Loan</h1>-->
+                        </div>
+                    </header>
+                </div>
+            </article>
+            
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Customer name</label> 
+                        <div class="itemBody slds-text-heading_small">{!v.caseRecord.Account.Name}</div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Account number</label> 
+                        <div class="itemBody slds-text-heading_small">{!v.selectedAccountNumber}</div>
+                    </div>
+                </lightning:layoutItem>
+               <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Flexi Reserve facility Hold</label> 
+                        <div class="itemBody slds-text-heading_small">{!v.accountInfoResponse.MLviewComprehensiveDetailsV1Response.mlp047o.holdCount}</div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Flexi Reserve facility</label> 
+                        <div class="itemBody slds-text-heading_small">{!v.accountNHInfoResponse.NHgetAccountDetailV3Response.nhc039o.productName}</div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Total Instalment</label> 
+                        <div class="itemBody slds-text-heading_small">{!v.accountNHInfoResponse.NHgetAccountDetailV3Response.nhc039o.mlPaymentDue}</div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Total loan granted</label> 
+                        <div class="itemBody slds-text-heading_small">Need Mappings</div>
+                    </div>
+                </lightning:layoutItem> 
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Outstanding loan balance</label> 
+                        <div class="itemBody slds-text-heading_small">{!v.accountNHInfoResponse.NHgetAccountDetailV3Response.nhc039o.mlOutstandingBalance}</div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Flexi Reserve amount available</label> 
+                        <div class="itemBody slds-text-heading_small">{!v.accountNHInfoResponse.NHgetAccountDetailV3Response.nhc039o.mlAvailableAmount}</div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Bondsaver Amount</label> 
+                        <div class="itemBody slds-text-heading_small">{!v.accountInfoResponse.MLviewComprehensiveDetailsV1Response.mlp047o.saveBondAmount}</div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Uncleared effects</label> 
+                        <div class="itemBody slds-text-heading_small">{!v.accountNHInfoResponse.NHgetAccountDetailV3Response.nhc039o.mlUnclearedEffects}</div>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <div class="slds-form-element slds-form-element_readonly">
+                        <label>Passbook indicator</label> 
+                        <div class="itemBody slds-text-heading_small">{!v.accountInfoResponse.MLviewComprehensiveDetailsV1Response.mlp047o.passbk}</div>
+                    </div> 
+                </lightning:layoutItem>  
+                <lightning:layoutItem padding="around-small" size="12">
+                <lightning:button aura:id="closeButton" variant="brand" label="Close Case" title="Close Case" onclick="{!c.caseCloseController}"/>
+            </lightning:layoutItem>
+            </lightning:layout>              
+        </aura:if>
+    </lightning:card>
+    
+</aura:component>

@@ -1,0 +1,199 @@
+<!--
+* Lightning Component for displaying Sales Tools Data and providing Calculator
+*
+* @author Srini, Ravi B, Varaprasad 
+* @version v1.0
+* @since   2021-05-22
+-->
+<aura:component access="global" 
+                controller="CalculatorsSectionController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction">
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>    
+    <!-- Attribute Decleration -->
+    <aura:attribute name="salesTools" type="List"/>
+    <aura:attribute name="selectedSalesTool" type="String"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="isTableDataPresent" type="Boolean" default="false"/>
+    <aura:attribute name="tableTitle" type="String"/>
+    <aura:attribute name="isIncludedInCalculation" type="List"/>
+    <aura:attribute name="rowsData" type="List"/>
+    <aura:attribute name="isCalculateEnabled" type="Boolean" default="false"/>
+    <aura:attribute name="workingCapitals" type="List"/>
+    <aura:attribute name="tempWorkingCapital" type="CalculatorsSectionController.CalculatorWCCJSON"/>
+    <aura:attribute name="operationType" type="String"/>
+    <aura:attribute name="tempIndex" type="Integer"/>
+    <aura:attribute name="closureReason" type="String"/>
+    <aura:attribute name="isNoOfDaysEnabled" type="Boolean" default="false"/>
+    <aura:attribute name="isCalculateSuccess" type="Boolean" default="false"/>
+    <aura:attribute name="displayAddNew" type="Boolean" default="true"/>
+    <aura:attribute name="workingCapitalsToCalculate" type="List"/>
+    <aura:attribute name="opportunityId" type="String" access="public"/>
+    <aura:attribute name="opportunityRecord" type="Opportunity" />
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.isTableDataPresent}">
+        <table class="tableBckColor slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+            <tr class="trHeight">
+                <div class="slds-text-heading_medium">
+                    {!v.tableTitle}
+                </div>                           
+            </tr>
+        </table>
+        <table class="slds-table slds-table_cell-buffer slds-border_left slds-border_right slds-table_bordered slds-table_col-bordered">
+            <aura:iteration items="{!v.rowsData}" var="rowData">
+                <aura:if isTrue="{!rowData.isHeader}">       
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th scope="col">
+                                <div class="slds-truncate" title="{!rowData.rowHeader}">{!rowData.rowHeader}</div>
+                            </th>
+                            <aura:iteration items="{!rowData.values}" var="rowDataValue" indexVar="index">
+                                <th scope="col">
+                                    <div align="right" class="slds-truncate" title="{!rowDataValue}">{!rowDataValue}</div>
+                                </th>
+                            </aura:iteration>
+                        </tr>
+                    </thead>
+                    <aura:set attribute="else">
+                        <tbody>
+                            <tr>
+                                <th scope="row" >
+                                    <div class="slds-truncate" title="{!rowData.rowHeader}">{!rowData.rowHeader}</div>
+                                </th>
+                                <aura:iteration items="{!rowData.values}" var="rowDataValue">
+                                    <td >
+                                        <div class="slds-truncate" title="{!rowDataValue}" align="right">
+                                            <!--  {!rowDataValue} -->
+                                            <lightning:formattedNumber value="{!rowDataValue}" minimumFractionDigits="2"  style="decimal"/>  
+                                        </div>
+                                    </td>
+                                </aura:iteration>
+                            </tr>
+                        </tbody>
+                    </aura:set>
+                </aura:if>
+            </aura:iteration>
+            <tbody>
+                <tr>
+                    <th scope="row" >
+                        <div class="slds-truncate" title="Include in Calculations">Include in Calculations</div>
+                    </th>
+                    <aura:iteration items="{!v.workingCapitals}" var="workingCapital">
+                        <td >
+                            <div align="center">
+                                <ui:inputCheckbox class="myCheckbox" 
+                                                  aura:id="checkbox" 
+                                                  change="{!c.clickCheckBox}" 
+                                                  value="{!workingCapital.useInCalc}"/>
+                            </div>
+                        </td>
+                    </aura:iteration>
+                </tr>
+                <tr>
+                    <th scope="row" >
+                        <div class="slds-truncate" title="Operation"> </div>
+                    </th>
+                    <aura:iteration items="{!v.workingCapitals}" indexVar="index">
+                        <td >
+                            <div align="center">
+                                <lightning:buttonIcon iconName="utility:edit"    
+                                                      name="{!index}"
+                                                      variant="container" 
+                                                      alternativeText="Edit"   
+                                                      class="slds-m-left_xx-small" 
+                                                      title="Edit"
+                                                      size="x-small"
+                                                      onclick="{!c.clickEdit}">
+                                </lightning:buttonIcon>
+                            </div>
+                        </td>
+                    </aura:iteration>
+                </tr>
+            </tbody>
+        </table>
+        <br/>
+        <aura:set attribute="else">
+            <div style="margin-left: 12px;">No financials are available. Capture required financial information</div>
+        </aura:set>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.displayAddNew}">
+        <lightning:button label="Add Financial Data"
+                          title="Add Financial Data"
+                          class="slds-button slds-m-top--medium"
+                          onclick="{!c.newFinancialData}" />
+    </aura:if>            
+    <aura:if isTrue="{!v.isCalculateSuccess}">
+        <!-- Reset Results -->
+        <lightning:button 
+                          variant="brand"
+                          label="Reset Calculator" 
+                          title="Reset Calculator" 
+                          onclick="{! c.resetCalculator }" 
+                          class="slds-button slds-m-top--medium slds-float_right"/>
+    </aura:if>   
+    <aura:if isTrue="{!v.isCalculateEnabled}">
+        <!--  Added by Vara -->         
+        <lightning:button variant="brand"
+                          aura:id="calculateBtn"
+                          label="Calculate"
+                          title="Calculate"
+                          class="buttonRight slds-button slds-m-top--medium slds-float_right"
+                          onclick="{!c.clickCalculate}"
+                          disabled = "{!v.isCalculateSuccess}"/>
+    </aura:if>
+    <br/><br/>
+    <aura:if isTrue="{!v.tempWorkingCapital != null}">
+        <div class="slds">
+            <div aria-hidden="true" role="dialog" class="slds-modal slds-modal--prompt slds-fade-in-hide" aura:id="modaldialog">
+                <div class="slds-modal__container">
+                    <div class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"    
+                                              variant="container" 
+                                              alternativeText="Close"   
+                                              class="slds-float_right" 
+                                              title="Close"
+                                              size="large"
+                                              onclick="{!c.hidePopup}">
+                        </lightning:buttonIcon>
+                        <h2 class="slds-text-heading--medium">{!v.operationType} Financial Data</h2>
+                    </div>
+                    <div class="slds-modal__content slds-p-around--medium">
+                        <div class="slds-p-around_medium">
+                            <lightning:layout>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    <ui:inputDate aura:id="workingCapitalDate" label="Period of financial statements" value="{!v.tempWorkingCapital.dated}" displayDatePicker="true" format="dd-MM-yyyy" required="true" />
+                                    <lightning:input aura:id="workingCapital" label="Cost of sales" type="number" value="{!v.tempWorkingCapital.costOfSales}" required="true" step="0.01" min="0"/>
+                                    <lightning:input aura:id="workingCapital" label="Inventories" type="number" value="{!v.tempWorkingCapital.inventories}" required="true" step="0.01" min="0"/>
+                                    <lightning:input aura:id="workingCapital" label="Payables" type="number" value="{!v.tempWorkingCapital.payables}" required="true" step="0.01" min="0"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem size="6" padding="around-small">
+                                    
+                                    <lightning:input aura:id="workingCapital" label="Turnover/ sales" type="number" value="{!v.tempWorkingCapital.turnOver}" required="true" step="0.01" min="0"/>
+                                    <lightning:input aura:id="workingCapital" label="Cash" type="number" value="{!v.tempWorkingCapital.cash}" required="true" step="0.01" min="0"/>
+                                    <lightning:input aura:id="workingCapital" label="Receivables" type="number" value="{!v.tempWorkingCapital.receivables}" required="true" step="0.01" min="0"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                            <lightning:button label="Save"
+                                              onclick="{!c.saveWorkingCapital}" 
+                                              variant="brand" 
+                                              class="slds-button slds-m-top--medium slds-float_right"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    <div class="slds-backdrop slds-backdrop--hide" aura:id="backdrop">
+    </div>
+    <aura:if isTrue="{!v.isCalculateSuccess}">
+        <c:WorkingCapitalCal workingCapitalCalculatorsInputs = "{!v.workingCapitalsToCalculate}"/>        
+    </aura:if>    
+    <!--<c:rejectCalculatorResults recordId = "{!v.opportunityId}" opportunityRecord= "{!v.opportunityRecord}"/>-->
+</aura:component>

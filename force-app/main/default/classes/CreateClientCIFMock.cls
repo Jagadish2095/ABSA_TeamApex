@@ -1,0 +1,65 @@
+@isTest
+global class CreateClientCIFMock implements HttpCalloutMock{
+    
+    Private String cvsValidate;
+    Private String validateAddress;
+    Private String createClient;
+    Private String updateJoint;
+    
+    global CreateClientCIFMock (final String cvsValidate, final String validateAddress, final String createClient){
+        this.cvsValidate = cvsValidate;
+        this.validateAddress = validateAddress;
+        this.createClient = createClient;
+    }
+    
+    // Implement this interface method
+    global HTTPResponse respond(HTTPRequest request) {
+        // Create a fake response
+        HttpResponse response = new HttpResponse();
+        response.setHeader('Content-Type', 'application/json');
+     
+        if(request.getEndpoint().contains('Validate Client Details CIF')){//validateData
+           
+            if(cvsValidate == StringConstants.POSITIVE_STRING){
+                 system.debug('request if'+request);
+
+                response.setBody('{"CvsValidationService_Resp_IB_v1":{"statusCode":"0"}}');
+                response.setStatusCode(200);
+            }else{
+                 system.debug('request else'+request);
+                //response.setBody('{"statusCode": "1","statusMessage": {"error": {"reason": "ID type / ID number already exists"}}}');//,"error": [{"reason": "ID type / ID number already exists"}]
+                //response.setBody('{"statusCode":"1","statusMessage":{"error":{"reason":"ID type / ID number already exists"}}}');
+                //response.setBody('{"statusCode":"1","statusMessage":{"error":[{"reason":"ID type mandatory"},{"reason":["Correspondence language mandatory"]},{"reason":"Invalid Preferred communication channel"},{"reason":"ID type / ID number already exists"}]}}');
+                response.setBody('{"CvsValidationService_Resp_IB_v1":{"statusCode":"1","statusMessage":{"error":[{"reason":"ID type mandatory"},{"reason":["Correspondence language mandatory"]}],"error":{"reason":"ID type mandatory"}}}}');
+                response.setStatusCode(400);
+            }
+            
+        }else if(request.getEndpoint().contains('Validate Address')){//validate/collection
+             system.debug('requestelse if'+request);
+            if(validateAddress == StringConstants.POSITIVE_STRING){
+                response.setBody('{"nbrUserMsgs": "0","nbrUserErrs": "0","msgEntry": [],"numAddrReturn": "1","addressCollection": [{"addressType": "10","addressLine1": "5 LIBERTAS ROAD","addressLine2": "POSTALADDRESSLINE2","town": "BRYANSTON","postalCode": "2191"}]}');
+                response.setStatusCode(200);
+            }else{
+                 system.debug('request else else'+request);
+                response.setBody('{}');
+                response.setStatusCode(400);
+            } 
+            
+        }else if(request.getEndpoint().contains('Create Client CIF')){//CIFcreateClient
+             
+            if(createClient == StringConstants.POSITIVE_STRING){
+                system.debug('request cif'+request);
+                response.setBody('{"CreateClientCIF_Resp_IB_v1":{"outputCkey": "TESTPT 036"}}');
+                response.setStatusCode(200);
+            }else{
+                system.debug('request cifelse'+request);
+                response.setBody('{"CvsValidationService_Resp_IB_v1":{"outputCkey": ""}}');
+                response.setStatusCode(400);
+            }
+            
+        }
+        system.debug('response-------'+response);
+        return response; 
+    }
+    
+}

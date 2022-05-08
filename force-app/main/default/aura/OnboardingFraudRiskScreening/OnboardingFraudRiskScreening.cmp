@@ -1,0 +1,83 @@
+<!--
+* Lightning Component for Screening Fraud Risk
+*
+* @author  Manoj Danthala : Absa
+* @version v1.0
+* @since   2020-08-04
+*
+-->
+<aura:component controller="OnboardingFraudRiskController" implements="flexipage:availableForRecordHome,force:hasRecordId" access="global">
+	<!--Attributes-->
+	<aura:attribute name="opportunityRecord" type="Opportunity" default="{sobjectType:'Opportunity'}" />
+	<aura:attribute name="recordId" type="Id" />
+	<aura:attribute name="showFraudResponse" type="boolean" default="false" />
+	<aura:attribute name="activeFraudSections" type="List" default="['FraudRiskScreening','FraudRiskScreeningResults']" />
+	<aura:attribute name="isPlatform" type="boolean" default="false" />
+
+	<aura:registerEvent name="fraudEvent" type="c:FraudRiskAppEvent" />
+
+	<!--Handlers-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<!--SPINNER-->
+	<aura:if isTrue="{!v.showSpinner}">
+		<div class="slds-spinner_container">
+			<lightning:spinner aura:id="TheSpinner" variant="brand" size="medium" />
+		</div>
+	</aura:if>
+
+	<center style="z-index: 99">
+		<lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" />
+	</center>
+
+	<lightning:accordion activeSectionName="fraudRiskScreening" allowMultipleSectionsOpen="true">
+		<lightning:accordionSection name="fraudRiskScreening" label="Fraud Risk Screening">
+			<div class="slds-p-left_medium">
+				<lightning:input
+					type="checkbox"
+					name="submit"
+					aura:id="fraudCheckbox"
+					label="I confirm the above information is correct to Submit Fraud Risk Screening"
+					onchange="{! c.showButton }"
+				/>
+				<lightning:button
+					variant="brand"
+					aura:id="fraudSubmitButton"
+					class="slds-align_absolute-center slds-hide slds-m-top_medium"
+					label="Submit for Fraud Risk Screening"
+					title="Submit for Fraud Risk Screening"
+					onclick="{! c.submitFraudScreening }"
+				/>
+				<!--{!and(v.opportunityRecord.FraudRiskAlert__c != '',v.opportunityRecord.FraudRiskAlert__c != null)}-->
+				<aura:if isTrue="{!v.showFraudResponse}">
+					<lightning:accordion activeSectionName="RiskRatingResults" allowMultipleSectionsOpen="true">
+						<lightning:accordionSection name="RiskRatingResults" label="Fraud Risk Screening Results">
+							<aura:if isTrue="{!v.opportunityRecord.Fraud_Status__c != 'Incomplete'}">
+								<p style="font-size: 16px" class="slds-m-top_medium">
+									<lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /> Instinct Fraud Risk Screening done
+									Successfully.
+								</p>
+								<b>Fraud Risk Alert: </b>{!v.opportunityRecord.FraudRiskAlert__c} <br />
+								<b>Fraud Risk Action: </b>{!v.opportunityRecord.FraudRiskActionTaken__c}
+
+								<lightning:button
+									variant="brand"
+									aura:id="fraudRefreshButton"
+									class="slds-align_absolute-center"
+									label="Refresh Fraud Screening "
+									title="Refresh Fraud Screening"
+									onclick="{! c.refreshFraudScreening }"
+								/>
+								<aura:set attribute="else">
+									<lightning:layoutItem size="12" class="red-color">
+										<b>Fraud Risk re-screening required. Primary Client and/or Related Party details changed</b>
+									</lightning:layoutItem>
+								</aura:set>
+							</aura:if>
+						</lightning:accordionSection>
+					</lightning:accordion>
+				</aura:if>
+			</div>
+		</lightning:accordionSection>
+	</lightning:accordion>
+</aura:component>

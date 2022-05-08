@@ -1,0 +1,104 @@
+<!--
+* Lightning Component for Onboarding Merchant Accepted Cards (merchantOnboardingAcceptedCards)
+*
+* @author  Tinashe
+* @version v1.0
+* @since   2020-04-02
+* W-004094
+*
+-->
+<aura:component controller="merchantOnboardingAcceptedCardsCtrlr"
+                implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global" >
+
+    <!-- Event Handler Declaration -->
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}" />
+
+    <!-- Parent Cmp Attribute Declaration -->
+    <aura:attribute name="cmpFormStatus" type="String" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="applicationProductMerchantId" type="String" default=""/>
+    <aura:attribute name="activeSections" type="List" default="['CardsInfo']" />
+    <aura:attribute name="cardItems" type="List" default="[]" />
+    <aura:attribute name="openModal" type="boolean"/>
+    <aura:attribute name="preSelectedCardValues" type="List" default="[]"/>
+    <aura:attribute name="availableCardOptions" type="List" default="[]"/>
+    <aura:attribute name="isShowSuccessToast" type="Boolean" />
+    <aura:attribute name="errorMessage" type="String" default=""/>
+    <aura:attribute name="oppProductId" type="String" default=""/>
+    <aura:attribute name="oppProductRecord" type="Object" />
+    <aura:attribute name="isSpinner" type="Boolean" default="true"/>
+
+    <!-- Method Declaration -->
+    <aura:method name="saveFormMethod" action="{!c.executeSaveFormMethod}" />
+
+    <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <aura:if isTrue="{!not(empty(v.oppProductId))}">
+        <force:recordData aura:id="oppProductRecordEditor"
+                          fields="Product2.Family"
+                          recordId="{!v.oppProductId}"
+                          targetFields ="{!v.oppProductRecord}"
+                          recordUpdated="{!c.oppProductRecordUpdated}"
+                          targetError="{!v.errorMessage}"
+                          mode="VIEW"/>
+     </aura:if>
+
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="CardsInfo" label="Accepted Cards" >
+
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="recordError">
+                    <br/>
+                    <h2 class="slds-section__title slds-align_absolute-left" style="color:red">{!v.errorMessage}</h2>
+                    <br/>
+                </div>
+            </aura:if>
+
+            <lightning:recordEditForm aura:id="acceptedCardsForm"
+                                      objectApiName="Application_Product_Merchant__c"
+                                      recordId="{!v.applicationProductMerchantId}"
+                                      onload="{!c.handleLoad}"
+                                      onsubmit="{!c.handleSubmit}"
+                                      onsuccess="{!c.handleSuccess}"
+                                      onerror="{!c.handleError}" >
+
+                <lightning:dualListbox aura:id="dualListboxCards" label= "Available Cards" sourceLabel="Available" selectedLabel="Selected" options="{!v.availableCardOptions}" value="{!v.preSelectedCardValues}" disabled="{!v.isFormReadOnly}" required="true"/>
+                <lightning:inputField  aura:id="AMEX_Merchant_Number" fieldName="AMEX_Merchant_Number__c" disabled="{!v.isFormReadOnly}" />
+                <lightning:inputField  aura:id="selectedCards" fieldName="Selected_Cards__c" class="slds-hide" />
+                <lightning:inputField  aura:id="oppLineItemId" fieldName="Opportunity_Product_Id__c" class="slds-hide" />
+                <lightning:button aura:id="saveBtn" type="submit" label="Save" variant="brand" disabled="{!or(empty(v.applicationProductMerchantId), v.isFormReadOnly)}" class="slds-align_absolute-center slds-m-top_xx-small" />
+                <!-- This section will pop up the Modal for certain cards
+                to let banker know to inform client to get registered with
+                relevant financial institution -->
+                <aura:If isTrue="{!v.openModal}">
+                    <div aura:id="editDialog" role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open slds-modal_small slds-backdrop ">
+                        <div class="slds-modal__container ">
+                            <div class="slds-modal__header">
+                                <div class="slds-text-heading--small">Accepted Cards</div>
+                            </div>
+                            <div class="slds-modal__content slds-p-around--small slds-grid slds-wrap " style="height:100px;" >
+                                <div class="slds-size--1-of-1 slds-small-size--1-of-1 ">
+                                    <div class="slds-text-body_small slds-text-color_success ">
+                                        <aura:iteration items="{!v.cardItems}" var="type"> <!-- Iterate through the card types captured and ask Banker to inform client-->
+                                            {!type}
+                                        </aura:iteration>
+                                    </div>
+                                </div>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <button class="slds-button slds-button_brand" onclick="{!c.closeModal}">Close</button>
+                            </footer>
+                        </div>
+                    </div>
+                </aura:If>
+                <!-- End modal section -->
+            </lightning:recordEditForm>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

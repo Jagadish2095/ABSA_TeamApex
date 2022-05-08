@@ -1,0 +1,234 @@
+<aura:component implements="lightning:availableForFlowScreens,lightning:isUrlAddressable,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global" controller="BranchAbsaLifeMemberController">
+    
+    <aura:attribute name="buttonLabel" type="string" default="Add New" />
+    <aura:attribute name="formLabel" type="string" default="Add Member" />
+    <aura:attribute name="hasPremiumInfo" type="Boolean" default="True" />
+    <aura:attribute name="isNotMainMember" type="Boolean" default="True" />
+    <aura:attribute name="dataOfBirthDisabled" type="Boolean" default="{!!v.isNotMainMember}" />
+    <aura:attribute name="gridData" type="Map" />
+    <aura:attribute name="currentIndex" type="Integer" default="-1" />
+    <aura:attribute name="isDisabled" type="Boolean" default="False"/>
+    <aura:attribute name="premiumCalculated" type="Boolean" default="False"/>
+    <aura:attribute name="isCalculating" type="Boolean" default="False"/>
+    <aura:attribute name="errorMessage" type="string" default="" />
+    <aura:attribute name="customMessage" type="string" default="" />
+    <aura:attribute name="customMessageHeader" type="string" default="" />
+    <aura:attribute name="itemId" type="string" />
+    <aura:attribute name="memberType" type="string"/>
+    <aura:attribute name="memberName" type="String"/>
+    <aura:attribute name="memberSurname" type="String"/>
+    <aura:attribute name="memberIdTypeOption" type="String"/>
+    <aura:attribute name="memberIdTypeOptions" type="Map" />
+    <aura:attribute name="memberIdText" type="String"/>
+    <aura:attribute name="memberTitle" type="String"/> 
+    <aura:attribute name="memberRelationship" type="String"/>
+    <aura:attribute name="memberRelationshipOptions" type="Map" />
+    <aura:attribute name="memberGender" type="String"/>
+    <aura:attribute name="memberGenderOptions" type="Map" />
+    <aura:attribute name="memberDateOfBirth" type="Date"/>
+    <aura:attribute name="memberCoverOptions" type="Map" />
+    <aura:attribute name="memberCoverOption" type="String"/>
+    <aura:attribute name="memberPremium" type="String"/>
+    <aura:attribute name="isModalOpen" type="Boolean" default="False" />
+    <aura:attribute name="policySession" type="Map"/>
+    <aura:attribute name="tempSession" type="Map"/>
+    <aura:attribute name="opportunityId" type="string"/>
+    <aura:attribute name="opportunityProductId" type="string"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="isCustomMessageModalOpen" type="Boolean" default="False" />
+    <aura:attribute name="wasNotInformed" type="Boolean" default="True" />
+    <!-- handlers-->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+    <aura:handler name="absaLifeProductSelectionEvent" event="c:AbsaLifeProductSelectionEvent" action="{!c.getValueFromComponentEvent}"/> 
+    
+    <div class="c-container">
+        <lightning:layout >
+            <lightning:layoutItem padding="around-small">
+                <aura:if isTrue="{!v.isNotMainMember}">
+                    <aura:if isTrue="{!v.hasPremiumInfo}">
+                        <p>The chosen product only allows for 1 spouse, up to 8 extended family members and unlimited amount of children to it.</p>
+                        <aura:set attribute="else">
+                            <p>For the chosen product only 1 beneficiary is permited, minimum 18 year of age</p>
+                        </aura:set>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        <p>Complete the main member form, to calculate premium.</p>
+                    </aura:set>
+                </aura:if>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" alignmentBump="left" >
+                <lightning:button variant="brand" label="{!v.buttonLabel}" title="Success" onclick="{!c.handleClick }" disabled='{!v.isDisabled}'/>
+            </lightning:layoutItem>
+        </lightning:layout>
+        <lightning:layout>
+            <lightning:layoutItem>
+                <lightning:datatable
+                                     keyField="id"
+                                     data="{! v.gridData }"
+                                     columns="{! v.columns }"
+                                     onrowaction="{! c.handleRowAction }"
+                                     hideCheckboxColumn="true" />
+            </lightning:layoutItem>
+        </lightning:layout>
+    </div>
+    <br/>
+    <div class="slds-m-around_xx-large">
+        <!--Use aura:if tag to display/hide popup based on isModalOpen value-->  
+        <aura:if isTrue="{!v.isModalOpen}">
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!v.formLabel}</h2>
+                        <h4 id="modal-heading-04" class="slds-text-heading_small slds-hyphenate">{!v.errorMessage}</h4>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-grid slds-wrap slds-gutters">
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                <label for="FirstName" >Full names</label>
+                                <lightning:input aura:id="FirstName"
+                                                 name="FirstName"
+                                                 value="{! v.memberName }"
+                                                 variant="label-hidden"
+                                                 disabled="{!!v.isNotMainMember}" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                <label for="LastName" >Surname</label>
+                                <lightning:input aura:id="LastName"
+                                                 name="LastName"
+                                                 value="{! v.memberSurname }"
+                                                 variant="label-hidden"
+                                                 disabled="{!!v.isNotMainMember}" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                <label for="IDField" >ID/Passport Number</label>
+                                <lightning:input aura:id="IDField"
+                                                 name="IDField"
+                                                 value="{! v.memberIdText }"
+                                                 variant="label-hidden"
+                                                 onblur="{!c.IDNumberCaptured}"
+                                                 disabled="{!!v.isNotMainMember}" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                <lightning:select aura:id="IDType"
+                                                  name="IDType"
+                                                  label="ID Type"
+                                                  value="{! v.memberIdTypeOption }"
+                                                  disabled="{!!v.isNotMainMember}" >
+                                    <option value="">please select...</option>
+                                    <!--To fix-->
+                                    <aura:iteration items="{! v.memberIdTypeOptions }" var="idType">
+                                        <option value="{!idType.value}" selected="{!idType==v.memberIdTypeOption}">{!idType.key}</option>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </div>
+                            <aura:if isTrue="{!v.isNotMainMember}">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                    <lightning:select aura:id="Relationship"
+                                                      name="Relationship"
+                                                      label="Relationship"
+                                                      value="{! v.memberRelationship }"
+                                                      onchange="{!c.onChangeRelationship}"
+                                                      disabled="{!!v.isNotMainMember}" >
+                                        <option value="">please select...</option>
+                                        <!--To fix-->
+                                        <aura:iteration items="{! v.memberRelationshipOptions }" var="relationships">
+                                            <option value="{!relationships.key}" selected="{!relationships==v.memberRelationship}">{!relationships.key}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                <lightning:select aura:id="Gender"
+                                                  name="Gender"
+                                                  label="Gender"
+                                                  value="{! v.memberGender }"
+                                                  disabled="{!!v.isNotMainMember}" >
+                                    <option value="">please select...</option>
+                                    <!--To fix-->
+                                    <aura:iteration items="{! v.memberGenderOptions }" var="gender">
+                                        <option value="{!gender.key}" selected="{!gender==v.memberGender}">{!gender.key}</option>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                <label for="DOB" >Date Of Birth</label>
+                                <lightning:input type="date" dateStyle="short" value="{!v.memberDateOfBirth}" variant="label-hidden" disabled="{!v.dataOfBirthDisabled}"/>
+                            </div>
+                            <aura:if isTrue="{!v.hasPremiumInfo}">
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                    <lightning:select aura:id="CoverOption"
+                                                      name="CoverOption"
+                                                      label="Cover Option"
+                                                      class="label-hidden"
+                                                      value="{!v.memberCoverOption }"
+                                                      onchange="{!c.onChangeCoverOption}">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.memberCoverOptions }" var="cover">
+                                            <option value="{!cover.value}" selected="{!cover==v.memberCoverOption}">{!cover.key}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                    <label for="Premium" >Premium</label>
+                                    <lightning:input aura:id="Premium"
+                                                     name="Premium"
+                                                     value="{! v.memberPremium }"
+                                                     style="pointer-events: none"
+                                                     variant="label-hidden"/>
+                                    <aura:if isTrue="{! v.isCalculating }">
+                                        <div>
+                                            <lightning:spinner alternativeText="Loading" size="small" />
+                                        </div>
+                                    </aura:if>
+                                </div>
+                            </aura:if>
+                        </div>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"                                        
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{!c.closeModel}"/>
+                        <lightning:button variant="brand"
+                                          label="Save"
+                                          title="Save"
+                                          onclick="{!c.submitDetails}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        <aura:if isTrue="{!v.isCustomMessageModalOpen}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!v.customMessageHeader}</h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-grid slds-wrap slds-gutters">
+                            <div>
+                                <aura:unescapedHtml value="{!v.customMessage}" />
+                            </div>
+                        </div>
+                    </div>
+                     <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="brand"
+                                          label="Ok"
+                                          title="Ok"
+                                          onclick="{!c.handleOkButton}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </div>
+</aura:component>

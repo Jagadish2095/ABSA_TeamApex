@@ -1,0 +1,186 @@
+<!--
+*Lightning component for Adding Non-Individual Entities as Related Parties.
+* @author  Diksha Wasekar
+* @version v1.0
+* @since   2020-07-02
+*
+-->
+<aura:component access="global" implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"  
+                controller="OnboardingUBOListViewController">
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+    <aura:attribute name="gridColumns" type="List" access="PRIVATE" />
+    <aura:attribute name="gridData" type="Object" access="public" />
+    <aura:attribute name="gridExpandedRows" type="Object" access="PRIVATE" />
+    <aura:attribute name="sortedBy" type="String" default="Controllinginterest"/>
+    <aura:attribute name="sortedDirection" type="String" default="asc"/>
+    <aura:attribute name="accRecordId" type="String" />
+    <aura:attribute name="selectedRows" type="list" />
+    
+    <!--Added by chandra dated 06/07/2020 against W-004939-->
+    <lightning:overlayLibrary aura:id="overlayLib"/>
+    <aura:attribute name="rowIdToView" type="String" />
+    <aura:attribute name="recordIdToEdit" type="String" />
+    <aura:attribute name="rowIdToDelete" type="String" />
+    <aura:attribute name="showRelationship" type="Boolean" />
+    <aura:attribute name="showRelationshipEdit" type="Boolean" />
+    <aura:attribute name="showAccConRelationshipEdit" type="Boolean" />
+    <aura:attribute name="showDeleteRelationshipConfirmation" type="Boolean" />
+    <aura:attribute name="recordError" type="String" />
+    <aura:attribute name="selectedRecordObjectApiName" type="String" />
+    <aura:attribute name="isRelatedRecordsDeleted" type="Boolean" />
+    <aura:attribute name="showOnboardingRelatedParty" type="Boolean" />
+    <aura:attribute name="accountClientType" type="String" /> <!--Chandra 08252020  against 4746-->
+    <aura:attribute name="ChkUBOField" type="String" /> <!--Diksha 09182020  against 6596-->
+    <aura:attribute name="accountParentRecord" type="Account" default="{sobjectType:'Account'}"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    
+    <!--Added by Masechaba Maseli dated 26/07/2020 against W-004935-->
+    <aura:attribute name="recordId" type="String" /> 
+    <aura:attribute name="primaryEntityId" type="String" /> 
+    <aura:attribute name="parentRelationshipId" type="String" />
+    <aura:attribute name="deleteRowPrimaryEntityId" type="String" />
+    <aura:attribute name="processTyperp" type="String" /><!--Manoj-6067-Lite Onboarding Manual Capture-->
+    
+    <!--Added by chandra dated 24/07/2020 against W-004939-->
+    <aura:method name="getOnboardingUBOAccountId" action="{!c.doAction}"
+                 description="Account Id Parameters"> 
+        <aura:attribute name="accId" type="String" /> 
+        <aura:attribute name="processTypeparam" type="String" /> <!--Manoj-6067-Lite Onboarding Manual Capture-->
+    </aura:method>
+    
+    <!--Added by chandra against W-4746 dated 25/08/2020-->
+    <aura:method name="getAccountClientType" action="{!c.setClientType}"
+                 description="Set Address Client Type based on Account Client Type"> 
+        <aura:attribute name="clientTypeVal" type="String" /> 
+    </aura:method>
+    
+    <!-- Loading Spinner Added by chandra--> 
+    <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" />
+    
+    <!--Added by chandra dated 17/07/2020 against W-004939-->
+    <aura:handler name="hideRelatedPartiesEvent" event="c:hideRelatedPartiesEvent" action="{!c.handleComponentEvent}"/>
+    
+    
+    <aura:attribute name="selectedRowsParentClientType" type="String" /> <!-- Added by Rajesh for the Roles Issue -->
+    <aura:attribute name="OppStage" type="String"/> <!--W-008562-->
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.accRecordId}"
+                      fields="Client_Type__c"
+                      targetFields="{!v.accountParentRecord}"
+                      targetError="{!v.recordLoadError}"
+                      />
+    
+    
+    <lightning:card variant="Narrow" title="UBO/Shareholder Structure" iconName="standard:account">
+    
+        <!--Added by Diksha dated 23/07/2020 against W-004928-->
+        <aura:set attribute="actions">
+            <lightning:button variant="brand" label="Add" title="Add" onclick="{!c.handleAdd}"/>
+            <lightning:button label="Refresh" title="Refresh" onclick="{!c.refreshRecords}"/>
+        </aura:set>
+
+        <div>
+            <lightning:treeGrid columns="{! v.gridColumns }"
+                                data="{! v.gridData }"
+                                keyField="recordId"
+                                aura:id="mytree"
+                                hideCheckboxColumn="true"
+                                onrowaction="{! c.handleRowAction }"
+                                onrowselection="{! c.onSelected }"
+                                selectedRows="{! v.selectedRows }"
+                                sortedBy="{!v.sortedBy}"  
+                                sortedDirection="{!v.sortedDirection}"/>
+                                
+            
+        </div>
+    </lightning:card>
+    
+    <!--Added by chandra dated 06/07/2020 against W-004939 to view relationship-->
+    <aura:if isTrue="{!v.showRelationship}">
+        <section role="dialog" tabindex="-1" aria-label="Meaningful description of the modal content" 
+                 aria-modal="true" aria-describedby="modal-content-id-1" 
+                 class="slds-modal slds-fade-in-open slds-modal_medium">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header slds-modal__header_empty">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:recordForm aura:id="myRecordForm"
+                                          recordId="{!v.rowIdToView}"
+                                          objectApiName="{!v.selectedRecordObjectApiName}"
+                                          layoutType="Full"
+                                          columns="2"
+                                          mode="readonly"/>
+                </div>
+                
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    <!--Added by chandra dated 08/07/2020 against W-004939 to edit relationship-->
+    <aura:if isTrue="{!v.showRelationshipEdit}">
+        <section role="dialog" tabindex="-1" aria-label="Meaningful description of the modal content" 
+                 aria-modal="true" aria-describedby="modal-content-id-1" 
+                 class="slds-modal slds-fade-in-open slds-modal_medium">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header slds-modal__header_empty">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.showAccConRelationshipEdit}">
+                        	<c:OnboardingRelatedParties recordIdAccountContactEdited="{!v.recordIdToEdit}"
+                                                        showModalRecordEdit="true"
+                                                        accountClientType="{!v.accountClientType}"
+                                                        isFromUBOListView="true"
+                                                        primaryEntityId="{!v.primaryEntityId}"
+                                                        ChkUBOField="{!v.ChkUBOField}"
+                                                        processTyperp="{!v.processTyperp}"
+                                                        showAccConRelationshipEdit="true"/>
+                        <aura:set attribute="else">
+                            <lightning:recordForm aura:id="myRecordForm"
+                                                  recordId="{!v.recordIdToEdit}"
+                                                  objectApiName="{!v.selectedRecordObjectApiName}"
+                                                  layoutType="Full"
+                                                  columns="2"
+                                                  mode="edit"
+                                                  onsubmit="{!c.handleSubmit}" />
+                        </aura:set>
+                    </aura:if> 
+                    
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    <!--Added by chandra dated 10/07/2020 against W-004939 to delete relationship-->
+    <aura:if isTrue="{!v.showDeleteRelationshipConfirmation}">
+    <force:recordData aura:id="recordToDelete"
+                      recordId="{!v.rowIdToDelete}"
+                      fields="Id"
+                      targetError="{!v.recordError}"
+                      recordUpdated="{!c.handleRecordUpdated}"
+                      />
+    </aura:if>
+    
+    <!--Added by chandra dated 24/07/2020 to open OnboardingRelatedParties-->
+    <aura:if isTrue="{!v.showOnboardingRelatedParty}">
+        <c:OnboardingRelatedParties showRemoveRelationshipConfirmation="false"
+                                    showDeleteRelationshipConfirmation="false"
+                                    showModal="true"
+                                    showModalRecordEdit="false" 
+                                    showCard="false" 
+                                    accRecId="{!v.accRecordId}"
+                                    processTyperp="{!v.processTyperp}"
+                                    accountClientType="{!v.accountClientType}"/>
+    </aura:if>
+</aura:component>

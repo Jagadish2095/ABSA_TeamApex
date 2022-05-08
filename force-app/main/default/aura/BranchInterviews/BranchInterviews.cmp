@@ -1,0 +1,127 @@
+<!--
+* Lightning Component to Resume Flow Interviews
+*
+* @author  Clifford Willers : ABSA (IQ Business)
+* @version v1.0
+* @since   2021-02-23
+*
+-->
+
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:lightningQuickAction,force:hasRecordId"
+                access="global"
+                controller="BranchInterviewsController" >
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:attribute name="apiLabel" type="String" default="Package Product"/>
+    <aura:attribute name="flowName" type="String" default="BranchCreditCardPackage"/>
+    <aura:attribute name="flowId" type="String" default=""/>
+    <aura:attribute name="flowResume" type="Boolean" default="false"/>
+    <aura:attribute name="startNewFlow" type="Boolean" default="false"/>
+
+    <aura:attribute name="opportunityId" type="String" default=""/>
+    <aura:attribute name="applicationId" type="String" default=""/>
+    <aura:attribute name="customerContractData" type="String" default=""/>
+    <aura:attribute name="customerVerificationData" type="String" default=""/>
+    <aura:attribute name="documentScanningData" type="String" default=""/>
+
+    <aura:attribute name="columns" type="List" default=""/>
+    <aura:attribute name="interviews" type="Object"/>
+    <aura:attribute name="showFlow" type="Boolean" default="false"/>
+    <aura:attribute name="pausedInterview" type="Boolean" default="false"/>
+
+    <aura:handler name="branchFlowEvent" event="c:BranchFlowEvent" action="{! c.handleflowEvent }"/>
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    <aura:handler name="change" value="{! v.startNewFlow }" action="{! c.startNewFlow }" />
+
+    <lightning:flow aura:id="branchFlow" />
+
+    <aura:if isTrue="{! (v.pausedInterview) }" >
+        <lightning:layout>
+            <lightning:layoutItem padding="around-small" >
+                <lightning:card iconName="standard:flow"
+                                title="Paused Interviews"
+                                class="slds-card_boundary">
+                    <table class="slds-table slds-table--bordered slds-table--cell-buffer slds-table_fixed-layout">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th scope="col" style="width:15%"><div class="slds-truncate">Flow Label</div></th>
+                                <th scope="col" style="width:15%"><div class="slds-truncate">Current Element</div></th>
+                                <th scope="col"><div class="slds-truncate">Pause Reason</div></th>
+                                <th scope="col" style="width:15%"><div class="slds-truncate">Paused Date</div></th>
+                                <th scope="col" style="width:15%"><div class="slds-truncate">Paused By</div></th>
+                                <th scope="col" style="width:3.25rem">
+                                    <div class="slds-truncate slds-assistive-text" title="Actions">Actions</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.interviews}" var="interview">
+                                <tr>
+                                    <th scope="row">
+                                        <div class="slds-truncate" title="{!interview.flowLabel}">
+                                            {!interview.flowLabel}
+                                        </div>
+                                    </th>
+                                    <th scope="row">
+                                        <div class="slds-truncate" title="{!interview.currentElement}">
+                                            {!interview.currentElement}
+                                        </div>
+                                    </th>
+                                    <td role="gridcell">
+                                        <div class="slds-truncate" title="{!interview.pauseLabel}">
+                                            {!interview.pauseLabel}
+                                        </div>
+                                    </td>
+                                    <td role="gridcell">
+                                        <div class="slds-truncate" title="{!interview.pausedDate}">
+                                            <ui:outputDateTime value="{!interview.pausedDate}"
+                                                                format="dd MMM yyyy HH:mm a"/>
+                                        </div>
+                                    </td>
+                                    <td role="gridcell">
+                                        <div class="slds-truncate" title="{!interview.pausedBy}">
+                                            {!interview.pausedBy}
+                                        </div>
+                                    </td>
+                                    <td role="gridcell">
+                                        <div class="slds-shrink-none">
+                                            <lightning:buttonMenu iconSize="x-small"
+                                                                  variant="border-filled"
+                                                                  menuAlignment="right"
+                                                                  alternativeText="Actions for this interview"
+                                                                  onselect="{! c.handleMenuSelect }">
+                                                <lightning:menuItem aura:id="{!interview.interviewId + 'resume'}"
+                                                                    label="Resume"
+                                                                    value="{!interview.interviewId + '~' + interview.flowDeveloperName + '~resume'}"
+                                                                    prefixIconName="utility:right"/>
+                                                <lightning:menuItem aura:id="{!interview.interviewId + 'restart'}"
+                                                                    label="Restart"
+                                                                    value="{!interview.interviewId + '~' + interview.flowDeveloperName + '~restart'}"
+                                                                    prefixIconName="utility:refresh"
+                                                                    disabled="{! interview.currentElement == 'ReferralComponent' }"/>
+                                            </lightning:buttonMenu>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </lightning:card>
+            </lightning:layoutItem>
+        </lightning:layout>
+        <div class="slds-p-around_x-small">
+            <!-- <lightning:button variant="brand" label="C" title="Brand action" onclick="{! c.testingStuff }" /> -->
+        </div>
+    </aura:if>
+    <aura:if isTrue="{! (v.showFlow) }" >
+        <c:BranchFlow flowName="{! (v.flowName) }"
+                      flowId="{! (v.flowId) }"
+                      recordId="{! (v.recordId) }"
+                      flowResume="{! (v.flowResume) }"
+                      opportunityId="{! (v.opportunityId) }"
+                      applicationId="{! (v.applicationId) }"
+                      customerContractData="{! (v.customerContractData) }"
+                      customerVerificationData="{! (v.customerVerificationData) }"
+                      documentScanningData="{! (v.documentScanningData) }"
+                      />
+    </aura:if>
+</aura:component>

@@ -1,0 +1,132 @@
+<aura:component access="global" controller="securitiesOfferedCTRL" implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+      <aura:attribute name="accRecId" type="String"/>
+    <aura:attribute name="mainShareholderId" type="Id"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    <aura:attribute name="existingSecurities" type="List"/>
+    <aura:attribute name="rowId" type="String"/>
+    <aura:attribute name="data" type="List"/>
+    <aura:attribute name="row" type="List"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="selectedRows" type="List"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute type="Boolean" name="showAddSecurityModal" default="false" />
+    <aura:attribute name="securityRecordId" type="String" default = "" />
+    <aura:attribute name="security" type="Security_Offered__c" default="{ 'sobjectType': 'Security_Offered__c' }"/>
+    <aura:attribute name="selectedMember" type="string" default=""/>
+    <aura:attribute name="primaryAcc" type="string" default=""/>
+    <aura:attribute name="nominalSum" type="Double" />
+    <aura:attribute name="totalASVSum" type="Double" />
+
+    <aura:attribute name="securitiesOfferedcolumns" type="List"/>
+    <aura:attribute name="securitiesOfferedData" type="List"/>
+
+    <lightning:messageChannel type="securitiesMessageChannel__c"
+            onMessage="{!c.handlerefreshEvent}" scope="APPLICATION"/>
+
+<!--   <aura:registerEvent name="sampleCmpEvent" type="c:newSecurityEvt" />-->
+   <lightning:workspaceAPI aura:id="workspace" />
+    <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="securitiesOfferedPerEntity">
+        <lightning:accordionSection name="securitiesOfferedPerEntity" label="Securities Offered per Entity">
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <div class="slds-col slds-size_1-of-1">
+                    <lightning:datatable
+                            columns="{! v.securitiesOfferedcolumns }"
+                            data="{! v.securitiesOfferedData }"
+                            keyField="id"
+                            hideCheckboxColumn="true"
+                            minColumnWidth="100"/>
+                </div>
+               <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                    <tbody>
+                            <tr>
+                                  <td>
+                                    <lightning:input aura:id="rowSelectionCheckboxId" type="checkbox-button" name="{!v.primaryAcc.Id}"  onchange="{!c.openNewSecuritiesTab}"/>
+                                    <a href="javascript:void(0)" value="{!v.primaryAcc.Id}"  onclick="{!c.openNewSecuritiesTab}" id="{!selectedMember}" ></a>
+                                </td>
+                                <td >
+                                    <div data-id="{!v.primaryAcc.Id}" class="slds-truncate" title="{!v.primaryAcc.Name}" >{!v.primaryAcc.Name}</div>
+                                </td>
+                            </tr>
+                        <aura:iteration items="{!v.data}" var="con">
+                            <tr>
+                                  <td>
+                                    <lightning:input aura:id="rowSelectionCheckboxId" type="checkbox-button" name="{!con.Id}" checked="{!con.ChkSelected}" onchange="{!c.openNewSecuritiesTab}"/>
+                                    <a href="javascript:void(0)" value="{!con.Id}"  onclick="{!c.openNewSecuritiesTab}" id="{!selectedMember}" ></a>
+                                </td>
+                                <td  scope="row">
+                                    <div data-id="{!con.Id}" class="slds-truncate" name="{!con}" title="{!con.FullName}" >{!con.FullName}</div>
+                                </td>
+                            </tr>
+                        </aura:iteration>
+                        <tr>
+                              <td> <lightning:input aura:id="rowSelectionCheckboxId" type="checkbox-button" name=" " checked=" " onchange="{!c.openNewSecuritiesTab}"/></td>
+                            <td>External Entity</td>
+                            <td></td>
+                               <!-- <a href="javascript:void(0)" value=""  onclick="{!c.openNewSecuritiesTab}" id=" " >Add a new security</a>-->
+                        </tr>
+                    </tbody>
+                </table>
+            <!--      <lightning:button label="Add New Security" onclick="{!c.openNewSecuritiesTab}" variant="brand" aura:id="ibtnProductTerms"/>
+               <lightning:button label="Add a new security" onclick="{!c.openNewSecuritiesTab}" variant="brand" aura:id="newSecurities"/>  -->
+            </div>
+        </lightning:accordionSection>
+
+        <!-- Add New Securities Modal-->
+        <aura:if isTrue="{!v.showAddSecurityModal}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+               <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeNewProductTermsModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add New Security</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <lightning:recordEditForm aura:id="" objectApiName="Security_Offered__c" recordId="{!v.securityRecordId}" > 
+                            <!--      <lightning:layout multipleRows="true" >
+
+                                <aura:iteration items="{!v.data}" var="con">
+
+                                    <div data-id="{!con.Id}" class="slds-truncate" name="{!con}" title="{!con.FullName}" >{!con.FullName}</div>
+
+                                </aura:iteration>
+                                -->
+
+                            <lightning:select name="select" label="Select an Individual" value="{!v.selectedMember}" required="true">
+                                <aura:iteration items="{!v.data}" var="con">
+                                    <option value="{!con.Id}" text="{!con.FullName}"></option>
+                                </aura:iteration>
+                            </lightning:select>
+                            <lightning:inputField fieldName="Specific_Security__c" aura:id="specificSecurity" value="{!v.security.Specific_Security__c}" class="customRequired"/>
+
+                            <lightning:inputField fieldName="Securities_Offered_for_Facility__c" aura:id="securityOffered" value="{!v.security.Securities_Offered_for_Facility__c}" class="customRequired"/>
+
+                            <lightning:inputField fieldName="Reference_Account_Number__c" aura:id="referenceAccNo" value="{!v.security.Reference_Account_Number__c}" class="customRequired"/>
+
+                            <lightning:inputField fieldName="Nominal_Value__c" aura:id="nominalValue" value="{!v.security.Nominal_Value__c}" class="customRequired"/>
+
+                            <!--   </lightning:layout>-->
+                        </lightning:recordEditForm>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button class="slds-float_left"
+                                      variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeNewProductTermsModal }"/>
+                    <lightning:button variant="brand"
+                                      label="Submit Request"
+                                      title="Submit Request"
+                                      onclick="{!c.addNewSecurity}"/>
+                </footer>
+                   </div>
+            </section>
+        </aura:if>
+    </lightning:accordion>
+</aura:component>

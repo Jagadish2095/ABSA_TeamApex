@@ -1,0 +1,126 @@
+<!--
+ - Created by Vitthal Jivrag on 2021/01/22.
+ -->
+
+ <aura:component description="CaseCallOutcomesController" controller="CaseCallOutcomesController"  implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+ access="global">
+
+<!-- aura attributes-->
+<aura:attribute name="inboundOutcomePicklistvalues" type="string[]" />
+<aura:attribute name="recordId" type="Id" />
+<aura:attribute name="listControllingValues" type="list" default="[]" description="to store controller field values"/>
+<aura:attribute name="listDependingValues" type="list" default="['--- None ---']" description="to store dependent field values"/>
+<aura:attribute name="depnedentFieldMap" type="map" description="map to store dependent values with controlling value"/>
+<aura:attribute name="bDisabledDependentFld" type="boolean" default="true"/>
+<aura:attribute name="bDisabledSave" type="boolean" default="true"/>
+<aura:attribute name="spinner" type="boolean" default="FALSE"/>
+<aura:attribute name="isCallBack" type="boolean" default="FALSE"/>
+<aura:attribute name="showLogACall" type="boolean" default="FALSE"/>
+
+
+<!-- Handle record saves and edits-->
+<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+<aura:handler event="force:refreshView" action="{!c.isRefreshed}" />
+<!--<aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+<aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>-->
+     <aura:attribute name="oppRecord" type="Object"/>
+<force:recordData aura:id="recordLoader"
+                          recordId="{!v.recordId}"
+                          fields="RecordType.Name"
+                          targetFields="{!v.oppRecord}"
+                          targetError="{!v.recordLoadError}"
+                          mode="EDIT" />
+<aura:if isTrue="{!v.spinner}">
+<div aura:id="spinnerId" class="slds-spinner_container">
+<div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+ <span class="slds-assistive-text">Loading...</span>
+ <div class="slds-spinner__dot-a"></div>
+ <div class="slds-spinner__dot-b"></div>
+</div>
+</div>
+</aura:if>
+
+
+<article class="slds-card">
+<div class="slds-card__header slds-grid">
+<header class="slds-media slds-media_center slds-has-flexi-truncate">
+ <div class="slds-media__figure">
+<span class="slds-icon_container slds-icon-standard-account" title="Log a Call">
+<lightning:icon size="medium" iconName="standard:log_a_call" alternativeText="Call" />
+<span class="slds-assistive-text">Log a Call</span>
+</span>
+ </div>
+ <div class="slds-media__body">
+     <h2 class="slds-card__header-title">
+         <a href="#" class="slds-card__header-link slds-truncate" title="Log a Call">
+             <span>Log a Call</span>
+         </a>
+     </h2>
+ </div>
+</header>
+</div>
+<div class="slds-box_border slds-card__body slds-card__body_inner">
+<lightning:layoutItem size="12" padding="around-small">
+ <lightning:select name="controllerFld"
+                   aura:id = "controllerFldSelect"
+                   label="Outcome"
+                   onchange="{!c.onControllerFieldChange}"
+                   required="true">
+     <aura:iteration items="{!v.listControllingValues}" var="val">
+         <option value="{!val}">{!val}</option>
+     </aura:iteration>
+ </lightning:select>
+</lightning:layoutItem>
+
+<!--Dependent Field-->
+<lightning:layoutItem size="12" padding="around-small">
+ <lightning:select name="dependentFld"
+                   label="Outcome Reason"
+                   aura:id = "dependentFldSelect"
+                   disabled="{!v.bDisabledDependentFld}"
+                     onchange="{!c.onDependentFieldChange}">
+     <aura:iteration items="{!v.listDependingValues}" var="val">
+         <option value="{!val}">{!val}</option>
+     </aura:iteration>
+ </lightning:select>
+</lightning:layoutItem>
+<aura:if isTrue="{!v.isCallBack}">
+ <lightning:layout >
+ <div class="slds-section slds-is-open">
+     <h3 class="slds-section__title slds-theme_shade">
+         <span class="slds-truncate slds-p-horizontal_small" title="Enter Call back information">Enter Call back information</span>
+     </h3>
+     <lightning:layoutItem size="12" padding="around-small">
+         <lightning:input aura:id="calldate" type="datetime-local" name="input1" label="Enter a date/time value" required="true"/>
+     </lightning:layoutItem>
+     <lightning:layoutItem size="12" padding="around-small">
+         <lightning:select aura:id="lang" name="lang" label="Select a language" required="{!v.oppRecord.RecordType.Name != 'Investment Opportunity'}" onchange="{!c.onLanguageFieldChange}">
+             <option value="">choose one...</option>
+             <option value="English">English</option>
+             <option value="Afrikaans">Afrikaans</option>
+             <option value="Ndebele">Ndebele</option>
+             <option value="Pedi">Pedi</option>
+             <option value="Sotho">Sotho</option>
+             <option value="Swati">Swati</option>
+             <option value="Tswana">Tswana</option>
+             <option value="Tsonga">Tsonga</option>
+             <option value="Venda">Venda</option>
+             <option value="Xhosa">Xhosa</option>
+             <option value="Zulu">Zulu</option>
+         </lightning:select>
+     </lightning:layoutItem>
+ </div>
+ </lightning:layout>
+</aura:if>
+
+
+<lightning:layoutItem size="12" padding="around-small">
+ <lightning:button label="Save" onclick="{!c.saveData}" variant="brand" aura:id="ibtnSave" disabled="{!v.bDisabledSave}"/>
+</lightning:layoutItem>
+</div>
+</article>
+
+<!--Controller Field-->
+
+
+</aura:component>

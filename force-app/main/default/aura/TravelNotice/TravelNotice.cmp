@@ -1,0 +1,193 @@
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global"
+                controller = "TravelNoticeController">
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    
+    <aura:attribute name="combiCardsAccounts" type="List" />
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"/>
+    <aura:attribute name="selectedCombiCard" type="String" access="global"/>
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="combiCardNo" type="String" />
+    <aura:attribute name="combiNumber" type="String" />
+    <aura:attribute name="showSelectedCardDetails" type="boolean" default="false"/>
+    <aura:attribute name="selectCombiCard" type="boolean" default="false"/>
+    <aura:attribute name="noCombiMsg" type="boolean" default="false"/>
+    <aura:attribute name="responseAccList" type="List" />
+    <aura:attribute name="accNumList" type="List" />  
+    <aura:attribute name="accountNumber" type="List" />
+    <aura:attribute name="Status" type="String" />
+    <aura:attribute name="prodTypesList" type="List" />
+    <aura:attribute name="selectedProductValue" type="String" />
+    <aura:attribute name="selectedAccountNumber" type="String" />
+    <aura:attribute name="serviceResponse" type="sObject" />
+	<aura:attribute name="today" type="Date" />
+    <aura:attribute name="pauseDate" type="Date" />
+	
+    <aura:attribute name="pauseHold" type="boolean" default="false"/>
+    <aura:attribute name="atmHold" type="boolean" default="false"/>
+    <aura:attribute name="posHold" type="boolean" default="false"/>
+    <aura:attribute name="latmHold" type="boolean" default="false"/>
+    <aura:attribute name="lposHold" type="boolean" default="false"/>
+    <aura:attribute name="cnpHold" type="boolean" default="false"/>
+    <aura:attribute name="dwhIndicator" type="boolean" default="false"/>
+    <aura:attribute name="pDate" type="String" />
+	
+    <aura:attribute name="pHold" type="String"/>
+    <aura:attribute name="atmHolds" type="String"/>
+    <aura:attribute name="posHolds" type="String"/>
+    <aura:attribute name="latmHolds" type="String"/>
+    <aura:attribute name="lposHolds" type="String"/>
+    <aura:attribute name="cnpHolds" type="String"/>
+    <aura:attribute name="dwhIndicators" type="String"/>
+    <aura:attribute name="isModalShow" type="boolean" default="false"/>
+    <aura:attribute name="isEnquiry" type="boolean" default="false"/>
+    
+    
+    <aura:if isTrue="{!v.noCombiMsg}"> 
+            <lightning:layoutItem padding="around-small" size="4"> 
+                <!-- Show the message to ui -->
+                <div class=" slds-notify slds-notify_toast slds-theme_error  slds-size_12-of-12">
+                    <span class="slds-assistive-text">error</span>
+                    <div class="slds-notify__content">
+                        <p class="slds-align_absolute-right">No combi card </p>    
+                        <h5 class="slds-text-heading_small slds-align_absolute-right">There's no combi card for this profile</h5>
+                        <br/>
+                        
+                    </div>
+                </div> 
+            </lightning:layoutItem>
+        </aura:if>
+    <aura:if isTrue="{!v.showSelectedCardDetails}">
+        <lightning:layout multipleRows="true">
+             
+             <lightning:layoutItem padding="around-small" size="12">
+            	<h3 class="slds-section__title"  size="12">
+            		<span class="slds-truncate slds-button slds-section__title-action" title="Account Selection">Use card when travelling</span>
+        		</h3> <br/>  
+         	</lightning:layoutItem>
+            
+            <lightning:layoutItem padding="around-small" size="6" >
+                
+                <div  class="slds-box slds-box_x-small slds-m-around_x-small filterStyle" style="color:white;height:146px;width:60%" >
+                    
+                    <div class="slds-notify__content">
+                        <h5 class="slds-text-heading_small slds-align_absolute-right">Card Number </h5>
+                        <br/>
+                        <div class="slds-truncate" title="">{!v.combiNumber} <br/></div> 
+                    </div>
+                </div>           
+            </lightning:layoutItem>
+            <aura:if isTrue="{!v.isEnquiry}"> 
+            <lightning:layoutItem padding="around-small" size="6" >
+                
+                <div class="slds-p-top_small">
+                   <!-- <lightning:input type="checkbox" label="Pause hold "  checked="{!v.pauseHold}"/> -->
+                </div>
+                <div class="slds-p-top_small">
+                	<lightning:input type="checkbox" label="International atm hold"  checked="{!v.atmHold}"/>
+                </div>
+                <div class="slds-p-top_small">
+                	<lightning:input type="checkbox" label="International pos hold"  checked="{!v.posHold}"/>
+                </div>
+                <div class="slds-p-top_small">
+                	<lightning:input type="checkbox" label="Local atm hold"  checked="{!v.latmHold}"/>
+                </div>
+                <div class="slds-p-top_small">
+                    <lightning:input type="checkbox" label="Local pos hold"  checked="{!v.lposHold}"/>
+                </div>
+                <div class="slds-p-top_small">
+                    <lightning:input type="checkbox" label="Card not present hold"  checked="{!v.cnpHold}"/>
+                </div>
+                <div class="slds-p-top_small">
+                    <lightning:input type="checkbox" label="Digital wallet hold indicator"  checked="{!v.dwhIndicator}"/>
+                </div>
+            </lightning:layoutItem>
+             </aura:if>
+            </lightning:layout>
+          <lightning:layout multipleRows="true">
+            
+           	<lightning:layoutItem padding="around-small" size="6">                
+                <lightning:select value="{!v.selectedProductValue}" class="select-auto-width" aura:id="myProductselection" 
+                                  onchange="{!c.getAccountNumbers}"	label="Select the Product Type" required="true">
+                    <option value="">--None--</option>
+                    <aura:iteration items="{!v.prodTypesList}" var="prod" indexVar="key">
+                        <option value="{!prod}">{!prod}</option>
+                    </aura:iteration>
+                </lightning:select>                
+            </lightning:layoutItem> 
+                     
+            <lightning:layoutItem padding="around-small" size="6">
+                
+                    <lightning:select value="{!v.selectedAccountNumber}" class="select-auto-width" aura:id="myAccountselection" onchange="{!c.getSelectedAccount}" label="Select the Account" required="true">
+                        <option value="">--None--</option>
+                        <aura:iteration items="{!v.accNumList}" var="acc" indexVar="key">
+                            <option value="{!acc}">{!acc}</option>
+                        </aura:iteration>
+                    </lightning:select>
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="around-small" size="6">
+                
+                <lightning:input type="date" name="input1" aura:id="pauseDt" label="Pause Date" value="{!v.pauseDate}" max="" required="true"/>
+                <!--<lightning:input value="{!v.pauseDate}" class="select-auto-width" aura:id="pauseDate" label="Pause Date" required="true"/> -->    
+            </lightning:layoutItem>
+              <div class="exampleHolder">
+                <lightning:spinner aura:id="Spinner" alternativeText="Loading" size="large" variant="brand" class="slds-hide"/>
+               </div>
+            <lightning:layoutItem size="12" padding="around-small">
+                
+            	<div class="slds-m-top_small slds-float--right">
+                	<lightning:button aura:id="submitButton"  variant="brand"  label="Update Travel Notice" onclick="{!c.submit}"/>
+            	</div><br/><br/>
+            </lightning:layoutItem>
+            
+            
+        </lightning:layout>
+       
+    </aura:if>
+    
+     <!--LOAD ALL COMBI CARD/CHEQUE LINKED TO CLIENT-->
+    <aura:if isTrue="{!v.selectCombiCard}">
+        <table style="width: 100%">  
+            <aura:iteration items="{!v.combiCardsAccounts}" var="selectedCombiCard" indexVar="key"> 
+                <tr> 
+                    <td style="width: 2%">                    
+                        <lightning:input type="Radio" data-value ="{!selectedCombiCard}" value="{!selectedCombiCard}" label="" aura:id="cardCheck" name="selectCard" onchange="{!c.showTransactionDetails}"/>	   
+                    </td>
+                    
+                    <td align="left" style="width: 30%">
+                        <div  class="slds-box slds-box_x-small slds-m-around_x-small filterStyle" style="color:white;height:140px" >
+                            Card Number
+                            <br/> <div class="slds-truncate" title="">{!selectedCombiCard}</div>        
+                        </div>
+                    </td> 
+                    <td>                  
+                    </td>
+                </tr>
+                
+            </aura:iteration>
+        </table>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.isModalShow}">
+        <section role="dialog" tabindex="-1" aria-label="Meaningful description of the modal content" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header slds-modal__header_empty ">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"  onclick="{!c.closeModal}">
+                        X
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <h1 class="slds-align_absolute-center">Are you sure you want to add a travel notice</h1>  
+                </div>
+                <footer class="slds-modal__footer">
+                    <div class="slds-align_absolute-center">
+                        <lightning:button class="slds-button slds-button_brand"  label="Yes" aura:id="previousId" variant="neutral" onclick="{!c.updateTravelNoticeModal}"/>
+                        <lightning:button class="slds-button slds-button_neutral" label="No" aura:id="previousId" variant="neutral" onclick="{!c.closeModal}"/>
+                    </div>                    
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+</aura:component>

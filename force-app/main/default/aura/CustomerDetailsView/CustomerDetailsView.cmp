@@ -1,0 +1,1544 @@
+<!--
+  @description       : Branch Customer Details View (DO NOT EDIT!)
+  @author            : clifford.willers@absa.africa
+  @last modified on  : 2021-10-20
+  @last modified by  : clifford.willers@absa.africa
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                extends="c:CustomerDetailsBase"
+                access="global"
+                controller="BranchCustomerController">
+    <!-- aura:component attributes -->
+    <aura:attribute name="editButton" type="Map" default="{ label: 'Edit', variant: 'brand', disabled: false }"/>
+    <aura:attribute name="processType" type="String" default="" />
+    <aura:attribute name="dhaAttestation" type="Boolean" default="false" />
+    <aura:attribute name="recordLoaded" type="Boolean" default="false" />
+    <aura:attribute name="submitting" type="Boolean" default="false" />
+    <aura:attribute name="postalAddressSame" type="String" default="No" />
+    <aura:attribute name="readOnly" type="Boolean" default="true" />
+    <aura:attribute name="loadedMissingData" type="List" default="[]"/>
+    <aura:attribute name="maintenanceCase" type="Object"/>
+    <aura:attribute name="caseCreated" type="Boolean" default="false" />
+    <aura:attribute name="firstLoad" type="Boolean" default="false" />
+    <!-- KYC attributes -->
+    <aura:attribute name="kycFieldChanged" type="Boolean" default="false" />
+    <!-- <aura:attribute name="kycChanged" type="String" /> -->
+    <aura:attribute name="kycFieldList" type="List" default="[]"/>
+    <!-- BranchCustomerHub attributes -->
+    <aura:attribute name="startNewFlow" type="boolean" default="false" />
+    <aura:attribute name="selectedProcess" type="Object" />
+    <aura:attribute name="complianceMissingData" type="List" default="[]" />
+    <!-- show component section attributes -->
+    <aura:attribute name="showPersonalInformation" type="Boolean" default="true" />
+    <aura:attribute name="showContactInformation" type="Boolean" default="true" />
+    <aura:attribute name="showMarketingConsent" type="Boolean" default="true" />
+    <aura:attribute name="showAddressInformation" type="Boolean" default="true" />
+    <aura:attribute name="showNextOfKinInformation" type="Boolean" default="true" />
+    <aura:attribute name="showEmploymentInformation" type="Boolean" default="true" />
+    <aura:attribute name="showEmployersInformation" type="Boolean" default="true" />
+    <aura:attribute name="showTaxInformation" type="Boolean" default="true" />
+    <!-- lightning:select Option Lists -->
+    <aura:attribute name="clientTypeOptions" type="List"/>
+    <aura:attribute name="titleOptions" type="List"/>
+    <aura:attribute name="maritalStatusOptions" type="List"/>
+    <aura:attribute name="maritalContractTypeOptions" type="List"/>
+    <aura:attribute name="countryOfBirthOptions" type="List"/>
+    <aura:attribute name="nationalityOptions" type="List"/>
+    <aura:attribute name="homeLanguageOptions" type="List"/>
+    <aura:attribute name="incomeSourceOptions" type="string"/>
+    <aura:attribute name="communicationLanguageOptions" type="List"/>
+    <aura:attribute name="communicationMethodOptions" type="List"/>
+    <aura:attribute name="residentialStatusOptions" type="List"/>
+    <aura:attribute name="postalAddressOptions" type="List"/>
+    <aura:attribute name="relationshipOptions" type="List" />
+    <aura:attribute name="occupationStatusOptions" type="List" />
+    <aura:attribute name="occupationLevelOptions" type="List" />
+    <aura:attribute name="occupationCategoryOptions" type="List" />
+    <aura:attribute name="qualificationOptions" type="List" />
+    <aura:attribute name="employerSectorOptions" type="List" />
+    <aura:attribute name="hasQualificationOptions" type="List" />
+    <aura:attribute name="incomeTaxOptions" type="List" />
+    <aura:attribute name="foreignTaxOptions" type="List" />
+    <aura:attribute name="incomeTaxReasonOptions" type="List"/>
+    <aura:attribute name="nonCreditMarketingOptions" type="List" />
+    <aura:attribute name="nonCreditMarketingIndicators" type="List" />
+    <aura:attribute name="creditMarketingOptions" type="List" />
+    <aura:attribute name="creditMarketingIndicators" type="List" />
+    <aura:attribute name="foreignTaxCountryOptions" type="List" />
+    <aura:attribute name="foreignTaxReasonOptions" type="List" />
+    <!-- Field Attributes: Personal Information -->
+    <aura:attribute name="clientType" type="Map" default="{ label: 'Client type', required: true, disabled: false }"/>
+    <aura:attribute name="titleMap" type="Map" default="{ label: 'Title', required: true, disabled: false }"/>
+    <aura:attribute name="firstNameMap" type="Map" default="{ label: 'Full names', required: true, disabled: false }"/>
+    <aura:attribute name="lastNameMap" type="Map" default="{ label: 'Surname', required: true, disabled: false }"/>
+    <aura:attribute name="iDNumberMap" type="Map" default="{ label: 'ID number', required: true, disabled: true }"/>
+    <aura:attribute name="dateIssuedMap" type="Map" default="{ label: 'Date issued', required: true, disabled: false }"/>
+    <aura:attribute name="incomeSourceMap" type="Map" default="{ label: 'Source of income', required: true, disabled: false }"/>
+    <aura:attribute name="maritalStatusMap" type="Map" default="{ label: 'Marital status', required: true, disabled: false }"/>
+    <aura:attribute name="maritalTypeMap" type="Map" default="{ label: 'Marriage type', required: true, disabled: false }"/>
+    <aura:attribute name="countryOfBirthMap" type="Map" default="{ label: 'Country of birth', required: true, disabled: false }"/>
+    <aura:attribute name="homeLanguageMap" type="Map" default="{ label: 'Home language', required: true, disabled: false }"/>
+    <aura:attribute name="nationalityMap" type="Map" default="{ label: 'Nationality', required: true, disabled: false }"/>
+    <aura:attribute name="homeLanguageOtherMap" type="Map" default="{ label: 'Please specify', required: true, disabled: false }"/>
+    <!-- Field Attributes: Contact Information -->
+    <aura:attribute name="personEmail" type="Map" default="{ label: 'Email address', required: false, disabled: false }"/>
+    <aura:attribute name="personOtherPhone" type="Map" default="{ label: 'Alternative contact number (optional)', required: false, disabled: false }"/>
+    <aura:attribute name="communicationLanguage" type="Map" default="{ label: 'Communication language', required: true, disabled: false }"/>
+    <aura:attribute name="personMobilePhone" type="Map" default="{ label: 'Cellphone number', required: true, disabled: false }"/>
+    <aura:attribute name="communicationMethod" type="Map" default="{ label: 'Preferred communication channel', required: true, disabled: false }"/>
+    <!-- Field Attributes: Marketing Consent   -->
+    <aura:attribute name="nonCreditMarketing" type="Map" default="{ value: '', label: 'Be the first to hear about exciting new products, upgrade opportunities, fantastic offers and even more Rewards from Absa Group. Interested?', required: true, disabled: false }"/>
+    <aura:attribute name="nonCreditCheck" type="Map" default="{ value: '', label: 'Are you sure? You can choose just how you hear about our offers' }"/>
+    <aura:attribute name="creditMarketing" type="Map" default="{ value: '', label: 'You may qualify for future loans and limit increases from Absa Group. Would you like to hear about these?', required: true, disabled: false }"/>
+    <aura:attribute name="creditCheck" type="Map" default="{ value: '', label: 'Please contact me via:' }"/>
+    <!-- Field Attributes: Address information -->
+    <aura:attribute name="residentialStatus" type="Map" default="{ label: 'Residential status', required: true, disabled: false }"/>
+    <aura:attribute name="residentialAddress" type="Map" default="{ loaded: false, type: 'Residential', street: '', street2: '', suburb: '', city: '', province: '', code: '', country: '', required: true, disabled: false, readOnly: false }"/>
+    <aura:attribute name="residentialAddressKyc" type="Map" default="{ street: '', street2: '', suburb: '', city: '', province: '', code: '', country: '' }"/>
+    <aura:attribute name="postalAddress" type="Map" default="{ loaded: false, type: 'Postal', street: '', street2: '', suburb: '', city: '', province: '', code: '', country: '', required: true, disabled: false, readOnly: false }"/>
+    <!-- Field Attributes: Next of Kin -->
+    <aura:attribute name="kinFirstNameMap" type="Map" default="{ label: 'First name', required: true, disabled: false }"/>
+    <aura:attribute name="kinLastNameMap" type="Map" default="{ label: 'Surname', required: true, disabled: false }"/>
+    <aura:attribute name="kinRelationshipMap" type="Map" default="{ label: 'Relationship', required: true, disabled: false }"/>
+    <aura:attribute name="kinCellphoneNumberMap" type="Map" default="{ label: 'Cellphone number', required: true, disabled: false }"/>
+    <aura:attribute name="kinTelephoneNumberMap" type="Map" default="{ label: 'Work number (optional)', required: false, disabled: false }"/>
+    <aura:attribute name="kinEmailAddressMap" type="Map" default="{ label: 'Email address (optional)', required: false, disabled: false }"/>
+    <!-- Field Attributes: Employment details -->
+    <aura:attribute name="occupationStatus" type="Map" default="{ value: '', label: 'Occupation status', required: true, disabled: false }"/>
+    <aura:attribute name="occupationLevel" type="Map" default="{ value: '', label: 'Occupation level', required: true, disabled: false }"/>
+    <aura:attribute name="occupationCategory" type="Map" default="{ value: '', label: 'Occupation category', required: true, disabled: false }"/>
+    <aura:attribute name="employerSector" type="Map" default="{ value: '', label: 'Industry', required: true, disabled: false }"/>
+    <aura:attribute name="hasQualification" type="Map" default="{ value: '', label: 'Does the customer have a post matric qualification?', required: true }"/>
+    <aura:attribute name="qualification" type="Map" default="{ value: '', label: 'Post matric qualification', required: true, disabled: false }"/>
+    <!-- Field Attributes: Employers details -->
+    <aura:attribute name="employerName" type="Map" default="{ value: '', label: 'Employers name', required: true, disabled: false }"/>
+    <aura:attribute name="employerPhone" type="Map" default="{ value: '', label: 'Employers phone number', required: true, disabled: false }"/>
+    <aura:attribute name="employersAddress" type="Map" default="{ loaded: false, type: 'Employers', street: '', street2: '', suburb: '', city: '', province: '', code: '', country: '', required: true, disabled: false }"/>
+    <!-- Field Attributes: Tax details -->
+    <aura:attribute name="incomeTax" type="Map" default="{ value: '', label: 'Is the customer registered for income tax?', required: true, disabled: false }"/>
+    <aura:attribute name="foreignTax" type="Map" default="{ value: '', label: 'Is the customer registered for foreign income tax?', required: true, disabled: false }"/>
+    <aura:attribute name="incomeTaxReason" type="Map" default="{ value: '', label: 'Reason SA income tax number not given', required: true, disabled: false }"/>
+    <aura:attribute name="incomeTaxNumber" type="Map" default="{ value: '', label: 'SA income tax number (optional)', required: false, disabled: false }"/>
+    <!-- foreignTax: dataTable -->
+    <aura:attribute name="foreignTaxData" type="Object" />
+    <aura:attribute name="foreignTaxDeleteData" type="Object" />
+    <aura:attribute name="foreignTaxCVSData" type="String" />
+    <aura:attribute name="foreignTaxColumns" type="List" />
+    <aura:attribute name="taxReadOnlyColumns" type="List" />
+    <!-- aura:handlers -->
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <aura:handler name="change" value="{! v.maritalStatusMap.value }" action="{! c.maritalStatusChanged }" />
+    <aura:handler name="change" value="{! v.occupationStatus.value }" action="{! c.occupationStatusChange }" />
+    <aura:handler name="change" value="{! v.communicationMethod.value }" action="{! c.checkForEmail }" />
+    <aura:handler name="change" value="{! v.residentialAddress.street }" action="{! c.addressChanged }"/>
+    <aura:handler name="change" value="{! v.residentialAddress.street2 }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialAddress.suburb }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialAddress.city }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialAddress.province }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialAddress.code }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.residentialAddress.country }" action="{! c.addressChanged }" />
+    <aura:handler name="change" value="{! v.complianceMissingData }" action="{! c.checkMissingData }" />
+    <aura:handler name="change" value="{! v.foreignTaxCountryOptions }" action="{! c.foreignTaxOptionsChanged }" />
+    <aura:handler name="change" value="{! v.foreignTaxReasonOptions }" action="{! c.foreignTaxOptionsChanged }" />
+    <aura:handler name="change" value="{!v.dialogSelection}" action="{!c.dialogSelectionChanged}" />
+    <aura:handler event="aura:doneRendering" action="{!c.checkMissingData}"/>
+    <aura:handler name="addressRecordEvent" event="c:BranchAddressRecordEvent" action="{! c.handleRecordEvent }"/>
+    <aura:handler action="{!c.handleNavigate}" event="c:BranchNavigateFlow"/>
+
+    <lightning:recordEditForm aura:id = "CustomerInformation"
+                              recordId="{! v.recordId }"
+                              objectApiName="Account"
+                              density="comfy"
+                              onload="{! c.recordLoaded }"
+                              onsubmit="{! c.recordSubmit }"
+                              onerror="{! c.recordError }"
+                              onsuccess="{! c.recordSuccess }">
+        <lightning:inputField fieldName="Client_Type__c" class="hidden_field"/>
+        <lightning:inputField fieldName="FirstName" class="hidden_field"/>
+        <lightning:inputField fieldName="Titles__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="ID_Number__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="LastName" class="hidden_field"/>
+        <lightning:inputField fieldName="Date_Issued__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Marital_Status__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Country_of_Birth__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Home_Language__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Home_Language_Other__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Marital_Contract_Type__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Nationality_List__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Income_Source__pc" class="hidden_field"/>
+
+        <lightning:inputField fieldName="PersonEmail" class="hidden_field"/>
+        <lightning:inputField fieldName="PersonOtherPhone" class="hidden_field"/>
+        <lightning:inputField fieldName="Communication_Language__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="PersonMobilePhone" class="hidden_field"/>
+        <lightning:inputField fieldName="Preferred_Communication_Method__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Residential_Status__pc" class="hidden_field"/>
+
+        <lightning:inputField fieldName="Next_of_Kin_First_Name_s__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Next_of_Kin_Last_Name__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Next_of_Kin_Relationship__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Next_of_Kin_Cellphone_Number__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Next_of_Kin_Telephone_Number__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Next_of_Kin_Email_Address__pc" class="hidden_field"/>
+
+        <lightning:inputField fieldName="Occupation_Status__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Occupation_Level__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Occupation_Category__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Has_Post_Matric_Qualification__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Post_Matric_Qualification__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Employer_Sector__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Employer_Name__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Employer_Phone__c" class="hidden_field"/>
+
+        <lightning:inputField fieldName="Is_customer_registered_for_income_tax__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Is_customer_registered_for_foreign_tax__c" class="hidden_field"/>
+        <lightning:inputField fieldName="Income_Tax_Number__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Income_Tax_Number_Reason__pc" class="hidden_field"/>
+
+        <lightning:inputField fieldName="Non_Credit_Marketing_Consent__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Non_Credit_Marketing_Indicator__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Credit_Marketing_Consent__pc" class="hidden_field"/>
+        <lightning:inputField fieldName="Credit_Marketing_Indicator__pc" class="hidden_field"/>
+
+        <button id="{! globalId + '_information_submit' }" type="submit" class="hidden_field"/>
+    </lightning:recordEditForm>
+
+    <aura:if isTrue="{! v.readOnly }">
+        <lightning:card>
+            <aura:if isTrue="{! v.showPersonalInformation }">
+                <lightning:card>
+                    <aura:set attribute="title">
+                        <b>Personal Information</b>
+                    </aura:set>
+                    <aura:set attribute="actions">
+                        <lightning:button aura:id="Edit"
+                                          label="{! v.editButton.label }"
+                                          variant="{! v.editButton.variant }"
+                                          disabled="{! v.editButton.disabled }"
+                                          iconName="utility:edit"
+                                          iconPosition="left"
+                                          onclick="{! c.onEditButtonPressed }" />
+                    </aura:set>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6" >
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_titleReadOnly_label' }" for="titleReadOnly" >{! v.titleMap.label }</label>
+                                <div id="{! globalId + '_titleReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="titleReadOnly"
+                                                                name="titleReadOnly"
+                                                                value="{! v.titleMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6" >
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_ClientTypeReadOnly_label' }" for="ClientTypeReadOnly" >{! v.clientType.label }</label>
+                                <div id="{! globalId + '_ClientTypeReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="ClientTypeReadOnly"
+                                                                name="ClientTypeReadOnly"
+                                                                value="{! v.clientType.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_fullNameReadOnly_label' }" for="fullNameReadOnly" >{! v.firstNameMap.label }</label>
+                                <div id="{! globalId + '_fullNameReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="fullNameReadOnly"
+                                                                name="fullNameReadOnly"
+                                                                value="{! v.firstNameMap.value }"/></b>
+                                </div>
+                            </div>
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_IdNumberReadOnly_label' }" for="IdNumberReadOnly" >{! v.iDNumberMap.label }</label>
+                                <div id="{! globalId + '_IdNumberReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="IdNumberReadOnly"
+                                                                name="IdNumberReadOnly"
+                                                                value="{! v.iDNumberMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_LastNameReadOnly_label' }" for="LastNameReadOnly" >{! v.lastNameMap.label }</label>
+                                <div id="{! globalId + '_LastNameReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="LastNameReadOnly"
+                                                                name="LastNameReadOnly"
+                                                                value="{! v.lastNameMap.value }"/></b>
+                                </div>
+                            </div>
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_DateIdIssuedReadOnly_label' }" for="DateIdIssuedReadOnly" >{! v.dateIssuedMap.label }</label>
+                                <div id="{! globalId + '_DateIdIssuedReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedDateTime aura:id="DateIdIssuedReadOnly"
+                                                                    name="DateIdIssuedReadOnly"
+                                                                    value="{! v.dateIssuedMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6" >
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_SourceOfIncomeReadOnly_label' }" for="SourceOfIncomeReadOnly" >{! v.incomeSourceMap.label }</label>
+                                <div id="{! globalId + '_SourceOfIncomeReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="SourceOfIncomeReadOnly"
+                                                                name="SourceOfIncomeReadOnly"
+                                                                value="{! v.incomeSourceMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6" >
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_MaritalStatusReadOnly_label' }" for="MaritalStatusReadOnly" >{! v.maritalStatusMap.label }</label>
+                                <div id="{! globalId + '_MaritalStatusReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="MaritalStatusReadOnly"
+                                                                name="MaritalStatusReadOnly"
+                                                                value="{! v.maritalStatusMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6" >
+                            <aura:if isTrue="{! v.maritalStatusMap.value == 'Married' }">
+                                <div class="slds-var-p-around_x-small">
+                                    <label id="{! globalId + '_MaritalContractTypeReadOnly_label' }" for="MaritalContractTypeReadOnly" >{! v.maritalTypeMap.label }</label>
+                                    <div id="{! globalId + '_MaritalContractTypeReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                        <b><lightning:formattedText aura:id="MaritalContractTypeReadOnly"
+                                                                    name="MaritalContractTypeReadOnly"
+                                                                    value="{! v.maritalTypeMap.value }"/></b>
+                                    </div>
+                                </div>
+                            </aura:if>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_countryOfBirthReadOnly_label' }" for="countryOfBirthReadOnly" >{! v.countryOfBirthMap.label }</label>
+                                <div id="{! globalId + '_countryOfBirthReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="countryOfBirthReadOnly"
+                                                                name="countryOfBirthReadOnly"
+                                                                value="{! v.countryOfBirthMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_nationalityReadOnly_label' }" for="nationalityReadOnly" >{! v.nationalityMap.label }</label>
+                                <div id="{! globalId + '_nationalityReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="nationalityReadOnly"
+                                                                name="nationalityReadOnly"
+                                                                value="{! v.nationalityMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_HomeLanguageReadOnly_label' }" for="HomeLanguageReadOnly" >{! v.homeLanguageMap.label }</label>
+                                <div id="{! globalId + '_HomeLanguageReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="HomeLanguageReadOnly"
+                                                                name="HomeLanguageReadOnly"
+                                                                value="{! v.homeLanguageMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <aura:if isTrue="{! v.homeLanguageMap.value == 'Other' }">
+                                <div class="slds-var-p-around_x-small">
+                                    <label id="{! globalId + '_HomeLanguageOtherReadOnly_label' }" for="HomeLanguageOtherReadOnly" >{! v.homeLanguageOtherMap.label }</label>
+                                    <div id="{! globalId + '_HomeLanguageOtherReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                        <b><lightning:formattedText aura:id="HomeLanguageOtherReadOnly"
+                                                                    name="HomeLanguageOtherReadOnly"
+                                                                    value="{! v.homeLanguageOtherMap.value }"/></b>
+                                    </div>
+                                </div>
+                            </aura:if>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                </lightning:card>
+            </aura:if>
+            <aura:if isTrue="{! v.showContactInformation }">
+                <lightning:card>
+                    <aura:set attribute="title">
+                        <b>Contact Information</b>
+                    </aura:set>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_PersonEmailReadOnly_label' }" for="PersonEmailReadOnly">{! v.personEmail.label }</label>
+                                <div id="{! globalId + '_PersonEmailReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="PersonEmailReadOnly"
+                                                                name="PersonEmailReadOnly"
+                                                                value="{! v.personEmail.value }"/></b>
+                                </div>
+                            </div>
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_PersonOtherPhoneReadOnly_label' }" for="PersonOtherPhoneReadOnly">{! v.personOtherPhone.label }</label>
+                                <div id="{! globalId + '_PersonOtherPhoneReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="PersonOtherPhoneReadOnly"
+                                                                name="PersonOtherPhoneReadOnly"
+                                                                value="{! v.personOtherPhone.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_PersonMobilePhoneReadOnly_label' }" for="PersonMobilePhoneReadOnly">{! v.personMobilePhone.label }</label>
+                                <div id="{! globalId + '_PersonMobilePhoneReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="PersonMobilePhoneReadOnly"
+                                                                name="PersonMobilePhoneReadOnly"
+                                                                value="{! v.personMobilePhone.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_CommunicationLanguageReadOnly_label' }" for="CommunicationLanguageReadOnly">{! v.communicationLanguage.label }</label>
+                                <div id="{! globalId + '_CommunicationLanguageReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="CommunicationLanguageReadOnly"
+                                                                name="CommunicationLanguageReadOnly"
+                                                                value="{! v.communicationLanguage.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_PreferredCommunicationMethodReadOnly_label' }" for="PreferredCommunicationMethodReadOnly">{! v.communicationMethod.label }</label>
+                                <div id="{! globalId + '_PreferredCommunicationMethodReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="PreferredCommunicationMethodReadOnly"
+                                                                name="PreferredCommunicationMethodReadOnly"
+                                                                value="{! v.communicationMethod.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                </lightning:card>
+            </aura:if>
+            <aura:if isTrue="{! v.showMarketingConsent }">
+                <lightning:card>
+                    <aura:set attribute="title">
+                        <b>Electronic Marketing Consent</b>
+                    </aura:set>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="12" >
+                            <div class="slds-var-p-around_x-small" >
+                                <label id="{! globalId + '_NonCreditMarketingGroupReadOnly_label' }" for="NonCreditMarketingGroupReadOnly">{! v.nonCreditMarketing.label }</label>
+                                <div id="{! globalId + '_NonCreditMarketingGroupReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="NonCreditMarketingGroupReadOnly"
+                                                                name="NonCreditMarketingGroupReadOnly"
+                                                                value="{! v.nonCreditMarketing.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <aura:if isTrue="{! v.nonCreditMarketing.value == 'No' }">
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                <div class="slds-var-p-around_x-small" >
+                                    <label id="{! globalId + '_nonCreditCheckBoxGroupReadOnly_label' }" for="NonCreditCheckBoxGroupReadOnly">{! v.nonCreditCheck.label }</label>
+                                    <div id="{! globalId + '_nonCreditCheckBoxGroupReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                        <aura:iteration aura:id="NonCreditCheckBoxGroupReadOnly"
+                                                        items="{!v.nonCreditCheck.value}"
+                                                        var="nonCreditItem">
+                                            <p><b> - {!nonCreditItem}</b></p>
+                                        </aura:iteration>
+                                    </div>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </aura:if>
+                </lightning:card>
+                <lightning:card>
+                    <aura:set attribute="title">
+                        <b>Credit Marketing Consent</b>
+                    </aura:set>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="12" >
+                            <div class="slds-var-p-around_x-small" >
+                                <label id="{! globalId + '_CreditMarketingGroupReadOnly_label' }" for="NonCreditMarketingGroupReadOnly">{! v.creditMarketing.label }</label>
+                                <div id="{! globalId + '_CreditMarketingGroupReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="CreditMarketingGroupReadOnly"
+                                                                name="CreditMarketingGroupReadOnly"
+                                                                value="{! v.creditMarketing.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <aura:if isTrue="{! v.creditMarketing.value == 'Yes' }">
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                <div class="slds-var-p-around_x-small" >
+                                    <label id="{! globalId + '_creditCheckBoxGroupReadOnly_label' }" for="CreditCheckBoxGroupReadOnly">{! v.creditCheck.label }</label>
+                                    <div id="{! globalId + '_creditCheckBoxGroupReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                        <aura:iteration aura:id="CreditCheckBoxGroupReadOnly"
+                                                        items="{!v.creditCheck.value}"
+                                                        var="creditItem">
+                                            <p><b> - {!creditItem}</b></p>
+                                        </aura:iteration>
+                                    </div>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </aura:if>
+                </lightning:card>
+            </aura:if>
+            <aura:if isTrue="{! v.showAddressInformation }">
+                <lightning:card>
+                    <aura:set attribute="title">
+                        <b>Address Information</b>
+                    </aura:set>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6" >
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_ResidentialStatusReadOnly_label' }" for="ResidentialStatusReadOnly" >{! v.residentialStatus.label }</label>
+                                <div id="{! globalId + '_ResidentialStatusReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="ResidentialStatusReadOnly"
+                                                                name="ResidentialStatusReadOnly"
+                                                                value="{! v.residentialStatus.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutItem size="12">
+                            <c:AddressDetailsView aura:id="residentialAddressReadOnly"
+                                                  recordId="{! v.recordId }"
+                                                  addressType="{! v.residentialAddress.type }"
+                                                  addressDisabled="{! v.residentialAddress.disabled }"
+                                                  addressStreet="{! v.residentialAddress.street }"
+                                                  addressStreet2="{! v.residentialAddress.street2 }"
+                                                  addressSuburb="{! v.residentialAddress.suburb }"
+                                                  addressCity="{! v.residentialAddress.city }"
+                                                  addressPostalCode="{! v.residentialAddress.code }"
+                                                  addressProvince="{! v.residentialAddress.province }"
+                                                  addressCountry="{! v.residentialAddress.country }"
+                                                  readOnly="true"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutItem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label for="PostalRadioGroupReadOnly">Postal address same as residential address?</label>
+                                <div class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="PostalRadioGroupReadOnly"
+                                                                name="PostalSameResidential"
+                                                                value="{! v.postalAddressSame }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutItem size="12">
+                            <c:AddressDetailsView aura:id="postalAddressReadOnly"
+                                                  recordId="{! v.recordId }"
+                                                  addressType="{! v.postalAddress.type }"
+                                                  addressDisabled="{! v.postalAddress.disabled }"
+                                                  addressStreet="{! v.postalAddress.street }"
+                                                  addressStreet2="{! v.postalAddress.street2 }"
+                                                  addressSuburb="{! v.postalAddress.suburb }"
+                                                  addressCity="{! v.postalAddress.city }"
+                                                  addressPostalCode="{! v.postalAddress.code }"
+                                                  addressProvince="{! v.postalAddress.province }"
+                                                  addressCountry="{! v.postalAddress.country }"
+                                                  readOnly="true"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </lightning:card>
+            </aura:if>
+            <aura:if isTrue="{! v.showNextOfKinInformation }">
+                <lightning:card>
+                    <aura:set attribute="title">
+                        <b>Next Of Kin</b>
+                    </aura:set>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_NextofKinFirstNameReadOnly_label' }" for="NextofKinFirstNameReadOnly">{! v.kinFirstNameMap.label }</label>
+                                <div id="{! globalId + '_NextofKinFirstNameReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="NextofKinFirstNameReadOnly"
+                                                                name="NextofKinFirstNameReadOnly"
+                                                                value="{! v.kinFirstNameMap.value }"/></b>
+                                </div>
+                            </div>
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_NextofKinRelationshipReadOnly_label' }" for="NextofKinRelationshipReadOnly">{! v.kinRelationshipMap.label }</label>
+                                <div id="{! globalId + '_NextofKinRelationshipReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="NextofKinRelationshipReadOnly"
+                                                                name="NextofKinRelationshipReadOnly"
+                                                                value="{! v.kinRelationshipMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_NextofKinLastNameReadOnly_label' }" for="NextofKinLastNameReadOnly">{! v.kinLastNameMap.label }</label>
+                                <div id="{! globalId + '_NextofKinLastNameReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="NextofKinLastNameReadOnly"
+                                                                name="NextofKinLastNameReadOnly"
+                                                                value="{! v.kinLastNameMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_NextofKinCellphoneNumberReadOnly_label' }" for="NextofKinCellphoneNumberReadOnly">{! v.kinCellphoneNumberMap.label }</label>
+                                <div id="{! globalId + '_NextofKinCellphoneNumberReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="NextofKinCellphoneNumberReadOnly"
+                                                                name="NextofKinCellphoneNumberReadOnly"
+                                                                value="{! v.kinCellphoneNumberMap.value }"/></b>
+                                </div>
+                            </div>
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_NextofKinTelephoneNumberReadOnly_label' }" for="NextofKinTelephoneNumberReadOnly">{! v.kinTelephoneNumberMap.label }</label>
+                                <div id="{! globalId + '_NextofKinTelephoneNumberReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="NextofKinTelephoneNumberReadOnly"
+                                                                name="NextofKinTelephoneNumberReadOnly"
+                                                                value="{! v.kinTelephoneNumberMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_NextofKinEmailAddressReadOnly_label' }" for="NextofKinEmailAddressReadOnly">{! v.kinEmailAddressMap.label }</label>
+                                <div id="{! globalId + '_NextofKinEmailAddressReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="NextofKinEmailAddressReadOnly"
+                                                                name="NextofKinEmailAddressReadOnly"
+                                                                value="{! v.kinEmailAddressMap.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                </lightning:card>
+            </aura:if>
+            <aura:if isTrue="{! v.showEmploymentInformation }">
+                <lightning:card>
+                    <aura:set attribute="title">
+                        <b>Employment Details</b>
+                    </aura:set>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_OccupationStatusReadOnly_label' }" for="OccupationStatusReadOnly">{! v.occupationStatus.label }</label>
+                                <div id="{! globalId + '_OccupationStatusReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="OccupationStatusReadOnly"
+                                                                name="OccupationStatusReadOnly"
+                                                                value="{! v.occupationStatus.value }"/></b>
+                                </div>
+                            </div>
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_OccupationLevelReadOnly_label' }" for="OccupationLevelReadOnly">{! v.occupationLevel.label }</label>
+                                <div id="{! globalId + '_OccupationLevelReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="OccupationLevelReadOnly"
+                                                                name="OccupationLevelReadOnly"
+                                                                value="{! v.occupationLevel.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_OccupationCategoryReadOnly_label' }" for="OccupationCategoryReadOnly">{! v.occupationCategory.label }</label>
+                                <div id="{! globalId + '_OccupationCategoryReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="OccupationCategoryReadOnly"
+                                                                name="OccupationCategoryReadOnly"
+                                                                value="{! v.occupationCategory.value }"/></b>
+                                </div>
+                            </div>
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_IndustryReadOnly_label' }" for="IndustryReadOnly">{! v.employerSector.label }</label>
+                                <div id="{! globalId + '_IndustryReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="IndustryReadOnly"
+                                                                name="IndustryReadOnly"
+                                                                value="{! v.employerSector.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6" >
+                            <div class="slds-var-p-around_x-small" >
+                                <label id="{! globalId + '_HasPostMatricQualificationRadioGroupReadOnly_label' }" for="HasPostMatricQualificationRadioGroupReadOnly">{! v.hasQualification.label }</label>
+                                <div id="{! globalId + '_HasPostMatricQualificationRadioGroupReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="HasPostMatricQualificationRadioGroupReadOnly"
+                                                                name="HasPostMatricQualificationRadioGroupReadOnly"
+                                                                value="{! v.hasQualification.value }"/></b>
+                                </div>
+                            </div>
+                            <aura:if isTrue="{! v.hasQualification.value == 'Yes' }">
+                                <div class="slds-var-p-around_x-small">
+                                    <label id="{! globalId + '_PostMatricQualificationReadOnly_label' }" for="PostMatricQualificationReadOnly" >{! v.qualification.label }</label>
+                                    <div id="{! globalId + '_PostMatricQualificationReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                        <b><lightning:formattedText aura:id="PostMatricQualificationReadOnly"
+                                                                    name="PostMatricQualificationReadOnly"
+                                                                    value="{! v.qualification.value }"/></b>
+                                    </div>
+                                </div>
+                            </aura:if>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                </lightning:card>
+            </aura:if>
+            <aura:if isTrue="{! v.showEmployersInformation }">
+                <lightning:card>
+                    <aura:set attribute="title">
+                        <b>Employers Details</b>
+                    </aura:set>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_EmployerNameReadOnly_label' }" for="EmployerNameReadOnly">{! v.employerName.label }</label>
+                                <div id="{! globalId + '_EmployerNameReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="EmployerNameReadOnly"
+                                                                name="EmployerNameReadOnly"
+                                                                value="{! v.employerName.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                        <lightning:layoutitem padding="horizontal-medium" size="6">
+                            <div class="slds-var-p-around_x-small">
+                                <label id="{! globalId + '_EmployerPhoneReadOnly_label' }" for="EmployerPhoneReadOnly">{! v.employerPhone.label }</label>
+                                <div id="{! globalId + '_EmployerPhoneReadOnly' }" class="slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small">
+                                    <b><lightning:formattedText aura:id="EmployerPhoneReadOnly"
+                                                                name="EmployerPhoneReadOnly"
+                                                                value="{! v.employerPhone.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <lightning:layout>
+                        <lightning:layoutItem size="12">
+                            <c:AddressDetailsView aura:id="employersAddressReadOnly"
+                                                  recordId="{! v.recordId }"
+                                                  addressType="{! v.employersAddress.type }"
+                                                  addressDisabled="{! v.employersAddress.disabled }"
+                                                  addressStreet="{! v.employersAddress.street }"
+                                                  addressStreet2="{! v.employersAddress.street2 }"
+                                                  addressSuburb="{! v.employersAddress.suburb }"
+                                                  addressCity="{! v.employersAddress.city }"
+                                                  addressPostalCode="{! v.employersAddress.code }"
+                                                  addressProvince="{! v.employersAddress.province }"
+                                                  addressCountry="{! v.employersAddress.country }"
+                                                  readOnly="true"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </lightning:card>
+            </aura:if>
+            <aura:if isTrue="{! v.showTaxInformation }">
+                <lightning:card>
+                    <aura:set attribute="title">
+                        <b>Tax Details</b>
+                    </aura:set>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6" >
+                            <div class="slds-var-p-around_x-small" >
+                                <label id="{! globalId + '_IncomeTaxRadioGroupReadOnly_label' }" for="IncomeTaxRadioGroupReadOnly">{! v.incomeTax.label }</label>
+                                <div id="{! globalId + '_IncomeTaxRadioGroupReadOnly' }" class="{!v.incomeTax.value == 'Yes' ? 'slds-var-p-top_xx-small':'slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small'}">
+                                    <b><lightning:formattedText aura:id="IncomeTaxRadioGroupReadOnly"
+                                                                name="IncomeTaxRadioGroupReadOnly"
+                                                                value="{! v.incomeTax.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <aura:if isTrue="{! v.incomeTax.value == 'Yes' }">
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                <div class="{!v.incomeTax.value == 'Yes' ? 'slds-var-p-left_x-small slds-var-p-bottom_x-small slds-var-p-right_x-small':'slds-var-p-around_x-small'}" >
+                                    <div id="{! globalId + '_incomeTaxDataReadOnly' }" class="slds-border_bottom slds-var-p-bottom_x-small">
+                                        <p> Tax number: {!v.incomeTaxNumber.value=='' || v.incomeTaxNumber.value==null ? v.incomeTaxReason.value : v.incomeTaxNumber.value} </p>
+                                    </div>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </aura:if>
+                    <lightning:layout>
+                        <lightning:layoutitem padding="horizontal-medium" size="6" >
+                            <div class="slds-var-p-around_x-small" >
+                                <label id="{! globalId + '_ForeignTaxRadioGroupReadOnly_label' }" for="ForeignTaxRadioGroupReadOnly">{! v.foreignTax.label }</label>
+                                <div id="{! globalId + '_ForeignTaxRadioGroupReadOnly' }" class="{!v.foreignTax.value == 'Yes' ? 'slds-var-p-top_xx-small':'slds-border_bottom slds-var-p-top_xx-small slds-var-p-bottom_x-small'}">
+                                    <b><lightning:formattedText aura:id="ForeignTaxRadioGroupReadOnly"
+                                                                name="ForeignTaxRadioGroupReadOnly"
+                                                                value="{! v.foreignTax.value }"/></b>
+                                </div>
+                            </div>
+                        </lightning:layoutitem>
+                    </lightning:layout>
+                    <aura:if isTrue="{! v.foreignTax.value == 'Yes' }">
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                <div class="{!v.foreignTax.value == 'Yes' ? 'slds-var-p-left_x-small slds-var-p-bottom_x-small slds-var-p-right_x-small':'slds-var-p-around_x-small'}" >
+                                    <div id="{! globalId + '_foreignTaxDataReadOnly' }" class="slds-border_bottom slds-var-p-bottom_x-small">
+                                        <aura:iteration aura:id="foreignTaxDataReadOnly"
+                                                        items="{!v.foreignTaxData}"
+                                                        var="foreignTaxItem"
+                                                        indexVar="rowIndex">
+                                            <p> {!rowIndex + 1}: <b>{!foreignTaxItem.Issuing_Country__c} </b> {!foreignTaxItem.Document_Data__c=='' || foreignTaxItem.Document_Data__c==null ? ' (' + foreignTaxItem.Reason_Not_Provided__c + ') ':' (' + foreignTaxItem.Document_Data__c + ') '} </p>
+                                        </aura:iteration>
+                                    </div>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </aura:if>
+                </lightning:card>
+            </aura:if>
+        </lightning:card>
+        <aura:set attribute="else">
+            <lightning:card>
+                <aura:if isTrue="{! v.showPersonalInformation }">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <b>Personal Information</b>
+                        </aura:set>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6" >
+                                <div id="{! globalId + '_title' }" class="slds-var-p-around_x-small">
+                                    <label id="{! globalId + '_title_label' }" for="title" >{! v.titleMap.label }</label>
+                                    <lightning:select aura:id="title"
+                                                        name="title"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.titleMap.value }"
+                                                        required="{! v.titleMap.required }"
+                                                        disabled="{! v.titleMap.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.titleOptions }" var="titles">
+                                            <option value="{!titles}" selected="{!titles==v.titleMap.value}">{!titles}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6" >
+                                <div id="{! globalId + '_ClientType' }" class="slds-var-p-around_x-small">
+                                    <label for="ClientType" >{! v.clientType.label }</label>
+                                    <lightning:select aura:id="ClientType"
+                                                        name="ClientType"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.clientType.value }"
+                                                        required="{! v.clientType.required }"
+                                                        disabled="{! v.clientType.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.clientTypeOptions }" var="clientTypes">
+                                            <option value="{!clientTypes}" selected="{!clientTypes==v.clientType.value}">{!clientTypes}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_fullName' }" class="slds-var-p-around_x-small">
+                                    <label id="{! globalId + '_fullName_label' }" for="fullName" >{! v.firstNameMap.label }</label>
+                                    <lightning:input aura:id="fullName"
+                                                        name="fullName"
+                                                        pattern="[a-zA-Z\\ \\'\\-]+"
+                                                        value="{! v.firstNameMap.value }"
+                                                        variant="label-hidden"
+                                                        required="{! v.firstNameMap.required }"
+                                                        disabled="{! v.firstNameMap.disabled }"/>
+                                </div>
+                                <div id="{! globalId + '_IdNumber' }" class="slds-var-p-around_x-small">
+                                    <label for="IdNumber" >{! v.iDNumberMap.label }</label>
+                                    <lightning:input aura:id="IdNumber"
+                                                        name="IdNumber"
+                                                        value="{! v.iDNumberMap.value }"
+                                                        variant="label-hidden"
+                                                        required="{! v.iDNumberMap.required }"
+                                                        disabled="{! v.iDNumberMap.disabled }"/>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_LastName' }" class="slds-var-p-around_x-small">
+                                    <label for="LastName" >{! v.lastNameMap.label }</label>
+                                    <lightning:input aura:id="LastName"
+                                                        name="LastName"
+                                                        pattern="[a-zA-Z\\ \\'\\-]+"
+                                                        value="{! v.lastNameMap.value }"
+                                                        variant="label-hidden"
+                                                        required="{! v.lastNameMap.required }"
+                                                        disabled="{! v.lastNameMap.disabled }"/>
+                                </div>
+                                <div id="{! globalId + '_DateIdIssued' }" class="slds-var-p-around_x-small">
+                                    <label for="DateIdIssued" >{! v.dateIssuedMap.label }</label>
+                                    <lightning:input aura:id="DateIdIssued"
+                                                        name="DateIdIssued"
+                                                        type="date"
+                                                        value="{! v.dateIssuedMap.value }"
+                                                        variant="label-hidden"
+                                                        placeholder="please select..."
+                                                        max="{! v.dateIssuedMap.max }"
+                                                        required="{! v.dateIssuedMap.required }"
+                                                        disabled="{! v.dateIssuedMap.disabled }"/>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6" >
+                                <div id="{! globalId + '_SourceOfIncome' }" class="slds-var-p-around_x-small">
+                                    <label for="SourceOfIncome" >{! v.incomeSourceMap.label }</label>
+                                    <lightning:select aura:id="SourceOfIncome"
+                                                        name="SourceOfIncome"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.incomeSourceMap.value }"
+                                                        required="{! v.incomeSourceMap.required }"
+                                                        disabled="{! v.incomeSourceMap.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.incomeSourceOptions }" var="income">
+                                            <option value="{!income}" selected="{!income==v.incomeSourceMap.value}">{!income}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6" >
+                                <div id="{! globalId + '_MaritalStatus' }" class="slds-var-p-around_x-small">
+                                    <label for="MaritalStatus" >{! v.maritalStatusMap.label }</label>
+                                    <lightning:select aura:id="MaritalStatus"
+                                                        name="MaritalStatus"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.maritalStatusMap.value }"
+                                                        required="{! v.maritalStatusMap.required }"
+                                                        disabled="{! v.maritalStatusMap.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.maritalStatusOptions }" var="mStatus">
+                                            <option value="{!mStatus}" selected="{!mStatus==v.maritalStatusMap.value}">{!mStatus}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6" >
+                                <aura:if isTrue="{! v.maritalStatusMap.value == 'Married' }">
+                                    <div id="{! globalId + '_MaritalContractType' }" class="slds-var-p-around_x-small">
+                                        <label for="MaritalContractType" >{! v.maritalTypeMap.label }</label>
+                                        <lightning:select aura:id="MaritalContractType"
+                                                            name="MaritalContractType"
+                                                            label=""
+                                                            class="label-hidden"
+                                                            value="{! v.maritalTypeMap.value }"
+                                                            required="{! v.maritalTypeMap.required }"
+                                                            disabled="{! v.maritalTypeMap.disabled }">
+                                            <option value="">please select...</option>
+                                            <aura:iteration items="{! v.maritalContractTypeOptions }" var="mContractType">
+                                                <option value="{!mContractType}" selected="{!mContractType==v.maritalTypeMap.value}">{!mContractType}</option>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </div>
+                                </aura:if>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_countryOfBirth' }" class="slds-var-p-around_x-small">
+                                    <label id="{! globalId + '_countryOfBirth_label' }" for="countryOfBirth" >{! v.countryOfBirthMap.label }</label>
+                                    <lightning:select aura:id="countryOfBirth"
+                                                        name="countryOfBirth"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.countryOfBirthMap.value }"
+                                                        required="{! v.countryOfBirthMap.required }"
+                                                        disabled="{! v.countryOfBirthMap.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.countryOfBirthOptions }" var="cobValue">
+                                            <option value="{!cobValue}" selected="{!cobValue==v.countryOfBirthMap.value}">{!cobValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_nationality' }" class="slds-var-p-around_x-small">
+                                    <label id="{! globalId + '_nationality_label' }" for="nationality" >{! v.nationalityMap.label }</label>
+                                    <lightning:select aura:id="nationality"
+                                                        name="nationality"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.nationalityMap.value }"
+                                                        required="{! v.nationalityMap.required }"
+                                                        disabled="{! v.nationalityMap.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.nationalityOptions }" var="nationalityValue">
+                                            <option value="{!nationalityValue}" selected="{!nationalityValue==v.nationalityMap.value}">{!nationalityValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_HomeLanguage' }" class="slds-var-p-around_x-small">
+                                    <label for="HomeLanguage" >{! v.homeLanguageMap.label }</label>
+                                    <lightning:select aura:id="HomeLanguage"
+                                                        name="HomeLanguage"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.homeLanguageMap.value }"
+                                                        required="{! v.homeLanguageMap.required }"
+                                                        disabled="{! v.homeLanguageMap.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.homeLanguageOptions }" var="homeValue">
+                                            <option value="{!homeValue}" selected="{!homeValue==v.homeLanguageMap.value}">{!homeValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <aura:if isTrue="{! v.homeLanguageMap.value == 'Other' }">
+                                    <div id="{! globalId + '_HomeLanguageOther' }" class="slds-var-p-around_x-small">
+                                        <label for="HomeLanguageOther" >{! v.homeLanguageOtherMap.label }</label>
+                                        <lightning:input aura:id="HomeLanguageOther"
+                                                            name="HomeLanguageOther"
+                                                            value="{! v.homeLanguageOtherMap.value }"
+                                                            variant="label-hidden"
+                                                            required="{! v.homeLanguageOtherMap.required }"
+                                                            disabled="{! v.homeLanguageOtherMap.disabled }"/>
+                                    </div>
+                                </aura:if>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </lightning:card>
+                </aura:if>
+                <aura:if isTrue="{! v.showContactInformation }">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <b>Contact Information</b>
+                        </aura:set>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_PersonEmail' }" class="slds-var-p-around_x-small">
+                                    <label for="PersonEmail">{! v.personEmail.label }</label>
+                                    <lightning:input aura:id="PersonEmail"
+                                                        name="PersonEmail"
+                                                        variant="label-hidden"
+                                                        type="email"
+                                                        value="{! v.personEmail.value }"
+                                                        required="{! v.personEmail.required }"
+                                                        disabled="{! v.personEmail.disabled }"/>
+                                </div>
+                                <div id="{! globalId + '_PersonOtherPhone' }" class="slds-var-p-around_x-small">
+                                    <label for="PersonOtherPhone">{! v.personOtherPhone.label }</label>
+                                    <lightning:input aura:id="PersonOtherPhone"
+                                                        name="PersonOtherPhone"
+                                                        variant="label-hidden"
+                                                        pattern="[0-9]{10}"
+                                                        value="{! v.personOtherPhone.value }"
+                                                        required="{! v.personOtherPhone.required }"
+                                                        disabled="{! v.personOtherPhone.disabled }"/>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_PersonMobilePhone' }" class="slds-var-p-around_x-small">
+                                    <label for="PersonMobilePhone">{! v.personMobilePhone.label }</label>
+                                    <lightning:input aura:id="PersonMobilePhone"
+                                                        name="PersonMobilePhone"
+                                                        variant="label-hidden"
+                                                        pattern="[0-9]{10}"
+                                                        value="{! v.personMobilePhone.value }"
+                                                        required="{! v.personMobilePhone.required }"
+                                                        disabled="{! v.personMobilePhone.disabled }"/>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_CommunicationLanguage' }" class="slds-var-p-around_x-small">
+                                    <label for="CommunicationLanguage">{! v.communicationLanguage.label }</label>
+                                    <lightning:select aura:id="CommunicationLanguage"
+                                                        name="CommunicationLanguage"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.communicationLanguage.value }"
+                                                        required="{! v.communicationLanguage.required }"
+                                                        disabled="{! v.communicationLanguage.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.communicationLanguageOptions }" var="clValue">
+                                            <option value="{!clValue}" selected="{!clValue==v.communicationLanguage.value}">{!clValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_PreferredCommunicationMethod' }" class="slds-var-p-around_x-small">
+                                    <label for="PreferredCommunicationMethod">{! v.communicationMethod.label }</label>
+                                    <lightning:select aura:id="PreferredCommunicationMethod"
+                                                        name="PreferredCommunicationMethod"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.communicationMethod.value }"
+                                                        required="{! v.communicationMethod.required }"
+                                                        disabled="{! v.communicationMethod.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.communicationMethodOptions }" var="cmValue">
+                                            <option value="{!cmValue}" selected="{!cmValue==v.communicationMethod.value}">{!cmValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </lightning:card>
+                </aura:if>
+                <aura:if isTrue="{! v.showMarketingConsent }">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <b>Electronic Marketing Consent</b>
+                        </aura:set>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                <div id="{! globalId + '_nonCreditMarketingGroup' }" class="slds-var-p-around_x-small" >
+                                    <lightning:radioGroup aura:id="nonCreditMarketingGroup"
+                                                          type="radio"
+                                                          name="nonCreditMarketingGroup"
+                                                          options="{! v.nonCreditMarketingOptions }"
+                                                          label="{! v.nonCreditMarketing.label }"
+                                                          value="{! v.nonCreditMarketing.value }"
+                                                          required="{! v.nonCreditMarketing.required }"/>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <aura:if isTrue="{! v.nonCreditMarketing.value == 'No' }">
+                            <lightning:layout>
+                                <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                        <div id="{! globalId + '_nonCreditCheckBoxGroup' }" class="slds-var-p-around_x-small">
+                                            <lightning:checkboxGroup aura:id="nonCreditCheckBoxGroup"
+                                                                     name="nonCreditCheckBoxGroup"
+                                                                     label="{!v.nonCreditCheck.label}"
+                                                                     options="{!v.nonCreditMarketingIndicators}"
+                                                                     value="{!v.nonCreditCheck.value}"
+                                            />
+                                        </div>
+                                </lightning:layoutitem>
+                            </lightning:layout>
+                        </aura:if>
+                    </lightning:card>
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <b>Credit Marketing Consent</b>
+                        </aura:set>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                <div id="{! globalId + '_CreditMarketingGroup' }" class="slds-var-p-around_x-small" >
+                                    <lightning:radioGroup aura:id="CreditMarketingGroup"
+                                                          type="radio"
+                                                          name="CreditMarketingGroup"
+                                                          options="{! v.creditMarketingOptions }"
+                                                          label="{! v.creditMarketing.label }"
+                                                          value="{! v.creditMarketing.value }"
+                                                          required="{! v.creditMarketing.required }"/>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <aura:if isTrue="{! v.creditMarketing.value == 'Yes' }">
+                            <lightning:layout>
+                                <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                        <div id="{! globalId + '_CreditCheckBoxGroup' }" class="slds-var-p-around_x-small">
+                                            <lightning:checkboxGroup aura:id="CreditCheckBoxGroup"
+                                                                     name="CreditCheckBoxGroup"
+                                                                     label="{!v.creditCheck.label}"
+                                                                     options="{!v.creditMarketingIndicators}"
+                                                                     value="{!v.creditCheck.value}"
+                                            />
+                                        </div>
+                                </lightning:layoutitem>
+                            </lightning:layout>
+                        </aura:if>
+                    </lightning:card>
+                </aura:if>
+                <aura:if isTrue="{! v.showAddressInformation }">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <b>Address Information</b>
+                        </aura:set>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_ResidentialStatus' }" class="slds-var-p-around_x-small">
+                                    <label for="ResidentialStatus" >{! v.residentialStatus.label }</label>
+                                    <lightning:select aura:id="ResidentialStatus"
+                                                        name="ResidentialStatus"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.residentialStatus.value }"
+                                                        required="{! v.residentialStatus.required }"
+                                                        disabled="{! v.residentialStatus.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.residentialStatusOptions }" var="resStatus">
+                                            <option value="{!resStatus}" selected="{!resStatus==v.residentialStatus.value}">{!resStatus}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutItem size="12">
+                                    <c:AddressDetailsView aura:id="residentialAddress"
+                                                        recordId="{! v.recordId }"
+                                                        addressType="{! v.residentialAddress.type }"
+                                                        addressDisabled="{! v.residentialAddress.disabled }"
+                                                        addressStreet="{! v.residentialAddress.street }"
+                                                        addressStreet2="{! v.residentialAddress.street2 }"
+                                                        addressSuburb="{! v.residentialAddress.suburb }"
+                                                        addressCity="{! v.residentialAddress.city }"
+                                                        addressPostalCode="{! v.residentialAddress.code }"
+                                                        addressProvince="{! v.residentialAddress.province }"
+                                                        addressCountry="{! v.residentialAddress.country }"
+                                                        readOnly="{! v.residentialAddress.readOnly }"/>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutItem padding="horizontal-medium" size="12">
+                                <div class="slds-var-p-around_x-small">
+                                    <lightning:radioGroup aura:id="PostalRadioGroup"
+                                                            name="PostalSameResidential"
+                                                            label="Postal address same as residential address?"
+                                                            options="{! v.postalAddressOptions }"
+                                                            value="{! v.postalAddressSame }"
+                                                            type="radio"
+                                                            required="true"
+                                                            onchange="{! c.postalSelectionChange }"
+                                                            />
+                                </div>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutItem size="12">
+                                <c:AddressDetailsView aura:id="postalAddress"
+                                                      recordId="{! v.recordId }"
+                                                      addressType="{! v.postalAddress.type }"
+                                                      addressDisabled="{! v.postalAddress.disabled }"
+                                                      addressStreet="{! v.postalAddress.street }"
+                                                      addressStreet2="{! v.postalAddress.street2 }"
+                                                      addressSuburb="{! v.postalAddress.suburb }"
+                                                      addressCity="{! v.postalAddress.city }"
+                                                      addressPostalCode="{! v.postalAddress.code }"
+                                                      addressProvince="{! v.postalAddress.province }"
+                                                      addressCountry="{! v.postalAddress.country }"
+                                                      readOnly="{! v.postalAddress.readOnly }"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </lightning:card>
+                </aura:if>
+                <aura:if isTrue="{! v.showNextOfKinInformation }">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <b>Next Of Kin</b>
+                        </aura:set>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_NextofKinFirstName' }" class="slds-var-p-around_x-small">
+                                    <label for="NextofKinFirstName">{! v.kinFirstNameMap.label }</label>
+                                    <lightning:input aura:id="NextofKinFirstName"
+                                                        name="NextofKinFirstName"
+                                                        pattern="[a-zA-Z\\ \\'\\-]+"
+                                                        value="{! v.kinFirstNameMap.value }"
+                                                        variant="label-hidden"
+                                                        required="{! v.kinFirstNameMap.required }"
+                                                        disabled="{! v.kinFirstNameMap.disabled }"/>
+                                </div>
+                                <div id="{! globalId + '_NextofKinRelationship' }" class="slds-var-p-around_x-small">
+                                    <label for="NextofKinRelationship">{! v.kinRelationshipMap.label }</label>
+                                    <lightning:select aura:id="NextofKinRelationship"
+                                                        name="NextofKinRelationship"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.kinRelationshipMap.value }"
+                                                        required="{! v.kinRelationshipMap.required }"
+                                                        disabled="{! v.kinRelationshipMap.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.relationshipOptions }" var="rValue">
+                                            <option value="{!rValue}" selected="{!rValue==v.kinRelationshipMap.value}">{!rValue}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_NextofKinLastName' }" class="slds-var-p-around_x-small">
+                                    <label for="NextofKinLastName">{! v.kinLastNameMap.label }</label>
+                                    <lightning:input aura:id="NextofKinLastName"
+                                                        name="NextofKinLastName"
+                                                        pattern="[a-zA-Z\\ \\'\\-]+"
+                                                        value="{! v.kinLastNameMap.value }"
+                                                        variant="label-hidden"
+                                                        required="{! v.kinLastNameMap.required }"
+                                                        disabled="{! v.kinLastNameMap.disabled }"/>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_NextofKinCellphoneNumber' }" class="slds-var-p-around_x-small">
+                                    <label for="NextofKinCellphoneNumber">{! v.kinCellphoneNumberMap.label }</label>
+                                    <lightning:input aura:id="NextofKinCellphoneNumber"
+                                                        name="NextofKinCellphoneNumber"
+                                                        value="{! v.kinCellphoneNumberMap.value }"
+                                                        variant="label-hidden"
+                                                        required="{! v.kinCellphoneNumberMap.required }"
+                                                        disabled="{! v.kinCellphoneNumberMap.disabled }"
+                                                        pattern="[0-9]+" />
+                                </div>
+                                <div id="{! globalId + '_NextofKinTelephoneNumber' }" class="slds-var-p-around_x-small">
+                                    <label for="NextofKinTelephoneNumber">{! v.kinTelephoneNumberMap.label }</label>
+                                    <lightning:input aura:id="NextofKinTelephoneNumber"
+                                                        name="NextofKinTelephoneNumber"
+                                                        value="{! v.kinTelephoneNumberMap.value }"
+                                                        variant="label-hidden"
+                                                        required="{! v.kinTelephoneNumberMap.required }"
+                                                        disabled="{! v.kinTelephoneNumberMap.disabled }"
+                                                        pattern="[0-9]+" />
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_NextofKinEmailAddress' }" class="slds-var-p-around_x-small">
+                                    <label for="NextofKinEmailAddress">{! v.kinEmailAddressMap.label }</label>
+                                    <lightning:input aura:id="NextofKinEmailAddress"
+                                                        name="NextofKinEmailAddress"
+                                                        value="{! v.kinEmailAddressMap.value }"
+                                                        variant="label-hidden"
+                                                        required="{! v.kinEmailAddressMap.required }"
+                                                        disabled="{! v.kinEmailAddressMap.disabled }"
+                                                        type="email" />
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </lightning:card>
+                </aura:if>
+                <aura:if isTrue="{! v.showEmploymentInformation }">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <b>Employment Details</b>
+                        </aura:set>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_OccupationStatus' }" class="slds-var-p-around_x-small">
+                                    <label for="OccupationStatus">{! v.occupationStatus.label }</label>
+                                    <lightning:select aura:id="OccupationStatus"
+                                                      name="OccupationStatus"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.occupationStatus.value }"
+                                                      required="{! v.occupationStatus.required }"
+                                                      disabled="{! v.occupationStatus.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.occupationStatusOptions }" var="oStatus">
+                                            <option value="{!oStatus}" selected="{!oStatus==v.occupationStatus.value}">{!oStatus}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                                <div id="{! globalId + '_OccupationLevel' }" class="slds-var-p-around_x-small">
+                                    <label for="OccupationLevel">{! v.occupationLevel.label }</label>
+                                    <lightning:select aura:id="OccupationLevel"
+                                                      name="OccupationLevel"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.occupationLevel.value }"
+                                                      required="{! v.occupationLevel.required }"
+                                                      disabled="{! v.occupationLevel.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.occupationLevelOptions }" var="oLevel">
+                                            <option value="{!oLevel}" selected="{!oLevel==v.occupationLevel.value }">{!oLevel}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_OccupationCategory' }" class="slds-var-p-around_x-small">
+                                    <label for="OccupationCategory">{! v.occupationCategory.label }</label>
+                                    <lightning:select aura:id="OccupationCategory"
+                                                      name="OccupationCategory"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.occupationCategory.value }"
+                                                      required="{! v.occupationCategory.required }"
+                                                      disabled="{! v.occupationCategory.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.occupationCategoryOptions }" var="oCat">
+                                            <option value="{!oCat}" selected="{!oCat==v.occupationCategory.value }">{!oCat}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                                <div id="{! globalId + '_Industry' }" class="slds-var-p-around_x-small">
+                                    <label for="Industry">{! v.employerSector.label }</label>
+                                    <lightning:select aura:id="Industry"
+                                                      name="Industry"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.employerSector.value }"
+                                                      required="{! v.employerSector.required }"
+                                                      disabled="{! v.employerSector.disabled }">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.employerSectorOptions }" var="e">
+                                            <option value="{!e}" selected="{!e==v.employerSector.value }">{!e}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6" >
+                                <div id="{! globalId + '_HasPostMatricQualificationRadioGroup' }" class="slds-var-p-around_x-small" >
+                                    <lightning:radioGroup aura:id="HasPostMatricQualificationRadioGroup"
+                                                        type="radio"
+                                                        name="HasPostMatricQualificationRadioGroup"
+                                                        label="{! v.hasQualification.label }"
+                                                        options="{! v.hasQualificationOptions }"
+                                                        value="{! v.hasQualification.value }"
+                                                        required="{! v.hasQualification.required }"
+                                                        onchange="{! c.hasQualificationChange }"/>
+                                </div>
+                                <aura:if isTrue="{! v.hasQualification.value == 'Yes' }">
+                                    <div id="{! globalId + '_PostMatricQualification' }" class="slds-var-p-around_x-small">
+                                        <label for="PostMatricQualification" >{! v.qualification.label }</label>
+                                        <lightning:select aura:id="PostMatricQualification"
+                                                        name="PostMatricQualification"
+                                                        label=""
+                                                        class="label-hidden"
+                                                        value="{! v.qualification.value }"
+                                                        required="{! v.qualification.required }"
+                                                        disabled="{! v.qualification.disabled }">
+                                            <option value="">please select...</option>
+                                            <aura:iteration items="{! v.qualificationOptions }" var="q">
+                                                <option value="{!q}" selected="{!q==v.qualification.value}">{!q}</option>
+                                            </aura:iteration>
+                                        </lightning:select>
+                                    </div>
+                                </aura:if>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </lightning:card>
+                </aura:if>
+                <aura:if isTrue="{! v.showEmployersInformation }">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <b>Employers Details</b>
+                        </aura:set>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_EmployerName' }" class="slds-var-p-around_x-small">
+                                    <label for="EmployerName">{! v.employerName.label }</label>
+                                    <lightning:input aura:id="EmployerName"
+                                                     name="EmployerName"
+                                                     variant="label-hidden"
+                                                     value="{! v.employerName.value }"
+                                                     required="{! v.employerName.required }"
+                                                     disabled="{! v.employerName.disabled }"/>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem padding="horizontal-medium" size="6">
+                                <div id="{! globalId + '_EmployerPhone' }" class="slds-var-p-around_x-small">
+                                    <label for="EmployerPhone">{! v.employerPhone.label }</label>
+                                    <lightning:input aura:id="EmployerPhone"
+                                                     name="EmployerPhone"
+                                                     variant="label-hidden"
+                                                     pattern="[0-9]{10}"
+                                                     value="{! v.employerPhone.value }"
+                                                     required="{! v.employerPhone.required }"
+                                                     disabled="{! v.employerPhone.disabled }"/>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutItem size="12">
+                                <c:AddressDetailsView aura:id="employersAddress"
+                                                      recordId="{! v.recordId }"
+                                                      addressType="{! v.employersAddress.type }"
+                                                      addressDisabled="{! v.employersAddress.disabled }"
+                                                      addressStreet="{! v.employersAddress.street }"
+                                                      addressStreet2="{! v.employersAddress.street2 }"
+                                                      addressSuburb="{! v.employersAddress.suburb }"
+                                                      addressCity="{! v.employersAddress.city }"
+                                                      addressPostalCode="{! v.employersAddress.code }"
+                                                      addressProvince="{! v.employersAddress.province }"
+                                                      addressCountry="{! v.employersAddress.country }"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </lightning:card>
+                </aura:if>
+                <aura:if isTrue="{! v.showTaxInformation }">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <b>Tax Details</b>
+                        </aura:set>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                <div id="{! globalId + '_IncomeTaxRadioGroup' }" class="slds-var-p-around_x-small" >
+                                    <lightning:radioGroup aura:id="IncomeTaxRadioGroup"
+                                                          type="radio"
+                                                          name="IncomeTaxRadioGroup"
+                                                          options="{! v.incomeTaxOptions }"
+                                                          label="{! v.incomeTax.label }"
+                                                          value="{! v.incomeTax.value }"
+                                                          required="{! v.incomeTax.required }"
+                                                          onchange="{! c.incomeTaxChange }"/>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <aura:if isTrue="{! v.incomeTax.value == 'Yes' }">
+                            <lightning:layout>
+                                <lightning:layoutitem padding="horizontal-medium" size="6" >
+                                        <div id="{! globalId + '_IncomeTaxNumber' }" class="slds-var-p-around_x-small">
+                                            <label for="IncomeTaxNumber">{! v.incomeTaxNumber.label }</label>
+                                            <lightning:input aura:id="IncomeTaxNumber"
+                                                             name="IncomeTaxNumber"
+                                                             variant="label-hidden"
+                                                             value="{! v.incomeTaxNumber.value }"/>
+                                        </div>
+                                </lightning:layoutitem>
+                            </lightning:layout>
+                            <lightning:layout>
+                                <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                        <div id="{! globalId + '_ReasonSaTaxNotGiven' }" class="slds-var-p-around_x-small">
+                                            <label for="ReasonSaTaxNotGiven">{! v.incomeTaxReason.label }</label>
+                                            <lightning:select aura:id="ReasonSaTaxNotGiven"
+                                                              name="ReasonSaTaxNotGiven"
+                                                              label=""
+                                                              class="label-hidden"
+                                                              value="{! v.incomeTaxReason.value }">
+                                                <option value="">please select...</option>
+                                                <aura:iteration items="{! v.incomeTaxReasonOptions }" var="taxReason">
+                                                    <option value="{!taxReason}" selected="{!taxReason==v.incomeTaxReason.value}">{!taxReason}</option>
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </div>
+                                </lightning:layoutitem>
+                            </lightning:layout>
+                        </aura:if>
+                        <lightning:layout>
+                            <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                <div id="{! globalId + '_ForeignTaxRadioGroup' }" class="slds-var-p-around_x-small" >
+                                    <lightning:radioGroup aura:id="ForeignTaxRadioGroup"
+                                                          type="radio"
+                                                          name="ForeignTaxRadioGroup"
+                                                          options="{! v.foreignTaxOptions }"
+                                                          label="{! v.foreignTax.label }"
+                                                          value="{! v.foreignTax.value }"
+                                                          required="{! v.foreignTax.required }"/>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <aura:if isTrue="{! v.foreignTax.value == 'Yes' }">
+                            <lightning:layout>
+                                <lightning:layoutitem padding="horizontal-medium" size="12" >
+                                    <div id="{! globalId + '_foreignTaxDataTable' }" class="slds-var-p-around_x-small">
+                                        <c:ForeignTaxDataTable aura:id="foreignTaxDataTable"
+                                                               columns="{!v.foreignTaxColumns}"
+                                                               data="{!v.foreignTaxData}"
+                                                               deleteData="{!v.foreignTaxDeleteData}"
+                                                               recordId="{!v.recordId}"/>
+                                    </div>
+                                </lightning:layoutitem>
+                            </lightning:layout>
+                        </aura:if>
+                    </lightning:card>
+                </aura:if>
+            </lightning:card>
+        </aura:set>
+    </aura:if>
+</aura:component>

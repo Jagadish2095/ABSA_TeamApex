@@ -1,0 +1,2338 @@
+<!--
+  @description       : 
+  @author            : Manish.battu@absa.africa
+  @last modified on  : 2021-11-30
+  @last modified by  : vineel.rudroju@absa.africa
+-->
+<aura:component
+	controller="productOnboardingController"
+	implements="flexipage:availableForAllPageTypes,force:appHostable,force:lightningQuickAction,force:hasRecordId"
+	access="global"
+>
+	<aura:attribute name="applicationRecordId" type="String" default="" />
+	<aura:attribute name="SelectedProduct" type="opportunitylineitem" />
+	<aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}" />
+	<!-- Saurabh : Added handler for App Event-->
+	<aura:attribute name="isHide" type="Boolean" default="false" />
+	<aura:attribute name="account" type="sObject" />
+	<aura:attribute name="showROA" type="String" default="No" />
+	<aura:attribute
+		name="activeROASections"
+		type="List"
+		default="['chequeInterestDates','roaQuestions','chequeStatementDetails','chequeInterestDates','chequeAccGen']"
+	/>
+	<aura:attribute
+		name="activeSectionsAnalysis"
+		type="List"
+		default="['chequeInterestDates','AnalysisDetails','chequeAccGen','ChequeChargeDetails','chequeStatementDetails']"
+	/>
+	<!-- Added by Rajesh for Product Details Expansion-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:handler name="change" value="{!v.options}" action="{!c.onDuplicateStatement}" />
+	<aura:attribute name="duplicateStatementDefault" type="String" default="N" />
+	<aura:attribute name="isDuplicateStatement" type="Boolean" default="false" />
+	<aura:attribute name="application" type="Application__c" default="{ 'sobjectType': 'Application__c' }" />
+	<aura:attribute name="product" type="Product2" default="{ 'sobjectType': 'Product2' }" />
+	<!--<aura:attribute name="pricingList" type="Product_Pricing__c[]"/> commenting after validation failure -->
+	<aura:attribute name="oppLineItems" type="OpportunityLineItem[]" />
+
+	<aura:attribute name="productList" type="OpportunityLineItem[]" />
+
+	<aura:attribute name="PricingSchemes" type="Price_Scheme__c[]" />
+	<aura:attribute name="selectedSchemeCode" type="String" default="false" />
+	<aura:attribute name="selectedParty" type="sObject" />
+	<aura:attribute name="relatedParties" type="List" />
+	<aura:attribute name="relatedParty" type="sObject" />
+
+	<!-- <aura:attribute name="showClientNeedsAnalysis" type="boolean" default="false" />-->
+	<aura:attribute type="Boolean" name="showProductTermsModal" default="false" />
+	<aura:attribute type="Boolean" name="showProductTermsBtn" default="false" />
+	<aura:attribute type="Boolean" name="showTermsAndConditionsBtn" default="false" />
+	<aura:attribute type="Boolean" name="showCompletefulfilmentBtn" default="false" />
+	<aura:attribute type="Boolean" name="showNotifyMe" default="false" />
+	<aura:attribute type="Boolean" name="showeStatementPanel" default="false" />
+	<aura:attribute type="Boolean" name="showEmployeeCarePanel" default="false" />
+
+	<aura:attribute type="Boolean" name="showDebitCard" default="false" />
+	<aura:attribute type="Boolean" name="showMainUser" default="false" />
+	<aura:attribute type="Boolean" name="showInternetBanking" default="false" />
+	<aura:attribute type="Boolean" name="showDebitCardCheckbox" default="true" /><!--Added by Mbuyiseni Mbhokane dated 11/09/2020-->
+	<!-- <aura:attribute name="recordId" type="String" />-->
+	<aura:attribute name="recordId" type="Id" />
+	<aura:attribute name="selectedOption" type="String" default="N" />
+	<aura:attribute name="underSupervision" type="String" default="N" />
+	<aura:attribute name="productFamily" type="String" />
+	<aura:attribute name="showSpecialistInfo" type="String" default="Yes" />
+	<aura:attribute name="showSavingsAccountGen" type="String" default="Yes" />
+	<aura:attribute name="sourceFundsGiven" type="String" />
+	<aura:attribute name="adviseGiven" type="String" />
+	<aura:attribute name="isAdviseGivenBol" type="String" />
+	<aura:attribute name="isReplacingProductBol" type="String" />
+	<aura:attribute name="isReplacingProduct" type="String" />
+	<aura:attribute name="replacingProduct" type="String" />
+	<aura:attribute name="isUnderSupervision" type="String" />
+	<aura:attribute name="isUnderSupervisionBol" type="String" />
+	<aura:attribute name="mainUser" type="List" />
+	<aura:attribute type="Boolean" name="roaLoaded" default="false" />
+	<!--Added Attribute for W-005411 by Anka Ganta dated 11/08/2020 -->
+	<aura:attribute name="selectedScheme" type="String" />
+	<aura:attribute name="showTextIfYes" type="Boolean" default="false" />
+	<aura:attribute name="transferShowFields" type="Boolean" />
+
+	<aura:attribute
+		name="DuplicateStatementOpt"
+		type="List"
+		default="[
+                                                                      {'label': 'Yes', 'value': 'Y'},
+                                                                      {'label': 'No', 'value': 'N'}
+                                                                      ]"
+	/>
+	<aura:attribute
+		name="duplicateStatementOptions"
+		type="List"
+		default="[
+                                                                          {'label': 'Yes', 'value': 'Y'},
+                                                                          {'label': 'No', 'value': 'N'}
+                                                                          ]"
+	/>
+	<aura:attribute
+		name="adviceOptions"
+		type="List"
+		default="[
+                                                              {'label': 'Yes', 'value': 'Y'},
+                                                              {'label': 'No', 'value': 'N'}
+                                                              ]"
+	/>
+	<aura:attribute
+		name="supervisionOptions"
+		type="List"
+		default="[
+                                                                   {'label': 'Yes', 'value': 'Y'},
+                                                                   {'label': 'No', 'value': 'N'}
+                                                                   ]"
+	/>
+	<aura:attribute
+		name="sourceFundsOptions"
+		type="List"
+		default="[
+                                                                   {'label': 'Yes', 'value': 'Y'},
+                                                                   {'label': 'No', 'value': 'N'}
+                                                                   ]"
+	/>
+	<aura:attribute name="userFirstName" type="string" default="" />
+	<aura:attribute name="usersurname" type="string" default="" />
+	<aura:attribute name="abNumber" type="string" default="" />
+	<aura:attribute name="userPhone" type="string" default="" />
+	<aura:attribute name="userEmail" type="string" default="" />
+	<aura:attribute name="currentUserId" type="String" />
+	<aura:attribute name="user" type="string" default="" />
+
+	<aura:attribute name="Name" type="string" default="" />
+	<aura:attribute name="ActiveEmail" type="string" default="" />
+	<aura:attribute name="Surname" type="string" default="" />
+	<aura:attribute name="PreferredLanguage" type="String" />
+	<aura:attribute name="PreferredContact" type="string" default="" />
+	<aura:attribute name="policynumber" type="String" />
+	<aura:attribute name="acctname" type="String" />
+	<aura:attribute name="sitecode" type="String" />
+	<aura:attribute name="showDepositBookFields" type="boolean" default="false" />
+
+	<!-- Product Usage -->
+	<!--<aura:handler name="init" value="{!this}" action="{!c.handleLoad}"/> -->
+	<aura:attribute name="activeSections" type="List" default="['ProductUsage','Terms']" />
+	<aura:attribute name="disabled" type="Boolean" default="false" />
+	<aura:attribute name="saved" type="Boolean" default="false" />
+	<aura:attribute name="showSpinner" type="Boolean" default="true" />
+	<!--<aura:attribute name="recordId" type="String" /> -->
+	<aura:attribute name="productRecordId" type="String" />
+	<aura:attribute name="fileShares" type="List" default="[]" />
+
+	<!--Added Attribute for W-005030 by Gopi dated 16/06/2020 -->
+	<aura:attribute type="Boolean" name="showAccCalculator" default="false" />
+
+	<!--Added attribute for W-004995 by Chandra dated 12/06/2020-->
+	<aura:attribute name="reDirectFeesChecked" type="Boolean" default="false" />
+	<aura:attribute name="opportunityRecord" type="Opportunity" default="{sobjectType:'Opportunity'}" />
+	<aura:attribute name="opportunityRecord2" type="Object" />
+	<aura:attribute name="recordLoadError" type="String" />
+	<!--Added a field Process Type field in record loader by chandra dated 16/07/2021-->
+	<force:recordData
+		aura:id="recordLoader"
+		recordId="{!v.recordId}"
+		fields="Entity_Type__c,Case__c,QA_Complex_Approval_Status__c,Complex_Application__c,IsClosed,Process_Type__c"
+		targetFields="{!v.opportunityRecord2}"
+		targetError="{!v.recordLoadError}"
+		recordUpdated="{!c.handleRecordUpdated}"
+	/>
+	<aura:attribute name="isProductAvail" type="Boolean" default="false" />
+	<!--Attributes Added by Rajesh @ 13/03/2020 START-->
+	<!--  <aura:attribute name="mandateOfficial" type="String"/> 
+    <aura:attribute name="isFromSaveAndNew" type="Boolean" default="false"/> 
+    <aura:attribute name="accountDetail" type="Account"/>
+     <aura:attribute name="selectedLookUpRecord" type="sObject" default="{}"/>
+    <aura:handler name="change" value="{!v.selectedLookUpRecord}" action="{!c.handleAccountChange}"/> -->
+	<!--Attributes Added by Rajesh @ 13/03/2020 END-->
+    <aura:attribute name="yesNoOptions" type="List" default="[
+                                                              {'label': 'Yes', 'value': 'Yes'},
+                                                              {'label': 'No', 'value': 'No'}
+                                                              ]"/>
+   <aura:attribute name="processType" type="String" /> <!--Added by chandra dated 26/07/2021-->
+    
+    <!--added by Manish for W-012357-->
+    <aura:attribute name="roaQuestions" type="Object" />
+    <aura:attribute
+                    name="faisClassificationOptions"
+                    type="List"
+                    default="[
+                             {'label': 'Key Individual', 'value': 'Key Individual'},
+                             {'label': 'Representative', 'value': 'Representative'},
+                             {'label': 'Representative Under Supervision', 'value': 'Representative Under Supervision'},
+                             ]"
+                    />
+    <aura:attribute
+                    name="roleOptions"
+                    type="List"
+                    default="[
+                             {'label': 'Banker', 'value': 'Banker'},
+                             {'label': 'Transactional Banker', 'value': 'Transactional Banker'},
+                             {'label': 'Product Specialist', 'value': 'Product Specialist'},
+                             {'label': 'Sector Specialist', 'value': 'Sector Specialist'},
+                             ]"
+                    />
+    <aura:attribute
+                    name="financialProductExpOptions"
+                    type="List"
+                    default="[
+                             {'label': 'Low', 'value': 'Low'},
+                             {'label': 'Medium', 'value': 'Medium'},
+                             {'label': 'High', 'value': 'High'},
+                             ]"
+                    />
+    <aura:attribute
+                    name="yesNoNAOptions"
+                    type="List"
+                    default="[
+                             {'label': 'Yes', 'value': 'Yes'},
+                             {'label': 'No', 'value': 'No'},
+                             {'label': 'N/A', 'value': 'N/A'},
+                             ]"
+                    />
+    <aura:attribute name="faisClassification" type="String" />
+    <aura:attribute name="role" type="String" />
+    <aura:attribute name="financialProdExp" type="String" />
+    <aura:attribute name="introductoryMeeting" type="String" />
+    <aura:attribute name="prodRequested" type="String" />
+    <aura:attribute name="followUpMeeting" type="String" />
+    <aura:attribute name="other" type="String" />
+    <aura:attribute name="presentation" type="String" />
+    <aura:attribute name="clientAdvicedOfRisk" type="String" />
+    <aura:attribute name="financialQuestion1" type="Boolean" default="false" />
+    <aura:attribute name="financialQuestion2" type="Boolean" default="false" />
+    <aura:attribute name="sectoralIndustry" type="String" />
+    <aura:attribute name="sectoralBusinessProfile" type="String" />
+    <aura:attribute name="sectoralOther" type="String" />
+    <aura:attribute name="generalNotes" type="String" />
+    <aura:attribute name="productSelectedPrior" type="String" />
+    <aura:attribute name="partiallyOrFullyReplace" type="String" />
+    <aura:attribute name="haveInvestementorInvestedComponent" type="String" />
+    <aura:attribute name="valueOfInvestmentDetermined" type="String" />
+    <aura:attribute name="feesToLevied" type="String" />
+    <aura:attribute name="indicativeOfFuturePerformances" type="String" />
+    <aura:attribute name="monetaryObligations" type="String" />
+    <aura:attribute name="anyIncentives" type="String" />
+    <aura:attribute name="penalties" type="String" />
+    <aura:attribute name="specialTermsConditions" type="String" />
+    <aura:attribute name="productReadilyAccessible" type="String" />
+    <aura:attribute name="CollingOffRights" type="String" />
+    <aura:attribute name="riskswithProducts" type="String" />
+    <aura:attribute name="replacementProduct" type="String" />
+    <aura:attribute name="meetingDateROA" type="Date" />
+    <aura:attribute name="advisor" type="String" />
+    <aura:attribute name="delegatesAtMeeting" type="String" />
+    <aura:attribute name="netAssetValue" type="String" />
+    <aura:attribute name="currentSituationROA" type="String" />
+    <aura:attribute name="needsOrObjectives" type="String" />
+    <aura:attribute name="presentationName" type="String" />
+    <aura:attribute name="presentationGrpName" type="String" />
+    <aura:attribute name="presentationDate" type="Date" />
+    <aura:attribute name="presentationLocation" type="String" />
+    <aura:attribute name="presentaitonFolioNo" type="String" />
+    <aura:attribute name="showSubSectionB" type="Boolean" default="true" />
+    <aura:attribute name="showYesNoNASeciton" type="Boolean" default="false" />
+    <aura:attribute name="showSectionD" type="Boolean" default="true" />
+    <aura:attribute name="sectionCTabledata" type="Object" />
+    <aura:attribute name="sectionCColumns" type="List" />
+    <aura:attribute name="draftValues" type="Object" default="[]" />
+    <aura:attribute name="sectionDTabledata" type="Object" />
+    <aura:attribute name="sectionDColumns" type="List" />
+    <aura:attribute name="sectionDdraftValues" type="Object" default="[]" />
+    <aura:attribute name="showSectionDTable" type="Boolean" default="false" />
+    <aura:attribute name="confirmationOFRecCompletion" type="Object"/>
+    <aura:attribute name="paramsMap" type="Map" default="{}" />
+    
+   <aura:if isTrue="{!v.showSpinner}">
+		<lightning:spinner />
+	</aura:if>
+
+	<lightning:recordEditForm aura:id="iApplicationRecord" objectApiName="Application__c" recordId="{!v.applicationRecordId}">
+		<lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="ProductUsage">
+			<!-- Specialist Tab -->
+			<aura:if isTrue="{!v.showSpecialistInfo == 'Yes' }">
+				<lightning:accordionSection name="Specialist" label="Specialist Tab ">
+					<div class="slds-grid slds-wrap slds-gutters_medium">
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:input name="FirstName" label="First Name" value="{!v.userFirstName}" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:input name="LastName" label="Surname" value="{!v.usersurname}" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:input name="abNumber" label="AB Number" value="{!v.abNumber}" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:input name="MobilePhone" label="TelePhone Number" value="{!v.userPhone}" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:input name="EmailAddress" label="Email Address" value="{!v.userEmail}" />
+							</span>
+						</div>
+					</div>
+				</lightning:accordionSection>
+			</aura:if>
+			<!-- End Of Specialist Tab -->
+			<!-- Savings Account General Tab -->
+			<aura:if isTrue="{!v.showSavingsAccountGen == 'Yes' }">
+				<lightning:accordionSection name="Savings Account General" label="Savings Account General">
+					<div class="slds-grid slds-wrap slds-gutters_medium">
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:inputField fieldName="Meeting_Of__c" aura:id="MeetingOf" value="{!v.application.Meeting_Of__c}" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:inputField fieldName="Meeting_Held_At__c" aura:id="MeetingheldAt" value="{!v.application.Meeting_Held_At__c}" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:inputField fieldName="Meeting_Date__c" aura:id="MeetingDate" value="{!v.application.Meeting_Date__c}" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:inputField
+									fieldName="Extract_signed_date__c"
+									aura:id="ExtractsignedDate"
+									value="{!v.application.Extract_signed_date__c}"
+								/>
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:inputField
+									fieldName="Total_number_of_accounts_to_be_Open__c"
+									aura:id="Totalnmbrofaccstoopen"
+									value="{!v.application.Total_number_of_accounts_to_be_Open__c}"
+								/>
+							</span>
+						</div>
+						<aura:if isTrue="{!v.showSavingsAccountGen != 'Yes' }">
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Req_NumOf_signs_to_Open_Close_Accounts__c"
+										aura:id="numberofsignsaccts"
+										value="{!v.application.Req_NumOf_signs_to_Open_Close_Accounts__c}"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Required_numof_signatories_to_give_instr__c"
+										aura:id="numberofsignstogiveinstructions"
+										value="{!v.application.Required_numof_signatories_to_give_instr__c}"
+									/>
+								</span>
+							</div>
+						</aura:if>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<!-- TdB : W-005179 Add Client Entity Type on UI becuase its a dependency on Source of Funds -->
+								<lightning:inputField fieldName="Client_Entity_Type__c" class="slds-hide" value="{!v.application.Client_Entity_Type__c}" />
+								<lightning:inputField
+									fieldName="Source_of_Funds_Savings__c"
+									aura:id="SourceofFundssavings"
+									value="{!v.application.Source_of_Funds_Savings__c}"
+									required="true"
+								/>
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:radioGroup
+									name="savingsAccountGenGroup"
+									label="Was the Clients explanation of Source of Funds satisfactory"
+									options="{!v.sourceFundsOptions }"
+									value="{!v.sourceFundsGiven}"
+									onchange="{!c.issourceFundsGiven}"
+									type="button"
+								/>
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:inputField
+									fieldName="Comments_on_explanation_given_for_Source__c"
+									aura:id="cmmntsgivenforsourcefunds"
+									value="{!v.application.Comments_on_explanation_given_for_Source__c}"
+								/>
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<label for="isThereAnyTPFTP">* Is there a Transfer to be performed for this product?</label>
+								<lightning:inputField
+									variant="label-hidden"
+									aura:id="isThereAnyTPFTP"
+									fieldName="Is_there_a_Transfer_to_be_performed_for__c"
+									value="{!v.application.Is_there_a_Transfer_to_be_performed_for__c}"
+									onchange="{!c.showTransferFields}"
+								/>
+								<aura:if isTrue="{!v.transferShowFields}">
+									<lightning:inputField fieldName="From_Account__c" value="{!v.application.From_Account__c}" />
+									<lightning:inputField fieldName="Amount__c" value="{!v.application.Amount__c}" />
+								</aura:if>
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:inputField fieldName="Notice_period__c" value="{!v.application.Notice_period__c}" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:inputField fieldName="Liquidity_Split__c" value="{!v.application.Liquidity_Split__c}" />
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:inputField fieldName="Credit_Rate_Plan__c" value="{!v.application.Credit_Rate_Plan__c}" />
+							</span>
+						</div>
+					</div>
+				</lightning:accordionSection>
+			</aura:if>
+			<lightning:accordionSection name="ProductUsage" label="Product Usage" aura:id="productusage">
+				<lightning:recordEditForm
+					aura:id="prodUsageform"
+					recordId="{!v.productRecordId}"
+					objectApiName="Application__c"
+					onload="{!c.doInit}"
+					onsubmit="{!c.acceptProductTerms}"
+					onsuccess="{!c.handleSuccess}"
+				>
+					<!-- the messages component is for error messages -->
+					<lightning:messages />
+
+					<!-- changes for W-005030 : Gopi On 16/6/2020 -->
+					<div class="slds-grid slds-wrap slds-gutters_medium">
+						<div class="slds-col slds-size_1-of-1">
+							<span>
+								<lightning:inputField
+									fieldName="Purpose_of_Account__c"
+									aura:id="purposeOfAcc"
+									required="true"
+									onchange="{!c.showPurposeOfAcctText}"
+								/>
+							</span>
+						</div>
+						<!-- Added by diksha for W-5029-->
+						<div class="slds-col slds-size_1-of-1">
+							<span>
+								<lightning:inputField fieldName="Purpose_of_Account_Text__c" aura:id="purposeOfAcctText" />
+							</span>
+						</div>
+
+						<div class="slds-col slds-size_1-of-1">
+							<span>
+								<lightning:inputField
+									fieldName="Account_Activity_Calculator__c"
+									aura:id="accActTracker"
+									required="true"
+									value="{!v.application.Account_Activity_Calculator__c}"
+								/>
+								<lightning:buttonIcon
+									iconName="utility:settings"
+									variant="border-filled"
+									onclick="{! c.openAccountActivity}"
+									alternativeText="Account Activity Calculator"
+									title="Account Activity Calculator"
+								/>
+								<div aura:id="accActiCal" class="slds-hide" style="color: var(--lwc-colorTextError, rgb(194, 57, 52)) !important">
+									Account Activity Calculator
+								</div>
+							</span>
+						</div>
+						<!--  	<div class="slds-col slds-size_1-of-2">
+                            <span>
+                                
+                                <lightning:inputField fieldName="Expected_number_of_credits_per_month__c" aura:id="expectedNumOfCredit" required="true"/>
+                                
+                            </span></div>
+                        
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>      
+                                <lightning:inputField fieldName="Rand_value_of_credits_per_month__c" aura:id="randValueOfCredit" required="true" />
+                            </span></div>  
+                        
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>      
+                                <lightning:inputField fieldName="Credits_received_via__c" aura:id="creditsReceivedVia" required="true" />
+                            </span></div>
+                        
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>      
+                                <lightning:inputField fieldName="Where_will_the_credits_be_coming_from__c" aura:id="whereWilltheCreditCome" required="true" />
+                            </span></div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Number_of_staff_members__c" aura:id="numberOfStaffMembers" required="true" />
+                            </span></div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Payment_date_of_staff__c" aura:id="paymentDateOfStaffMembers" required="true" />
+                            </span></div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Number_of_debits_per_month__c" aura:id="numberOfDebitsPerMonth" required="true" />
+                            </span></div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Number_of_supplier_payments_per_month__c" aura:id="numberOfSuppPayment" required="true" />
+                            </span></div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Where_are_the_suppliers_located__c" aura:id="wheretheSuppLocated" required="true" />
+                            </span></div>
+                        
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>      
+                                <lightning:inputField fieldName="Rand_value_of_debits_per_month__c" aura:id="randValueOfDebitsPerMonth" required="true" />
+                            </span></div>  
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Reason_for_debit_orders__c" aura:id="reasonForDebit" required="true" />
+                            </span></div> -->
+					</div>
+				</lightning:recordEditForm>
+			</lightning:accordionSection>
+			<!--    <lightning:accordionSection name="Terms" label="Terms and Conditions">
+              
+            
+            
+            <p>  </p>
+
+        </lightning:accordionSection>-->
+		</lightning:accordion>
+	</lightning:recordEditForm>
+
+	<!-- End Product Usage -->
+
+	<!-- Start Analysis Details-->
+	<!--Last M Lithamsanqa Nosekeleza-->
+	<lightning:recordEditForm
+		aura:id="iApplicationRecord"
+		objectApiName="Application__c"
+		recordId="{!v.productRecordId}"
+		onsuccess="{!c.handleSuccess}"
+		onload="{!c.doInit}"
+	>
+		<lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{!v.activeSectionsAnalysis}">
+
+		
+			<aura:if isTrue="{!(v.productFamily )}">
+				<lightning:accordionSection name="chequeAccGen" label="Cheque Account General">
+					<lightning:inputField fieldName="oppLineItems" value="{!v.oppLineItems}" class="customRequired" />
+
+					<!-- <lightning:select aura:id="PricingScheme" label="Product Pricing Scheme Created"> 
+                        <aura:iteration items="{!v.PricingSchemes}" var="ps" > 
+                             hello : {!ps.Label}
+                        </aura:iteration>
+                    </lightning:select> -->
+
+					<!-- W-004843 : Anka Ganta : 2020-07-14 -->
+					<lightning:select
+						aura:id="pricingscheme"
+						label="Product Pricing Scheme Created"
+						value="{!v.selectedScheme}"
+						onchange="{!c.onchangePriceScheme}"
+					>
+						<option aura:id="pricingschemeNone" value="" text="---None---" />
+						<aura:iteration items="{!v.PricingSchemes}" var="ps">
+							<option value="{!ps.Scheme_Code__c}" text="{!ps.Name}" selected="{!ps.selected}" />
+						</aura:iteration>
+					</lightning:select>
+
+					<!--  <lightning:inputField aura:id="selectedProduct" fieldName="Product_Name__c"  value="{!v.productList}" />-->
+
+					<!-- TdB : W-005179 Add Client Entity Type on UI becuase its a dependency on Source of Funds -->
+					<lightning:inputField fieldName="Client_Entity_Type__c" class="slds-hide" value="{!v.application.Client_Entity_Type__c}" />
+					<!--changes done regarding W-004996 by Chandra dated 15/06/2020-->
+					<lightning:inputField
+						aura:id="sourceOfFunds"
+						fieldName="Source_of_Funds_Savings__c"
+						value="{!v.application.Source_of_Funds_Savings__c}"
+						required="true"
+					/>
+
+					<!--TdB - W-005329 : Hide field until service is available for integration -->
+					<!--T<lightning:inputField aura:id="requireChequeCard" fieldName="Cheque_Card_Required__c"  value="{!v.application.Cheque_Card_Required__c}" /> -->
+
+					<!--TdB - W-005328 : Add additional fields for Deposit Book Required - Hide field until service is available for integration-->
+					<!--<lightning:inputField fieldName="Deposit_Book_Required__c" aura:id="requireDepositBook" value="{!v.application.Deposit_Book_Required__c}" onchange="{!c.onchangeDepositBookRequired}"/>
+                    <aura:if isTrue="{!v.showDepositBookFields}">
+                        <lightning:layout multipleRows="true">
+                            <lightning:layoutItem  size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                                <lightning:inputField fieldName="Book_Type__c"/>
+                                <lightning:inputField fieldName="Collection_Site__c"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                    </aura:if>-->
+
+					<!--Changes Start for W-004995 by Chandra dated 12/06/2020-->
+
+					<lightning:inputField fieldName="Re_Direct_Fees__c" aura:id="redirectFees" onchange="{!c.handleRedirectFeesChange}" />
+
+					<aura:if isTrue="{!v.reDirectFeesChecked}">
+						<div class="slds-grid slds-wrap slds-gutters_medium">
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Transfer_credit_interest_to_account__c" aura:id="transferCreditInterestToAccount" />
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Transfer_admin_fee_to_account__c" aura:id="transferAdminFeeToAccount" />
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Transfer_cash_deposit_fee_to_account__c" aura:id="transferCashDepositFeeToAccount" />
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Transfer_commitment_fee_to_account__c" aura:id="transferCommitmentFeeToAccount" />
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Transfer_debit_interest_to_account__c" aura:id="transferDebitInterestToAccount" />
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Transfer_service_fee_to_account__c" aura:id="transferServiceFeeToAccount" />
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Transfer_tax_levy_to_account__c" aura:id="transferTaxLevyToAccount" />
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Transfer_transaction_fee_to_account__c" aura:id="transferTransactionFeeToAccount" />
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Transfer_incoming_unpaid_items_to_accoun__c"
+										aura:id="transferIncomingUnpaidItemsToAccount"
+									/>
+								</span>
+							</div>
+						</div>
+					</aura:if>
+
+					<!--Changes Start for W-004995-->
+				</lightning:accordionSection>
+
+				<lightning:recordEditForm
+					aura:id="iApplicationRecord"
+					objectApiName="Application__c"
+					recordId="{!v.productRecordId}"
+					onsuccess="{!c.handleSuccess}"
+					onload="{!c.doInit}"
+				>
+				<!--W-13221 :Anka Changes : hide charge details
+					<lightning:accordionSection name="ChequeChargeDetails" label="Cheque Charge details">
+						<div class="slds-grid slds-wrap slds-gutters_medium">
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Charge_Type__c" aura:id="chargeType" value="{!v.application.Charge_Type__c}" />
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Charge_Capitalization_Type__c"
+										aura:id="chargeCapitalType"
+										value="{!v.application.Charge_Capitalization_Type__c}"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Charge_Capitalization_Frequency__c"
+										aura:id="chargeFreq"
+										value="{!v.application.Charge_Capitalization_Frequency__c}"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Charge_Capitalization_Date__c"
+										aura:id="chargeCapDate"
+										value="{!v.application.Charge_Capitalization_Date__c}"
+										required="true"
+									/>
+								</span>
+							</div>
+						</div>
+					</lightning:accordionSection> W-13221 -->
+
+					<lightning:accordionSection name="chequeStatementDetails" label="Cheque Statement Dates" aura:id ="chequeStatementDetails" >
+						<div class="slds-grid slds-wrap slds-gutters_medium">
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Delivery_Method__c"
+										aura:id="deliveryMethod"
+										value="{!v.application.Delivery_Method__c}"
+										required="true"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Statement_Frequency__c"
+										aura:id="statementFrequency"
+										value="{!v.application.Statement_Frequency__c}"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Statement_Day_of_the_month__c"
+										aura:id="statementDayOfMonth"
+										value="{!v.application.Statement_Day_of_the_month__c}"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Account_Stream__c" aura:id="accountStream" value="{!v.application.Account_Stream__c}" />
+								</span>
+							</div>
+						</div>
+						<div class="slds-col slds-size_1-of-2">
+							<span>
+								<lightning:radioGroup
+									name="radioGroupRequired"
+									class="customButton"
+									label="Duplicate Statement"
+									options="{!v.duplicateStatementOptions }"
+									value="{!v.selectedOption }"
+									onchange="{!c.onDuplicateStatement}"
+									type="button"
+								/>
+								<aura:if isTrue="{!(v.selectedOption == 'Y')}">
+									<lightning:inputField
+										fieldName="Delivery_Instruction__c"
+										aura:id="deliveryInstruction"
+										value="{!v.application.Delivery_Instruction__c}"
+									/>
+								</aura:if>
+							</span>
+						</div>
+					</lightning:accordionSection>
+                    <!--W-13221 : Anka Changes : hide charge details
+					<lightning:accordionSection name="chequeInterestDates" label="Cheque Account Interest Rate Dates">
+						<div class="slds-grid slds-wrap slds-gutters_medium">
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Accrual_Day_of_Month__c"
+										aura:id="accrualDayOfMonth"
+										value="{!v.application.Accrual_Day_of_Month__c}"
+										required="true"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Capitilisation_Day_of_Week__c"
+										aura:id="capitilisationDayOfWeek"
+										value="{!v.application.Capitilisation_Day_of_Week__c}"
+										required="true"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Capitilisation_Day_of_Month__c"
+										aura:id="capitilisationDayOfMonth"
+										value="{!v.application.Capitilisation_Day_of_Month__c}"
+										required="true"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Accrual_Day_of_Week__c"
+										aura:id="accrualDayOfWeek"
+										value="{!v.application.Accrual_Day_of_Week__c}"
+										required="true"
+									/>
+								</span>
+							</div>
+						</div>
+					</lightning:accordionSection> W-13221-->
+					<!--</aura:if> -->
+					<!--MANDATE OFFICIALS SECTION START 12/03/2020-->
+				</lightning:recordEditForm>
+			</aura:if>
+			<!--MANDATE OFFICIALS SECTION END 12/03/2020-->
+		</lightning:accordion>
+	</lightning:recordEditForm>
+
+	<!-- End Analysis Details-->
+
+	<!--Record of Advice (ROA) -->
+	<!-- 24/02/2020 T Senkomane added ROA Section to capture additional product information-->
+	<aura:if isTrue="{!v.showROA == 'Yes' }">
+		<lightning:accordion activeSectionName="roaQuestions" allowMultipleSectionsOpen="true">
+			<lightning:accordionSection name="roaQuestions" label="Record of Advice (ROA)">
+				<!--aura:if isTrue="{!not(empty(v.applicationId))}"-->
+				<lightning:recordEditForm
+					aura:id="roaForm"
+					objectApiName="Application__c"
+					recordId="{!v.productRecordId}"
+					onload="{!c.getAppData}"
+					onsuccess="{!c.handleSuccess}"
+					onerror="{!c.handleError}"
+				>
+					<div class="slds-grid slds-wrap slds-gutters_medium">
+						<div class="slds-col slds-size_2-of-2">
+							<span>
+								<lightning:radioGroup
+									aura:id="underSuperVisionGroup"
+									label="Is the individual that sold this product to the client under supervision for the product type"
+									options="{!v.adviceOptions}"
+									value="{!v.underSupervision}"
+									onchange="{!c.isUnderSupervision}"
+									type="button"
+								/>
+								<lightning:inputField aura:id="underSuper" fieldName="Client_Under_Supervision__c" class="slds-hide" />
+								<lightning:radioGroup
+									aura:id="adviceGivenGroup"
+									label="Advice Given"
+									options="{!v.adviceOptions}"
+									value="{!v.adviseGiven}"
+									onchange="{!c.isAdviceGiven}"
+									type="button"
+								/>
+								<lightning:inputField aura:id="advice" fieldName="Advice_Given__c" class="slds-hide" />
+							</span>
+						</div>
+					</div>
+				</lightning:recordEditForm>
+				<aura:if isTrue="{!(v.isAdviseGivenBol == 'Y')}">
+					<lightning:accordion allowMultipleSectionsOpen="true">
+						<lightning:accordionSection name="Section A: Details of Advisor or Intermediary" label="Section A: Details of Advisor or Intermediary">
+							<div class="slds-grid slds-wrap slds-gutters_medium">
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:input type="Date" aura:id="meetingDtROA" label="Meeting Date" value="{!v.meetingDateROA}"></lightning:input>
+								</div>
+								<lightning:recordEditForm
+									aura:id="roaForm1"
+									objectApiName="Application__c"
+									recordId="{!v.productRecordId}"
+								>
+									<div class="slds-col slds-size_2-of-2">
+										<lightning:inputField aura:id="advisor" fieldName="Advisor__c" value="{!v.advisor}"></lightning:inputField>
+									</div>
+								</lightning:recordEditForm>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="fais"
+										name="faisClassification"
+										label="FAIS Classification"
+										value="{!v.faisClassification}"
+										placeholder="---None---"
+										options="{!v.faisClassificationOptions}"
+										onchange="{!c.handleROAChange}"
+									></lightning:combobox>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="role"
+										name="role"
+										label="Role"
+										value="{!v.role}"
+										placeholder="---None---"
+										options="{!v.roleOptions}"
+										onchange="{!c.handleROAChange}"
+									></lightning:combobox>
+								</div>
+							</div>
+						</lightning:accordionSection>
+						<lightning:accordionSection name="Section B: Details of Client or Entity" label="Section B: Details of Client or Entity">
+							<div class="slds-grid slds-wrap slds-gutters_medium">
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:input
+										type="text"
+										aura:id="delegatesMeeting"
+										label="Delegates at the Meeting"
+										value="{!v.delegatesAtMeeting}"
+										onchange="{!c.handleROAChange}"
+									></lightning:input>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:input
+										type="number"
+										aura:id="netAssetValue"
+                                        formatter="currency" 
+                                        step="0.01"
+										label="Net Asset Value of Entity"
+										value="{!v.netAssetValue}"
+										onchange="{!c.handleROAChange}"
+									></lightning:input>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:input
+										type="text"
+										aura:id="currentSituation"
+										label="Current Financial Situation"
+										value="{!v.currentSituationROA}"
+										onchange="{!c.handleROAChange}"
+									></lightning:input>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="financialProdExp"
+										name="financialProdExp"
+										label="Current Financial Product Experience/Investment Risk Profile"
+										value="{!v.financialProdExp}"
+										placeholder="---None---"
+										options="{!v.financialProductExpOptions}"
+										onchange="{!c.handleROAChange}"
+									></lightning:combobox>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:input
+										type="text"
+										aura:id="needsOrObjectives"
+										label="Needs or Objectives"
+										value="{!v.needsOrObjectives}"
+										onchange="{!c.handleROAChange}"
+									></lightning:input>
+								</div>
+								<div class="slds-col slds-size_1-of-2"></div>
+								<aura:if isTrue="{!v.showSubSectionB}">
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:input
+											type="text"
+											label="Introductory Meeting"
+											name="introductoryMeeting"
+											aura:id="introductoryMeeting"
+											value="{!v.introductoryMeeting}"
+											onchange="{!c.handleROAChange}"
+										/>
+									</div>
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:input
+											type="text"
+											label="Specific Product Requested"
+											name="prodRequested"
+											aura:id="prodRequested"
+											value="{!v.prodRequested}"
+											onchange="{!c.handleROAChange}"
+										/>
+									</div>
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:input
+											type="text"
+											label="Follow-up Meeting"
+											name="followUpMeeting"
+											aura:id="followUpMeeting"
+											value="{!v.followUpMeeting}"
+											onchange="{!c.handleROAChange}"
+										/>
+									</div>
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:input
+											type="text"
+											label="Other"
+											name="other"
+											aura:id="other"
+											value="{!v.other}"
+											onchange="{!c.handleROAChange}"
+										/>
+									</div>
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:input
+											type="text"
+											label="Presentation"
+											name="presentation"
+											aura:id="presentation"
+											value="{!v.presentation}"
+											onchange="{!c.handleROAChange}"
+										/>
+									</div>
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:input
+											type="text"
+											aura:id="presentationName"
+											label="Name of Presentation"
+											value="{!v.presentationName}"
+											onchange="{!c.handleROAChange}"
+										></lightning:input>
+									</div>
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:input
+											type="text"
+											aura:id="presentationGrpName"
+											label="Details of Group Name"
+											value="{!v.presentationGrpName}"
+											onchange="{!c.handleROAChange}"
+										></lightning:input>
+									</div>
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:input
+											type="Date"
+											aura:id="presentationDate"
+											label="Date"
+											value="{!v.presentationDate}"
+											onchange="{!c.handleROAChange}"
+										></lightning:input>
+									</div>
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:input
+											type="text"
+											aura:id="presentationLocation"
+											label="Location"
+											value="{!v.presentationLocation}"
+											onchange="{!c.handleROAChange}"
+										></lightning:input>
+									</div>
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:input
+											type="text"
+											aura:id="presentationFolioNo"
+											label="Folio Number of Presentation"
+											value="{!v.presentaitonFolioNo}"
+											onchange="{!c.handleROAChange}"
+										></lightning:input>
+									</div>
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:combobox
+											aura:id="clientAdvicedOfRisk"
+											name="clientAdvicedOfRisk"
+											label="Was the client advised of the risk involved, as the client’s needs may not have been determined?"
+											value="{!v.clientAdvicedOfRisk}"
+											placeholder="---None---"
+											options="{!v.yesNoOptions}"
+											onchange="{!c.handleROAChange}"
+										></lightning:combobox>
+									</div>
+								</aura:if>
+								<div class="slds-col slds-size_2-of-2"></div>
+								<lightning:accordionSection name="Financial Position" label=" Financial Position">
+									<div class="slds-grid slds-wrap slds-gutters_medium">
+										<div class="slds-col slds-size_2-of-2">
+											<lightning:input
+												type="checkbox"
+												label="The client’s current financial position was considered by completing a Financial Needs Analysis that included income/expenses and assets/liabilities"
+												name="financialQuestion1"
+												aura:id="financialQuestion1"
+												onchange="{!c.handleROAChange}"
+												checked="{!v.financialQuestion1}"
+											/>
+										</div>
+										<div class="slds-col slds-size_2-of-2">
+											<lightning:input
+												type="checkbox"
+												label="The client opted not to provide the full facts in relation to his/her financial situation and therefore this advice is based only on the information and documentation provided. The advice may have been different if full financial details were provided"
+												name="financialQuestion2"
+												aura:id="financialQuestion2"
+												onchange="{!c.handleROAChange}"
+												checked="{!v.financialQuestion2}"
+											/>
+										</div>
+									</div>
+								</lightning:accordionSection>
+							</div>
+						</lightning:accordionSection>
+						<lightning:accordionSection name="Section C: Considerations" label="Section C: Considerations">
+							<div class="slds-grid slds-wrap slds-gutters_medium">
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:input
+										type="text"
+										label="Makro (Sectoral ) – Industry"
+										name="sectoralIndustry"
+										aura:id="sectoralIndustry"
+										value="{!v.sectoralIndustry}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:input
+										type="text"
+										label="Makro (Sectoral) – Typical firm or Business Profile"
+										name="sectoralBusinessProfile"
+										aura:id="sectoralBusinessProfile"
+										value="{!v.sectoralBusinessProfile}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:input
+										type="text"
+										label="Makro (Sectoral ) – Other"
+										name="sectoralOther"
+										aura:id="sectoralOther"
+										value="{!v.sectoralOther}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+							</div>
+						</lightning:accordionSection>
+						<div class="slds-grid slds-wrap slds-gutters_medium">
+							<div class="slds-col slds-size_1-of-2">
+								<lightning:input
+									aura:id="generalNotes"
+									label="General Notes"
+									value="{!v.generalNotes}"
+									onchange="{!c.handleROAChange}"
+								></lightning:input>
+							</div>
+							<div class="slds-col slds-size_1-of-2"></div>
+							<div class="slds-col slds-size_2-of-2">
+								<lightning:datatable
+									columns="{! v.sectionCColumns }"
+									data="{! v.sectionCTabledata }"
+									keyField="id"
+									hideCheckboxColumn="true"
+									draftValues="{! v.draftValues }"
+									onsave="{! c.handleSaveEdition }"
+								/>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<lightning:combobox
+									aura:id="productSelectedPrior"
+									name="productSelectedPrior"
+									label="Did you select a product prior to receiving the information you provided?"
+									value="{!v.productSelectedPrior}"
+									placeholder="---None---"
+									options="{!v.yesNoOptions}"
+									onchange="{!c.handleROAChange}"
+								></lightning:combobox>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<lightning:combobox
+									aura:id="partiallyOrFullyReplace"
+									name="partiallyOrFullyReplace"
+									label="Are the products that are being recommended or advised on or that you have determined will address the needs partially or fully replacing an existing financial product?"
+									value="{!v.partiallyOrFullyReplace}"
+									placeholder="---None---"
+									options="{!v.yesNoOptions}"
+									onchange="{!c.handleROAChange}"
+								/>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<lightning:combobox
+									aura:id="haveInvestementorInvestedComponent"
+									name="haveInvestementorInvestedComponent"
+									label="Do your suggested products or your determined products that meet your needs have an investment or investment component?"
+									value="{!v.haveInvestementorInvestedComponent}"
+									placeholder="---None---"
+									options="{!v.yesNoOptions}"
+									onchange="{!c.handleROAChange}"
+								/>
+							</div>
+							<div class="slds-col slds-size_1-of-2"></div>
+							<aura:if isTrue="{!v.showYesNoNASeciton}">
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="valueOfInvestmentDetermined"
+										name="valueOfInvestmentDetermined"
+										label="The Value of the investment determined, including underlying assets or other financial instruments?"
+										value="{!v.valueOfInvestmentDetermined}"
+										placeholder="---None---"
+										options="{!v.yesNoNAOptions}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="feesToLevied"
+										name="feesToLevied"
+										label="Any charges or fees to be levied against the product, including amount, frequency, net investment amount invested for benefit of client?"
+										value="{!v.feesToLevied}"
+										placeholder="---None---"
+										options="{!v.yesNoNAOptions}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="indicativeOfFuturePerformances"
+										name="indicativeOfFuturePerformances"
+										label="Past investment performance of the product over periods and at intervals with a warning that past performance are not indicative of future performances?"
+										value="{!v.indicativeOfFuturePerformances}"
+										placeholder="---None---"
+										options="{!v.yesNoNAOptions}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="monetaryObligations"
+										name="monetaryObligations"
+										label="Monetary obligations, including manner of payment, frequency, consequence of nonpayment, contractual escalations, increases or additions?"
+										value="{!v.monetaryObligations}"
+										placeholder="---None---"
+										options="{!v.yesNoNAOptions}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="anyIncentives"
+										name="anyIncentives"
+										label="Any incentives, remuneration, consideration, commission, fees etc. that will become payable as a result of the financial service rendered.?"
+										value="{!v.anyIncentives}"
+										placeholder="---None---"
+										options="{!v.yesNoNAOptions}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="penalties"
+										name="penalties"
+										label="Penalties and unrecovered expenses deductible or payable due to termination of terminated products?"
+										value="{!v.penalties}"
+										placeholder="---None---"
+										options="{!v.yesNoNAOptions}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="specialTermsConditions"
+										name="specialTermsConditions"
+										label="Special terms and conditions, exclusions of liability, waiting periods, loadings, penalties, excesses, restrictions or circumstances in which benefits will not be provided?"
+										value="{!v.specialTermsConditions}"
+										placeholder="---None---"
+										options="{!v.yesNoNAOptions}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="productReadilyAccessible"
+										name="productReadilyAccessible"
+										label="To what extent the product is readily realizable or funds concerned are accessible?"
+										value="{!v.productReadilyAccessible}"
+										placeholder="---None---"
+										options="{!v.yesNoNAOptions}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="collingOffRights"
+										name="collingOffRights"
+										label="Colling-off rights offered and if so, the procedure to exercise such rights?"
+										value="{!v.CollingOffRights}"
+										placeholder="---None---"
+										options="{!v.yesNoNAOptions}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<lightning:combobox
+										aura:id="riskswithProducts"
+										name="riskswithProducts"
+										label="Any material or other risks associated with the product?"
+										value="{!v.riskswithProducts}"
+										placeholder="---None---"
+										options="{!v.yesNoNAOptions}"
+										onchange="{!c.handleROAChange}"
+									/>
+								</div>
+							</aura:if>
+						</div>
+						<lightning:accordionSection name="Section D : Details of Client or Entity" label="Section D : Details of Client or Entity">
+							<aura:if isTrue="{!v.showSectionD}">
+								<div class="slds-grid slds-wrap slds-gutters_medium">
+									<div class="slds-col slds-size_1-of-2">
+										<lightning:combobox
+											aura:id="replacementProduct"
+											name="replacementProduct"
+											label="Is this a replacement product?"
+											value="{!v.replacementProduct}"
+											placeholder="---None---"
+											options="{!v.yesNoOptions}"
+											onchange="{!c.handleROAChange}"
+										/>
+									</div>
+									<div class="slds-col slds-size_1-of-2"></div>
+									<aura:if isTrue="{!v.showSectionDTable}">
+										<div class="slds-col slds-size_2-of-2">
+											<lightning:datatable
+												columns="{! v.sectionDColumns }"
+												data="{! v.sectionDTabledata }"
+												keyField="id"
+												hideCheckboxColumn="true"
+												draftValues="{! v.sectionDdraftValues }"
+												onsave="{! c.handleSectionDSave }"
+											/>
+										</div>
+									</aura:if>
+								</div>
+							</aura:if>
+						</lightning:accordionSection>
+						<lightning:accordionSection name="Section E : Your Confirmation" label="Section E : Your Confirmation">
+							<div class="slds-grid slds-wrap slds-gutters_medium">
+								<c:ProductOnboardingAuthSignatory recordId="{!v.recordId}" productOnboardingROA= "true"/>
+							</div>
+						</lightning:accordionSection>
+						<lightning:accordionSection name="Section F: Confirmation of Record Completion" label="Section F: Confirmation of Record Completion">
+							<lightning:recordEditForm
+								aura:id="roaForm3"
+								objectApiName="Application__c"
+								recordId="{!v.productRecordId}"
+							>
+								<lightning:button variant="brand" label="Add" title="Add" onclick="{!c.addBanker}" />
+								<div class="slds-grid slds-wrap slds-gutters_medium">
+									<aura:iteration items="{!v.confirmationOFRecCompletion}" var="rec" indexVar="index">
+										<div class="slds-col slds-size_1-of-2">
+											<label for="banker">Banker</label>
+											<lightning:inputField
+												id="fieldid"
+												aura:id="banker"
+												value="{!rec.banker}"
+												fieldName="Advisor__c"
+												variant="label-hidden"
+											></lightning:inputField>
+										</div>
+										<div class="slds-col slds-size_1-of-2">
+											<lightning:textarea
+												aura:id="sectionsCompleted"
+												label="Sections Completed"
+												value="{!rec.sectionsCompleted}"
+											></lightning:textarea>
+										</div>
+										<div class="slds-col slds-size_1-of-2">
+											<lightning:textarea aura:id="additionalComments" label="Additional Comments" value="{!rec.additionalComments}">
+											</lightning:textarea>
+										</div>
+										<div class="slds-col slds-size_1-of-2">
+											<a onclick="{!c.removeRow}" data-record="{!index}">
+												<lightning:icon iconName="utility:delete" size="small" alternativeText="Delete" />
+												<span class="slds-assistive-text">Delete</span>
+											</a>
+										</div>
+									</aura:iteration>
+								</div>
+								</lightning:recordEditForm>
+								<lightning:recordEditForm
+								aura:id="roaForm4"
+								objectApiName="Application__c"
+								recordId="{!v.productRecordId}"
+								onsubmit="{!c.saveROAF}"
+							>
+							<lightning:inputField  aura:id="generalNotes" fieldName="General_Notes__c" label="General Notes" class="slds-hide" />
+								<lightning:inputField  aura:id="confirmationOfRecCompletion" fieldName="Confirmation_of_Record_Completion__c" label="Confirmation of Record Completion" class="slds-hide" />
+								<lightning:inputField  aura:id="secitonCTableValue" fieldName="ROA_SectionC_Table_Value__c" label="ROA SectionC Table Value" class="slds-hide" />
+								<lightning:inputField  aura:id="sectionDTableValue" fieldName="ROA_SectionD_Table_Value__c" label="ROA SectionD Table Value" class="slds-hide" />
+								<lightning:inputField aura:id="advice" fieldName="Advice_Given__c" class="slds-hide" />
+								<lightning:inputField aura:id="underSuper" fieldName="Client_Under_Supervision__c" class="slds-hide" />
+								<lightning:button label="Update ROA" variant="brand" type="submit"/>
+							</lightning:recordEditForm>
+						</lightning:accordionSection>
+					</lightning:accordion>
+				</aura:if>
+				<!--/aura:if-->
+			</lightning:accordionSection>
+		</lightning:accordion>
+	</aura:if>
+	<!-- end ROA -->
+    <!-- Price Negotiation and Decline -->
+	<lightning:recordEditForm aura:id="iApplicationRecord" objectApiName="Application__c" recordId="{!v.applicationRecordId}">
+		<lightning:layout multipleRows="true">
+			<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+			<aura:if isTrue="{!v.opportunityRecord2.IsClosed == false}">
+				<lightning:layoutItem padding="around-small">
+					<ui:inputCheckbox
+						class="slds-float--left"
+						label="&nbsp; I would like to request alternate product terms / decline this product"
+						aura:id="iPriceNegotiation"
+						change="{!c.showNewProductTermBtn}"
+					/>
+				</lightning:layoutItem>
+			</aura:if>
+			<lightning:layoutItem class="right-align" padding="around-small">
+				<aura:if isTrue="{!v.showProductTermsBtn}">
+					<lightning:button label="Request New Terms" onclick="{!c.openNewProductTerms}" variant="brand" aura:id="ibtnProductTerms" />
+					<aura:set attribute="else">
+						<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+					</aura:set>
+				</aura:if>
+			</lightning:layoutItem>
+			<lightning:layout multipleRows="true">
+				<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+				<!-- fixing the allignment -->
+
+				<aura:if isTrue="{!v.opportunityRecord2.IsClosed == false}">
+					<lightning:layoutItem padding="around-small">
+						<ui:inputCheckbox
+							class="slds-float--left"
+							label="&nbsp; I agree to the Terms and conditions outlined above"
+							aura:id="iTermsAndConditions"
+							change="{!c.showTermAndConditionsBtn}"
+						/>
+					</lightning:layoutItem>
+				</aura:if>
+				<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+				<lightning:layoutItem class="right-align" padding="around-small">
+					<aura:if isTrue="{!v.showTermsAndConditionsBtn}">
+						<lightning:button label="Accept Product Terms" variant="brand" aura:id="ibtnTermsAndConditions" onclick="{!c.acceptProductTerms}" />
+
+						<aura:set attribute="else">
+							<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+						</aura:set>
+					</aura:if>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+				<lightning:layoutItem padding="around-small">
+					<ui:inputCheckbox
+						class="slds-float--left"
+						label="&nbsp; I confirm the above information is correct"
+						aura:id="completefulfimentid"
+						change="{!c.showCompletefulfilmentBtn}"
+					/>
+				</lightning:layoutItem>
+				<lightning:layoutItem class="right-align" padding="around-small">
+					<aura:if isTrue="{!v.showCompletefulfilmentBtn}">
+						<lightning:button
+							variant="brand"
+							disabled="{!v.isHide}"
+							label="{!v.isHide == true ? 'Completed Fulfilment' : 'Complete Fullfillment'}"
+							onclick="{!c.sendWelcomePckg}"
+						/>
+						<!--  <lightning:button label="Complete Fullfillment"  variant="brand" aura:id="ibtnfulfilment"  onclick="{!c.sendWelcomePckg}"/>-->
+						<aura:set attribute="else">
+							<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+						</aura:set>
+					</aura:if>
+				</lightning:layoutItem>
+			</lightning:layout>
+		</lightning:layout>
+	</lightning:recordEditForm>
+
+	<aura:attribute name="respData" type="object" />
+	<aura:attribute name="columns" type="List" />
+
+	<!-- the container element determine the height of the datatable -->
+	<lightning:accordion>
+		<lightning:accordionSection name="AccountInfo" label="Account Information">
+			<div style="height: 100px">
+				<lightning:datatable keyField="id" data="{! v.respData }" columns="{! v.columns }" hideCheckboxColumn="true" />
+			</div>
+		</lightning:accordionSection>
+	</lightning:accordion>
+	<!-- Diksha End -->
+
+	<!--Start of Value Added Services  -->
+	<div>
+		<lightning:recordEditForm
+			aura:id="iValueAddedServices"
+			recordId="{!v.productRecordId}"
+			objectApiName="Application__c"
+			onsubmit="{!c.updateAndSaveApplication}"
+			onsuccess="{!c.handleSuccess}"
+		>
+			<lightning:accordion allowMultipleSectionsOpen="true">
+				<lightning:accordionSection name="ValueAddedServices" label="Value Added Services" aura:id="form1">
+					<!-- the messages component is for error messages -->
+					<lightning:messages />
+
+					<div class="slds-grid slds-wrap slds-gutters_medium">
+						<div class="slds-col slds-size_1-of-4">
+							<span>
+								<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+								<lightning:layoutItem padding="around-small">
+									<ui:inputCheckbox class="slds-float--left" label="&nbsp; Notify Me" aura:id="iNotifyMe" change="{!c.showNewNotifyMe}" />
+								</lightning:layoutItem>
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-4">
+							<span>
+								<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+								<lightning:layoutItem padding="around-small">
+									<ui:inputCheckbox
+										class="slds-float--left"
+										label="&nbsp; Internet Banking"
+										aura:id="iInternetBanking"
+										change="{!c.showNewInternetBanking}"
+									/>
+								</lightning:layoutItem>
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-4">
+							<span>
+								<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+								<lightning:layoutItem padding="around-small">
+									<ui:inputCheckbox class="slds-float--left" label="&nbsp; Debit Card" aura:id="debitCard" change="{!c.showNewDebitCard}" />
+								</lightning:layoutItem>
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-4">
+							<span>
+								<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+								<lightning:layoutItem padding="around-small">
+									<ui:inputCheckbox class="slds-float--left" label="&nbsp; eStatement" aura:id="ieStatement" change="{!c.showEstatement}" />
+								</lightning:layoutItem>
+							</span>
+						</div>
+						<div class="slds-col slds-size_1-of-4">	
+                            <span>	
+                                <lightning:layoutItem padding="around-small">	
+                                </lightning:layoutItem>	
+                                <lightning:layoutItem padding="around-small">	
+                                    <ui:inputCheckbox class="slds-float--left" label="&nbsp; Employee Care Plan " aura:id="empCarePlan" change="{!c.showEmpCarePlan}"  />	
+                                </lightning:layoutItem>	
+                            </span>	
+                        </div> 
+
+					</div>
+
+					<!--Start of Notify Me added by Thulani -->
+					<aura:if isTrue="{!v.showNotifyMe}">
+						<lightning:layoutItem> </lightning:layoutItem>
+						<div class="slds-col slds-size_1-of-1" style="display: none; padding: 0">
+							<span>
+								<h1 class="slds-accordion__summary-heading">Notify Me</h1>
+							</span>
+						</div>
+						<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+						<div class="slds-grid slds-wrap slds-gutters_medium">
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input aura:id="Name" label="First name( s) " value="{!v.Name}" />
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input aura:id="Surname" label="Surname" value="{!v.Surname}" />
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:select name="PreferredLanguage" 
+                                                      aura:id="PreferredLanguage" 
+                                                      label="Preferred Language"
+                                                      value="{!v.PreferredLanguage}">
+										<option value="English">English</option>
+										<option value="Sepedi">Sepedi</option>
+										<option value="Zulu">Zulu</option>
+										<option value="Afrikaans">Afrikaans</option>
+									</lightning:select>
+									<!--<lightning:input aura:id="PreferredLanguage" label="Preferred Language" value="{!v.PreferredLanguage}"/>-->
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:select name="PreferredContact" 
+                                                      aura:id="PreferredContact"
+                                                      label="Preferred Contact" 
+                                                      value="{!v.PreferredContact}"
+                                                      required="true">
+										<option value="">choose one...</option>
+										<option value="Self Service">Self service</option>
+										<option value="Email">Email</option>
+										<option value="Post">Post</option>
+										<option value="Collect">Collect</option>
+									</lightning:select>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input aura:id="ActiveEmail" label="Active Email" value="{!v.ActiveEmail}" />
+								</span>
+							</div>
+							<br /><br />
+
+							<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+
+							<div class="slds-col slds-size_1-of-1">
+								<span>
+									<h1 class="slds-accordion__summary-heading">NOTIFY ME ACCOUNT DETAILS</h1>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input aura:id="AccountNumber" label="Account Number" value="{!v.policynumber}" />
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input aura:id="AccountName" label="Account Name" value="{!v.acctname}" />
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="All_transaction_type__c"
+										value="{!v.application.All_transaction_type__c}"
+										aura:id="AllTransactionType"
+										required="false"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Payment__c" value="{!v.application.Payment__c}" aura:id="Payment" required="false" />
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Withdrawal__c"
+										value="{!v.application.Withdrawal__c}"
+										aura:id="Withdrawal"
+										required="false"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Deposit__c" value="{!v.application.Deposit__c}" aura:id="Deposit" required="false" />
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Returned_Transactions__c"
+										value="{!v.application.Returned_Transactions__c}"
+										aura:id="ReturnedTransactions"
+										required="false"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Scheduled_transaction__c"
+										value="{!v.application.Scheduled_transaction__c}"
+										aura:id="ScheduledTransaction"
+										required="false"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Purchases__c" value="{!v.application.Purchases__c}" aura:id="Purchases" required="false" />
+								</span>
+							</div>
+
+							<!--W-13694 : Anka Ganta
+                            <div class="slds-col slds-size_1-of-2 ">	
+                                <span>	
+                                    <lightning:inputField fieldName="Notification_time__c" value="{!v.application.Notification_time__c}" aura:id="NotificationTime" required="false" />	
+                                </span>
+                            </div>-->
+                            
+                            <!--W-13694 : Anka Ganta-->
+							<div class="slds-col slds-size_1-of-2 ">	
+                                <span>	
+                                    <lightning:inputField fieldName="Notification_Time_Window__c" value="{!v.application.Notification_Time_Window__c}" aura:id="NotificationTime" required="true" />	
+                                </span>
+                            </div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Minimum_amount__c"
+										value="{!v.application.Minimum_amount__c}"
+										aura:id="MinimumAmount"
+										required="false"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Balance_update__c"
+										value="{!v.application.Balance_update__c}"
+										aura:id="BalanceUpdate"
+										required="false"
+									/>
+								</span>
+							</div>
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input
+										fieldName="Minimum_amount1__c"
+										value="{!v.application.Minimum_Amount1__c}"
+										label="Amount value"
+										aura:id="MinimumAmount1"
+										required="false"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Specific_day__c"
+										value="{!v.application.Specific_day__c}"
+										aura:id="SpecificDay"
+										required="false"
+									/>
+								</span>
+							</div>
+						</div>
+					</aura:if>
+					<!--End of Notify Me -->
+
+					<!--Start of Internet Banking added by Thulani -->
+					<aura:if isTrue="{!v.showInternetBanking}">
+						<div class="slds-col slds-size_1-of-1">
+							<span>
+								<h1 class="slds-accordion__summary-heading">Internet Banking</h1>
+							</span>
+						</div>
+						<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+						<div class="slds-grid slds-wrap slds-gutters_medium">
+							<div class="slds-col slds-size_1-of-1">
+								<span>
+									<h1 class="slds-accordion__summary-heading">SERVICE DETAILS</h1>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input
+										aura:id="BankAccountNumber"
+										label="Bank account number that will be used to access the service"
+										value="{!v.acctname}"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input
+										aura:id="AccountToBeDebitedMonthlyWithTheCost"
+										label="Account to be debited monthly with the cost"
+										value="{!v.application.Account_to_be_debited_monthly_with_the_c__c}"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input
+										aura:id="CombiRecordNumber"
+										label="Combi record number to which accounts and payees must be linked"
+										value="{!v.application.Combi_Record_Number__c}"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input
+										aura:id="NumberOfAuthorisations"
+										label="Number of authorisations that will be required for financial transactions"
+										value="{!v.application.Number_of_authorisations_that_will_be_re__c}"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input
+										aura:id="NumberOfMainUsers"
+										label="Number of main users"
+										value="{!v.application.Number_of_main_users__c}"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:input aura:id="FeeStructureCode" label="Fee Structure code" value="{!v.application.Fee_Structure_code__c}" />
+								</span>
+							</div>
+
+							<br />
+
+							<lightning:layoutItem padding="around-small"> </lightning:layoutItem>
+
+							<div class="slds-col slds-size_1-of-1">
+								<span>
+									<h1 class="slds-accordion__summary-heading">SERVICE SELECTION</h1>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Absa_online_for_business_BIB__c"
+										value="{!v.application.Absa_online_for_business_BIB__c}"
+										aura:id="AbsaOnlineForBusiness"
+										required="true"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Cell_phone_banking__c"
+										value="{!v.application.Cell_phone_banking__c}"
+										aura:id="CellPhoneBanking"
+										required="true"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Telephone_banking__c"
+										value="{!v.application.Telephone_banking__c}"
+										aura:id="TelephoneBanking"
+										required="true"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField fieldName="Notifyme__c" value="{!v.application.Notifyme__c}" aura:id="Notifyme" required="true" />
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-1">
+								<span>
+									<h1 class="slds-accordion__summary-heading">LIMITS DAILY</h1>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Funds_transfer__c"
+										value="{!v.application.Funds_transfer__c}"
+										aura:id="FundsTransfer"
+										required="true"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Bill_payments__c"
+										value="{!v.application.Bill_payments__c}"
+										aura:id="BillPayments"
+										required="true"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Own_defined_payments__c"
+										value="{!v.application.Own_defined_payments__c}"
+										aura:id="OwnDefinedPayments"
+										required="true"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-1">
+								<span>
+									<h1 class="slds-accordion__summary-heading">TRANSACTIONAL LIMITS</h1>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Future_dated_payments__c"
+										value="{!v.application.Future_dated_payments__c}"
+										aura:id="FutureDatedPayments"
+										required="true"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-2">
+								<span>
+									<lightning:inputField
+										fieldName="Stop_order_payments__c"
+										value="{!v.application.Stop_order_payments__c}"
+										aura:id="StopOrderPayments"
+										required="true"
+									/>
+								</span>
+							</div>
+
+							<div class="slds-col slds-size_1-of-1">
+								<span>
+									<h1 class="slds-accordion__summary-heading">MAIN USERS</h1>
+								</span>
+							</div>
+							<div>
+								<div class="relatedParties">
+									<lightning:select aura:id="relatedParties" label="Related Parties" onchange="{! c.getParty }">
+										<option aura:id="relatedParty" value="" text="---Please select---" />
+										<aura:iteration items="{!v.relatedParties}" var="party">
+											<option value="{!party.Id}" text="{!party.FirstName}" />
+										</aura:iteration>
+									</lightning:select>
+								</div>
+
+								<aura:iteration items="{!v.fileShares}" var="fileShare" indexVar="ivar">
+									<aura:if isTrue="{!v.showMainUser}">
+										<div class="MainUsers">
+											<div class="slds-col slds-size_1-of-2">
+												<span>
+													<lightning:input aura:id="Firstname" label="First name(s)" value="{!fileShare.data.FirstName}" />
+												</span>
+											</div>
+
+											<div class="slds-col slds-size_1-of-2">
+												<span>
+													<lightning:input aura:id="Surname" label="Surname" value="{!fileShare.data.LastName}" />
+												</span>
+											</div>
+
+											<div class="slds-col slds-size_1-of-2">
+												<span>
+													<lightning:input
+														aura:id="IdentificationPasspportForeignID"
+														label="Identification / passpport / foreign ID"
+														value="{!fileShare.data.IDNumber}"
+													/>
+												</span>
+											</div>
+
+											<div class="slds-col slds-size_1-of-2">
+												<span>
+													<lightning:input aura:id="CellphoneNumber" label="Cell phone number" value="{!fileShare.data.Phone}" />
+												</span>
+												<a
+													href="#"
+													onclick="{!c.removeShareHandler}"
+													data-idtoremove="{!fileShare.id}"
+													data-index="{!ivar}"
+													class="removeShare"
+													>-</a
+												>
+											</div>
+										</div>
+									</aura:if>
+								</aura:iteration>
+							</div>
+						</div>
+					</aura:if>
+					<!--End Internet Banking -->
+
+					<!--Start of eStatement added by Lesibe -->
+					<aura:if isTrue="{!v.showeStatementPanel}">
+						<lightning:layoutItem padding="around-small">
+							<div class="slds-col slds-size_1-of-1 p-b-10">
+								<span>
+									<h1 class="slds-accordion__summary-heading">eStatement</h1>
+								</span>
+							</div>
+
+							<div class="slds-grid slds-wrap slds-gutters_medium">
+								<div class="slds-col slds-size_1-of-2">
+									<span>
+										<lightning:select
+											name="DeliveryMethod"
+											aura:id="deliveryMethodId"
+											label="Delivery Method"
+											required="true"
+											value="{!v.application.Delivery_Method__c}"
+										>
+											<option value="">choose one...</option>
+											<option value="Self Service">Self service</option>
+											<option value="Email">Email</option>
+											<option value="Post">Post</option>
+											<option value="Collect">Collect</option>
+										</lightning:select>
+									</span>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<span>
+										<lightning:select
+											name="StatementFrequency"
+											aura:id="statementFrequencyId"
+											label="Statement Frequency"
+											required="true"
+											value="{!v.application.Statement_Frequency__c}"
+										>
+											<option value="">choose one...</option>
+											<option value="Daily">Daily</option>
+											<option value="2 Weeks">2 Weeks</option>
+											<option value="Monthly">Monthly</option>
+											<option value="Quarterly">Quarterly</option>
+											<option value="Annually">Annually</option>
+										</lightning:select>
+									</span>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<span>
+										<lightning:input
+											aura:id="statementDayOfMonthId"
+											label="Statement day Of the month"
+											value="{!v.application.Statement_Day_of_the_month__c}"
+										/>
+									</span>
+								</div>
+								<div class="slds-col slds-size_1-of-2">
+									<span>
+										<lightning:select name="AccountStream" aura:id="accountStreamId" label="Account Stream" required="true">
+											<option value="O">Ordinary</option>
+											<option value="B">Business</option>
+											<option value="P">Reference</option>
+										</lightning:select>
+									</span>
+								</div>
+
+								<div class="slds-col slds-size_1-of-2">
+									<span>
+										<lightning:radioGroup
+											name="DuplicateStatements"
+											aura:id="duplicateStatementsId"
+											label="Duplicate Statements"
+											options="{!v.DuplicateStatementOpt }"
+											value="{!v.duplicateStatementDefault}"
+											onchange="{!c.duplicateStatOption}"
+											type="button"
+										/>
+									</span>
+									<aura:if isTrue="{!v.showTextIfYes}">
+										<span>
+											<lightning:textarea aura:id="deliveryInstructionId" label="Delivery instruction" value="" />
+										</span>
+									</aura:if>
+								</div>
+
+								<div class="slds-p-around_small slds-size_12-of-12">
+									<span>
+										<lightning:button
+											label="Update and Save"
+											variant="brand"
+											aura:id="ibtnUpdateAndSaveEstatement"
+											onclick="{!c.updateAndSaveEstatement}"
+										/>
+									</span>
+								</div>
+							</div>
+						</lightning:layoutItem>
+					</aura:if>
+					<!--End eStatement -->
+
+					<!--Start of Debit Card -->
+					<aura:if isTrue="{!v.showDebitCard}">
+						<aura:if isTrue="{!v.processType == 'Voice Sales Product Onboarding'}">
+						<lightning:flow aura:id="cardOrdering" onstatuschange="{!c.cardDelivery}"/>
+						<aura:set attribute="else">
+						<!--<c:debitCard/> -->
+						<c:DebitCardOrdering aura:id="cardOrdering" showdebitCardOrderingModel="{!v.showDebitCard}" recordId="{!v.recordId}" />
+						</aura:set>
+						</aura:if>		
+					</aura:if>
+					<!--End of Debit Card -->
+
+					<!--Star of update button -->
+					<lightning:layoutItem class="right-align" padding="around-small">
+						<aura:if isTrue="{!v.showNotifyMe}">
+							<lightning:button
+								label="Update and Save"
+								variant="brand"
+								aura:id="ibtnUpdateAndSaveApplication"
+								onclick="{!c.updateAndSaveApplication}"
+							/>
+
+							<aura:set attribute="else">
+								<aura:if isTrue="{!v.showInternetBanking}">
+									<lightning:button
+										label="Update and Save"
+										variant="brand"
+										aura:id="ibtnUpdateAndSaveApplication"
+										onclick="{!c.updateAndSaveApplication}"
+									/>
+								</aura:if>
+							</aura:set>
+						</aura:if>
+					</lightning:layoutItem>
+					<!-- End Of Update Button -->
+				</lightning:accordionSection>
+			</lightning:accordion>
+		</lightning:recordEditForm>
+	</div>
+	<!--End of Value Added Services added by Thulani -->
+
+	<!-- Product Term Request Modal-->
+	<aura:if isTrue="{!v.showProductTermsModal}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{!c.closeNewProductTermsModal}"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Product Terms Request</h2>
+				</header>
+				<div class="slds-scrollable_y">
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+						<p>
+							<lightning:recordEditForm aura:id="iApplicationRecordModal" objectApiName="Application__c" recordId="{!v.applicationRecordId}">
+								<lightning:layout multipleRows="true">
+									<lightning:layoutItem padding="around-small" size="12">
+										<lightning:inputField
+											fieldName="Decision__c"
+											aura:id="iDecision"
+											value="{!v.application.Decision__c}"
+											class="customRequired"
+										/>
+									</lightning:layoutItem>
+									<lightning:layoutItem padding="around-large" size="12">
+										<lightning:inputField
+											fieldName="Request_Details_Comments__c"
+											aura:id="iRequestDetailsComments"
+											value="{!v.application.Request_Details_Comments__c}"
+											class="customRequired"
+										/>
+									</lightning:layoutItem>
+								</lightning:layout>
+							</lightning:recordEditForm>
+						</p>
+					</div>
+					<footer class="slds-modal__footer">
+						<lightning:button class="slds-float_left" variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeNewProductTermsModal }" />
+						<lightning:button variant="brand" label="Submit Request" title="Submit Request" onclick="{! c.submitProductTermsRequest}" />
+					</footer>
+				</div>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+	</aura:if>
+
+	<!-- Modal for calculating Account Activity -->
+	<aura:if isTrue="{!v.showAccCalculator}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeAccActivty }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Account Activity Calculator</h2>
+				</header>
+				<div class="slds-scrollable">
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+						<p>
+							<lightning:recordEditForm aura:id="showAccCalcu" objectApiName="Application__c" recordId="{!v.applicationRecordId}">
+								<lightning:layout multipleRows="true">
+									<lightning:layoutItem padding="around-small" flexibility="auto">
+										<aura:if isTrue="{!v.isProductAvail}">
+											<lightning:layoutItem padding="around-small" flexibility="auto">
+												<lightning:inputField
+													fieldName="Expected_number_of_credits_per_month__c"
+													label="Expected Credit Per Month"
+													aura:id="expectedNumOfCredit"
+													value="{!v.application.Expected_number_of_credits_per_month__c}"
+												/>
+											</lightning:layoutItem>
+											<lightning:layoutItem padding="around-small" flexibility="auto">
+												<lightning:inputField
+													fieldName="Rand_value_of_credits_per_month__c"
+													value="{!v.application.Rand_value_of_credits_per_month__c}"
+													label="Rand Value of Credits Per Month"
+													aura:id="randValueOfCredit"
+												/>
+											</lightning:layoutItem>
+											<lightning:layoutItem padding="around-small" flexibility="auto">
+												<lightning:inputField
+													fieldName="Credits_received_via__c"
+													value="{!v.application.Credits_received_via__c}"
+													label="Credits received via (EFT, Cash etc.)"
+													aura:id="creditsReceivedVia"
+												/>
+											</lightning:layoutItem>
+											<lightning:layoutItem padding="around-small" flexibility="auto">
+												<lightning:inputField
+													fieldName="Where_will_the_credits_be_coming_from__c"
+													value="{!v.application.Where_will_the_credits_be_coming_from__c}"
+													label="Where will the credits be coming from"
+													aura:id="whereWilltheCreditCome"
+												/>
+											</lightning:layoutItem>
+											<aura:set attribute="else">
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Credits_received_via__c"
+														value="{!v.application.Credits_received_via__c}"
+														label="Credits received via (EFT, Cash etc.)"
+														aura:id="creditsReceivedVia"
+													/>
+												</lightning:layoutItem>
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Where_will_the_credits_be_coming_from__c"
+														value="{!v.application.Where_will_the_credits_be_coming_from__c}"
+														label="Where will the credits be coming from"
+														aura:id="whereWilltheCreditCome"
+													/>
+												</lightning:layoutItem>
+
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Number_of_staff_members__c"
+														value="{!v.application.Number_of_staff_members__c}"
+														label="Number of staff members"
+														aura:id="numberOfStaffMembers"
+													/>
+												</lightning:layoutItem>
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Payment_date_of_staff__c"
+														value="{!v.application.Payment_date_of_staff__c}"
+														label="Payment date of staff"
+														aura:id="paymentDateOfStaffMembers"
+													/>
+												</lightning:layoutItem>
+
+												<!--   <lightning:layoutItem padding="around-small" flexibility="auto">
+                                            <lightning:inputField fieldName="Number_of_debits_per_month__c"  value="{!v.application.Number_of_debits_per_month__c}" label="Number of debits per month" aura:id="numberOfDebitsPerMonth"  />
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" flexibility="auto">   
+                                            <lightning:inputField fieldName="Number_of_supplier_payments_per_month__c"  value="{!v.application.Number_of_supplier_payments_per_month__c}" label="Number of supplier payments per month" aura:id="numberOfSuppPayment" />
+                                        </lightning:layoutItem> -->
+
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Where_are_the_suppliers_located__c"
+														value="{!v.application.Where_are_the_suppliers_located__c}"
+														label="Where are the suppliers located"
+														aura:id="wheretheSuppLocated"
+													/>
+												</lightning:layoutItem>
+												<!--     <lightning:layoutItem padding="around-small" flexibility="auto">   
+                                            <lightning:inputField fieldName="Rand_value_of_debits_per_month__c"  value="{!v.application.Rand_value_of_debits_per_month__c}" label="Rand value of debits per month" aura:id="randValueOfDebitsPerMonth"  />
+                                        </lightning:layoutItem> -->
+
+												<lightning:layoutItem padding="around-small" flexibility="auto">
+													<lightning:inputField
+														fieldName="Reason_for_debit_orders__c"
+														value="{!v.application.Reason_for_debit_orders__c}"
+														label="Reason for debit orders"
+														aura:id="reasonForDebit"
+													/>
+												</lightning:layoutItem>
+											</aura:set>
+										</aura:if>
+									</lightning:layoutItem>
+								</lightning:layout>
+							</lightning:recordEditForm>
+						</p>
+					</div>
+				</div>
+				<footer class="slds-modal__footer">
+					<lightning:button class="slds-float_left" variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeAccActivty}" />
+					<lightning:button variant="brand" label="Submit" title="Submit Request" onclick="{! c.generateAccActivty}" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+	</aura:if>
+
+	<!-- Modal End -->
+</aura:component>

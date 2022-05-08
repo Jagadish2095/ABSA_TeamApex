@@ -1,0 +1,97 @@
+<!-- Lightning Component is based upon CardTransactionHistory
+        @author: Manideep kenche
+        @created 2021/09/28 -->
+<aura:component controller="CardTransactionHistoryController"
+                implements="force:appHostable,flexipage:availableForAllPageTypes,lightning:availableForFlowScreens,force:hasRecordId" access="global" >
+    
+    <aura:attribute name="policyNumber" type="String" default=""  />
+    <aura:attribute name="selectedAccountFromFlow" type="String" access="global" />
+    <aura:attribute name="caseId" type="String"  />
+    <aura:attribute name="errorMessage" type="String"  />
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    
+    <!--Transactional History attribute declaration-->
+    <aura:attribute name="transactionalHistoryData" type="List" />
+    <aura:attribute name="transactionalHistoryDataTable" type="List" />
+    <aura:attribute name="filterStartDate" type="Date" />
+    <aura:attribute name="filterEndDate" type="Date" />
+    <aura:attribute name="transactionalHistoryColumns" type="List" />
+    
+    <!--pagination-->
+    <aura:attribute name="currentPageNumber" type="Integer" default="1" />
+    <aura:attribute name="totalPages" type="Integer" default="1" />
+    <aura:attribute name="pageSize" type="Integer" default="10" />
+    <aura:attribute name="fData" type="List" />
+    
+    <div class = "slds-is-relative">
+        <lightning:tabset>
+            <lightning:tab label="Transactional history" id="TransactionalHistory" onactive="{!c.handleTransactionalHistory}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="4" padding="around-small">
+                        <lightning:input type="date" aura:id="startDate" label="Start Date" value="{!v.filterStartDate}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="4" padding="around-small">
+                        <lightning:input type="date" aura:id="endDate" label="End Date" value="{!v.filterEndDate}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="4" padding="around-small" class="slds-grid slds-align-bottom">
+                        <lightning:button variant="brand" label="Apply Date Range" title="Apply Date Range" onclick="{! c.filterDateRange }" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <lightning:layout>
+                    <lightning:datatable
+                                         keyField="Counter"
+                                         data="{! v.transactionalHistoryDataTable }"
+                                         columns="{! v.transactionalHistoryColumns }"
+                                         hideCheckboxColumn="true"
+                                         />
+                </lightning:layout>
+                <br></br>
+                <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                    <ui:message title="Error" severity="error" closable="false">
+                        {!v.errorMessage}
+                    </ui:message>
+                </aura:if>
+                <br></br>
+                
+                <div>
+                    <lightning:button
+                                      label="First"
+                                      iconName="utility:left"
+                                      iconPosition="left"
+                                      onclick="{! c.onFirst }"
+                                      disabled="{! v.currentPageNumber == 1 }" />
+                    <lightning:button
+                                      label="Previous"
+                                      iconName="utility:chevronleft"
+                                      iconPosition="left"
+                                      onclick="{! c.onPrev }"
+                                      disabled="{! v.currentPageNumber == 1 }" />
+                    <span class="slds-var-p-horizontal_x-small">
+                        Page {! (v.currentPageNumber) } of {! (v.totalPages) }
+                    </span>
+                    
+                    <lightning:button
+                                      label="Next"
+                                      iconName="utility:chevronright"
+                                      iconPosition="right"
+                                      onclick="{! c.onNext }"
+                                      disabled="{! v.currentPageNumber == v.totalPages }" />
+                    <lightning:button
+                                      label="Last"
+                                      iconName="utility:right"
+                                      iconPosition="right"
+                                      onclick="{! c.onLast }"        
+                                      disabled="{! v.currentPageNumber == v.totalPages }" />
+                </div>
+            </lightning:tab>
+            
+        </lightning:tabset>
+        
+        <!-- Lightning Spinner -->
+        <aura:if isTrue="{!v.showSpinner}">
+            <div >
+                <lightning:spinner class="spins slds-align_absolute-center" aura:id="spinner" alternativeText="Loading" variant="brand" size="medium" />
+            </div>
+        </aura:if>
+    </div>
+</aura:component>

@@ -1,0 +1,119 @@
+<!--
+* Lightning Component for the Needs Analysis and Investment Objective (Schedule B) SPM
+* @author  Diksha : Absa
+* @version v1.0
+* @since   2020-10-08
+*
+-->
+
+<aura:component controller="onboardingSPMNeedAnalysisCon"
+                implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global">
+    
+    <aura:attribute name="options" type="List"  default="[
+                                                         {'label': 'Full discretionary portfolio', 'value': 'Full discretion portfolio' },
+                                                         {'label': 'Non-discretionary portfolios', 'value': 'Non-discretionary portfolios' }
+                                                         ]"/>
+    
+    <aura:attribute name="value" type="String" default="" />
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="errors" type="Object" default="[]"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/> 
+    <aura:attribute name="portfoliovalue" type="String" />
+    <aura:attribute name="appId" type="String" />
+    <aura:attribute name="opplineId" type="String" />
+    <aura:attribute name="appproductId" type="String" />
+    <aura:attribute name="renderfields" type="boolean" default="false" />
+    <aura:attribute name="renderQuoteBuilder" type="boolean" default="false" />
+    <aura:attribute name="quoteBuilderFilterCategory" type="String"/> <!-- JQUEV: 20210318-->
+    <aura:attribute name="isApplicationProductLoaded" type="boolean" default="false" /><!-- JQUEV: 20210324-->
+    <aura:attribute name="isOpportunityProductLoaded" type="boolean" default="false" /><!-- JQUEV: 20210324-->
+    <aura:attribute name="isQuoteBuilderLoaded" type="boolean" default="false" /><!-- JQUEV: 20210324-->
+    <aura:attribute name="isPlatform" type="Boolean" /> <!--NEKHUBVIM-->
+    <aura:attribute name="accountRec" type="object" />
+    <!-- handlers-->
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+    <aura:handler event="force:refreshView" action="{!c.handleChange}" />
+
+    <lightning:accordion aura:id="accordion" allowMultipleSectionsOpen="true" activeSectionName="Needs Analysis and Investment Objective (Schedule B)">
+           <lightning:accordionSection name="Needs Analysis and Investment Objective (Schedule B)" label="Needs Analysis and Investment Objective (Schedule B)" aura:id = "form"  >
+           <lightning:recordEditForm aura:id="Need Analysis"
+                                          recordId= "{!v.opplineId}"
+                                          objectApiName="OpportunityLineItem"
+                                          onsuccess="{!c.handleSuccess}"
+                                          onload="{!c.handleOppProdLoad}"
+                                          onerror="{!c.handleError}"
+                                                          >
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Investment_amount_R__c" aura:id="investmentamountR" required="true" />
+                            </span>
+                        </div>
+                    </div>
+                </lightning:recordEditForm>
+                <lightning:recordEditForm aura:id="Need Analysis"
+                                          recordId= "{!v.appproductId}"
+                                          objectApiName="Application_Product__c"
+                                          onsuccess="{!c.handleSuccess}"
+                                          onload="{!c.handleAppProdLoad}"
+                                          onerror="{!c.handleError}"
+                                          >
+                    <lightning:inputField fieldName="Management_Type_Managed_Code__c" aura:id="managementTypeManagedCode" class="slds-hide"/>
+                    <aura:if isTrue="{!or(v.accountRec.SPM_Platform_Type__c ==null,v.accountRec.SPM_Platform_Type__c =='')}">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Cash_accruals__c" aura:id="cashaccruals" onchange="{!c.renderFields}" required="true"/>
+                            </span>
+                        </div>
+                        <aura:if isTrue="{!v.renderfields}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="Regular_withdrawal_amount_R__c" aura:id="regularwithdrawalamountR" required="true"/>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField fieldName="Frequency_of_payment_required__c" aura:id="frequencyofpaymentrequired" required="true"/>
+                                </span>
+                            </div>
+                        </aura:if>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Other_special_requirements__c" aura:id="otherspecialrequirements" />
+                            </span>
+                        </div>
+                    </div>
+                        </aura:if>
+                </lightning:recordEditForm>
+                <div class="slds-col slds-size_1-of-1">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                        <lightning:button type="submit" label="Save" variant="brand" onclick="{!c.handleSubmit}"/>
+                    </span><br><br><br><br><br></br></br></br></br></br>
+                </div>
+               <aura:if isTrue="{!or(v.accountRec.SPM_Platform_Type__c ==null,v.accountRec.SPM_Platform_Type__c =='')}">  
+            <div  class="slds-col slds-size_1-of-1">
+                    <span><span>
+                        <div class="last-row-bold">
+                            <lightning:datatable
+                                                 columns="{! v.columns }"
+                                                 data="{! v.data }"
+                                                 keyField="Id" 
+                                                 errors="{! v.errors }"
+                                                 draftValues="{! v.draftValues }"
+                                                 onsave="{! c.handleSave }"
+                                                 hideCheckboxColumn="true"
+                                                 showRowNumberColumn="false"/>     
+                        </div>
+                        </span></span>
+                    </div>
+              </aura:if>
+        </lightning:accordionSection>
+        </lightning:accordion>
+   
+    <aura:if isTrue="{!v.renderQuoteBuilder}">
+        <c:QuoteBuilder quoteType="SPM Onboarding" accordionSectionLabel="Fees And Allocations" aura:id="quoteBuilderCmp" recordId="{!v.recordId}" filterCategory="{!v.quoteBuilderFilterCategory}" />
+    </aura:if>
+</aura:component>

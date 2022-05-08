@@ -1,0 +1,98 @@
+<aura:component access="global"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"              
+                >
+    <aura:attribute
+                    name="options"
+                    type="List"
+                    default="[{'label': 'Yes', 'value': 'Yes'},
+                             {'label': 'No', 'value': 'No'}]"/>
+    
+    <aura:attribute name="buttonVariant" type="String" default="bare"/>
+    <aura:attribute name="buttonStateIcon" type="String" default="utility:add"/>
+    <aura:attribute name="productRequired" type="String" default="No" />
+    <aura:attribute name="acceptedDisclosure" type="String" default="No" />
+    <aura:attribute name="Disclosure" type="String"  />
+    <aura:attribute name="isProductSelected" type="Boolean" default="false" />
+    <aura:attribute name="isProductFulfilled" type="Boolean" default="false" />
+    <aura:attribute name="productName" type="String" default="Product Name"/>
+    <aura:attribute name="productDescription" type="String" default="product Description"/>
+    <aura:attribute name="productDisclosures" type="String" default="product Disclosures" />
+    
+    <aura:attribute name="isOpen" type="boolean" default="false" />
+    
+    <aura:registerEvent name="absaLifeProductSelectionEvent" type="c:AbsaLifeProductSelectionEvent"/>
+    
+    <lightning:accordionSection name="{!v.productName}" label="{!v.productName}">
+        <aura:set attribute="actions">
+            <lightning:buttonIcon 
+                                  iconName="{!v.buttonStateIcon}" 
+                                  size="large" 
+                                  variant="{!v.buttonVariant}" 
+                                  onclick="{!c.handleSelectedProduct}" 
+                                  alternativeText="" 
+                                  title="" />
+        </aura:set>
+        <aura:if isTrue="{!and(v.isProductSelected,v.productName !='Instant Life')}">
+            <div>
+                <div>
+                    <p> Do you require the {!v.productName} that provides {!v.productDescription}? </p>
+                    <lightning:radioGroup
+                                          name="radioGroupRequired"
+                                          label=""
+                                          options="{! v.options }"
+                                          value="{!v.productRequired}"
+                                          type="radio"
+                                          style="display:inline-block !important"
+                                          />
+                </div>
+                <br />
+                <br />
+                <span>
+                    <p>
+                        <b>Disclosures</b> 
+                    </p>
+                    <div class="ql-editor slds-rich-text-area__content slds-text-color_weak slds-grow">
+                        <aura:unescapedHtml value="{!v.productDisclosures}"/>
+                    </div>
+                </span>
+                <br />
+                <div>
+                    <p>Have you explain the Disclosures to the customer ?</p>
+                    <lightning:radioGroup
+                                          disabled="{!v.productRequired == 'No'}"
+                                          name="radioGroupDisclosure"
+                                          label=""
+                                          options="{!v.options }"
+                                          value="{!v.acceptedDisclosure}"
+                                          type="radio"
+                                          style="display:inline-block !important"
+                                          />
+                </div>
+                <div>
+                    <lightning:button
+                                      disabled="{!v.acceptedDisclosure == 'No'}"
+                                      variant="brand-outline"
+                                      label="Capture Policy Details"
+                                      title="Brand action"
+                                      onclick="{! c.handleCaptureDetails}"
+                                      />
+                </div>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!and(v.isProductSelected,v.productName == 'Instant Life')}">
+            <span>
+                    <p>
+                        <b>Disclosures</b> 
+                    </p>
+                    <div class="ql-editor slds-rich-text-area__content slds-text-color_weak slds-grow">
+                        <aura:unescapedHtml value="{!v.productDisclosures}"/>
+                       </div>
+                </span>
+             <lightning:input  type="checkbox" label="I confirm that I have read the above Disclosures to the customer" name="disclosure"
+                                     onclick="{!c.captureInstantLifeProduct}" aura:id="disclosureId" />
+            <div>
+                
+            </div>
+        </aura:if>               	
+    </lightning:accordionSection>              
+</aura:component>

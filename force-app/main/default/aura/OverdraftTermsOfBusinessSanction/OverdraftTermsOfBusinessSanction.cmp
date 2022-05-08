@@ -1,0 +1,135 @@
+<!--
+* Lightning Component for Overdraft Terms Of Business Sanctioner's view
+    * @author  Almas Aleem : Absa
+    * @version v1.0
+    * @since   2021-04-15
+    * 
+    *
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" 
+                controller="ProductTermsOfBusinessController">
+	 <!--Attribute Decleration -->
+    <aura:attribute name="recordId" type="Id" />  <!--Opportunity Id-->
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />
+    <aura:attribute name="showApprove" type="Boolean" default="false" />
+    <aura:attribute name="showDecline" type="Boolean" default="false" />
+    <aura:attribute name="selectedValues" type="String" />
+    
+    <aura:attribute name="appProdTobList" type="List" />
+    <aura:attribute name="iterationIndex" type="String" />
+    <aura:attribute name="userRecord" type="User" />
+    <aura:attribute name="fieldWrapList" type="Object[]" />
+    <aura:attribute name="showfieldWrapList" type="Object[]" />
+    
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+     <!--Changes for approval sanctioner-->
+    <aura:attribute name="record" type="Object"
+                    description="The record object to be displayed"/>
+    <aura:attribute name="simpleRecord" type="Object"
+                    description="A simplified view record object to be displayed"/>
+    <aura:attribute name="recordError" type="String"
+                    description="An error message bound to force:recordData"/>
+    <force:recordData aura:id="record"
+                      fields="Id,Approval_Owner__c"
+                      recordId="{!v.recordId}"
+                      targetError="{!v.recordError}"
+                      targetRecord="{!v.record}"
+                      targetFields ="{!v.simpleRecord}"
+                      mode="VIEW"/>
+    
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    
+      <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    <aura:iteration items="{!v.appProdTobList}" var="prodrec"  indexVar="index">
+        
+        <!-- Product Details -->
+        <lightning:accordion aura:id="accordion">
+            
+            <lightning:accordionSection name="productinfo" label="{!prodrec.appProductLabel}">
+                
+                <!--<lightning:recordEditForm  aura:id="productView"  recordId="{!prodrec.appProduct.Id}" objectApiName="Application_Product__c"> -->
+                    <!-- show product details --> 
+                    <lightning:layout multipleRows="true" > 
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Cheque Account Number</p>
+                            <lightning:formattedText value="{!prodrec.ChequeAccountNumber}"/>                       
+                        </lightning:layoutItem>
+							
+						<lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Product Type</p>
+                            <lightning:formattedText value="{!prodrec.ProductType}"/>                       
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Purpose of Overdraft</p>
+                            <lightning:formattedText value="{!prodrec.PurposeofOverdraft}"/>                  
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Review Date</p>
+                            <lightning:formattedDateTime value="{!prodrec.ReviewDate}"/>
+                            
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Expiry Date</p>
+                            <lightning:formattedDateTime value="{!prodrec.ExpiryDate}"/>
+                            
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Campaign Code</p>
+                            <lightning:formattedText value="{!prodrec.CampaignCode}"/>
+                            
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>NCA Appplicable</p>
+                            <lightning:formattedText value="{!prodrec.NCAAppplicable}"/>
+                            
+                        </lightning:layoutItem>
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Maximum NCA Rate Type</p>
+                            <lightning:formattedText value="{!prodrec.MaximumNCARate}" />
+                            
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Maximum NCA Rate Type</p>
+                            <lightning:formattedText value="{!prodrec.MaximumNCARateType}" />
+                            
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" class="slds-p-top_large">
+                            <p>Agreement Category</p>
+                            <lightning:formattedText value="{!prodrec.AgreementCategory}" />
+                            
+                        </lightning:layoutItem>
+                    </lightning:layout>   
+                
+                <!-- show product details end-->
+              <!--  </lightning:recordEditForm > -->
+                
+                <!-- Introduce Child Component -->
+                <c:showTOBSection prodrec ="{!prodrec}" simpleRecord="{!v.simpleRecord}"/>
+                
+              <!-- child component section end -->
+                
+            </lightning:accordionSection>    
+           
+            <lightning:accordionSection name="decision history" label="Decision History">
+                
+                <c:TOBDecisionHistory appProdId="{!prodrec.appProduct.Id}"/>
+                
+            </lightning:accordionSection>    
+        </lightning:accordion>
+    </aura:iteration>   
+    <!-- button section -->
+    <div class="slds-grid slds-gutters ">
+        <!--<lightning:button class="slds-var-m-top_small slds-float_right" variant="brand" type="submit" name="update" label="Save All"  onclick="{!c.saveAll}"/>
+    --></div>
+</aura:component>

@@ -1,0 +1,134 @@
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes" access="global" controller = "NotifyBankerController">
+    <aura:attribute name="productsStringValue" type="String"/>
+    
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:attribute name="notifyBanker" type="Boolean" default = "false"/>
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"/>
+    <aura:attribute name="caseRecordId" type="String" access="global"/>
+    <aura:attribute name="notifyBankerOptions" type="List"/>
+    <aura:attribute name="name" type="String"/>
+    <aura:attribute name="email" type="String"/>
+    <aura:attribute name="products" type="String"/>
+    <aura:attribute name="selectedBusinessBanke" type="String"/>
+    <aura:attribute name="isBanker" type="boolean" default="false"/>
+    
+    <div class="slds-p-bottom_medium">
+        <h1>Select a tile to view information on a new tab</h1>
+    </div>
+    
+    <table>
+          <tr>
+        		<td class="slds-p-right_x-large" style="width:15%">
+                    <div class="slds-card slds-card_boundary">
+        				<div class="slds-card__header slds-grid" style="display:-webkit-box !important">
+            				<header class="slds-media slds-media--center slds-has-flexi-truncate"> 
+            				</header>
+          
+            			<div class="slds-media__figure" >
+                 
+                		<lightning:icon iconName="standard:product" alternativeText="Customer Holds" size="small" />
+            			</div>
+            			<div class="slds-media__body" ><h2 >
+                			<a class="slds-card__header-link baseCard__header-title-container" href="https://www.absa.co.za/personal/" target="_blank">
+                    
+                    			<span class="slds-card__header-title slds-truncate slds-m-right--xx-small" title="Holds" >Products</span>
+                    		</a></h2></div>
+        				</div>  
+    				</div>
+                </td>
+                <td class="slds-p-right_x-large">
+              		 <div class="slds-card slds-card_boundary">
+        				<div class="slds-card__header slds-grid" style="display:-webkit-box !important">
+            				<header class="slds-media slds-media--center slds-has-flexi-truncate"> 
+            				</header>
+          
+            			<div class="slds-media__figure" >
+                 
+                		<lightning:icon iconName="custom:custom55" alternativeText="Customer Holds" size="small" />
+            			</div>
+            			<div class="slds-media__body" ><h2 >
+                			<a class="slds-card__header-link baseCard__header-title-container" href="http://oneintranet.intra.absaafrica/sites/ppsg/Pages/default.aspx" target="_blank">
+                    
+                    			<span class="slds-card__header-title slds-truncate slds-m-right--xx-small" title="Holds" >Policies and Procedures</span>
+                    		</a></h2></div>
+        				</div>  
+                    </div>   
+                </td>
+                <td>
+               		<div class="slds-card slds-card_boundary">
+        				<div class="slds-card__header slds-grid" style="display:-webkit-box !important">
+            				<header class="slds-media slds-media--center slds-has-flexi-truncate"> 
+            				</header>
+          
+            			<div class="slds-media__figure" >
+                 
+                		<lightning:icon iconName="custom:custom17" alternativeText="Customer Holds" size="small" />
+            			</div>
+            			<div class="slds-media__body" ><h2 >
+                			<a class="slds-card__header-link baseCard__header-title-container" href="https://www.absa.co.za/rates-and-fees/ " target="_blank">
+                    
+                    			<span class="slds-card__header-title slds-truncate slds-m-right--xx-small" title="Holds" >Pricing brochure</span>
+                    		</a></h2></div>
+        				</div>  
+                    </div> 
+                </td>
+          </tr>
+    </table>
+    
+    <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    
+    <div class="slds-p-vertical_medium">
+        <h1>Enquiry details</h1>
+    </div>
+    <table style="width:50%">
+        <tr>
+         <td style="width:30%">
+             <div>
+                 <lightning:input aura:id="Product" label="Product Name"/>
+             	 
+             </div>
+             
+         </td>
+         <td>
+            	<div class="slds-col add-button slds-p-top_large slds-p-left_xx-small">
+					<lightning:button variant="brand" label="+" onclick="{!c.onItemSubmit}"></lightning:button>
+				</div>
+         </td>
+         <td>
+             <div class = "slds-p-top_large">
+             	<lightning:textarea name="inputNotes" aura:id="notes" label="Notes(Options)"/>
+             </div>
+                
+          </td>
+       </tr>
+
+    </table>
+    <div class="slds-p-top_large">
+        <table  id = 'myTable' Style = 'width: 25%;' >
+        
+    	</table>
+    </div>
+    <div class="slds-checkbox slds-p-top_large">
+      <lightning:input aura:id="notifyBankerCheck" type="checkbox" label="Customer request to be contacted (notify Banker)" onchange="{!c.bankerNotify}" disabled="{!v.isBanker}" />
+      
+    </div>
+    <aura:if isTrue="{!v.notifyBanker}">
+    	<div style="width:15%">
+    		<lightning:select value="{!v.selectedBusinessBanke}" class="select-auto-width" aura:id="myBankerselection" 
+                                  onchange="{!c.bankerNotify}" required="true">
+                    <option value="">--Select a recipient--</option>
+                    <aura:iteration items="{!v.notifyBankerOptions}" var="banker" indexVar="key">
+                        <option text="{!banker.label}" value="{!banker.value}"/>
+                    </aura:iteration>
+        	</lightning:select> 
+    	</div>
+    </aura:if>
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="around-small" size="12">
+        	<div class="slds-p-top_large">
+        		<lightning:button aura:id="submitButton" class="slds-m-top_small slds-float--right" iconName="utility:check" variant="brand" type="submit" name="add" label="Close Case" onclick="{!c.closeCase}"/>    
+            </div>
+        </lightning:layoutItem>
+    </lightning:layout>
+    
+</aura:component>

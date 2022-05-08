@@ -1,0 +1,80 @@
+<aura:component access="global" implements="force:appHostable">
+
+   <aura:attribute name="data" type="Map" default="" />  
+
+   <aura:attribute name="selectedIIP" type="Map" default="" />   
+   <aura:attribute name="IIPHoldAction" type="String" default="" description="release/cancel action" />
+   <aura:attribute name="IIPHoldModal" type="Boolean" default="false" /> 
+   <aura:attribute name="selectedDebitOrder" type="Map" default="" /> 
+   <aura:attribute name="showBtnSpinner" type="Boolean" default="false"/>
+   <aura:attribute name="debitReverseModal" type="boolean" default="false"/>
+   <aura:attribute name="debitOrderReversalModal" type="boolean" default="false"/>
+   <aura:attribute name="accAccOrIdNum" type="String" default=""/> 
+
+   <div class="slds-p-top_medium">      
+       <div class="slds-grid">
+         <div class="slds-size--1-of-1 slds-large-size--1-of-1">
+            <div class="slds">        
+               <table class="slds-table--cell-buffer slds-max-medium-table--stacked-horizontal">  
+                  <thead>
+                     <tr class="slds-grid slds-wrap apply-text-color slds-p-bottom_medium">                     
+                        <th scope="col" class="slds-size_2-of-12">Date created</th>
+                        <th scope="col" class="slds-size_1-of-12">Time</th>
+                        <th scope="col" class="slds-size_2-of-12">From account</th>                           
+                        <th scope="col" class="slds-size_2-of-12">To account</th>
+                        <th scope="col" class="slds-size_1-of-12">Amount</th> 
+                        <th scope="col" class="slds-size_1-of-12">Status notes</th> 
+                        <th scope="col" class="slds-size_3-of-12"></th>                          
+                     </tr>
+                  </thead>
+                  <tbody>            
+                      <aura:if isTrue="{!(v.data.iipsData.length > 0)}">
+                         <aura:iteration items="{!v.data.iipsData}" var="iip" indexVar="key">
+                            <tr class="slds-grid slds-wrap row-hover-class slds-p-top_medium slds-p-bottom_medium"> 
+                               <td class="slds-size_2-of-12">{!iip.value.formatted_created_date}</td>
+                               <td class="slds-size_1-of-12">{!iip.value.formatted_created_time} </td>
+                               <td class="slds-size_2-of-12"><lightning:formattedRichText value="{!iip.value.source_account}"/></td>
+                               <td class="slds-size_2-of-12">{!iip.value.target_account}</td>
+                                <td class="slds-size_1-of-12">{!iip.value.formatted_amount} </td>
+                               <td class="slds-size_1-of-12"><lightning:formattedRichText value="{!iip.value.formatted_status_notes}"/></td>   
+                               <td class="slds-size_3-of-12">   
+                         	   <aura:if isTrue="{!iip.value.formatted_status_notes == 'In progress'}">          
+                                       <div class="slds-grid slds-wrap">
+                                           <div class="slds-p-right_small slds-p-bottom_x-small"> 
+                                                <button style="width:100px;" disabled="{!iip.value.release_action_button_disabled}"   class="{!iip.value.release_action_button_class+' slds-button slds-button_brand'}" Id="{!iip.key}" name="release" aura:id="{!iip.key}" onclick="{!c.IIPHandler}">Release
+                                                    <aura:if isTrue="{!iip.value.show_release_button_spinner}">
+                                                        <lightning:spinner class="spinner-cls" alternativeText="Loading" size="small" />
+                                                    </aura:if>                                               
+                                                </button> 
+                                           </div>                                         
+                                           <div class="slds-p-right_small">
+                                                <button style="width:100px;" disabled="{!iip.value.cancel_action_button_disabled}"  class="{!iip.value.cancel_action_button_class+' slds-button slds-button_neutral'}" Id="{!iip.key}" name="cancel" aura:id="{!iip.key}" onclick="{!c.IIPHandler}">Cancel
+                                                    <aura:if isTrue="{!iip.value.show_cancel_button_spinner}">
+                                                        <lightning:spinner class="spinner-cls" alternativeText="Loading" size="small" />
+                                                    </aura:if>                                                  
+                                               </button>
+                                           </div>
+                                           <div class="{!iip.value.iip_hold_status_message_class}">{!iip.value.iip_hold_status_message}</div> 
+                                       </div>
+                                   		<aura:set attribute="else"> 
+                                           	<aura:if isTrue="{!iip.value.iip_hold_status_message_class}"> 
+                                                 <div class="{!iip.value.iip_hold_status_message_class}">{!iip.value.iip_hold_status_message}</div> 
+                                       		</aura:if>                                       
+                                  	 	</aura:set>                                     
+                               </aura:if>                            
+                               </td>                            
+                            </tr>
+                         </aura:iteration>                         
+                      </aura:if>
+                  </tbody>
+               </table>
+               <aura:if isTrue="{!(v.data.iipsData.length == 0)}">
+                   <div class="slds-align_absolute-center slds-p-around_xx-small slds-size--1-of-1">No IIP holds found</div>  
+               </aura:if>                 
+            </div>
+         </div>
+      </div>
+   </div>   
+   <c:DBS_Dashboard_Spinner showSpinner="{!v.data.showSpinner.iipHolds}" spinnerMsg="{!v.data.showSpinner.iipHoldsMsg}"/>    
+   <c:DBS_Dashboard_IIPHoldRelease data="{!v.data}" showOverlay="{!v.IIPHoldModal}" actionTaken="{!v.IIPHoldAction}"  selectedIIPHold="{!v.selectedIIP}" accAccOrIdNum="{!v.accAccOrIdNum}" />
+</aura:component>

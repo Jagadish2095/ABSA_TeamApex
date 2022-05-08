@@ -1,0 +1,101 @@
+<!--
+* Lightning Component for Document upload to amber
+*
+* @author  Mohammed Junaid U
+* @version v1.0
+* @since   2021-07-23
+-->
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" 
+                access="global" controller="ComplianceViewDashboardController" >
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="isUploadInit" type="Boolean" default="false" />
+    <aura:attribute name="fileName" type="String" default="No File Selected.."/>
+    <aura:attribute name="parentDocumentType" type="String" />
+    <aura:attribute name="documentSubType" type="String" default="Choose one..."/>
+    <aura:attribute name="documentSType" type="String"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="isUpload" type="Boolean" default="false" />
+    <aura:attribute name="isUploading" type="Boolean" default="true" />
+    <aura:attribute name="childDocumentPicklistValues" type="Object"/>
+    <aura:attribute name="showSmallSpinner" type="Boolean" default="false" />
+    <aura:attribute name="showError" type="Boolean" default="false" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="showStartSpinner" type="Boolean" default="true" />
+    <aura:attribute name="hanisResponse" type="HanisValidate_Resp_IB_v1"/>
+    <aura:attribute name="CPBResponse" type="CPBValidate_Resp_IB_v1"/>
+    <aura:attribute name="experianResponse" type="ExperianBusinessDetailsGet_Resp_IB_v1"/>
+    <aura:attribute name="accRec" type="Account"/>
+    <aura:attribute name="goldenSourceButton" type="Boolean" default="false" />
+    
+    <aura:if isTrue="{!v.showStartSpinner}">
+        <div class="slds-backdrop slds-backdrop_open">
+            <lightning:spinner aura:id="spinner" variant="brand" size="large"/>
+        </div>
+    </aura:if> 
+    <aura:if isTrue="{!v.isUpload}">
+        <!-- <aura:set attribute="else"> -->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container"> 
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeAll}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Upload Document</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.showError}">
+                        <div class="slds-notify_alert slds-alert_error" role="alert">
+                            <span class="slds-assistive-text">error</span>
+                            <h1>Error : Select a Document Subtype to upload</h1>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!v.showSpinner}">
+                        <lightning:spinner aura:id="spinner" variant="brand" size="large"/>
+                    </aura:if>
+                    <aura:if isTrue="{!or(v.parentDocumentType == 'ProofOfId', v.parentDocumentType == 'ProofOfAddress')}"> 
+                        <div class="slds-align_absolute-center" style="height:5rem">
+                            <button class="slds-button slds-button_brand" disabled = "{!v.goldenSourceButton}" onclick="{!c.populateDetails}">Populate Details from Golden Sources</button>
+                        </div>
+                    </aura:if>
+                    <lightning:layoutItem size="6" padding="around-small" >
+                        <p>Parent Document Type : <ui:outputTextArea aura:id="oTextarea" value="{!v.parentDocumentType}"/>
+                        </p>
+                    </lightning:layoutItem>
+                    <lightning:select name="documentType" label="Select the type for document upload." required="true"
+                                      value="{!v.documentSubType}">
+                        <option value="">Choose one...</option>
+                        <aura:iteration items="{!v.childDocumentPicklistValues}" var="item">
+                            <option value="{!item.value}">
+                                {!item}
+                            </option>
+                        </aura:iteration>
+                    </lightning:select>
+                    <lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" type="file" name="file"
+                                     accept=".pdf" label="Upload Document" multiple="false"/>
+                    <div class="slds-text-body_small slds-text-color_error">{!v.fileName}</div>
+                    <!--use aura:if for show-hide the loading spinner image-->
+                    <aura:if isTrue="{!v.showSmallSpinner}">
+                        <div class="slds-text-body_small slds-text-color_error">Uploading...
+                            <img src="/auraFW/resources/aura/images/spinner.gif" class="spinner-img" alt="Loading"/>'
+                        </div>
+                        <aura:set attribute="else">
+                            <button class="slds-button slds-button_brand" onclick="{!c.doSave}">Upload Attachment</button>
+                        </aura:set>
+                    </aura:if>
+                </div>
+                <div class="slds-modal__footer">
+                    <aura:if isTrue="{!v.isUploading}">
+                        <lightning:button variant="neutral" iconName="utility:close" label="Cancel" onclick="{!c.closeAll}"/>
+                    </aura:if>
+                </div>
+            </div>
+        </section>
+        <!--  </aura:set> -->
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!-- </aura:if> -->
+    </aura:if>
+    
+</aura:component>

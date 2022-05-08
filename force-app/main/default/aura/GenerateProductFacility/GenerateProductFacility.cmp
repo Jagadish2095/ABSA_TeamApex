@@ -1,0 +1,308 @@
+<!--
+* Lightning Component for quote generation
+* @author  Almas Aleem: Absa
+* @version v1.0
+* @since   2021-01-18
+*
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global"
+                controller="GenerateQuoteController">
+
+    <!-- Attribute Decleration -->
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="appProdId" type="Id"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />
+    <aura:attribute name="facilityWrap" type="Object" />
+    <aura:attribute name="userRecord" type="User" />
+    <aura:attribute name="facilitiesTypeOptions"  type="List"/>
+    <aura:attribute name="facilitiesOptions"  type="List" />
+    <aura:attribute name="specialConditionsOptions"  type="List" />
+    <aura:attribute name="classificationOptions"  type="List" />
+    <aura:attribute name="AddresseeOptions"  type="List" />
+    <aura:attribute name="AddresseetitleOptions"  type="List" />
+    <aura:attribute name="generalbankingfacilityOptions"  type="List" />
+    <aura:attribute name="RegpayDateOptions"  type="List" />
+    <aura:attribute name="RegularpaymentDate"  type="String" />
+    <aura:attribute name ="feeTypeOptions" type="List"/>
+     <aura:attribute name ="InterestrateTypeOptions" type="List"/>
+    <aura:attribute name="facilitiesSelected" type="String" />
+    <aura:attribute name="specialConditionsSelected"  type="String" />
+    <aura:attribute name="classificationSelected"  type="String" />
+    <aura:attribute name="isGeneralFacilitySelected"  type="String" />
+
+    <aura:attribute name="isActiveOnceOffOnly" type="Boolean" default="false" />
+    <aura:attribute name="isActiveOnceOffRecurring" type="Boolean" default="false" />
+    <aura:attribute name="isActiveVariable" type="Boolean" default="false" />
+    <aura:attribute name="selLimitTypes" type="Object" />
+    <aura:attribute name="selRedFrequency" type="Object" />
+    <aura:attribute name="LimitTypeOptions" type="list" />
+ 	<aura:attribute name="minDate" type="Date" />
+    <aura:attribute name="maxDate" type="Date" />
+    <aura:attribute name="CMSACBOptions" type="list"  />
+
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib" />
+
+
+    <lightning:accordion aura:id="accordion">
+        <lightning:accordionSection name="moreinfor" label="Overdraft - Out Of NCA">
+
+       <lightning:accordionSection name="Quotes Section" label="Product Details">
+            <lightning:layout multipleRows="true">
+
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;">Is this an CMS or ACB limit only</p>
+                    <lightning:select class="fontClass" aura:id="isGeneralFacilitySelected" name="SelectMethod" value="{!v.quoteWrap.ACBLimit}" onchange="" >
+                        <aura:iteration items="{!v.CMSACBOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:10px !important">Domicile Branch Code</p>
+                    <lightning:input class="fontClass" value="{!v.quoteWrap.domicilebranchCode}" />
+                </lightning:layoutItem>
+
+
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Facility amount</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.facilityWrap.facilityAmount}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <!--<lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;">Total </p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.facilityWrap.totalamount}"/>
+                </lightning:layoutItem>-->
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Interest rate type</p>
+                    <!--<lightning:formattedText  class="fontClass" value="{!v.facilityWrap.InterestrateType}"/>-->
+
+                     <lightning:select class="fontClass" aura:id="InterestrateTypeOptionsselected" name="SelectMethod" value="{!v.facilityWrap.InterestrateType}" >
+                        <aura:iteration items="{!v.InterestrateTypeOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;">Prime interest rate</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.facilityWrap.Primeinterestrate}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Interest rate</p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.facilityWrap.Interestrate}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Interest Rate Margin </p>
+                    <lightning:formattedNumber class="fontClass" value="{!v.facilityWrap.interestMargin}" maximumFractionDigits="2"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Penalty interest rate</p>
+                    <lightning:input type="number" class="fontClass" value="{!v.facilityWrap.penaltyinterest}" step="0.01"/>
+                </lightning:layoutItem>
+                <!---<lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Will the OD limit be decreased over time?</p>
+                    <lightning:formattedText class="fontClass" value="{!v.facilityWrap.ODLimitType}"/>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Your Overdraft Facility Limit will reduce each</p><lightning:formattedText class="fontClass" value="{!v.facilityWrap.facilityreduced}"/>
+                </lightning:layoutItem>
+                <aura:iteration items="{!v.facilityWrap.decreasemap}" var="item">
+                    <lightning:layoutItem size="6" class="productHeader">
+                        <p style="margin:5px !important;"> Decrease amount</p><lightning:formattedNumber class="fontClass" value="{!item.DecreaseAmount1}" maximumFractionDigits="2"/>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" class="productHeader">
+                        <p style="margin:5px !important;"> Decrease date</p><lightning:formattedDateTime class="fontClass" value="{!item.DecreaseDate1}"/>
+                    </lightning:layoutItem>
+                </aura:iteration>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Target Amount</p><lightning:formattedNumber class="fontClass" value="{!v.facilityWrap.targetamount}" maximumFractionDigits="2"/>
+
+                </lightning:layoutItem>-->
+           </lightning:layout>
+    		</lightning:accordionSection>
+
+				<lightning:accordionSection name="Limit Section" label="Limit Type">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" padding="horizontal-small">
+                    <lightning:select aura:id="inputNewAcc" required="true" label="Limit Type"  name="SelectMethod" class="dynamic select" value="{!v.facilityWrap.LimitType}" onchange="{!c.onLimitSelectChange}">
+                        <aura:iteration items="{!v.LimitTypeOptions}" var="limit">
+                            <option class="{!limit.class}" text="{!limit.label}" value="{!limit.value}" selected="{!limit.selected}" />
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+
+                <aura:if isTrue="{!v.isActiveOnceOffOnly}">
+
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input type="date" aura:id="inputNewAcc" required="true" label="Once-Off Date" value="{!v.facilityWrap.OnceOffDate}" min="{!v.minDate}" max="{!v.maxDate}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Once-Off Amount" value="{!v.facilityWrap.OnceOffAmount}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Target Amount" value="{!v.facilityWrap.targetAmount}" />
+                    </lightning:layoutItem>
+                </aura:if>
+                <aura:if isTrue="{!v.isActiveOnceOffRecurring}">
+                     <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:select aura:id="inputNewAcc" required="true" label="Reduction Frequency" class="dynamic" value="{!v.facilityWrap.ReductionFrequency}" >
+                            <aura:iteration items="{!v.selRedFrequency}" var="red">
+                                <option class="{!red.class}" text="{!red.label}" value="{!red.value}" selected="{!red.selected}" />
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Reduction Amount" value="{!v.facilityWrap.ReductionAmount}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input type="date" aura:id="inputNewAcc" required="true" label="Reduction Date" value="{!v.facilityWrap.ReductionDate}" min="{!v.minDate}" max="{!v.maxDate}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="horizontal-small">
+                        <lightning:input aura:id="inputNewAcc" required="true" type="number" label="Target Amount" value="{!v.facilityWrap.targetAmount}" />
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem size="6" padding="around-small">
+                    </lightning:layoutItem>
+                </aura:if>
+                <aura:if isTrue="{!v.isActiveVariable}">
+                    <lightning:layoutItem size="6" padding="around-small">
+                        <p>Variable Amounts Table</p>
+                        <table class="slds-table slds-table--cell-buffer">
+                            <thead>
+                                <tr class="slds-var-m-top_small">
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="AccountNameNumber">#</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="AccountNameNumber">Variable Amount</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="AccountType">Variable Date</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="AccountNameNumber">Target Amount</div>
+                                    </th>
+
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.facilityWrap.variablemap}" var="vData">
+                                    <tr>
+                                        <td>
+                                            {!vData.Id}
+                                        </td>
+                                        <td>
+                                            <lightning:input name="{!vData.Id}" type="number" value="{!vData.variableAmount}"  formatter="currency" step="0.01"  onchange="{!c.onSetTargetAmount}"/>
+                                        </td>
+                                        <td>
+                                            <lightning:input name="{!vData.Id}" type="date" value="{!vData.variableDate}"/> <!--  min="{!vData.MinDate}" max="{!vData.MaxDate}"  onchange="{!c.onSetMinDate}" max="{!v.quoteWrap.OverdraftLimitNewAmount}" -->
+                                        </td>
+                                         <td>
+                                            <lightning:input name="{!vData.Id}" type="number" value="{!vData.targetAmount}" formatter="currency" step="0.01"/>
+                                        </td>
+
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="6" padding="around-small">
+                    </lightning:layoutItem>
+                </aura:if>
+
+            </lightning:layout>
+
+        </lightning:accordionSection>
+                 <lightning:accordionSection name="Quotes Section" label="Fees and Dates">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Initiation fee</p><lightning:formattedNumber class="fontClass" value="{!v.facilityWrap.Initiationfees}" maximumFractionDigits="2"/>
+
+                </lightning:layoutItem>
+
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Monthly administration fee</p><lightning:formattedNumber class="fontClass" value="{!v.facilityWrap.Monthlyadministrationfee}" maximumFractionDigits="2"/>
+
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Review fees (per annum)</p><lightning:input  type="number" class="fontClass"  value="{!v.facilityWrap.Reviewfees}" step="0.01"/>
+
+                </lightning:layoutItem>
+                 <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Review Date</p> <lightning:input type="date" class="fontClass" value="{!v.facilityWrap.ReviewDate}"  />
+                </lightning:layoutItem>
+
+                 <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;">Review Fee type</p>
+                    <lightning:select class="fontClass" aura:id="feeTypeOptionsselected" name="SelectMethod" value="{!v.facilityWrap.ReviewType}" >
+                        <aura:iteration items="{!v.feeTypeOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Unutilised facility fee</p><lightning:input type="number" class="fontClass" value="{!v.facilityWrap.Unutilisedfacilityfee}" step="0.01"/>
+
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <span class="required">*</span>
+                </lightning:layoutItem>
+                    <!-- commented out by Tinashe-->
+                    <!--p style="margin:5px !important;"> The Facilities will be made available to you after you have provided us with:</p>
+                    <lightning:select class="fontClass" aura:id="facilitiesselected" name="SelectMethod"   value="{!v.facilityWrap.facilitiesSelected}" onchange="" >
+                        <aura:iteration items="{!v.facilitiesOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+
+                    <lightning:dualListbox name="facilitiesSelectedOptions"
+                                           label= "The Facilities will be made available to you after you have provided us with:"
+                                           sourceLabel="Available"
+                                           selectedLabel="Selected"
+                                           options="{!v.facilitiesOptions}"
+                                           value="{!v.facilitiesSelected}"
+                                           onchange="{!c.facilitiesSelectedOptionsChange}"/>
+
+                </lightning:layoutItem-->
+
+
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Other conditions </p><lightning:input class="fontClass" value="{!v.facilityWrap.otherConditions}"/>
+
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <p style="margin:5px !important;"> Regular payment date</p>
+                    <!--<lightning:input class="fontClass" type="date" value="{!v.facilityWrap.RegularpaymentDate}"/>-->
+                    <lightning:select  aura:id="RegularpaymentDate" name="SelectMethod" value="{!v.facilityWrap.RegularpaymentDate}" onchange="" >
+                        <aura:iteration items="{!v.RegpayDateOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <lightning:layoutItem size="6" class="productHeader">
+                    <span class="required">*</span>
+                    <p style="margin:5px !important;"> Economic empowerment classification</p>
+                    <lightning:select class="fontClass" aura:id="classificationselected" name="SelectMethod" value="{!v.facilityWrap.classificationSelected}"  >
+                        <aura:iteration items="{!v.classificationOptions}" var="item">
+                            <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                        </aura:iteration>
+                    </lightning:select>
+
+                </lightning:layoutItem>
+                     </lightning:layout>
+          </lightning:accordionSection>
+            </lightning:accordionSection>
+    </lightning:accordion>
+            <lightning:button variant="brand" type="submit" name="save" label="Save" aura:id="decisionbutton" onclick="{!c.saveFacility}"/>
+            <br/><br/>
+            <div class="slds-grid">
+                <div class="slds-col slds-size_1-of-3">
+                    <c:documentStub documenttemplate= "ABSA 6157 EX - OD Facility Letter" recordId="{!v.appProdId}"/> <!-- Added by Tinashe-->
+                </div>
+            </div>
+
+</aura:component>

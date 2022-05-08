@@ -1,0 +1,70 @@
+<!--
+* Lightning Component for Onboarding Merchant Business Details (MerchantBusinessDetails)
+*
+* @author  Jason Quevauvilliers
+* @version v1.0
+* @since   2020-04-02
+*
+-->
+<aura:component access="global"
+                controller="MerchantSalesActivityController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}" />
+
+    <!-- Parent Cmp Attribute Declaration -->
+    <aura:attribute name="cmpFormStatus" type="String" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="activeSections" type="List" default="['BusinessDetails']" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="applicationId" type="String" default=""/>
+    <aura:attribute name="isShowSuccessToast" type="Boolean" />
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['estatementEmail', 'estatementSourceOfFunds']" />
+    <aura:attribute name="errorMessage" type="String" default=""/>
+
+    <!-- Method Declaration -->
+    <aura:method name="saveFormMethod" action="{!c.executeSaveFormMethod}" />
+
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="BusinessDetails" label="Business Details" >
+
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="recordError">
+                    <br/>
+                    <h2 class="slds-section__title slds-align_absolute-left" style="color:red">{!v.errorMessage}</h2>
+                    <br/>
+                </div>
+            </aura:if>
+
+            <lightning:recordEditForm aura:id="merchantBusinessDetailsForm"
+                                      objectApiName="Application__c"
+                                      recordId="{!v.applicationId}"
+                                      onsubmit="{!c.handleSubmit}"
+                                      onsuccess="{!c.handleSuccess}"
+                                      onerror="{!c.handleError}" >
+
+                <lightning:layout multipleRows="true">
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <!--Source_of_Funds_Savings__c is Dependent on Client_Entity_Type__c so it needs to be on the form. But Client_Entity_Type__c is already populated-->
+                        <lightning:inputField aura:id="estatementClientEntityType" fieldName="Client_Entity_Type__c" class="slds-hide"/>
+                        <lightning:inputField aura:id="estatementSourceOfFunds" fieldName="Source_of_Funds_Savings__c" disabled="{!v.isFormReadOnly}" required="true" />
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <lightning:inputField aura:id="estatementEmail" fieldName="Merchant_Estatements_Email_Address__c" disabled="{!v.isFormReadOnly}" required="true" />
+                    </lightning:layoutItem>
+
+                    <lightning:layoutItem padding="around-small" size="12">
+                        <lightning:button aura:id="savebtn" type="submit" label="Save" variant="brand" disabled="{!or(empty(v.applicationId), v.isFormReadOnly)}" class="slds-align_absolute-center slds-m-top_xx-large"/>
+                    </lightning:layoutItem>
+
+                </lightning:layout>
+            </lightning:recordEditForm>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

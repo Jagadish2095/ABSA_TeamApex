@@ -1,0 +1,174 @@
+<!--@author Jagadish Thummala-->
+<!--@Created Date 6/05/2022 -->
+<!--@Work Id:  -->
+<aura:component controller="CreditCardCustomerDetailsController"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName">
+    <!---Attributes-->
+    <aura:attribute name="AddressCertificate" type="string" access="public" />
+    <aura:attribute name="responseFromCpb" type="Object" access="public" />
+    <aura:attribute name="residentialAddressline1" type="string" access="public" />
+    <aura:attribute name="residentialAddressline2" type="string" access="public" />
+    <aura:attribute name="residentialAddressline3" type="string" access="public" />
+    <aura:attribute name="residentialAddressline4" type="string" access="public" />
+    <aura:attribute name="residentialStatus" type="string" access="public" />
+    <aura:attribute name="postalCode" type="string" access="public" />
+    <aura:attribute name="residentialInformation" type="Map" default="" />
+    <aura:attribute name="recordId" type="String" access="public" default="" />
+    <aura:attribute name="isEdit" type="boolean" default="true" />
+    <aura:attribute name="identityInfo" type="Object" default="" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+
+    <!--Methods-->
+    <aura:method name="collectResidentialInformationFromCPB" action="{!c.getCPBaddress}"
+        description="A method to collect the Residential Information from CPB">
+    </aura:method>
+    <aura:method name="collectModifiedResidentialInformation" action="{!c.getModifiedInformation}"
+        description="A method to collect the modified Residential Information">
+    </aura:method>
+
+
+    <!---Handlers-->
+    <aura:handler name="change" value="{!v.identityInfo}" action="{!c.assignResidentialInformation}" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <!-- <aura:attribute name="AccountId" type="string" default="0013O00000rHQ7MQAW" /> -->
+    <aura:if isTrue="{!v.showSpinner}">
+        <center style="z-index: 99">
+            <lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+        </center>
+    </aura:if>
+    <!--Display Errors-->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+            <br />
+        </div>
+    </aura:if>
+    <br />
+    <div class="c-container">
+        <aura:if isTrue="{!v.isEdit}">
+            <lightning:layout>
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <div class="custom-box">
+                        <label for="Residential Address Line 1">Residential Address Line 1</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText value="{!v.residentialAddressline1}" />
+                        <button onclick="{!c.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Residential Address Line 1">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="Residential Address Line 2">Residential Address Line 2</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText value="{!v.residentialAddressline2}" />
+                        <button onclick="{!c.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Residential Address Line 2">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="SA Suburb/Foreign Town">SA Suburb/Foreign Town</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText value="{!v.residentialAddressline3}" />
+                        <button onclick="{!c.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="SA Suburb/Foreign Town">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+
+                </lightning:layoutItem>
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <div class="custom-box">
+                        <label for="SA City/Town/Foreign Country">SA City/Town/Foreign Country</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText value="{!v.residentialAddressline4}" />
+                        <button onclick="{!c.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="SA City/Town/Foreign Country">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="SA Postal Code">SA Postal Code</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText value="{!v.postalCode}" />
+                        <button onclick="{!c.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="SA Postal Code">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="Residential Status">Residential Status</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText value="{!v.ResidentialStatus}" />
+                        <button onclick="{!c.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Residential Status">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="Time lived at this address">Time lived at this address</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText value="{!v.Timelivedatthisddress}" />
+                        <button onclick="{!c.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Time lived at this address">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>
+            <aura:set attribute="else">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="horizontal-small" size="6">
+                        <div class="custom-box slds-border_bottom">
+                            <lightning:input type="text" label="Residential Address Line 1"
+                                value="{!v.residentialAddressline1}" required="true" />
+                        </div>
+                        <div class="custom-box slds-border_bottom">
+                            <lightning:input type="text" label="SA Suburb/Foreign Town"
+                                value="{!v.residentialAddressline3}" required="true" />
+                        </div>
+                        <div class="custom-box slds-border_bottom">
+                            <lightning:input type="text" label="SA Postal Code" value="{!v.postalCode}"
+                                required="true" />
+                        </div>
+                        <div class="custom-box slds-border_bottom">
+                            <lightning:input type="text" label="Residential Status" value="{!v.residentialStatus}"
+                                required="true" />
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="horizontal-small" size="6">
+                        <div class="custom-box slds-border_bottom">
+                            <lightning:input type="text" label="Residential Address Line 2"
+                                value="{!v.residentialAddressline2}" required="true" />
+                        </div>
+                        <div class="custom-box slds-border_bottom">
+                            <lightning:input type="text" label="SA City/Town/Foreign Country"
+                                value="{!v.residentialAddressline4}" required="true" />
+                        </div>
+                        <div class="custom-box slds-border_bottom">
+                            <lightning:input type="text" label="Time Lived at this address" value="{!v.postalCountry}"
+                                required="true" />
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </aura:set>
+        </aura:if>
+    </div>
+</aura:component>

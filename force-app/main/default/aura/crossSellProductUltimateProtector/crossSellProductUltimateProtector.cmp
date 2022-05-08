@@ -1,0 +1,255 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" controller="CrossSellProductsController" access="global">
+   
+    <!--quoteeditattrib-->
+    <aura:attribute name="showQuoteEdit" type="boolean" default="false"/>
+    <aura:attribute name="updateQuoteScreenClose" type="boolean" default="false"/>
+    
+    <aura:attribute name="opportunityDetails" type="Opportunity" default="{sobjectType:'Opportunity'}"/>
+    <aura:attribute name="OppPrtyDetails" type="object"/>
+    <aura:attribute name="oppPartyDetailsList" type="object[]"/>
+    <aura:attribute name="pricingMatrix" type="EPP_Pricing_Matrix__c" default="{sobjectType:'EPP_Pricing_Matrix__c'}"/>
+    <aura:attribute name="activeSections" type="List" default="['A','B','D','C']" />
+    <aura:attribute name="options" type="List" default="[{'label': 'Yes', 'value': 'Yes'},
+                                                            {'label': 'No', 'value': 'No'} ]"/>
+
+
+    <aura:attribute name="coverage" type = "String"/>
+    <aura:attribute name="Premium" type="Double" />
+    <aura:attribute name="policySession" type="String"/>                                                   
+    <aura:attribute name="accidentalDeathBenefitOptions" type="List"/>
+    <aura:attribute name="deathBenifitOptions" type="List"/>
+    <aura:attribute name="accidentalDeathBenefitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="deathBenifitPremium" type="Double" default="0.00"/>
+    <aura:attribute name="policyFee" type="Double" default="0.00"/>
+    <aura:attribute name="totalPremium" type="Double" default="0.00"/>
+    <aura:attribute name="quoteStatus" type="String" />
+    <aura:attribute name="totalPremiumLbl" type="String" default="Total Premium: R0.00"/>
+    <!--# Question Atributs-->
+    <aura:attribute name="quest1" type="String" description="question 1" default="Within the last 5 years, have you been declined, deferred or accepted with special terms by a life insurance company? (For Example, have you had to pay a higher premium or had exclusions applied to your policy)." />
+    <aura:attribute name="quest2" type="String" description="question 2" default="Have you ever suffered from or are you on treatment for, heart disease, chest pain, stroke, diabetes, high blood pressure, lung disease, raised cholesterol, cancer, kidney disease, any liver disorder or tested positive for HIV?"/>
+    <aura:attribute name="quest3" type="String" description="question 3" default="Do you have any disabling disorder such as: Blindness, deafness, paralysis, missing limb(s), joint problems, back problems or any form of mental illness such as major depression?"/>
+    <!--Questoin response-->
+    <aura:attribute name="quest1Res" type="String" default='' />
+    <aura:attribute name="quest2Res" type="String"  default=''/>
+    <aura:attribute name="quest3Res" type="String" default='' />
+	<aura:registerEvent name="navigateFlowEvent" type="c:navigateFlowEvt"/>
+    <aura:attribute name="availableActions" type="String[]" />
+	<aura:attribute name="selectedDeath" type="String"/>
+    <aura:attribute name="selectedAccidentalDeathBenifit" type="String"/>
+    <aura:attribute name="showBenfit" type="Boolean" default="false"/>
+
+    <aura:attribute name="showDeathDisablity" type="Boolean" default="false"/>
+    <aura:attribute name="showAccidentalDeathDisablity" type="Boolean" default="false"/>
+    <aura:attribute name="selectedDeathDisablity" type="Boolean" default="false"/>
+    <aura:attribute name="selectedAccidentalDeathDisablity" type="Boolean" default="false"/>
+    <aura:attribute name="isQuoteDone" type="Boolean" default="true"/>
+    <aura:attribute name="showUpScreen" type="Boolean" default="false"/>
+    <aura:attribute name="showErrorScreen" type="Boolean" default="false"/>
+
+    <aura:attribute name="accountNotValid" type="boolean" default="true"/>
+    <aura:attribute name="accountInValidReason" type="String"/>
+    <!--# Flow Attribute -->
+    <aura:attribute name="selectedProductFromFlow" type="String" />
+    <aura:attribute name="QuoteFromFlow" type="String"  />
+    <aura:attribute name="OpportunityFromFlow" type="String"  default="0060E00000fGTAUQA4"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="large"/>
+        </div>
+    </aura:if>
+
+    <aura:attribute name="showSpinner2" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner2}">
+        <lightning:spinner aura:id="spin" variant="brand" size="medium"/>
+    </aura:if>
+    <h1 class="slds-section__title"><b>Ultimate Protector Product</b></h1>
+        <aura:if isTrue="{!v.showErrorScreen}">
+        <lightning:layout multipleRows="true" class="slds-notify slds-notify_toast slds-theme_error">
+            <div class="slds-notify__content">
+                <h6 class="slds-text-heading_small">Error Message </h6>
+                <br/>
+                <p class="slds-align_absolute-center">Person with age 60 and more years are not eligibile for Ulimate Protector Cover</p>
+            </div>
+        </lightning:layout>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.accountNotValid}">
+        <lightning:layout multipleRows="true" class="slds-notify slds-notify_toast slds-theme_error">
+            <div class="slds-notify__content">
+                <h6 class="slds-text-heading_small">Error Message </h6>
+                <br/>
+                <p class="slds-align_absolute-center">{!v.accountInValidReason}</p>
+            </div>
+            <lightning:layoutItem size="12">
+                <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Refresh" onclick="{!c.doInit}"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </aura:if>
+
+  <aura:if isTrue ="{!v.showUpScreen}">
+    <lightning:accordion  allowMultipleSectionsOpen="true"   activeSectionName="{! v.activeSections }" >
+        <lightning:accordionSection name="A" label="Personal Details">
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">CIF Number :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.CIF_Number__c}"/>
+                     <!--<lightning:input aura:id="updateForm" value="{!v.opportunityDetails.CIF_Number__c}" label="CIF Number"  disabled="true"/>
+                     --></lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">Id Number :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.ID_Number__c}" />
+                   <!--  <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.ID_Number__c}" label="Id Number"  disabled="true"/>
+                    --></lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">Passport Number :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Person_Passport_Number__c}" />
+                     <!--<lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Passport_Number__c}" label="Passport Number"  disabled="true"/>
+                     --></lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">CASA Ref :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.CASA_Reference_Number__c}" />
+                    <!-- <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.CASA_Reference_Number__c}" label="CASA Ref"  disabled="true"/>
+                    --></lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">Sur Name :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Person_Account_Last_Name__c}" />
+                    <!--  <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Account_Last_Name__c}" label="SurName"  disabled="true"/>
+                    --></lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">First Name :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Person_Account_First_Name__c}" />
+                     <!-- <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Account_First_Name__c}" label="First Name"  disabled="true"/>
+                     --></lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">Marital Status :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Person_Marital_Status__c}" />
+                   <!--   <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Marital_Status__c}" label="Marital Status"  disabled="true"/>
+                   --></lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">Occupation :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Person_Occupation__c}" />
+                  <!--    <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Occupation__c}" label="Occupation"  disabled="true"/>
+                  --> </lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">Language :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Person_Language__c}" />
+                   <!--   <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Language__c}" label="Language"  disabled="true"/>
+                   --></lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">Gender :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Person_Account_Gender__c}" />
+                  <!--    <lightning:input aura:id="updateForm" value="{!v.opportunityDetails.Person_Account_Gender__c}" label="Gender"  disabled="true"/>
+                  --></lightning:layoutItem>
+                </lightning:layout> 
+        </lightning:accordionSection>
+        <lightning:accordionSection name="D" label="Source of Income /Funds">
+            <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">Source Of Income :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Income_Source__c}" />
+                  </lightning:layoutItem>
+                  <lightning:layoutItem padding="around-small" size="5">
+                    <label class="slds-form-element__label" for="text-input-id-1" id="inline-text-label">Source Of Fund :</label>
+                    <ui:outputText aura:id="text-input-id-1" class="field" value="{!v.opportunityDetails.Source_Of_Fund__c}" />
+                 </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="B" label="Health Questions">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem padding="around-small" size="10">
+                            <lightning:radioGroup  name="radioGroup1"  label="{!v.quest1}" options="{!v.options}" value="{!v.quest1Res }" type="radio" onchange="{! c.handleChange }" class="customRadioCls"/> 
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="10">
+                            <lightning:radioGroup name="radioGroup2"  label="{!v.quest2}" options="{!v.options}" value="{!v.quest2Res }" type="radio" onchange="{! c.handleChange }"/> 
+                            </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="10">
+                            <lightning:radioGroup name="radioGroup3"  label="{!v.quest3}" options="{!v.options}" value="{! v.quest3Res }" type="radio" onchange="{! c.handleChange }"/> 
+                            </lightning:layoutItem>
+                    </lightning:layout>
+                </lightning:accordionSection>
+                <aura:if isTrue="{!v.showBenfit}">
+                <lightning:accordionSection name="C" label="Benefits">
+                    
+                 <lightning:layout multipleRows="true">
+                    <aura:if isTrue="{!v.showDeathDisablity}">
+                        <lightning:layoutItem padding="around-small" size="8">
+                        <lightning:input type="checkbox" label="Death and Accidental Disability" name="input2" checked="{!v.selectedDeathDisablity}" required="true" disabled="true"/>
+                        </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:select aura:id="deathDisablity" name="DeathandAccidentalDisability" label="Cover" value="{!v.coverage}" onchange="{!c.onPicklistDeathDisableChange}" required="true">
+                                <aura:iteration items="{!v.deathBenifitOptions}" var="item">
+                                    <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem class="slds-p-left_small" size="12">
+			                Premium :R <ui:outputText value="{!v.Premium}"/>
+                        </lightning:layoutItem>
+                            <lightning:layoutItem padding="around-small" size="12">
+                                <b><ui:outputText value="{!v.totalPremiumLbl}"/></b>
+                            </lightning:layoutItem>
+                    </aura:if>  
+
+                    <aura:if isTrue="{!v.showAccidentalDeathDisablity}">
+                        <lightning:layoutItem padding="around-small" size="8">
+                            <lightning:input type="checkbox" label="Accidental Death Benifit and Accidental Disability" name="input2" checked="{!v.selectedAccidentalDeathDisablity}" required="true" disabled="true"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="5">
+                            <lightning:select aura:id="accidentalDeathDisablity" name="AccidentalDeathBenifitandAccidentalDisability " label="Cover" value="{!v.coverage}" onchange="{!c.onPicklistAccidentalDeathDisableChange}" required="true">
+                                <aura:iteration items="{!v.accidentalDeathBenefitOptions}" var="item">
+                                    <option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+                                </aura:iteration>
+                            </lightning:select>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem class="slds-p-left_small" size="12">
+			                Premium :R <ui:outputText value="{!v.Premium}"/>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem padding="around-small" size="12">
+                                <b><ui:outputText value="{!v.totalPremiumLbl}"/></b>
+                            </lightning:layoutItem>
+                    </aura:if>
+                    </lightning:layout>
+                
+                </lightning:accordionSection>
+            </aura:if>
+</lightning:accordion>
+</aura:if>
+<br/>
+     <lightning:recordEditForm aura:id="iCreateOpportunity" objectApiName="Opportunity" recordId="{!v.OpportunityFromFlow}">
+            <lightning:layout>
+               <lightning:layoutItem padding="around-small" size="12">
+                     <lightning:inputField class="magnifyLabel" fieldName="Quote_Outcome__c" aura:id="Quote_Outcome__c" value="{!v.opportunityDetails.Quote_Outcome__c}" disabled="{!v.readOnlyFields}" required="true" onchange="{!c.onOutcomeChange}"/>
+                   <aura:if isTrue="{!v.isQuoteDone}">
+                       <lightning:input  class="magnifyLabel"  label="Quote Outcome Reason" aura:id="Last_Name__c" value="{!v.opportunityDetails.Quote_Outcome_Reason__c}" disabled="{!v.readOnlyFields}" /> 
+                   <aura:set attribute="else">
+                     <lightning:inputField class="magnifyLabel" fieldName="Quote_Outcome_Reason__c" aura:id="Quote_Outcome_Reason__c" value="{!v.opportunityDetails.Quote_Outcome_Reason__c}" disabled="{!v.readOnlyFields}" />
+                   </aura:set>
+                   </aura:if>
+               </lightning:layoutItem>
+        </lightning:layout>
+        </lightning:recordEditForm>
+<div class="slds-float_right" style ="display: inline-block;">
+     <div >
+<aura:if isTrue="{!v.showQuoteEdit}">
+                <lightning:button variant="brand" label="Quote" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+                <aura:set attribute="else"> 
+       <!-- <lightning:button  variant="brand" label="Previous" aura:id="BACK" onclick="{!c.handleChangePrev}"/>-->
+        <aura:if isTrue="{!v.isQuoteDone}">
+             <lightning:button variant="brand" label="Next" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+        <aura:set attribute="else">
+             <lightning:button variant="brand" label="Quote" aura:id="NEXT" onclick="{!c.handleChangeNext}"/>
+        </aura:set>
+         </aura:if>
+                </aura:set>
+            </aura:if>
+    </div>
+</div>
+<br/>
+<br/>
+
+
+</aura:component>

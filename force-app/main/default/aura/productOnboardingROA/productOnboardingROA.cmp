@@ -1,0 +1,121 @@
+<aura:component controller="productOnboardingController"
+    implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global" >
+
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+
+    <!-- Attribute Decleration -->
+    <aura:attribute name="recordId" type="String" default="" access="public" />
+    <aura:attribute name="applicationId" type="String" default="" />
+    <aura:attribute name="underSupervisionValue" type="String" default="" />
+    <aura:attribute name="adviceGivenValue" type="String" default="" />
+    <aura:attribute name="productReplacementValue" type="String" default="" />
+    <aura:attribute name="activeSections" type="List" default="['recordOFAdvice']" />
+    <aura:attribute name="redioGroupOptions" type="List" default="[
+                                                              {'label': 'Yes', 'value': 'YES'},
+                                                              {'label': 'No', 'value': 'NO'}
+                                                              ]"/>
+
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true">
+        <lightning:accordionSection name="recordOFAdvice" label="Record of Advice (ROA) Questions">
+            <aura:if isTrue="{!not(empty(v.applicationId))}">
+            <lightning:recordEditForm aura:id="roaForm" objectApiName="Application__c" recordId="{!v.applicationId}"
+                onload="{!c.onload}" onsuccess="{!c.handleSuccess}" onerror="{!c.handleError}">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span>
+                            <lightning:radioGroup aura:id="underSuperVision"
+                                label="Is the individual that sold this product to the client under supervision for the product type"
+                                options="{!v.redioGroupOptions}" value="{!v.underSupervisionValue}"
+                                onchange="{!c.isUnderSupervision}" type="button" />
+                                <lightning:inputField aura:id="underSuper" fieldName="Client_Under_Supervision__c" class="slds-hide"/>
+                            <lightning:radioGroup aura:id="adviceGivenGroup" label="Advice Given"
+                             options="{!v.redioGroupOptions}" value="{!v.adviceGivenValue}" onchange="{!c.isAdviceGiven}" type="button" />
+                            <lightning:inputField aura:id="advice" fieldName="Advice_Given__c" class="slds-hide"/>
+                            <aura:if isTrue="{!(v.adviceGivenValue == 'YES')}">
+                                <aura:if isTrue="{!or(v.underSupervisionValue == 'YES',v.underSupervisionValue == 'NO')}">
+                                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                                        <div class="slds-col slds-size_2-of-2">
+                                            <h2>Details of Client </h2>
+                                            <lightning:inputField aura:id="delegatesMeetingDate" fieldName="Meeting_Date__c" />
+                                            <lightning:inputField aura:id="delegatesAtMeeting" fieldName="Delegates_at_Meeting__c"/>
+                                            <lightning:inputField aura:id="netAssetValue" fieldName="Net_Asset_Value__c" />
+                                            <lightning:inputField aura:id="currentSituation"  fieldName="Current_Situation__c" />
+                                            <lightning:inputField aura:id="currentProductXP"  fieldName="Current_Finacial_Product_Experience__c" />
+                                            <lightning:inputField aura:id="needsOrObjectives" fieldName="Needs_or_Objectives__c" />
+                                            <h2>Consideration</h2>
+                                            <lightning:inputField aura:id="typicalmacroOrSectorial" fieldName="Macro_or_Sectorial_Firm__c"/>
+                                            <lightning:inputField aura:id="othermacroOrSectorial" fieldName="Other_Macro_or_Sectorial_Comments__c" />
+                                            <lightning:inputField aura:id="generalNotes" fieldName="General_Notes__c" />
+                                            <lightning:inputField aura:id="priorProduct"  fieldName="Did_Client_Select_Product__c" />
+                                            <h2>Product Considered</h2>
+                                            <lightning:inputField aura:id="productConsidered" fieldName="Produts_Considered__c"/>
+                                            <lightning:inputField aura:id="productRecommended" fieldName="Product_Recommended_to_Client__c"/>
+                                            <lightning:inputField aura:id="reasonNotRecommended" fieldName="Reason_why_Recommended_not_Recommended__c" />
+                                            <h2>Presentation Information</h2>
+                                            <lightning:inputField aura:id="presentationName" fieldName="Presentation_Name__c" />
+                                            <lightning:inputField aura:id="presentationGroupName" fieldName="Presentation_Group_Name__c"/>
+                                            <lightning:inputField aura:id="presentationDate" fieldName="Presentation_Date__c" />
+                                            <lightning:inputField aura:id="presentationLocation" fieldName="Presentation_Location__c" />
+                                            <lightning:inputField aura:id="presentationFolioNo" fieldName="Presentation_Folio_Number__c" />
+                                            <h2>Client Confirmation</h2>
+                                            <lightning:inputField aura:id="firstName" fieldName="First_Name__c" />
+                                            <lightning:inputField aura:id="surname" fieldName="Surname__c" />
+                                            <lightning:inputField aura:id="designation" fieldName="Designation__c" />
+                                            <lightning:inputField aura:id="dateVal" fieldName="Date__c" />
+                                        </div>
+                                    </div>
+                                </aura:if>
+                            </aura:if>
+                            <aura:if isTrue="{!(v.adviceGivenValue == 'NO')}">
+                                <lightning:radioGroup aura:id="productReplacementGroup"
+                                    label="Is this product replacing an existing product "
+                                options="{!v.redioGroupOptions}" value="{!v.productReplacementValue}" onchange="{!c.replacingProduct}" type="button" />
+                                <lightning:inputField aura:id="productReplacement" fieldName="Replacing_an_Existing_Product__c" class="slds-hide"/>
+                                <aura:if isTrue="{!(v.productReplacementValue == 'YES')}">
+                                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                                        <div class="slds-col slds-size_2-of-2">
+                                            <h2>Details of Client </h2>
+                                            <lightning:inputField aura:id="delegatesMeetingDate" fieldName="Meeting_Date__c" />
+                                            <lightning:inputField aura:id="delegatesAtMeeting" fieldName="Delegates_at_Meeting__c"/>
+                                            <lightning:inputField aura:id="netAssetValue" fieldName="Net_Asset_Value__c" />
+                                            <lightning:inputField aura:id="currentSituation"  fieldName="Current_Situation__c" />
+                                            <lightning:inputField aura:id="currentProductXP"  fieldName="Current_Finacial_Product_Experience__c" />
+                                            <lightning:inputField aura:id="needsOrObjectives" fieldName="Needs_or_Objectives__c" />
+                                            <h2>Consideration</h2>
+                                            <lightning:inputField aura:id="typicalmacroOrSectorial" fieldName="Macro_or_Sectorial_Firm__c"/>
+                                            <lightning:inputField aura:id="othermacroOrSectorial" fieldName="Other_Macro_or_Sectorial_Comments__c" />
+                                            <lightning:inputField aura:id="generalNotes" fieldName="General_Notes__c" />
+                                            <lightning:inputField aura:id="priorProduct"  fieldName="Did_Client_Select_Product__c" />
+                                            <h2>Product Considered</h2>
+                                            <lightning:inputField aura:id="productConsidered" fieldName="Produts_Considered__c"/>
+                                            <lightning:inputField aura:id="productRecommended" fieldName="Product_Recommended_to_Client__c"/>
+                                            <lightning:inputField aura:id="reasonNotRecommended" fieldName="Reason_why_Recommended_not_Recommended__c" />
+                                            <h2>Presentation Information</h2>
+                                            <lightning:inputField aura:id="presentationName" fieldName="Presentation_Name__c" />
+                                            <lightning:inputField aura:id="presentationGroupName" fieldName="Presentation_Group_Name__c"/>
+                                            <lightning:inputField aura:id="presentationDate" fieldName="Presentation_Date__c" />
+                                            <lightning:inputField aura:id="presentationLocation" fieldName="Presentation_Location__c" />
+                                            <lightning:inputField aura:id="presentationFolioNo" fieldName="Presentation_Folio_Number__c" />
+                                            <h2>Client Confirmation</h2>
+                                            <lightning:inputField aura:id="firstName" fieldName="First_Name__c" />
+                                            <lightning:inputField aura:id="surname" fieldName="Surname__c" />
+                                            <lightning:inputField aura:id="designation" fieldName="Designation__c" />
+                                            <lightning:inputField aura:id="dateVal" fieldName="Date__c" />
+                                        </div>
+                                    </div>
+                                </aura:if>
+                            </aura:if>
+                        </span>
+                    </div>
+                </div>
+                <div class="slds-size_1-of-1">
+                    <lightning:button aura:id="savebtn" type="submit" label="Save ROA" variant="brand"
+                        class="slds-align_absolute-center slds-m-top_xx-small" />
+                </div>
+            </lightning:recordEditForm>
+        </aura:if>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

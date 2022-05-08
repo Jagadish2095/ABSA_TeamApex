@@ -1,0 +1,77 @@
+<!--
+* Lightning Component for selecting a beneficiary linked to a combi card
+*
+* @author  Danie Booysen
+* @version v1.0
+* @since   2021-03-25
+*
+-->
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+	access="global"
+	controller="BeneficiarySelectionApex"
+>
+	<!--Handler Declaration-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<!--Attributes-->
+	<aura:attribute name="activeCombiAccList" type="List" />
+	<aura:attribute name="accBeneficiaryList" type="List" />
+	<aura:attribute name="selectedCombiValue" type="string" default="" />
+	<aura:attribute name="showTable" type="boolean" default="false" />
+	<aura:attribute name="clientAccountIdFromFlow" type="String" access="global" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+
+	<!--Display Errors-->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+
+	<!--Spinner-->
+	<aura:if isTrue="{!v.showSpinner}">
+		<center style="z-index: 99">
+			<lightning:spinner aura:id="TheSpinner" variant="brand" size="large" />
+		</center>
+	</aura:if>
+
+	<div class="slds-hide">
+		<c:CIGetAccountLinkedToClientCodeCmp
+			aura:id="hiddenComp"
+			showHeading="false"
+			clientAccountIdFromFlow="{!v.clientAccountIdFromFlow}"
+			errorMessage="{!v.errorMessage}"
+			activeCombiAccList="{!v.activeCombiAccList}"
+		/>
+	</div>
+
+	<!--Combi Card Selection-->
+	<lightning:layout>
+		<lightning:layoutItem padding="around-small" size="6" flexibility="auto">
+			<div size="50%">
+				<lightning:select
+					value="{!v.selectedCombiValue}"
+					class="select-auto-width"
+					aura:id="combiselection"
+					onchange="{!c.onSelectCombiAccount}"
+					label="Select Combi Account"
+					required="true"
+				>
+					<option value="">--None--</option>
+					<aura:iteration items="{!v.activeCombiAccList}" var="combiAccDet" indexVar="key">
+						<option value="{!combiAccDet}">{!combiAccDet}</option>
+					</aura:iteration>
+				</lightning:select>
+			</div>
+		</lightning:layoutItem> </lightning:layout
+	><br />
+
+	<!--Results display and search-->
+	<aura:if isTrue="{!v.showTable}">
+		<c:SmartSearchClientSide aura:id="searchBen" dataToDisplay="{!v.accBeneficiaryList}" />
+	</aura:if>
+</aura:component>

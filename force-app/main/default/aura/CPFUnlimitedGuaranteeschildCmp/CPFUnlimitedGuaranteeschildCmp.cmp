@@ -1,0 +1,311 @@
+<!--
+  @description       : 
+  @author            : 
+  @last modified on  : 2021-06-30
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-06-30      Initial Version
+-->
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="accItem" type="Application_Security_CPF__c" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="isunLimited" type="string" />
+    <aura:attribute name="newUnLimitedGaurantee" type="Application_Security_CPF__c[]" />
+    <aura:attribute name="isActiveRemoveAccount" type="Boolean" default="false" />
+    <aura:attribute name="unlimrowindex" type="String" />
+    <aura:attribute name="showTobeReleasedOptions" type="String" />
+    <aura:attribute name="showIncAddOptions" type="String" />
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading..." />
+        </div>
+    </aura:if>
+    <!-- Register Application Events -->
+    <aura:registerEvent name="CPFLimitedandUnlimitedGauranteesevent" type="c:CPFLimitedandUnlimitedGauranteesevent"/>
+    <!--<lightning:accordion activeSectionName="UnLimited Guarantees" allowMultipleSectionsOpen="false">
+        <lightning:accordionSection name="UnLimitedGuarantees" label="UnLimited Guarantees" >-->
+    <aura:if isTrue="{!v.isunLimited =='New'}">
+        <lightning:recordEditForm aura:id="isecurityOfferedCpfRecord" objectApiName="Application_Security_CPF__c"  >
+            
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <p>Unlimited guarantee number</p>
+                        <ui:outputText aura:id="unlimuniqueID" value="{!v.unlimrowindex + 1}"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove This Account" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+                        <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                            <lightning:button class="slds-float_right" label="Remove Account" variant="brand" onclick="{!c.removeUnlimitedAccount}" />
+                        </aura:if>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Guarantor name</span>
+                            <lightning:helptext icon-name="utility:like" content="Guarantee by [INSERT GUARANTOR NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)], dated [DATE]" />
+                        </label>
+                        
+                        <lightning:inputField fieldName="Guarantor_name__c" aura:id="inputunlimiGuarName" value="{!v.accItem.Guarantor_name__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Guarantor registration number</span>
+                            <lightning:helptext icon-name="utility:like" content="Guarantee by [INSERT GUARANTOR NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)], dated [DATE]" />
+                        </label>
+                        <lightning:inputField fieldName="Guarantor_registration_number__c" aura:id="inpunlimiGuarRegNmbr" value="{!v.accItem.Guarantor_registration_number__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Session_of_claims_and_loans_accounts__c" aura:id="unlimisessionclaimsloansId" value="{!v.accItem.Session_of_claims_and_loans_accounts__c}" required="true"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="CPA_document_version__c" aura:id="InputunlimiCPAdoc" value="{!v.accItem.CPA_document_version__c}" required="true"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">To be released</span>
+                            <lightning:helptext icon-name="utility:like" content="Option: [To be released within [NUMBER] months of Option: [the registration of the Mortgage Bond(s)] / [first drawdown].]" />
+                        </label>
+                        <!--<lightning:inputField fieldName="To_be_released__c" aura:id="InputUnlimitoBereleased" value="{!v.accItem.To_be_released__c}" onchange="{!c.OnchangetobeReleased}"/>-->
+                        <c:DynamicPicklistValueRenderer aura:id="InputUnlimitoBereleased"
+                                                        picklistfieldName="To_be_released__c"
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.To_be_released__c}" default="No"
+                                                        />
+                    </span>
+                </div>
+                <aura:if isTrue="{!v.accItem.To_be_released__c =='Yes'}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="When_to_release_months__c" aura:id="InpUnlimiwentorelease" value="{!v.accItem.When_to_release_months__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Release_condition__c" aura:id="InpUnlimireleaseCondtn" value="{!v.accItem.Release_condition__c}" required="true"/>
+                        </span>
+                    </div>
+                    
+                </aura:if>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Include address</span>
+                            <lightning:helptext icon-name="utility:like" content="Capture domicilium address for Notices." />
+                        </label>
+                        <!--<lightning:inputField fieldName="Include_address__c" aura:id="InputUnlimiIncAdd" value="{!v.accItem.Include_address__c}" onchange="{!c.OnchangeIncludeAdd}"/>-->
+                        <c:DynamicPicklistValueRenderer aura:id="InputUnlimiIncAdd"
+                                                        picklistfieldName="Include_address__c"
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.Include_address__c}" default="No"
+                                                        disabled="true"/>
+                    </span>
+                </div>
+                <aura:if isTrue="{!v.accItem.Include_address__c =='Yes'}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Guarantor_email_address_for_notices__c" aura:id="InUnlimiemailfornotice" value="{!v.accItem.Guarantor_email_address_for_notices__c}" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Address_line_1__c" aura:id="InpUnlimiAddressLine1" value="{!v.accItem.Address_line_1__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Address_line_2__c" aura:id="InpUnlimiAddressLine2" value="{!v.accItem.Address_line_2__c}"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Suburb__c" aura:id="InpUnlimiSuburb" value="{!v.accItem.Suburb__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="City__c" aura:id="InpUnlimiCity" value="{!v.accItem.City__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Postal_Code__c" aura:id="InpUnlimiPostalCode" value="{!v.accItem.Postal_Code__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Country__c" aura:id="InpUnlimiCountry" value="{!v.accItem.Country__c}" required="true"/>
+                        </span>
+                    </div>
+                </aura:if>
+                
+            </div>
+        </lightning:recordEditForm>
+    </aura:if>
+    <aura:if isTrue="{!v.isunLimited =='Existing'}">
+        <lightning:recordEditForm aura:id="isecurityOfferedCpfRecord" objectApiName="Application_Security_CPF__c"  >
+            
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <p>Unlimited guarantee number</p>
+                        <ui:outputText aura:id="unlimuniqueID" value="{!v.unlimrowindex + 1}"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove This Account" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+                        <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                            <lightning:button class="slds-float_right" label="Remove Account" variant="brand" onclick="{!c.removeUnlimitedAccount}" />
+                        </aura:if>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Guarantor name</span>
+                            <lightning:helptext icon-name="utility:like" content="Guarantee by [INSERT GUARANTOR NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)], dated [DATE]" />
+                        </label>
+                        
+                        <lightning:inputField fieldName="Guarantor_name__c" aura:id="inputunlimiGuarName" value="{!v.accItem.Guarantor_name__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Guarantor registration number</span>
+                            <lightning:helptext icon-name="utility:like" content="Guarantee by [INSERT GUARANTOR NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)], dated [DATE]" />
+                        </label>
+                        <lightning:inputField fieldName="Guarantor_registration_number__c" aura:id="inpunlimiGuarRegNmbr" value="{!v.accItem.Guarantor_registration_number__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Session_of_claims_and_loans_accounts__c" aura:id="unlimisessionclaimsloansId" value="{!v.accItem.Session_of_claims_and_loans_accounts__c}" required="true"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            
+                            <span class="required">* </span>
+                            
+                            <span class="slds-m-right_small">Date registered</span>
+                            <lightning:helptext icon-name="utility:like" content="Guarantee by [INSERT GUARANTOR NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)], dated [DATE]" />
+                        </label>
+                        
+                        <lightning:inputField fieldName="Date_registered__c" aura:id="Inputunlimidatereg" value="{!v.accItem.Date_registered__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">To be released</span>
+                            <lightning:helptext icon-name="utility:like" content="Option: [To be released within [NUMBER] months of Option: [the registration of the Mortgage Bond(s)] / [first drawdown].]" />
+                        </label>
+                        <!--<lightning:inputField fieldName="To_be_released__c" aura:id="InputUnlimitoBereleased" value="{!v.accItem.To_be_released__c}" onchange="{!c.OnchangetobeReleased}"/>-->
+                        <c:DynamicPicklistValueRenderer aura:id="InputUnlimitoBereleased"
+                                                        picklistfieldName="To_be_released__c"
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.To_be_released__c}"
+                                                        />
+                    </span>
+                </div>
+                <aura:if isTrue="{!v.accItem.To_be_released__c =='Yes'}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="When_to_release_months__c" aura:id="InpUnlimiwentorelease" value="{!v.accItem.When_to_release_months__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Release_condition__c" aura:id="InpUnlimireleaseCondtn" value="{!v.accItem.Release_condition__c}" required="true"/>
+                        </span>
+                    </div>
+                    
+                </aura:if>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Include address</span>
+                            <lightning:helptext icon-name="utility:like" content="If Yes: Guarantor/(s)’ domicilium citandi et executandi and address for notices:" />
+                        </label>
+                        <!--<lightning:inputField fieldName="Include_address__c" aura:id="InputUnlimiIncAdd" value="{!v.accItem.Include_address__c}" onchange="{!c.OnchangeIncludeAdd}"/>-->
+                        <c:DynamicPicklistValueRenderer aura:id="InputUnlimiIncAdd"
+                                                        picklistfieldName="Include_address__c"
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.Include_address__c}"
+                                                        disabled="true"/>
+                    </span>
+                </div>
+                <aura:if isTrue="{!v.accItem.Include_address__c =='Yes'}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Guarantor_email_address_for_notices__c" aura:id="InUnlimiemailfornotice" value="{!v.accItem.Guarantor_email_address_for_notices__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Address_line_1__c" aura:id="InpUnlimiAddressLine1" value="{!v.accItem.Address_line_1__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Address_line_2__c" aura:id="InpUnlimiAddressLine2" value="{!v.accItem.Address_line_2__c}"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Suburb__c" aura:id="InpUnlimiSuburb" value="{!v.accItem.Suburb__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="City__c" aura:id="InpUnlimiCity" value="{!v.accItem.City__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Postal_Code__c" aura:id="InpUnlimiPostalCode" value="{!v.accItem.Postal_Code__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Country__c" aura:id="InpUnlimiCountry" value="{!v.accItem.Country__c}" required="true"/>
+                        </span>
+                    </div>
+                </aura:if>
+                
+            </div>
+        </lightning:recordEditForm>
+    </aura:if>
+    <!--</lightning:accordionSection>
+    </lightning:accordion>-->
+</aura:component>

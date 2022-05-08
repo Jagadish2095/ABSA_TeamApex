@@ -1,0 +1,135 @@
+<!--/*
+* Lightning Component ABSAOnlineStatementSearch
+*
+* @author  Srikanth : Absa
+* @version v2.0
+* @since   2020-10-20
+*
+*/-->
+<aura:component
+	controller="ABSAOnlineStatementSearchController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction,flexipage:availableForAllPageTypes"
+	access="global"
+>
+	<lightning:workspaceAPI aura:id="workspace" />
+
+	<!--Handler Declaration-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<!--Attribute Declaration-->
+	<aura:attribute name="isRateChange" type="Boolean" access="global" />
+	<aura:attribute name="caseIdFromFlow" type="String" access="global" />
+	<aura:attribute name="SelectedAccNumberFromFlow" type="String" access="global" />
+	<aura:attribute name="clientAccountIdFromFlow" type="String" access="global" />
+	<aura:attribute name="cifKey" type="String" access="global" />
+	<aura:attribute name="SelectedaccountTypeFromFlow" type="String" access="global" />
+	<aura:attribute name="startDate" type="String" access="global" />
+	<aura:attribute name="endDate" type="String" access="global" />
+	<aura:attribute name="responseWrapper" type="Object" access="global" />
+	<aura:attribute name="jsStg" type="String" access="global" />
+	<aura:attribute name="today" type="Date" />
+	<aura:attribute name="selectedAccountList" type="String" access="global" />
+	<aura:attribute name="selectedDocList" type="String[]" access="global" />
+	<aura:attribute name="showStatmentDeatilsSection" type="boolean" access="global" default="true" />
+	<aura:attribute name="responseList" type="object" access="global" />
+	<aura:attribute name="docResoponseList" type="List" access="global" />
+	<aura:attribute name="columns" type="List" />
+	<aura:attribute name="showSpinner" type="boolean" default="false" />
+	<aura:attribute name="serviceGroup" type="String" />
+	<aura:attribute name="emailTemplateName" type="String" />
+
+	<!--Added by Nagpalsing Girase 09/07/2021 -->
+	<aura:attribute name="taxYear" type="String" access="global" />
+
+	<!--Start of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+	<aura:handler name="change" value="{!v.clientIDnVObjectParent}" action="{!c.handleObjectChange}" />
+	<aura:attribute name="clientIDnVObjectParent" type="Map" default="{}" />
+	<aura:attribute name="allowClientIDnVPolling" type="Boolean" default="false" />
+	<aura:attribute name="clientCifCodeParent" type="Boolean" default="false" />
+
+	<!-- changes made for Ford/Avaf Indicator by Mradul  W-014878 for Monthly Statements-->
+	<c:FordAvafIndicator aura:id="fordAvaf" accountNumber="{!v.SelectedAccNumberFromFlow}" caseId="{!v.caseIdFromFlow}" />
+
+	<aura:if isTrue="{!v.allowClientIDnVPolling}">
+		<c:ClientIDnVPolling clientIDnVObject="{!v.clientIDnVObjectParent}" cifCodeFromParentCmp="{!v.clientCifCodeParent}" />
+	</aura:if>
+
+	<lightning:recordEditForm
+		aura:id="caseEditFormIDnV"
+		objectApiName="Case"
+		recordId="{!v.caseIdFromFlow}"
+		onload="{!c.handleCaseLoadIDnV}"
+		onsuccess="{!c.handleCaseSuccessIDnV}"
+	>
+		<lightning:inputField aura:id="statusFieldIDnV" fieldName="Status" class="slds-hide" />
+		<lightning:inputField aura:id="serviceGroupFieldIDnV" fieldName="sd_Service_Group__c" class="slds-hide" />
+		<lightning:inputField aura:id="clientCIFFieldIDnV" fieldName="Client_CIF_Number__c" class="slds-hide" />
+		<lightning:inputField aura:id="caseNumberFieldIDnV" fieldName="CaseNumber" class="slds-hide" />
+	</lightning:recordEditForm>
+	<!--End of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+
+	<!--Start of AVAF/FORD Monthly Statement. MSONI.W-010350, W-013235. 2021/07/06-->
+	<lightning:recordEditForm aura:id="caseSubjectEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}">
+		<lightning:inputField aura:id="caseSubjectField" fieldName="Subject" class="slds-hide" />
+		<lightning:inputField aura:id="caseType__cField" fieldName="Type__c" class="slds-hide" />
+	</lightning:recordEditForm>
+	<!--End of AVAF/FORD Monthly Statement. MSONI.W-010350, W-013235. 2021/07/06-->
+	<div class="slds">
+		<lightning:card title="">
+			<h3 class="slds-section__title">
+				<span class="slds-truncate slds-button slds-section__title-action" title="Account Selection">Account Selection</span>
+			</h3>
+			<aura:if isTrue="{!v.showSpinner}">
+				<center style="z-index: 99">
+					<lightning:spinner aura:id="TheSpinner" variant="brand" size="large" />
+				</center>
+			</aura:if>
+			<lightning:layout multipleRows="true">
+				<aura:if isTrue="{!v.showStatmentDeatilsSection}">
+					<lightning:layoutItem size="12" padding="around-small">
+						<lightning:input name="input1" label="Account Number" value="{!v.SelectedAccNumberFromFlow}" disabled="false" />
+					</lightning:layoutItem>
+					<lightning:layoutItem size="12" padding="around-small">
+						<lightning:input name="input1" label="CIF Key" value="{!v.cifKey}" disabled="false" />
+					</lightning:layoutItem>
+					<lightning:layoutItem size="12" padding="around-small">
+						<lightning:input name="input1" label="Account Type" value="{!v.SelectedaccountTypeFromFlow}" disabled="false" />
+					</lightning:layoutItem>
+					<lightning:layoutItem size="12" padding="around-small">
+						<lightning:input type="date" name="input1" label="start Date" value="{!v.startDate}" max="{!v.today}" aura:id="startDate" />
+					</lightning:layoutItem>
+					<lightning:layoutItem size="12" padding="around-small">
+						<lightning:input type="date" name="input1" label="end Date" enabled="false" value="{!v.endDate}" max="{!v.today}" />
+					</lightning:layoutItem>
+					<lightning:layoutItem size="12" padding="around-small">
+						<lightning:button aura:id="submitButton" variant="brand" label="Search" title="Base action" onclick="{! c.submit }" />
+					</lightning:layoutItem>
+				</aura:if>
+			</lightning:layout>
+
+			You can select up to 6 statements from the list
+
+			<aura:if isTrue="{!v.responseList.length >0}">
+				<lightning:datatable
+					keyField="id"
+					maxRowSelection="6"
+					data="{!v.responseList }"
+					columns="{!v.columns }"
+					hideCheckboxColumn="false"
+					minColumnWidth="100px"
+					onrowselection="{!c.getSelectedRow}"
+					resizeStep="5px"
+					class="count"
+				/>
+
+				<aura:set attribute="else">
+					<p class="slds-text-heading_medium font-weight-bold"></p>
+					<br /><br />
+				</aura:set>
+			</aura:if>
+			<aura:if isTrue="{!v.selectedDocList.length > 0 }">
+				<lightning:button aura:id="getPdfButton" variant="brand" label="Get PDF" title="Get PDF" onclick="{!c.getAttachment}" />
+			</aura:if>
+		</lightning:card>
+	</div>
+</aura:component>

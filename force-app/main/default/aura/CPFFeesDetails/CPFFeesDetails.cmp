@@ -1,0 +1,431 @@
+<!--
+  @description       : 
+  @author            : 
+  @last modified on  : 2021-07-08
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-07-08      Initial Version
+-->
+<aura:component controller="CPFFeesDetailsController" implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" /> 
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="appPrdctCpfRec" type="Object" />
+    <aura:attribute name="showAdminFee" type="Boolean" default="false"/>
+    <aura:attribute name="ValAmt" type="String" />
+    <aura:attribute name="IncAdminFeeTot" type="String"/>
+    <aura:attribute name="showAValuationAmt" type="Boolean" default="false"/>   
+    <aura:attribute name="showEarlyTermFields" type="Boolean" default="false"/> 
+    <aura:attribute name="showPrepaymentFields" type="Boolean" default="false"/> 
+    <aura:attribute name="AdminFeeValue" type="String" default="No"/> 
+    <aura:attribute name="PrePaymentFee" type="String" default="No"/>
+    <aura:attribute name="ValuationFee" type="String" default="No"/>
+    <aura:attribute name="Latebondregpenaltyval" type="String" default="No"/>
+    <aura:attribute name="Cancellationafteracceptanceclauseval" type="String" default="No"/>
+    <aura:attribute name="otherfeesapplicableval" type="String" default="No"/>
+    <aura:attribute name="earlyTermFeeYear1" type="decimal" /> <!--default="3"-->
+    <aura:attribute name="earlyTermFeeYear2" type="decimal" />
+    <aura:attribute name="earlyTermFeeYear3" type="decimal" />
+    <aura:attribute name="prodName" type="string" /> 
+    <aura:attribute name="newOtherfees" type="list" />
+    <aura:attribute name="newFeesOther" type="Application_Fees__c[]" />
+    <aura:attribute name="IncludeAminTotFacility" type="String" default="No"/>
+    <aura:attribute name="IncludeAminTotFacility2" type="String" default="No"/>
+    <aura:attribute name="EarlyTerminationFee" type="String" default="No"/>
+    <aura:attribute name="DefaultEarlyTeminationFee" type="String"/>
+    
+    <aura:handler name="CPFLimitedandUnlimitedGauranteesevent" event="c:CPFLimitedandUnlimitedGauranteesevent" action="{!c.handleOthefeesApplicationEvent}"/>
+ 
+    
+    <lightning:recordEditForm
+                              aura:id="iApplicationRecord" 
+                              objectApiName="Application_Product_CPF__c" 
+                              recordId="{!v.appPrdctCpfRec.Id}" 
+                              onError ="{!c.handleSaveError}"
+                              onSuccess ="{!c.handleSuccess}"
+                              >   
+        <lightning:accordion>
+            <lightning:accordionSection name="FeesDetails" label="Fees Details">
+                <div class="slds-grid slds-wrap slds-gutters_medium"> 
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >  
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Cancellation fee payable (% of loan amount)</span>
+                                <lightning:helptext icon-name="utility:like" content="[NUMBER]% of the Facility Amount payable if all the Conditions Precedent are not fulfilled, or waived by the Bank, within 60 (sixty) days of the Signature Date] " />
+                            </label>
+                            <lightning:inputField fieldName="Cancellation_fee_payable__c"  aura:id="cancelFee" variant="label-hidden" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Admin Fee</span>
+                                <lightning:helptext icon-name="utility:like" content="R[AMOUNT] which is payable Option: [on Signature Date]/[on first drawdown of the Facility]/[by debit to the [Current Account]/ [Loan Account]." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Admin_fee__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            value="{!v.AdminFeeValue}"
+                                                            /> 
+                            
+                        </span>
+                    </div>
+                    <!--<aura:if isTrue="{!v.showAdminFee}">-->
+                    <aura:if isTrue="{!v.AdminFeeValue == 'Yes'}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >  
+                                <lightning:inputField fieldName="Admin_fee_amount__c"  aura:id="adminAmt"/> 
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >   
+                                <lightning:inputField fieldName="Payable__c"  aura:id="payable"/> 
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Include Admin fee in total facility</span>
+                                    <lightning:helptext icon-name="utility:like" content="Select Yes if the Admin fee must also be included in the Total Facility Amount." />
+                                </label>
+                                <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                picklistfieldName="Include_admin_fee_in_total_facility__c" 
+                                                                objectName="Application_Product_CPF__c"
+                                                                value="{!v.IncludeAminTotFacility}"
+                                                                /> 
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >   
+                                <lightning:inputField fieldName="Account_type__c"  aura:id="accType"/> 
+                            </span>
+                        </div>
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >  
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Restructure fee(%)</span>
+                                <lightning:helptext icon-name="utility:like" content="Option [NUMBER]% of the amount outstanding at the time, if the terms of the Facility are restructured as a result of an Event of Default or at the request of the Borrower." />
+                            </label>
+                            <lightning:inputField fieldName="Restructure_fee__c" aura:id="restruFee" variant="label-hidden" />
+                        </span>
+                    </div>  
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >  
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Commitment fee(%)</span>
+                                <lightning:helptext icon-name="utility:like" content="Commitment Fee: [NUMBER]% of the undrawn/uncancelled portion of the Facility Amount." />
+                            </label>
+                            <lightning:inputField fieldName="Commitment_Fee__c" aura:id="commFee" variant = "label-hidden" />
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Valuation fee</span>
+                                <lightning:helptext icon-name="utility:like" content="Valuation Fee: R[AMOUNT]" />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Valuation_fee__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            picklistLabelName=""
+                                                            value="{!v.ValuationFee}"
+                                                            
+                                                            /> 
+                        </span></div>
+                    
+                    <aura:if isTrue="{!or(v.ValuationFee =='Yes', v.ValuationFee =='Yes exluding VAT' )}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Valuation fee amount</span>
+                                    <lightning:helptext icon-name="utility:like" content="R[AMOUNT]" />
+                                </label>
+                                <lightning:inputField fieldName="Valuation_fee_amount__c" aura:id="valFeeAmt" variant = "label-hidden" value="{!v.ValAmt}"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Include Valuation fee in total facility</span>
+                                    <lightning:helptext icon-name="utility:like" content="Select Yes if the Admin fee must also be included in the Total Facility Amount." />
+                                </label>
+                                <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                picklistfieldName="Include_admin_fee_in_total_facility2__c" 
+                                                                objectName="Application_Product_CPF__c"
+                                                                value="{!v.IncludeAminTotFacility2}"
+                                                                /> 
+                            </span>
+                        </div>
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >  
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Flexi facility (%)</span>
+                                <lightning:helptext icon-name="utility:like" content="R[AMOUNT]" />
+                            </label>
+                            <lightning:inputField fieldName="Flexi_facility__c" aura:id="flexiFacility" variant="label-hidden"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Early termination fee</span>
+                                <lightning:helptext icon-name="utility:like" content="Early Termination Fee if the Facility (or any part thereof) is cancelled or terminated for any reason whatsoever after the first Drawdown date as follows:
+                                                                                      i) during Year 1: 3% (excl. VAT) of the total loan amount = [AMOUNT ];
+                                                                                      ii) during Year 2: 2% (excl. VAT) of the total loan amount = [AMOUNT ]; and
+                                                                                      iii) during Year 3: 1% (excl. VAT) of the total loan amount = [AMOUNT ]." />
+                            </label>
+                            
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Early_termination_fee__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            picklistLabelName=""
+                                                            value="{!v.EarlyTerminationFee}"
+                                                            
+                                                            /> 
+                        </span>
+                    </div>
+                    <aura:if isTrue="{!and(v.EarlyTerminationFee=='Yes' ,v.prodName == 'CPF Below R5 Million')}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span > 
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early termination fee year 1</span>
+                                    <lightning:helptext icon-name="utility:like" content="Early Termination Fee if the Facility (or any part thereof) is cancelled or terminated for any reason whatsoever after the first Drawdown date as follows:
+                                                                                          i) during Year 1: 3% (excl. VAT) of the total loan amount = [AMOUNT ]" />
+                                </label>
+                                <lightning:inputField fieldName="Early_termination_fee_year_1__c" aura:id="earlyTermFeeYr1" value="{!v.earlyTermFeeYear1}" disabled = "true" variant= "label-hidden" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >  
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early termination fee year 2</span>
+                                    <lightning:helptext icon-name="utility:like" content="Early Termination Fee if the Facility (or any part thereof) is cancelled or terminated for any reason whatsoever after the first Drawdown date as follows:
+                                                                                          ii) during Year 2: 2% (excl. VAT) of the total loan amount = [AMOUNT ];" />
+                                </label>
+                                <lightning:inputField fieldName="Early_termination_fee_year_2__c" aura:id="earlyTermFeeYr2" value="{!v.earlyTermFeeYear2}" disabled = "true" variant="label-hidden" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early termination fee year 3</span>
+                                    <lightning:helptext icon-name="utility:like" content="Early Termination Fee if the Facility (or any part thereof) is cancelled or terminated for any reason whatsoever after the first Drawdown date as follows:
+                                                                                          iii) during Year 3: 1% (excl. VAT) of the total loan amount = [AMOUNT ]" />
+                                </label>
+                                <lightning:inputField fieldName="Early_termination_fee_year_3__c" aura:id="earlyTermFeeYr3" value="{!v.earlyTermFeeYear3}" disabled = "true" variant= "label-hidden" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >  
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early termination fee further year</span>
+                                    <lightning:helptext icon-name="utility:like" content="Capture any other early termination fee for further years." />
+                                </label>
+                                <lightning:inputField fieldName="Early_termination_fee_further_years__c" aura:id="earlyTermFeeFurtherYrs" variant="label-hidden" />
+                            </span>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.EarlyTerminationFee=='Yes' ,v.prodName == 'CPF Above R5 Million')}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span > 
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early termination fee year 1</span>
+                                    <lightning:helptext icon-name="utility:like" content="Early Termination Fee if the Facility (or any part thereof) is cancelled or terminated for any reason whatsoever after the first Drawdown date as follows:
+                                                                                          i) during Year 1: 3% (excl. VAT) of the total loan amount = [AMOUNT ]" />
+                                </label>
+                                <lightning:inputField fieldName="Early_termination_fee_year_1__c" aura:id="earlyTermFeeYr1"  variant= "label-hidden" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >  
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early termination fee year 2</span>
+                                    <lightning:helptext icon-name="utility:like" content="Early Termination Fee if the Facility (or any part thereof) is cancelled or terminated for any reason whatsoever after the first Drawdown date as follows:
+                                                                                          ii) during Year 2: 2% (excl. VAT) of the total loan amount = [AMOUNT ];" />
+                                </label>
+                                <lightning:inputField fieldName="Early_termination_fee_year_2__c" aura:id="earlyTermFeeYr2"   variant="label-hidden" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early termination fee year 3</span>
+                                    <lightning:helptext icon-name="utility:like" content="Early Termination Fee if the Facility (or any part thereof) is cancelled or terminated for any reason whatsoever after the first Drawdown date as follows:
+                                                                                          iii) during Year 3: 1% (excl. VAT) of the total loan amount = [AMOUNT ]" />
+                                </label>
+                                <lightning:inputField fieldName="Early_termination_fee_year_3__c" aura:id="earlyTermFeeYr3" variant= "label-hidden" />
+                            </span>
+                        </div>
+                      <div class="slds-col slds-size_1-of-2">
+                            <span >  
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early termination fee further year</span>
+                                    <lightning:helptext icon-name="utility:like" content="Capture any other early termination fee for further years." />
+                                </label>
+                                <lightning:inputField fieldName="Early_termination_fee_further_years__c" aura:id="earlyTermFeeFurtherYrs" variant="label-hidden" />
+                            </span>
+                        </div>
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Prepayment fee</span>
+                                <lightning:helptext icon-name="utility:like" content="Prepayment Fee if the Facility (or any part thereof) is prepaid for any reason whatsoever after the first Drawdown date as follows:
+                                                                                      i) [NUMBER]% of the Facility Amount prepaid during Year 1];
+                                                                                      ii) [NUMBER]% of the Facility Amount prepaid during Year 2]; and
+                                                                                      iii) [NUMBER]% of the Facility Amount prepaid during Year 3]" />
+                            </label>
+                            
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Prepayment_fee__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            picklistLabelName=""
+                                                            value="{!v.PrePaymentFee}"
+                                                            
+                                                            /> 
+                        </span>
+                    </div>
+                    <aura:if isTrue="{!v.PrePaymentFee =='Yes'}">
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >  
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early prepayment fee year 1</span>
+                                    <lightning:helptext icon-name="utility:like" content="Prepayment Fee if the Facility (or any part thereof) is prepaid for any reason whatsoever after the first Drawdown date as follows:
+                                                                                          i) [NUMBER]% of the Facility Amount prepaid during Year 1];" />
+                                </label>
+                                <lightning:inputField fieldName="Early_prepayment_fee_year_1__c" aura:id="earlyPrepFeeYr1" variant="label-hidden" />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >  
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early prepayment fee year 2</span>
+                                    <lightning:helptext icon-name="utility:like" content="Prepayment Fee if the Facility (or any part thereof) is prepaid for any reason whatsoever after the first Drawdown date as follows:
+                                                                                          i) [NUMBER]% of the Facility Amount prepaid during Year 2];" />
+                                </label>
+                                <lightning:inputField fieldName="Early_prepayment_fee_year_2__c" aura:id="earlyPrepFeeYr2" variant="label-hidden"/>
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >  
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Early prepayment fee year 3</span>
+                                    <lightning:helptext icon-name="utility:like" content="Prepayment Fee if the Facility (or any part thereof) is prepaid for any reason whatsoever after the first Drawdown date as follows:
+                                                                                          i) [NUMBER]% of the Facility Amount prepaid during Year 3];" />
+                                </label>
+                                <lightning:inputField fieldName="Early_prepayment_fee_year_3__c" aura:id="earlyPrepFeeYr3" variant="label-hidden"/>
+                            </span>
+                        </div>
+                        <!-- <div class="slds-col slds-size_1-of-2">
+                    <span >  
+                        <label class="slds-form-element__label">
+                          <span class="slds-m-right_small">Early prepayment fee further years</span>
+                                           <lightning:helptext icon-name="utility:like" content="Capture any other early prepayment fee for further years." />
+                </label>
+                        <lightning:inputField fieldName="Early_prepayment_fee_further_years__c" aura:id="earlyprepaymentFeeFurtherYrs" variant="label-hidden" />
+                    </span>
+                </div> -->
+                    </aura:if>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Cancellation after acceptance clause</span>
+                                <lightning:helptext icon-name="utility:like" content="If the Borrower cancels this Facility after signature of this Commercial Terms then the Borrower will nevertheless be liable for payment on demand of the Bank’s administration fees as well as any wasted costs incurred by the registration attorney in preparation of loan and security documentation.  The Borrower shall be liable for payment of the Property Valuation irrespective of whether or not the Borrower signs this Commercial Terms." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Cancellation_after_acceptance_clause__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            picklistLabelName=""
+                                                            value="{!v.Cancellationafteracceptanceclauseval}"
+                                                            
+                                                            /> 
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <label class="slds-form-element__label">
+                                <span class="slds-m-right_small">Late bond registration penalty</span>
+                                <lightning:helptext icon-name="utility:like" content="Should the Bank’s Mortgage Bond not be registered within a period of 60 days of the Signature Date, the Bank may (at its discretion) charge the Borrower an additional fee of 1% (one percent) per annum of the Facility Amount, levied from the date 60 days from the Signature Date until the date on which the Mortgage Bond(s) is registered, on a pro rata basis." />
+                            </label>
+                            <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                            picklistfieldName="Late_bond_registration_penalty__c" 
+                                                            objectName="Application_Product_CPF__c"
+                                                            picklistLabelName=""
+                                                            value="{!v.Latebondregpenaltyval}"
+                                                            
+                                                            /> 
+                        </span>
+                    </div>
+                    <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Other Fees Applicable</span>
+                                    <lightning:helptext icon-name="utility:like" content="Select Yes if other fees are applicable to this Loan" />
+                                </label>
+                                <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                picklistfieldName="Other_fees_applicable__c" 
+                                                                objectName="Application_Product_CPF__c"
+                                                                picklistLabelName=""
+                                                                value="{!v.otherfeesapplicableval}"
+                                                                disabled="true"
+                                                                /> 
+                            </span>
+                        </div>
+                    </aura:if>
+                    <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  > 
+                        <div class="slds-col slds-size_1-of-2">
+                            <span >
+                                <label class="slds-form-element__label">
+                                    <span class="slds-m-right_small">Other Fees Applicable</span>
+                                    <lightning:helptext icon-name="utility:like" content="Select Yes if other fees are applicable to this Loan" />
+                                </label>
+                                <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist" 
+                                                                picklistfieldName="Other_fees_applicable__c" 
+                                                                objectName="Application_Product_CPF__c"
+                                                                picklistLabelName=""
+                                                                value="{!v.otherfeesapplicableval}"
+                                                                /> 
+                            </span>
+                        </div>
+              <aura:if isTrue="{!v.otherfeesapplicableval=='Yes'}">
+               <aura:iteration items="{!v.newOtherfees}" var="nOtherFeesItem" indexVar="index">
+                    <c:CPFOtherFees aura:id="newotherfeesId" otherfeesItem="{!nOtherFeesItem}" rowindex="{!index}" otherfees="{!v.newFeesOther}"
+                                    OppRecId="{!v.recordId}" Type="Fees Details"/>
+                </aura:iteration> 
+                <div class="slds-col slds-size_1-of-2">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                    </span>
+                </div>            
+                <div class="slds-col slds-size_1-of-2">
+                    <span class="slds-m-top_medium">
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                            <lightning:button label="Add Other Fees" onclick="{!c.addOtherfees}" variant="brand" aura:id="ibtn1" disabled="true"/>
+                        </aura:if>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  > 
+                            <lightning:button label="Add Other Fees" onclick="{!c.addOtherfees}" variant="brand" aura:id="ibtn1" />
+                        </aura:if>
+                    </span>
+                </div>
+                </aura:if> 
+            </aura:if>
+                <br><br></br></br>
+                <div class="slds-col slds-size_1-of-1">
+                    <span class="slds-m-top_medium; slds-align_absolute-center">
+                        <aura:if  isTrue="{!v.prodName == 'CPF Below R5 Million'}"  > 
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherfeesSubmit}" variant="brand" aura:id="ibtn1" />
+                        </aura:if>
+                        <aura:if  isTrue="{!v.prodName == 'CPF Above R5 Million'}"  > 
+                            <lightning:button label="Save &amp; Validate" onclick="{!c.handleOtherfeesSubmit}" variant="brand" aura:id="ibtn1" />
+                        </aura:if>
+                    </span>
+                </div>
+                   </div>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </lightning:recordEditForm>
+</aura:component>

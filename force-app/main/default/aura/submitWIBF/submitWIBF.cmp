@@ -1,0 +1,122 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForAllPageTypes" controller="SubmitWibfController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+    
+    <aura:attribute name="opportunity" type="Opportunity" default="{sobjectType:'Opportunity'}"/>
+
+    <aura:attribute name="showSubmitScreen" type="boolean" default="true"/>
+    <aura:attribute name="showInvalidScreen" type="boolean" default="false"/>
+    
+    <aura:attribute name="showValidateButton" type="boolean" default="true"/>
+    <aura:attribute name="showPRIButton" type="boolean" default="false"/>
+    <aura:attribute name="showSubmitButton" type="boolean" default="false"/>
+    <aura:attribute name="showUltimateProtector" type="boolean" default="false"/>
+    <aura:attribute name="isDirectDelivery" type="boolean" default="false"/>
+    <aura:attribute name="submittedToBackOffice" type="boolean" default="false"/>
+
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showSubmitScreen}">
+        <lightning:layout multipleRows="true">
+            
+            <aura:if isTrue="{!v.showUltimateProtector}">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12">
+                        <h2 class="slds-section__title">Submit to WBIF</h2>
+                    </lightning:layoutItem>
+                </lightning:layout>
+                <aura:set attribute="else">
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem size="12">
+                            <h2 class="slds-section__title">Close Opportunity</h2>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </aura:set>
+            </aura:if>
+ 
+            <aura:if isTrue="{!v.opportunity.WBIF_Validate_Status__c == 'Incomplete'}">
+                <lightning:layoutItem size="12">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <lightning:icon iconName="action:close" size="small"/>
+                            WBIF Validation Errors
+                        </aura:set>
+                        <aura:set  attribute="footer">
+                            <div class="outputTextArea">
+                                <ui:outputTextArea aura:id="oTextarea" value="{!v.opportunity.WBIF_Last_Error_Message__c}"/>
+                            </div>
+                        </aura:set>
+                        Last Error Date: <ui:outputDateTime value="{!v.opportunity.WBIF_Last_Error_Date__c}"></ui:outputDateTime> 
+                    </lightning:card>
+                </lightning:layoutItem>
+            </aura:if>
+            
+            <aura:if isTrue="{!v.opportunity.WBIF_Submit_Status__c == 'Valid'}">
+                <lightning:layoutItem size="12">
+                    <lightning:card>
+                        <aura:set attribute="title">
+                            <aura:if isTrue="{!v.submittedToBackOffice}">
+                                <lightning:icon iconName="utility:warning" size="small"/>
+                                Submitted to Back Office
+                                
+                                <aura:set attribute="else">
+                                    <lightning:icon iconName="action:approval" size="small"/>
+                                	WBIF Successfully Submitted
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                        <aura:set  attribute="footer">
+                            <div class="outputTextArea">
+                                <ui:outputText value="{!'Policy Number: ' + v.opportunity.WBIF_Policy_Number__c}"/>
+                                <br/>
+                                <br/>
+                                <ui:outputTextArea aura:id="oTextarea" value="{!v.opportunity.WBIF_Submit_Message__c}"/>
+                            </div>
+                        </aura:set>
+                    </lightning:card>
+                </lightning:layoutItem>
+            </aura:if>
+            
+            <aura:if isTrue="{!v.opportunity.WBIF_Submit_Status__c != 'Valid'}">
+                <aura:if isTrue="{!v.showValidateButton}">
+                        <lightning:layoutItem size="12">
+                            <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Validate" onclick="{!c.validate}"/>
+                        </lightning:layoutItem>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.showPRIButton}">
+                    <lightning:layoutItem size="12">
+                        <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Get PRI Number" onclick="{!c.priNumber}"/>
+                    </lightning:layoutItem>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.showSubmitButton}">
+                    <lightning:layoutItem size="12">
+                        <lightning:button class="slds-m-top_small slds-float--right" variant="brand" label="Submit" onclick="{!c.submit}"/>
+                    </lightning:layoutItem>
+                </aura:if>
+            </aura:if>
+        </lightning:layout>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showInvalidScreen}">
+        <lightning:layout multipleRows="true">
+            <aura:if isTrue="{!v.opportunity.RecordType.Name == 'Direct Delivery Sales Opportunity'}">
+                <lightning:layoutItem size="12">
+                	<p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:close" alternativeText="Not Done" /> Please complete the Verbal Disclosures for the products selected.</p>            
+            	</lightning:layoutItem>
+            <aura:set attribute="else">
+            	<lightning:layoutItem size="12">
+                	<p style="font-size:16px"><lightning:icon size="xx-small" iconName="action:close" alternativeText="Not Done" /> The Declaration has not been done yet, please complete this first.</p>            
+            	</lightning:layoutItem>
+            </aura:set>
+            </aura:if>
+        </lightning:layout>
+    </aura:if>
+</aura:component>

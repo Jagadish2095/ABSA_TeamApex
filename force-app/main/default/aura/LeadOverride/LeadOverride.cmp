@@ -1,0 +1,1426 @@
+<!--
+* Lead Override to include Client Finder
+*
+* @author  Tracy de Bruin : CloudSmiths
+* @since   2019-01-30
+-->
+
+<aura:component
+	controller="LeadOverrideController"
+	implements="lightning:isUrlAddressable,lightning:hasPageReference,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasSObjectName"
+	access="global"
+>
+	<lightning:workspaceAPI aura:id="workspace" />
+	<lightning:navigation aura:id="navId" />
+	<!--added for direct deivery-->
+	<!-- Handlers -->
+	<aura:handler event="c:setClientInfo" action="{!c.setClientValue}" />
+	<aura:handler event="c:setContactInfo" action="{!c.setContactValue}" />
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<!--added by Poornima -->
+	<aura:handler name="change" value="{!v.selectedLookUpRecord}" action="{!c.handleSelectedLookUpRecord}" />
+
+	<!-- Attributes -->
+	<!--added by Poornima -->
+	<aura:attribute name="selectedLookUpRecord" type="Contact" default="{}" />
+	<aura:attribute name="isIndvClient" type="Boolean" default="true" />
+	<!-- Attributes -->
+	<aura:attribute
+		name="clientRecord"
+		type="Account"
+		default="{'sobjectType': 'Account',
+                                                                'Id': '',
+                                                                'Salutation' : '',
+                                                                'FirstName': '',
+                                                                'LastName': '',
+                                                                'Phone': '',
+                                                                'PersonMobilePhone': '',
+                                                                'PersonEmail': '',
+                                                                'CIF__c': '',
+                                                                'RecordTypeId':'',
+                                                                'Name' : '',
+                                                                'isPersonAccount':'',
+                                                                'PersonContactId' : ''
+                                                                }"
+	/>
+	<aura:attribute
+		name="contactRecord"
+		type="Contact"
+		default="{
+                                                                 'SObjectType': 'Contact',
+                                                                 'FirstName': '',
+                                                                 'LastName': '',
+                                                                 'Email': '',
+                                                                 'Phone': ''
+                                                                 }"
+	/>
+
+	<aura:attribute name="leadRecord" type="Lead" default="{'sobjectType': 'Lead'}" />
+
+	<aura:attribute
+		name="financialProductRecord"
+		type="Financial_Product__c"
+		default="{'sobjectType': 'Financial_Product__c',
+                                                                                       'Name': '',
+                                                                                       'Business_Unit__c': '',
+                                                                                       'Id': ''
+                                                                                       }"
+	/>
+
+	<aura:attribute name="siteRecord" type="Site__c" default="{'sobjectType': 'Site__c'}" />
+
+	<aura:attribute name="defaultRecordType" type="String" />
+	<aura:attribute name="defaultRecordTypeId" type="String" />
+	<aura:attribute name="isRetailLead" type="Boolean" default="false" />
+	<aura:attribute name="isShortTermInsurance" type="Boolean" default="false" />
+	<aura:attribute name="isRouteRetailLead" type="Boolean" default="false" />
+	<aura:attribute name="isAssignRetailLead" type="Boolean" default="false" />
+	<aura:attribute name="isAssignToUserRetailLead" type="Boolean" default="false" />
+	<aura:attribute name="isOpen" type="boolean" default="false" />
+	<aura:attribute name="showAssignBtn" type="Boolean" default="false" />
+	<aura:attribute name="showRouteBtn" type="Boolean" default="false" />
+	<aura:attribute name="showInvestmentField" type="boolean" default="false" />
+	<aura:attribute name="butonDisable" type="boolean" default="false" />
+	<aura:attribute name="showColleague" type="boolean" default="true" />
+	<aura:attribute name="isAssignAICSTIlLead" type="Boolean" default="false" />
+	<aura:attribute name="isRouteAICSTIlLead" type="Boolean" default="false" />
+	<aura:attribute name="isAssignToUserAICSTIlLead" type="Boolean" default="false" />
+	<aura:attribute
+		name="serviceGroupRecord"
+		type="Service_Group__c"
+		default="{'sobjectType': 'Service_Group__c',
+                                                                               'Name': '',
+                                                                               'Queue__c': '',
+                                                                               'Id': ''}"
+	/>
+
+	<!--Event handler for Add and Delete Row Event -->
+	<aura:handler name="DeleteRowEvt" event="c:DeleteRowEvt" action="{!c.removeDeletedRow}" />
+	<aura:handler name="AddRowEvt" event="c:AddNewRowEvt" action="{!c.addNewRow}" />
+
+	<!--Aura Attribute to store Product Interests List as Array-->
+	<aura:attribute name="productInterestList" type="List" default="[]" />
+
+	<!-- Added by Simangaliso Mathenjwa 5 June 2020 -->
+	<aura:attribute name="serviceGroupId2" type="String" />
+	<aura:attribute name="serviceGroupSearchLabel" type="String" default="Branch Search" />
+	<aura:attribute name="serviceGroupSearchPlaceHolder" type="String" default="Search Branch..." />
+	<aura:attribute name="sobjecttype" type="String" default="{!v.sObjectName}" />
+	<aura:attribute name="showLeadInformation" type="boolean" default="false" />
+	<!-- Simangaliso Mathenjwa 5 June 2020-->
+	<aura:attribute name="selectedUserId" type="String" />
+	<aura:attribute name="selectedUserRecord" type="User" default="{'sobjectType': 'User', 'Name': '', 'Id': ''}" />
+	<aura:attribute name="serviceGroupLookupCondition" type="String" default="" />
+	<aura:attribute name="serviceGroupSearchCondition" type="String" default="" />
+	<aura:attribute name="userLookupFieldCondition" type="String" default="" />
+	<!--Added for Short term insurance-->
+	<aura:attribute name="physicalCodeId" type="string" />
+	<aura:attribute name="postalCodeId" type="string" />
+
+	<aura:attribute name="userPublicGroupNames" type="List" default="[]" />
+	<aura:attribute name="selectedUserServiceGroupIds" type="List" default="[]" />
+
+	<!--DD Attributes-->
+	<aura:attribute name="showExtenderCoverFields" type="boolean" default="false" />
+	<aura:attribute name="showCardLifeFields" type="boolean" default="false" />
+	<aura:attribute name="showBSSAFieldBool" type="boolean" default="false" />
+	<aura:attribute name="absaStaffCheck" type="boolean" default="false" />
+	<aura:attribute name="showSourcefields" type="boolean" default="true" />
+	<aura:attribute name="showSTISourcefields" type="boolean" default="false" />
+	<aura:attribute name="sourceOptions" type="List" />
+	<aura:attribute name="subsourceOptions" type="List" />
+	<aura:attribute name="siteCodeOptions" type="List" />
+	<aura:attribute name="depnedentFieldMap" type="map" description="map to store dependent values with controlling value" />
+	<aura:attribute name="depnedentSiteFieldMap" type="map" description="map to store dependent values with controlling value" />
+	<aura:attribute name="bDisabledDependentFld" type="boolean" default="true" />
+	<aura:attribute name="bDisabledSourceFld" type="boolean" default="true" />
+	<!--DD Attributes ENd-->
+
+	<aura:handler name="change" value="{!v.selectedUserId}" action="{!c.getSelectedUserServiceGroup}" />
+
+	<!-- Spinner for loading -->
+	<center style="z-index: 99">
+		<lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" alternativeText="Loading..." />
+	</center>
+	<!--<aura:if isTrue="{!v.showSpinner}">
+      <lightning:spinner aura:id="spinner" alternativeText="Loading" variant="brand" size="large"/>
+   <aura:set attribute="else">
+      -->
+	<div class="slds-grid slds-gutters">
+		<!-- Client Finder Lightning Component with Attributes-->
+		<div class="slds-col slds-border_right" style="width: 8rem">
+			<c:ClientFinder
+				isCompactView="true"
+				showCreateIndividualProspect="true"
+				showCreateBusinessProspect="true"
+				showProductSelection="true"
+				showContactSelection="false"
+				showCaseHistory="false"
+				showLeadHistory="true"
+				showParticipantSelection="false"
+			/>
+		</div>
+
+		<!-- Lead creation form-->
+		<div class="slds-col .slds-border_left slds-hide" aura:id="firstDiv" style="width: 8rem; margin-bottom: 40px">
+			<lightning:card iconName="action:new_lead" title="Lead Information">
+				<div class="slds-col .slds-border_left">
+					IMPORTANT TO NOTE: Search for an existing Client or create a new Prospect on the left before filling Lead Information
+				</div>
+				<div class="c-container">
+					<lightning:recordEditForm aura:id="iCreateLead" objectApiName="Lead" recordId="{!v.leadRecordId}" recordTypeId="{!v.defaultRecordTypeId}">
+						<aura:if isTrue="{!v.defaultRecordType == 'Direct_Delivery_Sales_Lead'}">
+							<h3 class="slds-section__title">
+								<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Product Interest</span>
+							</h3>
+							<lightning:layout>
+								<lightning:layoutItem padding="around-small" size="12">
+									<lightning:inputField fieldName="Financial_Product__c" aura:id="ddFinancialProduct" onchange="{!c.getFinancialProductdd}" />
+
+									<aura:if isTrue="{!or(v.showSTISourcefields,v.showSourcefields)}">
+										<lightning:select
+											aura:id="STISource"
+											name="STISource"
+											label="Source"
+											value="{!v.leadRecord.DD_Source__c}"
+											onchange="{!c.showBSSAField}"
+											class="customRequired"
+											disabled="{!v.bDisabledSourceFld}"
+										>
+											<aura:iteration items="{!v.sourceOptions}" var="item">
+												<option text="{!item}" value="{!item}" selected="{!item.selected}" />
+											</aura:iteration>
+										</lightning:select>
+										<lightning:select
+											aura:id="STISubSource"
+											name="STISubSource"
+											label="Sub Source"
+											value="{!v.leadRecord.DD_Lead_Sub_Source__c}"
+											class="customRequired"
+											disabled="{!v.bDisabledDependentFld}"
+										>
+											<aura:iteration items="{!v.subsourceOptions}" var="item">
+												<option text="{!item}" value="{!item}" selected="{!item.selected}" />
+											</aura:iteration>
+										</lightning:select>
+									</aura:if>
+								</lightning:layoutItem>
+							</lightning:layout>
+						</aura:if>
+						<!--<aura:if isTrue="{!v.defaultRecordType == 'Direct_Delivery_Sales_Lead'}">
+                        <aura:if isTrue="{!v.showSourcefields}">-->
+						<aura:if isTrue="{!v.defaultRecordType != 'STI_Lead'}">
+							<aura:if isTrue="{!and(v.defaultRecordType != 'Retail_Sales_Lead', v.defaultRecordType != 'Retail_Service_Lead')}">
+								<aura:if isTrue="{!or(v.showSTISourcefields,v.showSourcefields)}">
+									<aura:if isTrue="{!not(v.isShortTermInsurance)}">
+										<h3 class="slds-section__title">
+											<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Responsible Area</span>
+										</h3>
+										<lightning:layout>
+											<lightning:layoutItem padding="around-small" size="12">
+												<aura:if isTrue="{!v.showBSSAFieldBool}">
+													<lightning:select
+														aura:id="BSSA_Site_Code__c"
+														name="Site Code"
+														label="Site Code"
+														value="{!v.leadRecord.BSSA_Site_Code__c}"
+														class="customRequired"
+														disabled="{!v.bDisabledDependentFld}"
+													>
+														<aura:iteration items="{!v.siteCodeOptions}" var="item">
+															<option text="{!item}" value="{!item}" selected="{!item.selected}" />
+														</aura:iteration>
+													</lightning:select>
+													<!--<lightning:inputField fieldName="BSSA_Site_Code__c" aura:id="BSSA_Site_Code__c" value="{!v.leadRecord.BSSA_Site_Code__c}" class="customRequired" /> -->
+													<aura:set attribute="else">
+														<c:LookUpField
+															lookupSearchData="ServiceGroupLookupSearch"
+															lookupSearchCondition="{!v.serviceGroupLookupCondition}"
+															icon_name="custom:custom84"
+															selectedRecord="{!v.serviceGroupRecord}"
+															recordIdString="{!v.serviceGroupId2}"
+															aura:id="serviceGrouplookup"
+															label="Branch Search"
+															placeHolder="Search branch..."
+														/>
+													</aura:set>
+												</aura:if>
+												<!--<lightning:inputField fieldName="DD_Branch_Contact_Number__c" aura:id="DD_Branch_Contact_Number__c" value="{!v.leadRecord.DD_Branch_Contact_Number__c}" />-->
+												<lightning:inputField
+													fieldName="Branch_Employee_Number__c"
+													aura:id="Branch_Employee_Number__c"
+													value="{!v.leadRecord.Branch_Employee_Number__c}"
+												/>
+											</lightning:layoutItem>
+										</lightning:layout>
+									</aura:if>
+								</aura:if>
+							</aura:if>
+						</aura:if>
+						<!--</aura:if>-->
+						<h3 class="slds-section__title">
+							<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Client Information</span>
+						</h3>
+						<lightning:layout>
+							<lightning:layoutItem padding="around-small" size="6">
+								<div style="display: none">
+									<lightning:inputField fieldName="Name" />
+								</div>
+
+								<lightning:inputField fieldName="Salutation" aura:id="iSalutation" value="" class="customRequired" />
+								<aura:if
+									isTrue="{!and(v.isRetailLead, or(v.defaultRecordType == 'Retail_Sales_Lead', v.defaultRecordType == 'Retail_Service_Lead'))}"
+								>
+									<lightning:inputField fieldName="FirstName" aura:id="iFirstName" value="{!v.leadRecord.FirstName}" />
+									<lightning:inputField fieldName="LastName" aura:id="iLastName" value="{!v.leadRecord.LastName}" />
+									<aura:set attribute="else">
+										<aura:if isTrue="{!v.isShortTermInsurance}">
+											<lightning:inputField
+												fieldName="Initials__c"
+												aura:id="Initials"
+												value="{!v.leadRecord.Initials__c}"
+												class="customRequired"
+											/>
+											<lightning:inputField
+												fieldName="FirstName"
+												aura:id="iFirstName"
+												value="{!v.leadRecord.FirstName}"
+												class="customRequired"
+											/>
+											<lightning:inputField fieldName="LastName" aura:id="iLastName" value="{!v.leadRecord.LastName}" />
+										</aura:if>
+										<!--added extra if-else for direct delvery-->
+										<aura:if isTrue="{!v.defaultRecordType=='Direct_Delivery_Sales_Lead'}">
+											<lightning:inputField
+												fieldName="DD_Initials__c"
+												aura:id="ddInitial"
+												value="{!v.leadRecord.DD_Initials__c}"
+												class="customRequired"
+											/>
+											<lightning:inputField fieldName="FirstName" aura:id="ddFirstName" value="{!v.leadRecord.FirstName}" />
+											<lightning:inputField fieldName="LastName" aura:id="ddLastName" value="{!v.leadRecord.LastName}" />
+											<lightning:inputField
+												fieldName="DD_Gender__c"
+												aura:id="ddgender"
+												value="{!v.leadRecord.DD_Gender__c}"
+												class="customRequired"
+											/>
+											<aura:set attribute="else">
+												<!--Added for STI -->
+												<aura:if isTrue="{!v.defaultRecordType=='STI_Lead'}">
+													<aura:if isTrue="{!!v.isIndvClient}">
+														<lightning:inputField
+															fieldName="Parent_Account__c"
+															aura:id="iParent_Account"
+															value="{!v.leadRecord.Parent_Account__c}"
+															class="customRequired"
+														/>
+														<div class="customRequired">
+															<c:ContactLookupParentComponent
+																objectAPIName="Contact"
+																AccountId="{!v.clientRecord.Id}"
+																IconName="standard:contact"
+																selectedRecord="{!v.selectedLookUpRecord}"
+																label="Contact Name"
+															/>
+														</div>
+													</aura:if>
+												</aura:if>
+												<aura:if isTrue="{!not(v.isShortTermInsurance)}">
+													<lightning:inputField fieldName="FirstName" aura:id="iFirstName" value="{!v.leadRecord.FirstName}" />
+													<lightning:inputField fieldName="LastName" aura:id="iLastName" value="{!v.leadRecord.LastName}" />
+													<lightning:inputField
+														fieldName="Nationality__c"
+														aura:id="iIdNumber"
+														value="{!v.leadRecord.Nationality__c}"
+													/>
+												</aura:if>
+											</aura:set>
+										</aura:if>
+									</aura:set>
+								</aura:if>
+							</lightning:layoutItem>
+							<lightning:layoutItem padding="around-small" size="6">
+								<aura:if
+									isTrue="{!and(v.isRetailLead, or(v.defaultRecordType == 'Retail_Sales_Lead', v.defaultRecordType == 'Retail_Service_Lead'))}"
+								>
+									<lightning:inputField fieldName="ID_Type__c" aura:id="iIdType" value="{!v.leadRecord.ID_Type__c}" class="customRequired" />
+									<label class="slds-form-element__label" for="iIdNumber">ID/Passport Number</label>
+									<lightning:inputField
+										fieldName="ID_Number__c"
+										aura:id="iIdNumber"
+										value="{!v.leadRecord.ID_Number__c}"
+										class="customRequired"
+										variant="label-hidden"
+									/>
+									<lightning:inputField
+										fieldName="Nationality__c"
+										aura:id="iNationality"
+										value="{!v.leadRecord.Nationality__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField fieldName="Gross_Income__c" aura:id="iGrossIncome" value="{!v.leadRecord.Gross_Income__c}" />
+									<aura:set attribute="else">
+										<aura:if isTrue="{!v.isShortTermInsurance}">
+											<lightning:inputField
+												fieldName="ID_Type__c"
+												aura:id="iIdType"
+												value="{!v.leadRecord.ID_Type__c}"
+												class="customRequired"
+											/>
+											<label class="slds-form-element__label" for="iIdNumber">ID/Passport Number</label>
+											<lightning:inputField
+												fieldName="ID_Number__c"
+												aura:id="iIdNumber"
+												value="{!v.leadRecord.ID_Number__c}"
+												class="customRequired"
+												variant="label-hidden"
+											/>
+											<lightning:inputField
+												fieldName="Country_Passport_Issued__c"
+												aura:id="Gender"
+												value="{!v.leadRecord.Country_Passport_Issued__c}"
+											/>
+											<lightning:inputField
+												fieldName="Gender__c"
+												aura:id="Gender"
+												value="{!v.leadRecord.Gender__c}"
+												class="customRequired"
+											/>
+											<lightning:inputField
+												fieldName="Client_Type__c"
+												aura:id="ClientType"
+												value="{!v.leadRecord.Client_Type__c}"
+												class="customRequired"
+											/>
+										</aura:if>
+										<!--added extra if-else for direct delvery-->
+										<aura:if isTrue="{!v.defaultRecordType == 'Direct_Delivery_Sales_Lead'}">
+											<label class="slds-form-element__label" for="iIdNumber">Date Of Birth</label>
+											<lightning:inputField
+												fieldName="DD_Date_of_Birth__c"
+												aura:id="ddDob"
+												value="{!v.leadRecord.DD_Date_of_Birth__c}"
+												class="customRequired"
+												variant="label-hidden"
+											/>
+											<lightning:inputField
+												fieldName="ID_Type__c"
+												aura:id="ddIdType"
+												value="{!v.leadRecord.ID_Type__c}"
+												class="customRequired"
+											/>
+											<label class="slds-form-element__label" for="ddIdNumber">ID/Passport Number</label>
+											<lightning:inputField
+												fieldName="ID_Number__c"
+												aura:id="ddIdNumber"
+												value="{!v.leadRecord.ID_Number__c}"
+												class="customRequired"
+												variant="label-hidden"
+											/>
+											<lightning:inputField fieldName="Marital_status__c" aura:id="ddMstatus" value="{!v.leadRecord.Marital_status__c}" />
+											<lightning:inputField
+												fieldName="DD_Marital_Contract_Type__c"
+												aura:id="ddMcontract"
+												value="{!v.leadRecord.DD_Marital_Contract_Type__c}"
+											/>
+											<aura:set attribute="else">
+												<aura:if isTrue="{!v.defaultRecordType == 'STI_Lead'}">
+													<lightning:inputField fieldName="Email" aura:id="iSTIEmail" value="{!v.leadRecord.Email}" />
+													<lightning:inputField
+														fieldName="Phone"
+														aura:id="iSTIPhone"
+														value="{!v.leadRecord.Phone}"
+														class="customRequired"
+													/>
+													<lightning:inputField
+														fieldName="MobilePhone"
+														aura:id="iSTIMobilePhone"
+														value="{!v.leadRecord.MobilePhone}"
+													/>
+													<lightning:inputField fieldName="ID_Type__c" aura:id="iSTIIdType" value="{!v.leadRecord.ID_Type__c}" />
+													<label class="slds-form-element__label" for="iSTIIdNumber">ID/Passport Number</label>
+													<lightning:inputField
+														fieldName="ID_Number__c"
+														aura:id="iSTIIdNumber"
+														value="{!v.leadRecord.ID_Number__c}"
+														variant="label-hidden"
+													/>
+													<aura:set attribute="else">
+														<aura:if isTrue="{!not(v.isShortTermInsurance)}">
+															<lightning:inputField fieldName="Email" aura:id="iEmail" value="{!v.leadRecord.Email}" />
+															<lightning:inputField
+																fieldName="Phone"
+																aura:id="iPhone"
+																value="{!v.leadRecord.Phone}"
+																class="customRequired"
+															/>
+															<lightning:inputField
+																fieldName="MobilePhone"
+																aura:id="iMobilePhone"
+																value="{!v.leadRecord.MobilePhone}"
+															/>
+															<lightning:inputField
+																fieldName="ID_Number__c"
+																aura:id="iIdNumber"
+																value="{!v.leadRecord.ID_Number__c}"
+															/>
+														</aura:if>
+													</aura:set>
+												</aura:if>
+											</aura:set>
+										</aura:if>
+									</aura:set>
+								</aura:if>
+							</lightning:layoutItem>
+						</lightning:layout>
+						<aura:if isTrue="{!v.defaultRecordType =='Direct_Delivery_Sales_Lead'}">
+							<h3 class="slds-section__title">
+								<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Other Information</span>
+							</h3>
+							<aura:if isTrue="{!v.showExtenderCoverFields}">
+								<lightning:layout>
+									<lightning:layoutItem padding="around-small" size="12">
+										<lightning:inputField
+											fieldName="DD_AVAF_Account_Number__c"
+											aura:id="DD_AVAF_Account_Number__c"
+											value="{!v.leadRecord.DD_AVAF_Account_Number__c}"
+											class="customRequired"
+										/>
+										<lightning:inputField
+											fieldName="DD_Vehicle_Description__c"
+											aura:id="DD_Vehicle_Description__c"
+											value="{!v.leadRecord.DD_Vehicle_Description__c}"
+											class="customRequired"
+										/>
+										<lightning:inputField
+											fieldName="Outstanding_Capital__c"
+											aura:id="Outstanding_Capital__c"
+											value="{!v.leadRecord.Outstanding_Capital__c}"
+											class="customRequired"
+										/>
+										<lightning:inputField
+											fieldName="DD_Market_Value__c"
+											aura:id="DD_Market_Value__c"
+											value="{!v.leadRecord.DD_Market_Value__c}"
+											class="customRequired"
+										/>
+										<label class="slds-form-element__label" for="Absa_Staff__c">Absa Staff</label>
+										<!--<lightning:inputField fieldName="Absa_Staff__c" aura:id="Absa_Staff__c" value="{!v.leadRecord.Absa_Staff__c}" variant="label-hidden" /> 
+                                        --><lightning:input
+											type="checkbox"
+											aura:id="Absa_Staff__c"
+											name="Absa_Staff__c"
+											checked="{!v.leadRecord.Absa_Staff__c}"
+											variant="label-hidden"
+										/>
+									</lightning:layoutItem>
+								</lightning:layout>
+								<aura:set attribute="else">
+									<lightning:layout>
+										<lightning:layoutItem padding="around-small" size="6">
+											<lightning:inputField
+												fieldName="DD_Source_of_Income__c"
+												aura:id="DD_Source_of_Income__c"
+												value="{!v.leadRecord.DD_Source_of_Income__c}"
+												class="customRequired"
+											/>
+										</lightning:layoutItem>
+										<lightning:layoutItem padding="around-small" size="6">
+											<lightning:inputField
+												fieldName="DD_Source_of_Funds__c"
+												aura:id="DD_Source_of_Funds__c"
+												value="{!v.leadRecord.DD_Source_of_Funds__c}"
+												class="customRequired"
+											/>
+										</lightning:layoutItem>
+									</lightning:layout>
+								</aura:set>
+							</aura:if>
+							<aura:if isTrue="{!v.showCardLifeFields}">
+								<lightning:layout>
+									<lightning:layoutItem padding="around-small" size="12">
+										<lightning:inputField
+											fieldName="DD_Absa_Credit_card_Number__c"
+											aura:id="DD_Absa_Credit_card_Number__c"
+											value="{!v.leadRecord.DD_Absa_Credit_card_Number__c}"
+											class="customRequired"
+										/>
+										<lightning:inputField
+											fieldName="DD_Absa_Credit_Card_Limit__c"
+											aura:id="DD_Absa_Credit_Card_Limit__c"
+											value="{!v.leadRecord.DD_Absa_Credit_Card_Limit__c}"
+											class="customRequired"
+										/>
+									</lightning:layoutItem>
+								</lightning:layout>
+							</aura:if>
+						</aura:if>
+						<aura:if isTrue="{!and(v.isRetailLead, or(v.defaultRecordType == 'Retail_Sales_Lead', v.defaultRecordType == 'Retail_Service_Lead'))}">
+							<h3 class="slds-section__title">
+								<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Communication Method</span>
+							</h3>
+							<lightning:layout>
+								<lightning:layoutItem padding="around-small" size="6">
+									<!--<lightning:inputField fieldName="Preferred_Communication_Channel__c" aura:id="iPreferredCommunicationChannel" value="{!v.leadRecord.Preferred_Communication_Channel__c}" class="customRequired"/> -->
+									<lightning:inputField
+										fieldName="Preferred_Communication_Channel_RBB__c"
+										aura:id="iPreferredCommunicationChannel"
+										value="{!v.leadRecord.Preferred_Communication_Channel_RBB__c}"
+										class="customRequired"
+									/>
+								</lightning:layoutItem>
+								<lightning:layoutItem padding="around-small" size="6">
+									<br /><lightning:inputField fieldName="Phone" aura:id="iPhone" value="{!v.leadRecord.Phone}" />
+									<lightning:inputField fieldName="MobilePhone" aura:id="iMobilePhone" value="{!v.leadRecord.MobilePhone}" />
+									<lightning:inputField fieldName="Email" aura:id="iEmail" value="{!v.leadRecord.Email}" />
+								</lightning:layoutItem>
+							</lightning:layout>
+							<aura:set attribute="else">
+								<aura:if isTrue="{!v.isShortTermInsurance}">
+									<h3 class="slds-section__title">
+										<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Communication Method</span>
+									</h3>
+
+									<lightning:layout>
+										<lightning:layoutItem padding="around-small" size="6">
+											<lightning:inputField
+												fieldName="Preferred_Communication_Channel_RBB__c"
+												aura:id="iPreferredCommunicationChannel"
+												value="{!v.leadRecord.Preferred_Communication_Channel_RBB__c}"
+												class="customRequired"
+											/>
+										</lightning:layoutItem>
+
+										<lightning:layoutItem padding="around-small" size="6">
+											<br /><lightning:inputField fieldName="Phone" aura:id="iPhone" value="{!v.leadRecord.Phone}" />
+											<lightning:inputField fieldName="MobilePhone" aura:id="iMobilePhone" value="{!v.leadRecord.MobilePhone}" />
+											<lightning:inputField fieldName="Email" aura:id="iEmail" value="{!v.leadRecord.Email}" />
+										</lightning:layoutItem>
+									</lightning:layout>
+								</aura:if>
+								<!--added extra if-else for direct delvery-->
+								<aura:if isTrue="{!v.defaultRecordType=='Direct_Delivery_Sales_Lead'}">
+									<h3 class="slds-section__title">
+										<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Communication Method</span>
+									</h3>
+									<lightning:layout>
+										<lightning:layoutItem padding="around-small" size="6">
+											<lightning:inputField
+												fieldName="Preferred_Communication_Channel__c"
+												aura:id="iPreferredCommunicationChannel"
+												value="{!v.leadRecord.Preferred_Communication_Channel__c}"
+												class="customRequired"
+											/>
+											<!--<lightning:inputField fieldName="Preferred_Communication_Channel_RBB__c" aura:id="ddPreferredCommunicationChannel" value="{!v.leadRecord.Preferred_Communication_Channel_RBB__c}" class="customRequired"/>-->
+										</lightning:layoutItem>
+										<lightning:layoutItem padding="around-small" size="6">
+											<br /><lightning:inputField fieldName="Phone" aura:id="ddPhone" value="{!v.leadRecord.Phone}" />
+											<lightning:inputField fieldName="MobilePhone" aura:id="ddMobilePhone" value="{!v.leadRecord.MobilePhone}" />
+											<lightning:inputField fieldName="Email" aura:id="ddEmail" value="{!v.leadRecord.Email}" />
+										</lightning:layoutItem>
+									</lightning:layout>
+
+									<aura:set attribute="else">
+										<aura:if isTrue="{!not(v.isShortTermInsurance)}">
+											<h3 class="slds-section__title">
+												<span class="slds-truncate slds-button slds-section__title-action" title="Section Title"
+													>Company Information</span
+												>
+											</h3>
+											<lightning:layout>
+												<lightning:layoutItem padding="around-small" size="6">
+													<lightning:inputField fieldName="Company" aura:id="iCompany" value="{!v.leadRecord.Company}" />
+													<lightning:inputField
+														fieldName="Entity_Type__c"
+														aura:id="iEntityType"
+														value="{!v.leadRecord.Entity_Type__c}"
+													/>
+													<lightning:inputField
+														fieldName="Turn_Over_Bracket__c"
+														aura:id="iTurnOverBracket"
+														value="{!v.leadRecord.Turn_Over_Bracket__c}"
+													/>
+												</lightning:layoutItem>
+												<lightning:layoutItem padding="around-small" size="6">
+													<lightning:inputField fieldName="CIF__c" aura:id="iCIF" value="{!v.leadRecord.CIF__c}" />
+													<lightning:inputField
+														fieldName="Company_Registration_Number__c"
+														aura:id="iCompanyRegistrationNumber"
+														value="{!v.leadRecord.Company_Registration_Number__c}"
+													/>
+													<lightning:inputField fieldName="Segment__c" aura:id="iSegment" value="{!v.leadRecord.Segment__c}" />
+												</lightning:layoutItem>
+											</lightning:layout>
+										</aura:if>
+									</aura:set>
+								</aura:if>
+							</aura:set>
+						</aura:if>
+						<aura:if isTrue="{!v.isShortTermInsurance}">
+							<h3 class="slds-section__title">
+								<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Additional Lead Information</span>
+							</h3>
+							<lightning:layout>
+								<lightning:layoutItem padding="around-small" size="6">
+									<lightning:inputField
+										fieldName="Nationality__c"
+										aura:id="iNationality"
+										value="{!v.leadRecord.Nationality__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField
+										fieldName="Marital_status__c"
+										aura:id="Marital Status"
+										value="{!v.leadRecord.Marital_status__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField
+										fieldName="Marital_Contract_Type__c"
+										aura:id="MaritalContractType"
+										value="{!v.leadRecord.Marital_Contract_Type__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField
+										fieldName="Occupational_Status__c"
+										aura:id="OccupationalStatus"
+										value="{!v.leadRecord.Occupational_Status__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField
+										fieldName="Country_of_Birth__c"
+										aura:id="CountryOfBirth"
+										value="{!v.leadRecord.Country_of_Birth__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField
+										fieldName="Occupation__c"
+										aura:id="Occupation"
+										value="{!v.leadRecord.Occupation__c}"
+										class="customRequired"
+									/>
+								</lightning:layoutItem>
+								<lightning:layoutItem padding="around-small" size="6">
+									<lightning:inputField
+										fieldName="Correspondence_Language__c"
+										aura:id="LanguagePreference"
+										value="{!v.leadRecord.Correspondence_Language__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField fieldName="CIF__c" aura:id="CIF" value="{!v.leadRecord.CIF__c}" />
+									<lightning:inputField
+										fieldName="Marketing_consent__c"
+										aura:id="Marketingconsent"
+										value="{!v.leadRecord.Marketing_consent__c}"
+									/>
+									<lightning:inputField
+										fieldName="Source_of_Funds__c"
+										aura:id="SourceOfFunds"
+										value="{!v.leadRecord.Source_of_Funds__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField fieldName="Date_of_Birth__c" aura:id="SourceOfFunds" value="{!v.leadRecord.Date_of_Birth__c}" />
+								</lightning:layoutItem>
+							</lightning:layout>
+
+							<h3 class="slds-section__title">
+								<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Address Type</span>
+							</h3>
+							<lightning:layout>
+								<lightning:layoutItem padding="around-small" size="6">
+									<!--START OF THE PHYSICAL ADDRESS : Added by Mbuyiseni Mbhokane -->
+
+									<fieldset class="slds-form-element slds-form-element_compound slds-form-element_address">
+										<legend class="slds-form-element__legend slds-form-element__label">Physical address</legend>
+										<div class="slds-form-element__control">
+											<div class="slds-form-element__row">
+												<div class="slds-size_1-of-1">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Physical_address_line_1__c"
+																aura:id="Physicaladdressline1"
+																value="{!v.leadRecord.Physical_address_line_1__c}"
+																class="customRequired"
+															/>
+														</div>
+													</div>
+												</div>
+											</div>
+
+											<div class="slds-form-element__row">
+												<div class="slds-size_1-of-1">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Physical_address_Line_2__c"
+																aura:id="Physicaladdressline2"
+																value="{!v.leadRecord.Physical_address_Line_2__c}"
+															/>
+														</div>
+													</div>
+												</div>
+											</div>
+
+											<div class="slds-form-element__row">
+												<div class="slds-size_4-of-6">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Physical_address_City__c"
+																aura:id="PhysicaladdressCity"
+																value="{!v.leadRecord.Physical_address_City__c}"
+																class="customRequired"
+															/>
+														</div>
+													</div>
+												</div>
+												<div class="slds-size_2-of-6">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Physical_address_Suburb__c"
+																aura:id="PhysicaladdressSuburb"
+																value="{!v.leadRecord.Physical_address_Suburb__c}"
+																class="customRequired"
+															/>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div class="slds-form-element__row">
+												<div class="slds-size_4-of-6">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Physical_Code__c"
+																aura:id="PhysicalCodeLookUp"
+																onchange="{!c.handlePhysicalChange}"
+															/>
+														</div>
+													</div>
+												</div>
+
+												<div class="slds-size_2-of-6">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Physical_address_Country__c"
+																aura:id="PhysicalAddressCountry"
+																value="{!v.leadRecord.Physical_address_Country__c}"
+																class="customRequired"
+															/>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</fieldset>
+									<!--END OF THE PHYSICAL ADDRESS : Added by Mbuyiseni Mbhokane -->
+								</lightning:layoutItem>
+								<lightning:layoutItem padding="around-small" size="6">
+									<!--START OF THE POSTAL ADDRESS : Added by Mbuyiseni Mbhokane -->
+
+									<fieldset class="slds-form-element slds-form-element_compound slds-form-element_address">
+										<legend class="slds-form-element__legend slds-form-element__label">Postal address</legend>
+										<div class="slds-form-element__control">
+											<div class="slds-form-element__row">
+												<div class="slds-size_1-of-1">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Postal_Address_Line_1__c"
+																aura:id="PostalAddressLine1"
+																value="{!v.leadRecord.Postal_Address_Line_1__c}"
+																class="customRequired"
+															/>
+														</div>
+													</div>
+												</div>
+											</div>
+
+											<div class="slds-form-element__row">
+												<div class="slds-size_1-of-1">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Postal_Address_Line_2__c"
+																aura:id="PostalAddressLine2"
+																value="{!v.leadRecord.Postal_Address_Line_2__c}"
+															/>
+														</div>
+													</div>
+												</div>
+											</div>
+
+											<div class="slds-form-element__row">
+												<div class="slds-size_4-of-6">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Postal_Address_City__c"
+																aura:id="PostalAddressCity"
+																value="{!v.leadRecord.Postal_Address_City__c}"
+																class="customRequired"
+															/>
+														</div>
+													</div>
+												</div>
+												<div class="slds-size_2-of-6">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Postal_Address_Suburb__c"
+																aura:id="PostalAddressSuburb"
+																value="{!v.leadRecord.Postal_Address_Suburb__c}"
+																class="customRequired"
+															/>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div class="slds-form-element__row">
+												<div class="slds-size_4-of-6">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Postal_Code__c"
+																aura:id="postalCodeLookUp"
+																onchange="{!c.handlePostalChange}"
+															/>
+														</div>
+													</div>
+												</div>
+
+												<div class="slds-size_2-of-6">
+													<div class="slds-form-element">
+														<div class="slds-form-element__control">
+															<lightning:inputField
+																fieldName="Postal_Address_Country__c"
+																aura:id="PostalAddressCountry"
+																value="{!v.leadRecord.Postal_Address_Country__c}"
+																class="customRequired"
+															/>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</fieldset>
+									<!--END OF THE POSTAL ADDRESS : Added by Mbuyiseni Mbhokane -->
+								</lightning:layoutItem>
+							</lightning:layout>
+
+							<!--Add copy address button -->
+							<div class="slds-p-left_large">
+								<lightning:button variant="brand" label="Copy Address" title="Brand action" onclick="{! c.copyAddress }" />
+							</div>
+
+							<lightning:inputField
+								fieldName="LeadSource"
+								aura:id="iLeadSource"
+								value="{!v.leadRecord.LeadSource}"
+								class="customRequired"
+								onchange="{!c.clearServiceGroup}"
+							/>
+						</aura:if>
+						<!--Closing if statement-->
+
+						<!-- added by Poornima -->
+						<aura:if isTrue="{!v.defaultRecordType == 'STI_Lead'}">
+							<h3 class="slds-section__title">
+								<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">STI Information</span>
+							</h3>
+							<lightning:layout>
+								<lightning:layoutItem padding="around-small" size="6">
+									<lightning:inputField
+										fieldName="Customer_Consent__c"
+										aura:id="iCustomerConsent"
+										value="{!v.leadRecord.Customer_Consent__c}"
+									/>
+									<lightning:inputField
+										fieldName="Type_of_Asset_to_be_Insured__c"
+										aura:id="iTypeofAssettobeInsured"
+										value="{!v.leadRecord.Type_of_Asset_to_be_Insured__c}"
+									/>
+									<lightning:inputField
+										fieldName="Please_Specify__c"
+										aura:id="iPleaseSpecify"
+										value="{!v.leadRecord.Please_Specify__c}"
+										disabled="{!!(v.leadRecord.Type_of_Asset_to_be_Insured__c=='Other')}"
+									/>
+								</lightning:layoutItem>
+								<lightning:layoutItem padding="around-small" size="6">
+									<lightning:inputField
+										fieldName="AIC_Relationship_Consultant_Name__c"
+										aura:id="iAICRelationshipConsultantName"
+										value="{!v.leadRecord.AIC_Relationship_Consultant_Name__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField
+										fieldName="Asset_Account_Number__c"
+										aura:id="iAssetAccountNumber"
+										value="{!v.leadRecord.Asset_Account_Number__c}"
+									/>
+									<lightning:inputField
+										fieldName="Policy_needs_ABSA_Financial_Interest__c"
+										aura:id="iPolicyneedsABSAFinancialInterest"
+										value="{!v.leadRecord.Policy_needs_ABSA_Financial_Interest__c}"
+									/>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<h3 class="slds-section__title">
+								<span class="slds-truncate slds-button slds-section__title-action" title="Section Title"
+									>If no invoice available, provide the following information</span
+								>
+							</h3>
+							<lightning:layout>
+								<lightning:layoutItem padding="around-small" size="12">
+									<lightning:inputField
+										fieldName="Full_Description_of_Vehicle__c"
+										aura:id="iFullDescriptionofVehicle"
+										value="{!v.leadRecord.Full_Description_of_Vehicle__c}"
+									/>
+									<lightning:inputField
+										fieldName="Vehicle_Retail_Value_Inclusive_of_VAT__c"
+										aura:id="iVehicleRetailValueInclusiveofVAT"
+										value="{!v.leadRecord.Vehicle_Retail_Value_Inclusive_of_VAT__c}"
+									/>
+
+									<span>Enter full description and values of extras fitted to the vehicle(inclusive of VAT)</span>
+
+									<lightning:inputField
+										fieldName="Vehicle_Extra_Fittings_Information__c"
+										aura:id="iVehicleExtraFittingsInformation"
+										value="{!v.leadRecord.Vehicle_Extra_Fittings_Information__c}"
+									/>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<h3 class="slds-section__title">
+								<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">CAF STI Lead Source Information</span>
+							</h3>
+							<lightning:layout>
+								<lightning:layoutItem padding="around-small" size="6">
+									<lightning:inputField
+										fieldName="Lead_Name__c"
+										aura:id="iLeadName"
+										value="{!v.leadRecord.Lead_Name__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField
+										fieldName="Lead_Phone__c"
+										aura:id="iLeadPhone"
+										value="{!v.leadRecord.Lead_Phone__c}"
+										class="customRequired"
+									/>
+								</lightning:layoutItem>
+								<lightning:layoutItem padding="around-small" size="6">
+									<lightning:inputField
+										fieldName="Lead_Email__c"
+										aura:id="iLeadEmail"
+										value="{!v.leadRecord.Lead_Email__c}"
+										class="customRequired"
+									/>
+									<lightning:inputField
+										fieldName="Referring_Banker_s_Branch__c"
+										aura:id="iReferringBankersBranch"
+										value="{!v.leadRecord.Referring_Banker_s_Branch__c}"
+										class="customRequired"
+									/>
+								</lightning:layoutItem>
+							</lightning:layout>
+						</aura:if>
+						<aura:if isTrue="{!and(v.defaultRecordType !='Direct_Delivery_Sales_Lead', not(v.isShortTermInsurance))}">
+							<h3 class="slds-section__title">
+								<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Product Interest</span>
+							</h3>
+						</aura:if>
+						<aura:if isTrue="{!not(v.isShortTermInsurance)}">
+							<lightning:layout>
+								<aura:if
+									isTrue="{!and(v.isRetailLead, or(v.defaultRecordType == 'Retail_Sales_Lead', v.defaultRecordType == 'Retail_Service_Lead'))}"
+								>
+									<lightning:layoutItem padding="around-small" size="12">
+										<ui:inputCheckbox class="slds-float--left" label="&nbsp; Hot Lead" aura:id="iHotDeal" />
+										<hr />
+										<table class="slds-table slds-table_cell-buffer" width="100%">
+											<tbody>
+												<aura:iteration items="{!v.productInterestList}" var="item" indexVar="index">
+													<c:ProductInterestRowItems productInstance="{!item}" rowIndex="{!index}" />
+												</aura:iteration>
+											</tbody>
+										</table>
+										<lightning:inputField
+											fieldName="Expressed_Interest_Detail__c"
+											aura:id="iExpressedInterestDetail"
+											value="{!v.leadRecord.Expressed_Interest_Detail__c}"
+										/>
+										<lightning:inputField
+											fieldName="LeadSource"
+											aura:id="iLeadSource"
+											value="{!v.leadRecord.LeadSource}"
+											class="customRequired"
+											onchange="{!c.clearServiceGroup}"
+										/>
+										<lightning:inputField
+											fieldName="Lead_Type__c"
+											aura:id="idLeadType"
+											value="{!v.leadRecord.Lead_Type__c}"
+											class="customRequired"
+										/>
+										<lightning:inputField
+											fieldName="Source_Business_Unit__c"
+											aura:id="iLeadSourceBus"
+											value="{!v.leadRecord.Source_Business_Unit__c}"
+										/>
+										<lightning:inputField
+											fieldName="Language_Preference__c"
+											aura:id="iLanguagePreference"
+											value="{!v.leadRecord.Language_Preference__c}"
+										/>
+										<lightning:inputField
+											fieldName="Proposed_Appointment_Date__c"
+											aura:id="iLeadApointment"
+											value="{!v.leadRecord.Proposed_Appointment_Date__c}"
+										/>
+										<lightning:inputField
+											fieldName="Expected_Production_Number__c"
+											aura:id="iLeadProdNumber"
+											value="{!v.leadRecord.Expected_Production_Number__c}"
+										/>
+										<lightning:inputField fieldName="Travel_Info__c" aura:id="iTravelInfo" value="{!v.leadRecord.Travel_Info__c}" />
+									</lightning:layoutItem>
+									<aura:set attribute="else">
+										<!--adding snippet or Direct delivery module-->
+										<aura:if isTrue="{!v.defaultRecordType == 'Direct_Delivery_Sales_Lead'}">
+											<aura:set attribute="else">
+												<aura:if isTrue="{!v.defaultRecordType == 'STI_Lead'}">
+													<lightning:layoutItem padding="around-small" size="12">
+														<lightning:inputField
+															fieldName="Financial_Product__c"
+															aura:id="iFinancialProductSTI"
+															onchange="{!c.getFinancialProduct}"
+															class="customRequired"
+														/>
+														<lightning:inputField
+															fieldName="Lead_Additional_Information__c"
+															aura:id="iExpressedInterestDetailSTI"
+															value="{!v.leadRecord.Lead_Additional_Information__c}"
+														/>
+														<lightning:inputField
+															fieldName="Lead_Source__c"
+															aura:id="iLeadSourceSTI"
+															value="{!v.leadRecord.Lead_Source__c}"
+															class="customRequired"
+														/>
+														<lightning:inputField
+															fieldName="STI_Sub_Source__c"
+															aura:id="iLeadSubSourceSTI"
+															value="{!v.leadRecord.STI_Sub_Source__c}"
+															class="customRequired"
+														/>
+														<lightning:inputField
+															fieldName="Preferred_Communication_Channel__c"
+															aura:id="iPreferredCommunicationChannelSTI"
+															value="{!v.leadRecord.Preferred_Communication_Channel__c}"
+															class="customRequired"
+														/>
+														<lightning:inputField
+															fieldName="Lead_Type__c"
+															aura:id="iLeadTypeSTI"
+															value="{!v.leadRecord.Lead_Type__c}"
+															class="customRequired"
+														/>
+														<lightning:inputField
+															fieldName="Language_Preference__c"
+															aura:id="iLanguagePreferenceSTI"
+															value="{!v.leadRecord.Language_Preference__c}"
+														/>
+													</lightning:layoutItem>
+													<aura:set attribute="else">
+														<lightning:layoutItem padding="around-small" size="12">
+															<lightning:inputField
+																fieldName="Financial_Product__c"
+																aura:id="iFinancialProduct1"
+																onchange="{!c.getFinancialProduct}"
+															/>
+															<lightning:inputField
+																fieldName="Expressed_Interest_Detail__c"
+																aura:id="iExpressedInterestDetail"
+																value="{!v.leadRecord.Expressed_Interest_Detail__c}"
+															/>
+															<lightning:inputField
+																fieldName="LeadSource"
+																aura:id="iLeadSource"
+																value="{!v.leadRecord.LeadSource}"
+																class="customRequired"
+															/>
+															<lightning:inputField
+																fieldName="Preferred_Communication_Channel__c"
+																aura:id="iPreferredCommunicationChannel"
+																value="{!v.leadRecord.Preferred_Communication_Channel__c}"
+																class="customRequired"
+															/>
+															<lightning:inputField
+																fieldName="Lead_Type__c"
+																aura:id="iLeadType"
+																value="{!v.leadRecord.LeadType}"
+																class="customRequired"
+															/>
+															<lightning:inputField
+																fieldName="Language_Preference__c"
+																aura:id="iLanguagePreference"
+																value="{!v.leadRecord.Language_Preference__c}"
+															/>
+															<aura:if isTrue="{!v.showInvestmentField}">
+																<lightning:inputField
+																	class="highlightCls"
+																	fieldName="Investment_Amount__c"
+																	aura:id="investedAmt"
+																	value="{!v.leadRecord.Investment_Amount__c}"
+																	required="true"
+																/>
+															</aura:if>
+														</lightning:layoutItem>
+													</aura:set>
+												</aura:if>
+											</aura:set>
+										</aura:if>
+									</aura:set>
+								</aura:if>
+							</lightning:layout>
+						</aura:if>
+						<aura:if isTrue="{!and(v.isRetailLead, or(v.defaultRecordType == 'Retail_Sales_Lead', v.defaultRecordType == 'Retail_Service_Lead'))}">
+							<h3 class="slds-section__title">
+								<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Responsible Area</span>
+							</h3>
+							<lightning:layout>
+								<lightning:layoutItem padding="around-small" size="12">
+									<c:LookUpField
+										lookupSearchData="ServiceGroupLookupSearch"
+										lookupSearchCondition="{!v.serviceGroupLookupCondition}"
+										icon_name="custom:custom84"
+										selectedRecord="{!v.serviceGroupRecord}"
+										recordIdString="{!v.serviceGroupId2}"
+										aura:id="serviceGrouplookup"
+										label="Branch / Business Unit Search"
+										placeHolder="Search branch/business unit..."
+									/>
+									<c:LookUpField
+										lookupSearchData="UserLookupSearch"
+										lookupSearchCondition="{!v.userLookupFieldCondition}"
+										icon_name="custom:custom84"
+										selectedRecord="{!v.selectedUserRecord}"
+										recordIdString="{!v.selectedUserId}"
+										aura:id="userlookup"
+										label="Colleague Search"
+										placeHolder="Search colleague..."
+									/>
+									<i style="color: grey">Please note you can only assign to colleagues that are in the same branch as yours</i>
+								</lightning:layoutItem>
+							</lightning:layout>
+							<aura:set attribute="else">
+								<aura:if isTrue="{!v.isShortTermInsurance}">
+									<h3 class="slds-section__title">
+										<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Responsible Area</span>
+									</h3>
+									<lightning:layout>
+										<lightning:layoutItem padding="around-small" size="12">
+											<c:LookUpField
+												lookupSearchData="ServiceGroupLookupSearch"
+												lookupSearchCondition="{!v.serviceGroupLookupCondition}"
+												icon_name="custom:custom84"
+												selectedRecord="{!v.serviceGroupRecord}"
+												recordIdString="{!v.serviceGroupId2}"
+												aura:id="serviceGrouplookup"
+												label="Branch Search"
+												placeHolder="Search branch..."
+											/>
+											<c:LookUpField
+												lookupSearchData="UserLookupSearch"
+												lookupSearchCondition="{!v.userLookupFieldCondition}"
+												icon_name="custom:custom84"
+												selectedRecord="{!v.selectedUserRecord}"
+												recordIdString="{!v.selectedUserId}"
+												aura:id="userlookup"
+												label="Colleague Search"
+												placeHolder="Search colleague..."
+											/>
+											<i style="color: grey">Please note you can only assign to colleagues that are in the same branch as yours</i>
+										</lightning:layoutItem>
+									</lightning:layout>
+								</aura:if>
+								<!--adding snippet or Direct delivery module-->
+								<aura:if isTrue="{!v.defaultRecordType == 'Direct_Delivery_Sales_Lead' }">
+									<aura:if isTrue="{!v.showColleague}">
+										<h3 class="slds-section__title">
+											<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Assign to colleague</span>
+										</h3>
+										<lightning:layout>
+											<lightning:layoutItem padding="around-small" size="12">
+												<label class="slds-form-element__label" for="iReferrer">Colleague Search</label>
+												<lightning:inputField
+													fieldName="DD_Agent_Who_Referred_Lead__c"
+													aura:id="iReferrer"
+													value="{!v.leadRecord.DD_Agent_Who_Referred_Lead__c}"
+													variant="label-hidden"
+												/>
+											</lightning:layoutItem>
+										</lightning:layout>
+									</aura:if>
+									<aura:set attribute="else">
+										<aura:if isTrue="{!not(v.isShortTermInsurance)}">
+											<h3 class="slds-section__title">
+												<span class="slds-truncate slds-button slds-section__title-action" title="Section Title"
+													>Regional Information</span
+												>
+											</h3>
+											<lightning:layout>
+												<lightning:layoutItem padding="around-small" size="12">
+													<aura:if isTrue="{!v.defaultRecordType == 'STI_Lead'}">
+														<lightning:inputField
+															fieldName="Preferred_Site_STI__c"
+															aura:id="iPreferredSiteSTI"
+															onchange="{!c.getPreferredSite}"
+															class="customRequired"
+														/>
+														<br />
+														<aura:set attribute="else">
+															<lightning:inputField
+																fieldName="Preferred_Site__c"
+																aura:id="iPreferredSite"
+																onchange="{!c.getPreferredSite}"
+															/>
+															<br />
+														</aura:set>
+													</aura:if>
+													<ui:inputCheckbox
+														class="slds-float--left"
+														label="&nbsp; Assign using Active Assignment Rule"
+														aura:id="iAssignmentRule"
+													/>
+												</lightning:layoutItem>
+											</lightning:layout>
+										</aura:if>
+									</aura:set>
+								</aura:if>
+							</aura:set>
+						</aura:if>
+
+						<!-- Custom Buttons -->
+						<lightning:layout>
+							<lightning:layoutItem class="right-align" padding="around-small" size="12">
+								<aura:if
+									isTrue="{!and(v.isRetailLead, or(v.defaultRecordType == 'Retail_Sales_Lead', v.defaultRecordType == 'Retail_Service_Lead'))}"
+								>
+									<lightning:button
+										label="Assign to colleague"
+										onclick="{!c.assignRetailLeadToUser}"
+										variant="brand"
+										aura:id="ibtnAssignToUser"
+									/>
+									<aura:if isTrue="{!v.showRouteBtn}">
+										<lightning:button label="Route" onclick="{!c.routeRetailLead}" variant="brand" aura:id="ibtnServiceGroupRouting" />
+									</aura:if>
+									<aura:if isTrue="{!v.showAssignBtn}">
+										<lightning:button
+											label="Assign to me"
+											onclick="{!c.saveAndNavigateToRetailLead}"
+											variant="brand"
+											aura:id="ibtncreateLead"
+										/>
+									</aura:if>
+									<lightning:button label="Cancel" onclick="{!c.openModel}" variant="brand" aura:id="ibtnCancel" />
+									<aura:set attribute="else">
+										<!--Short term insurance btns-->
+										<aura:if isTrue="{!v.isShortTermInsurance}">
+											<lightning:button
+												label="Assign to colleague"
+												onclick="{!c.assignAICSTIlLeadToUser}"
+												variant="brand"
+												aura:id="ibtnAssignToUser"
+											/>
+											<lightning:button label="Route" onclick="{!c.routeAICSTIlLead}" variant="brand" aura:id="ibtnServiceGroupRouting" />
+											<lightning:button
+												label="Assign to me"
+												onclick="{!c.saveAndNavigateToAICSTIlLead}"
+												variant="brand"
+												aura:id="ibtncreateLead"
+											/>
+											<lightning:button label="Cancel" onclick="{!c.cancelAndCloseTab}" variant="brand" aura:id="ibtnCancel" />
+										</aura:if>
+										<!--adding snippet or Direct delivery module-->
+										<aura:if isTrue="{!v.defaultRecordType == 'Direct_Delivery_Sales_Lead'}">
+											<aura:if isTrue="{!v.showColleague}">
+												<lightning:button
+													label="Assign to colleague"
+													onclick="{!c.assignRetailLeadToUser}"
+													variant="brand"
+													disabled="{!v.butonDisable}"
+												/>
+											</aura:if>
+											<lightning:button label="Assign to me" onclick="{!c.saveDDLead}" variant="brand" disabled="{!v.butonDisable}" />
+											<!--<lightning:button label="Route" onclick="{!c.routeDDLead}" variant="brand" aura:id="ibtnServiceGroupRouting"/>-->
+											<lightning:button
+												label="Cancel"
+												onclick="{!c.openModel}"
+												variant="brand"
+												aura:id="ibtnCancel"
+												disabled="{!v.butonDisable}"
+											/>
+											<aura:set attribute="else">
+												<aura:if isTrue="{!not(v.isShortTermInsurance)}">
+													<lightning:button label="Save" onclick="{!c.createNewLead}" variant="brand" aura:id="ibtncreateLead" />
+													<lightning:button label="Cancel" onclick="{!c.cancelAndCloseTab}" variant="brand" aura:id="ibtnCancel" />
+												</aura:if>
+											</aura:set>
+										</aura:if>
+									</aura:set>
+								</aura:if>
+							</lightning:layoutItem>
+						</lightning:layout>
+					</lightning:recordEditForm>
+				</div>
+			</lightning:card>
+		</div>
+
+		<aura:if isTrue="{!v.isOpen}">
+			<!--###### MODAL BOX Start######-->
+			<section
+				role="dialog"
+				tabindex="-1"
+				aria-labelledby="modal-heading-01"
+				aria-modal="true"
+				aria-describedby="modal-content-id-1"
+				class="slds-modal slds-fade-in-open"
+			>
+				<div class="slds-modal__container">
+					<!-- ###### MODAL BOX HEADER Start ######-->
+					<header class="slds-modal__header">
+						<lightning:buttonIcon
+							iconName="utility:close"
+							onclick="{! c.closeModel }"
+							alternativeText="close"
+							variant="bare-inverse"
+							class="slds-modal__close"
+						/>
+						<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Cancel new lead</h2>
+					</header>
+					<!--###### MODAL BOX BODY Part Start######-->
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+						<p>Changes made will not be saved, are you sure you want to cancel?</p>
+					</div>
+					<!--###### MODAL BOX FOOTER Part Start ######-->
+					<footer class="slds-modal__footer">
+						<lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeModel }" />
+						<lightning:button variant="brand" label="Confirm" title="Confirm" onclick="{! c.cancelAndCloseTab }" />
+					</footer>
+				</div>
+			</section>
+			<div class="slds-backdrop slds-backdrop_open"></div>
+			<!--###### MODAL BOX Part END Here ######-->
+		</aura:if>
+	</div>
+	<!--</aura:set>
+    </aura:if>-->
+</aura:component>

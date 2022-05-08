@@ -1,0 +1,496 @@
+<aura:component controller="StopOrderMaintenance" implements="force:hasRecordId,lightning:availableForFlowScreens" access="global">
+	<lightning:workspaceAPI aura:id="workspace" />
+
+	<!--Attribute Declaration-->
+	<aura:attribute name="mapValues" type="Map" />
+	<aura:attribute name="listValues" type="List" />
+	<aura:attribute name="currencyCode" type="String" />
+	<aura:attribute name="recordId" type="String" access="global" /><!--Acc record Id-->
+	<aura:attribute name="isEditBeneficiaryOpen" type="boolean" default="false" />
+	<aura:attribute name="isRemoveBeneficiaryOpen" type="boolean" default="false" />
+	<aura:attribute name="isEmailStopOrderHistoryOpen" type="boolean" default="false" />
+	<aura:attribute name="clientEmail" type="String" access="global" />
+	<aura:attribute name="caseId" type="String" access="global" />
+	<aura:attribute name="caseRecordTypeId" type="String" access="global" />
+	<aura:attribute name="executeAnotherJob" type="boolean" default="false" access="global" />
+	<aura:attribute name="instrNo" type="String" />
+	<aura:attribute name="accountNumber" type="String" />
+	<aura:attribute name="accountNumberType" type="String" />
+	<aura:attribute name="accountNumberBranch" type="String" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="isErrorMessage" type="Boolean" />
+	<!-- Bank And Branch Name/Code  -->
+	<aura:attribute name="lookupId" type="String" />
+	<aura:attribute name="selectedBankId" type="String" />
+	<aura:attribute name="selectedBranchCodeId" type="String" />
+	<aura:attribute name="selectedBranchCodeName" type="String" />
+	<aura:attribute name="selectedBankName" type="sobject" default="" />
+	<aura:attribute name="selectedBranchName" type="string" default="" />
+	<aura:attribute name="branchCode" type="string" default="" />
+	<!--Account Type -->
+	<aura:attribute name="targetAccTypeoptions" type="List" />
+	<aura:attribute name="selectedTargetAccType" type="string" />
+	<aura:attribute name="beneficiaryName" type="String" />
+	<aura:attribute name="bankName" type="String" />
+	<aura:attribute name="targetAccount" type="String" />
+	<aura:attribute name="sourceRef" type="String" />
+	<aura:attribute name="targetRef" type="String" />
+	<aura:attribute name="targetAccountType" type="String" />
+	<aura:attribute name="amount" type="String" />
+	<aura:attribute name="frequency" type="String" />
+	<aura:attribute name="payDate" type="Date" />
+	<aura:attribute name="payEndDate" type="Date" />
+	<aura:attribute name="payDay" type="String" />
+	<aura:attribute name="typeOfAction" type="String" />
+	<aura:attribute name="executeJobs" type="boolean" default="true" />
+	<aura:attribute name="isModalShow" type="boolean" default="false" />
+	<aura:attribute name="message" type="String" />
+	<aura:attribute name="isSpinner" type="boolean" default="false" />
+	<aura:attribute name="userRecord" type="Object" />
+	<aura:attribute
+		name="idsToValidate"
+		type="List"
+		default="['iPayDate','iTargetRef','iBeneficiaryName', 'iSourceRef','iTragetAccount','iPayDay','iselectAccType','iFreq','iEndDate','iAmount']"
+	/>
+	<!--Handler Declaration-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<!--Start of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+	<aura:handler name="change" value="{!v.clientIDnVObjectParent}" action="{!c.handleObjectChange}" />
+	<aura:attribute name="clientIDnVObjectParent" type="Map" default="{}" />
+	<aura:attribute name="allowClientIDnVPolling" type="Boolean" default="false" />
+	<aura:attribute name="clientCifCodeParent" type="Boolean" default="false" />
+
+	<aura:if isTrue="{!v.allowClientIDnVPolling}">
+		<c:ClientIDnVPolling clientIDnVObject="{!v.clientIDnVObjectParent}" cifCodeFromParentCmp="{!v.clientCifCodeParent}" />
+	</aura:if>
+
+	<lightning:recordEditForm
+		aura:id="caseEditFormIDnV"
+		objectApiName="Case"
+		recordId="{!v.caseId}"
+		onload="{!c.handleCaseLoadIDnV}"
+		onsuccess="{!c.handleCaseSuccessIDnV}"
+	>
+		<lightning:inputField aura:id="statusFieldIDnV" fieldName="Status" class="slds-hide" />
+		<lightning:inputField aura:id="serviceGroupFieldIDnV" fieldName="sd_Service_Group__c" class="slds-hide" />
+		<lightning:inputField aura:id="clientCIFFieldIDnV" fieldName="Client_CIF_Number__c" class="slds-hide" />
+		<lightning:inputField aura:id="caseNumberFieldIDnV" fieldName="CaseNumber" class="slds-hide" />
+	</lightning:recordEditForm>
+	<!--End of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+
+	<lightning:card iconName="log_event">
+		<aura:if isTrue="{!v.executeJobs}">
+			<aura:if isTrue="{!v.isSpinner}">
+				<center style="z-index: 99">
+					<lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+				</center>
+			</aura:if>
+			<div class="c-container">
+				<h3 class="slds-section__title">
+					<span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Stop Order Maintenance</span>
+				</h3>
+
+				<aura:if isTrue="{!v.isErrorMessage}">
+					<lightning:layout>
+						<lightning:layoutItem padding="around-small" size="12">
+							<p style="color: red">
+								<ui:outputText aura:id="iCustomErrorMessage" value="{!v.errorMessage}" />
+							</p>
+						</lightning:layoutItem>
+					</lightning:layout>
+				</aura:if>
+
+				<aura:renderIf isTrue="{!not(empty(v.listValues))}">
+					<div class="slds-table--header-fixed_container" style="height: 13.5rem">
+						<div class="slds-scrollable" style="height: 100%; width: 100%">
+							<table class="slds-table slds-table_bordered slds-table--header-fixed slds-table_col-bordered">
+								<thead>
+									<tr>
+										<th scope="col">
+											<div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate slds-cell-fixed">Name</div>
+										</th>
+										<th scope="col">
+											<div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate slds-cell-fixed">Start Date</div>
+										</th>
+										<th scope="col">
+											<div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate slds-cell-fixed">End Date</div>
+										</th>
+										<!--th scope="col">
+                                                <div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate slds-cell-fixed">Ref</div>
+                                            </th-->
+										<th scope="col" style="width: 5rem">
+											<div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate slds-cell-fixed">Amount</div>
+										</th>
+										<th scope="col">
+											<div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate slds-cell-fixed">Freq</div>
+										</th>
+										<th scope="col">
+											<div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate slds-cell-fixed">Bank</div>
+										</th>
+										<th scope="col">
+											<div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate slds-cell-fixed">Account</div>
+										</th>
+
+										<th scope="col" style="width: 0.5rem">
+											<div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate slds-cell-fixed">Actions</div>
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									<aura:iteration items="{!v.listValues}" var="item" indexVar="key">
+										<tr>
+											<td>
+												<div class="slds-truncate">{!item.value.refName}</div>
+											</td>
+											<td>
+												<div class="slds-truncate">{!item.value.actionDate}</div>
+											</td>
+											<td>
+												<div class="slds-truncate">{!item.value.PayEndDate}</div>
+											</td>
+											<!--td>
+                                                    <div class="slds-truncate">{!item.value.sourceRef}</div>
+                                                </td-->
+											<td>
+												<div class="slds-truncate">{!$Locale.currency} {!item.value.amount}</div>
+											</td>
+											<td>
+												<div class="slds-truncate">{!item.value.freq}</div>
+											</td>
+											<td>
+												<div class="slds-truncate">{!item.value.targetBank}</div>
+											</td>
+											<td>
+												<div class="slds-truncate">{!item.value.targetAccount}</div>
+											</td>
+
+											<td class="slds-truncate">
+												<lightning:buttonMenu alternativeText="Show menu" menuAlignment="auto" onselect="{!c.handleSelect}">
+													<lightning:menuItem value="{!item.key}" label="Edit" iconName="utility:custom_apps" />
+													<lightning:menuItem value="{!item.key}" label="Delete" iconName="action:delete" />
+												</lightning:buttonMenu>
+											</td>
+										</tr>
+									</aura:iteration>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</aura:renderIf>
+				<br />
+				<lightning:layout multipleRows="false" horizontalAlign="spread">
+					<lightning:layoutItem padding="around-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+						<lightning:button class="slds-float_right" aura:id="iRefresh" variant="brand" label="Refresh" title="Refresh" onclick="{! c.doInit}" />
+						<!--
+                             DO NOT REMOVE - WILL BE USED WHEN DOCFUSION IS READY
+                            <lightning:button class="slds-float_left"
+                                            aura:id="iHistory"
+                                            variant="brand"
+                                            label="Email"
+                                            title="Email"
+                                            onclick="{! c.handleEmailStopOrderHistory}"/>
+                            -->
+						<lightning:button class="slds-float_left" aura:id="iAddnew" variant="brand" label="Add" title="Add" onclick="{!c.handleClickAdd}" />
+					</lightning:layoutItem>
+					<lightning:layoutItem padding="around-small" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+						<lightning:button
+							class="slds-float_right"
+							aura:id="iCloseCase"
+							variant="brand"
+							label="Close Case"
+							title="Close Case"
+							onclick="{! c.closeCase}"
+						/>
+					</lightning:layoutItem>
+				</lightning:layout>
+
+				<!--Modal : Email Stop Order History-->
+				<aura:if isTrue="{!v.isEmailStopOrderHistoryOpen}">
+					<!--###### MODAL BOX Start######-->
+					<section
+						role="dialog"
+						tabindex="-1"
+						aria-labelledby="modal-heading-01"
+						aria-modal="true"
+						aria-describedby="modal-content-id-1"
+						class="slds-modal slds-fade-in-open"
+					>
+						<div class="slds-modal__container">
+							<!-- ###### MODAL BOX HEADER Start ######-->
+							<header class="slds-modal__header">
+								<lightning:buttonIcon
+									iconName="utility:close"
+									onclick="{! c.closeEmailStopOrderHistory }"
+									alternativeText="close"
+									variant="bare-inverse"
+									class="slds-modal__close"
+								/>
+								<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Email Stop Order History</h2>
+							</header>
+							<!--###### MODAL BOX BODY Part Start######-->
+							<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+								<lightning:recordEditForm
+									aura:id="recordViewForm"
+									recordId="{!v.caseId}"
+									recordTypeId="{!v.caseRecordTypeId}"
+									objectApiName="Case"
+								>
+									<lightning:inputField fieldName="Email__c" aura:id="emailAddress" value="{!v.clientEmail}" />
+								</lightning:recordEditForm>
+							</div>
+							<!--###### MODAL BOX FOOTER Part Start ######-->
+							<footer class="slds-modal__footer">
+								<lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeEmailStopOrderHistory }" />
+								<lightning:button variant="brand" label="Send" title="Send" onclick="{! c.actionEmailStopOrderHistory }" />
+							</footer>
+						</div>
+					</section>
+					<div class="slds-backdrop slds-backdrop_open"></div>
+					<!--###### MODAL BOX Part END Here ######-->
+				</aura:if>
+				<!--Modal : Remove Stop Order -->
+				<aura:if isTrue="{!v.isRemoveBeneficiaryOpen}">
+					<!--###### MODAL BOX Start######-->
+					<section
+						role="dialog"
+						tabindex="-1"
+						aria-labelledby="modal-heading-01"
+						aria-modal="true"
+						aria-describedby="modal-content-id-1"
+						class="slds-modal slds-fade-in-open"
+					>
+						<div class="slds-modal__container">
+							<!-- ###### MODAL BOX HEADER Start ######-->
+							<header class="slds-modal__header">
+								<lightning:buttonIcon
+									iconName="utility:close"
+									onclick="{! c.closeRemoveBeneficiary }"
+									alternativeText="close"
+									variant="bare-inverse"
+									class="slds-modal__close"
+								/>
+								<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Remove Stop Order</h2>
+							</header>
+							<!--###### MODAL BOX BODY Part Start######-->
+							<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+								<p>
+									<b> {!v.beneficiaryName} : Are you sure you want to remove this Stop Order? </b>
+								</p>
+							</div>
+							<!--###### MODAL BOX FOOTER Part Start ######-->
+							<footer class="slds-modal__footer">
+								<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeRemoveBeneficiary }" />
+								<lightning:button variant="brand" label="Yes" title="Yes" onclick="{! c.actionRemoveBeneficiary }" />
+							</footer>
+						</div>
+					</section>
+					<div class="slds-backdrop slds-backdrop_open"></div>
+					<!--###### MODAL BOX Part END Here ######-->
+				</aura:if>
+
+				<!--Modal : Edit Stop Order -->
+				<aura:if isTrue="{!v.isEditBeneficiaryOpen}">
+					<!--###### MODAL BOX Start######-->
+					<section
+						role="dialog"
+						tabindex="-1"
+						aria-labelledby="modal-heading-01"
+						aria-modal="true"
+						aria-describedby="modal-content-id-1"
+						class="slds-modal slds-fade-in-open"
+					>
+						<div class="slds-modal__container">
+							<!-- ###### MODAL BOX HEADER Start ######-->
+							<header class="slds-modal__header">
+								<lightning:buttonIcon
+									iconName="utility:close"
+									onclick="{! c.closeEditBeneficiary }"
+									alternativeText="close"
+									variant="bare-inverse"
+									class="slds-modal__close"
+								/>
+								<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add / Update Stop Order</h2>
+							</header>
+							<!--###### MODAL BOX BODY Part Start######-->
+							<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+								<lightning:layout>
+									<lightning:layoutItem padding="around-small" size="12">
+										<lightning:input
+											aura:id="iBeneficiaryName"
+											label="Recipient Name"
+											value="{!v.beneficiaryName}"
+											maxlength="20"
+											required="true"
+										/>
+									</lightning:layoutItem>
+								</lightning:layout>
+								<lightning:recordEditForm aura:id="iLookup" objectApiName="Lookup__c" recordId="{!v.lookupId}">
+									<lightning:layout>
+										<lightning:layoutItem padding="around-small" size="6">
+											<!-- Bank Name -->
+											<abbr title="required" class="slds-required">*</abbr>
+											<label class="slds-form-element__label" for="iBank">Bank Name</label>
+											<lightning:inputField aura:id="iBank" fieldName="Bank__c" variant="label-hidden" value="{!v.selectedBankId}" />
+
+											<lightning:input aura:id="iTragetAccount" label="Account Number" value="{!v.targetAccount}" required="true" />
+											<lightning:input aura:id="iSourceRef" label="Your Reference" value="{!v.sourceRef}" required="true" />
+											<lightning:input aura:id="iTargetRef" label="Recipient Reference" value="{!v.targetRef}" required="true" />
+											<lightning:input type="date" aura:id="iPayDate" label="Payment Date" value="{!v.payDate}" required="true" />
+
+											<lightning:select
+												aura:id="iPayDay"
+												name="selectPayDay"
+												label="Payment Day"
+												onchange="{! c.onPayDayChange }"
+												required="true"
+											>
+												<option value="1">1</option>
+												<option value="2">2</option>
+												<option value="3">3</option>
+												<option value="4">4</option>
+												<option value="5">5</option>
+												<option value="6">6</option>
+												<option value="7">7</option>
+												<option value="8">8</option>
+												<option value="9">9</option>
+												<option value="10">10</option>
+												<option value="11">11</option>
+												<option value="12">12</option>
+												<option value="13">13</option>
+												<option value="14">14</option>
+												<option value="15">15</option>
+												<option value="16">16</option>
+												<option value="17">17</option>
+												<option value="18">18</option>
+												<option value="19">19</option>
+												<option value="20">20</option>
+												<option value="21">21</option>
+												<option value="22">22</option>
+												<option value="23">23</option>
+												<option value="24">24</option>
+												<option value="25">25</option>
+												<option value="26">26</option>
+												<option value="27">27</option>
+												<option value="28">28</option>
+												<option value="29">29</option>
+												<option value="30">30</option>
+												<option value="31">31</option>
+											</lightning:select>
+										</lightning:layoutItem>
+										<lightning:layoutItem padding="around-small" size="6">
+											<!--Branch code-->
+											<c:strike_lookup
+												required="true"
+												label="Branch Name"
+												object="Lookup__c"
+												searchField="Name"
+												placeholder="Search Branch"
+												iconName="standard:poll"
+												order="Name"
+												limit="10"
+												showRecentRecords="true"
+												filter="{!v.selectedBankId}"
+												value="{!v.selectedBranchCodeId}"
+												loadingMessage="Loading..."
+												errorMessage="Invalid input"
+												valueLabel="{!v.selectedBranchCodeName}"
+											/>
+
+											<!--Picklist for Account types-->
+											<lightning:select
+												required="true"
+												aura:id="iselectAccType"
+												name="selectAccType"
+												label="Account Type"
+												onchange="{! c.onTargetAccTypeChange }"
+											>
+												<option value="02">Current/Cheque</option>
+												<option value="01">Savings</option>
+											</lightning:select>
+
+											<lightning:input
+												required="true"
+												type="number"
+												aura:id="iAmount"
+												label="Amount"
+												value="{!v.amount}"
+												formatter="currency"
+												step="0.01"
+											/>
+
+											<lightning:select
+												aura:id="iFreq"
+												name="selectFreq"
+												label="Take Action When"
+												onchange="{! c.onFreqChange }"
+												required="true"
+											>
+												<option value="DAILY">DAILY</option>
+												<option value="MONTHLY">MONTHLY</option>
+												<option value="MONTH END">MONTH END</option>
+												<option value="WEEKLY">WEEKLY</option>
+												<option value="ANNUALLY">ANNUALLY</option>
+												<option value="2 MONTHLY">2 MONTHLY</option>
+												<option value="2 WEEKLY">2 WEEKLY</option>
+												<option value="QUARTERLY">QUARTERLY</option>
+												<option value="4 MONTHLY">4 MONTHLY</option>
+												<option value="6 MONTHLY">6 MONTHLY</option>
+											</lightning:select>
+
+											<lightning:input type="date" aura:id="iEndDate" label="End Date" value="{!v.payEndDate}" required="true" />
+										</lightning:layoutItem>
+									</lightning:layout>
+								</lightning:recordEditForm>
+							</div>
+							<!--###### MODAL BOX FOOTER Part Start ######-->
+							<footer class="slds-modal__footer">
+								<lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{! c.closeEditBeneficiary }" />
+								<lightning:button variant="brand" label="Submit" title="Submit" onclick="{! c.validateRequiredFields }" />
+							</footer>
+						</div>
+					</section>
+					<div class="slds-backdrop slds-backdrop_open"></div>
+					<!--###### MODAL BOX Part END Here ######-->
+				</aura:if>
+			</div>
+			<aura:set attribute="else">
+				<lightning:layout multipleRows="true">
+					<lightning:layoutItem padding="around-small" size="10">
+						<div class="slds-align--absolute-left slds-p-top_small"><span style="color: green">{!v.message}</span></div>
+					</lightning:layoutItem>
+				</lightning:layout>
+			</aura:set>
+		</aura:if>
+	</lightning:card>
+
+	<aura:if isTrue="{!v.isModalShow}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-label="Meaningful description of the modal content"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<header class="slds-modal__header slds-modal__header_empty">
+					<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick="{!c.closeModal}">
+						X
+						<span class="slds-assistive-text">Close</span>
+					</button>
+				</header>
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<h1 class="slds-align_absolute-center">Do you want to execute another job</h1>
+				</div>
+				<footer class="slds-modal__footer">
+					<div class="slds-align_absolute-center">
+						<lightning:button class="slds-button slds-button_brand" label="Yes" aura:id="previousId" variant="neutral" onclick="{!c.executeJob}" />
+						<lightning:button class="slds-button slds-button_neutral" label="No" aura:id="previousId" variant="neutral" onclick="{!c.closeModal}" />
+					</div>
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+	</aura:if>
+</aura:component>

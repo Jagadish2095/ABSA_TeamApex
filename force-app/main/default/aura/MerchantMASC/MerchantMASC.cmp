@@ -1,0 +1,112 @@
+<!--
+* Lightning Component for Onboarding Merchant Mass Account Maintenance and Setup (MerchantMASC)
+*
+* @author  Jason Quevauvilliers
+* @version v1.0
+* @since   2020-04-02
+*
+-->
+<aura:component access="global"
+                controller="MerchantSalesActivityController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" >
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="c:onboardingOpportunityIdsCreated" action="{!c.handleApplicationEvent}"/>
+
+    <!-- Parent Cmp Attribute Declaration -->
+    <aura:attribute name="cmpFormStatus" type="String" />
+    <aura:attribute name="isFormReadOnly" type="Boolean" />
+
+    <!-- Attribute Declaration -->
+    <aura:attribute name="activeSections" type="List" default="['MassAccountMaintenanceAndSetup']" />
+    <aura:attribute name="reloadForm" type="boolean" default="true"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="applicationProductMerchantId" type="String" default=""/>
+    <aura:attribute name="depositMonitoringRequired" type="boolean" default="true"/>
+    <aura:attribute name="displayEmptyDiv" type="boolean" default="false"/>
+    <aura:attribute name="appProdMerchRecord" type="Object" />
+    <aura:attribute name="isShowSuccessToast" type="Boolean" />
+    <aura:attribute name="arrayAuraIdsToBeValidated" type="List" default="['appProdMerchRegion', 'appProdMerchAssociationCode', 'appProdMerchSiteCode', 'appProdMerchOfficerCode', 'appProdMerchCostCentre', 'appProdMerchMCC', 'appProdMerchNumberOfDays']" />
+    <aura:attribute name="resetFieldsList" type="List" default="['appProdMerchRegion','appProdMerchAssociationCode','appProdMerchSiteCode','appProdMerchOfficerCode','appProdMerchCostCentre', 'appProdMerchMCC', 'appProdMerchNumberOfDays']" />
+    <aura:attribute name="errorMessage" type="String" default="" />
+
+    <!-- Method Declaration -->
+    <aura:method name="saveFormMethod" action="{!c.executeSaveFormMethod}" />
+
+    <lightning:accordion activeSectionName="{! v.activeSections }" allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="MassAccountMaintenanceAndSetup" label="Mass Account Maintenance and Setup" >
+
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="recordError">
+                    <br/>
+                    <h2 class="slds-section__title slds-align_absolute-left" style="color:red">{!v.errorMessage}</h2>
+                    <br/>
+                </div>
+            </aura:if>
+
+            <aura:if isTrue="{!v.reloadForm}">
+
+                <lightning:recordEditForm aura:id="massAccountMaintenanceAndSetupForm"
+                                          objectApiName="Application_Product_Merchant__c"
+                                          recordId="{!v.applicationProductMerchantId}"
+                                          onsubmit="{!c.handleSubmit}"
+                                          onsuccess="{!c.handleSuccess}"
+                                          onload="{!c.handleLoad}"
+                                          onerror="{!c.handleError}" >
+
+                    <lightning:layout multipleRows="true">
+
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:inputField fieldName="Region__c" aura:id="appProdMerchRegion" required="true" disabled="{!v.isFormReadOnly}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:inputField fieldName="Association_Code__c" aura:id="appProdMerchAssociationCode"  required="true" disabled="{!v.isFormReadOnly}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:inputField fieldName="Site_Code__c" aura:id="appProdMerchSiteCode" required="true" disabled="{!v.isFormReadOnly}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:inputField fieldName="Officer_Code__c" aura:id="appProdMerchOfficerCode"  required="true" disabled="{!v.isFormReadOnly}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:inputField fieldName="Cost_Centre__c" aura:id="appProdMerchCostCentre" required="true" disabled="{!v.isFormReadOnly}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:inputField fieldName="MCC__c" aura:id="appProdMerchMCC" required="true" disabled="{!v.isFormReadOnly}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="3">
+                            <lightning:inputField fieldName="Deposit_Monitoring__c" onchange="{!c.handleDepositMonitoringCheck}" aura:id="appProdMerchDepositMonitoring" name="appProdMerchDepositMonitoring" disabled="{!v.isFormReadOnly}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="3">
+                            <aura:if isTrue="{!v.depositMonitoringRequired}" >
+                            	<lightning:inputField fieldName="Number_of_Days__c" aura:id="appProdMerchNumberOfDays" disabled="{!v.isFormReadOnly}" required="{!v.depositMonitoringRequired}"/>
+                            </aura:if>
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <!--SPACING-->
+                        </lightning:layoutItem>
+
+                        <lightning:layoutItem padding="around-small" size="6">
+                            <lightning:inputField fieldName="Nett_Settlement__c" disabled="{!v.isFormReadOnly}"/>
+                        </lightning:layoutItem>
+
+                        <lightning:messages />
+                        <lightning:layoutItem padding="around-small" size="12">
+                            <lightning:button aura:id="savebtn" type="submit" label="Save" variant="brand" disabled="{!or(empty(v.applicationProductMerchantId),v.isFormReadOnly)}" class="slds-align_absolute-center slds-m-top_x-large" />
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </lightning:recordEditForm>
+
+            </aura:if>
+        </lightning:accordionSection>
+    </lightning:accordion>
+</aura:component>

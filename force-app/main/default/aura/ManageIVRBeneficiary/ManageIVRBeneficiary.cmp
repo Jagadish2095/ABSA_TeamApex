@@ -1,0 +1,344 @@
+<aura:component access="global" controller ="ManageIVRBeneficiaryController"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:isUrlAddressable">
+    
+    <aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+    <aura:handler name="oSelectedDependentRecordEvent" event="c:selectedDependentsObjectRecordEvent" action="{!c.handleBrachCodeComponentEvent}"/>
+    
+    <aura:attribute name="instructionList" type="List" />
+    <aura:attribute name="updateBeneFiciaryModal" type="boolean" default="false" />
+    <aura:attribute name="updateBeneFiciaryModalButtons" type="boolean" default="false" />
+    <aura:attribute name="paginationList" type="List"/>
+    <aura:attribute name="IVR" type="String"/>
+    <aura:attribute name="respString" type="String"/>
+    <aura:attribute name="pageSize" type="Integer" default="5"/>
+    <aura:attribute name="totalSize" type="Integer"/>
+    <aura:attribute name="start" type="Integer" />
+    <aura:attribute name="end" type="Integer"/>
+    <aura:attribute name="name" type="String"/>
+    <aura:attribute name="recipientRef" type="String"/>
+    <aura:attribute name="ownReference" type="String"/>
+    <aura:attribute name="bank" type="String"/>
+    <aura:attribute name="tieb" type="String"/> 
+    <aura:attribute name="instrNo" type="String"/>
+    <aura:attribute name="rawResponse" type="String"/>
+    <aura:attribute name="accountNumber" type="String"/>
+    <aura:attribute name="accountType" type="String"/>
+    <aura:attribute name="branchCode" type="String"/>
+    <aura:attribute name="AddBen" type="boolean" default="false"/>
+    <aura:attribute name="selectedBankName" type="string" default=""/>
+    <aura:attribute name="targetAccTypeoptions" type="List" />
+    <aura:attribute name="showSpinner" type="boolean" default="false"/> 
+    <aura:attribute name="updateAddBen" type="boolean" default="false"/>
+    <aura:attribute name="showSaveButton" type="boolean" default="true"/>
+    <aura:attribute name="showRefresh" type="boolean" default="false"/>
+    <aura:attribute name="showCloseCase" type="boolean" default="true"/>
+    <aura:attribute name="refreshUpdate" type="boolean" default="false"/>
+    <aura:attribute name="updateData" type="boolean" default="false"/>
+    <aura:attribute name="showDeleteButton" type="boolean" default="true"/>
+    <aura:attribute name="caseRecord" type="Object"/>
+    <force:recordData aura:id="recordLoader" recordId="{!v.recordId}" fields="Id,Account.Name" targetFields="{!v.caseRecord}" />
+    
+    <!--# Flow Attribute -->
+    <aura:attribute name="selectedAccountNumberToFlow" type="String" access="global"/>
+    <aura:attribute name="clientAccountIdFromFlow" type="String" access="global"  />
+    <aura:attribute name="selectedProductValue" type="String" access="global" />
+    
+    <!-- Bank And Branch Name/Code  for Updating --> 
+    <aura:attribute name="lookupId" type="String"/>
+    <aura:attribute name="selectedBankId" type="String"/>
+    <aura:attribute name="selectedBranchCodeId" type="String"/>
+    <aura:attribute name="selectedBranchCodeName" type="String"/>
+    <aura:attribute name="selectedBankNameUpd" type="sobject" default=""/>
+    <aura:attribute name="selectedBranchName" type="string" default=""/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <center style="z-index:999">
+            <lightning:spinner aura:id="TheSpinner" variant="brand" size="large"/>
+        </center>
+    </aura:if>
+    
+    <div class="slds-card slds-card_boundary">
+        
+        <header class="slds-card__header slds-grid">
+            <div class="slds-media slds-media--center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <lightning:icon iconName="standard:product" alternativeText="Absa Products" size="small" />
+                </div>
+                <div class="slds-media__body slds-truncate">
+                    <h2>
+                        <a href="javascript:void(0);" class="slds-text-link--reset">
+                            <span class="slds-text-heading--small">IVR Beneficiaries</span>
+                        </a>
+                    </h2>
+                </div>
+            </div>
+            <div class="slds-no-flex">
+                <button onclick="{!c.openModel}" class="slds-button slds-button--neutral slds-col--bump-left">Add New</button>
+                <aura:if isTrue="{!v.showRefresh}"><lightning:button variant="brand" label="Refresh"  onclick="{!c.doInit }" /></aura:if>
+                
+            </div>
+        </header>
+        <table >
+            <tr> <td style="width:5%">Show</td><td style="width:7%">
+                <lightning:select aura:id="records" onchange="{!c.onSelectChange}">
+                    <option text="5" value="5"/>
+                    <option text="10" value="10"/>
+                    <option text="20" value="20"/>
+                    <option text="30" value="30"/>
+                </lightning:select>
+                
+                </td>
+                <td>Entries</td>
+                
+                
+            </tr>
+            
+        </table>
+        
+        <div class="slds-table--header-fixed_container">
+            
+            <div class="slds-scrollable_x" style="width:100%;">
+                
+                <table class="slds-table slds-table_bordered slds-table--header-fixed">
+                    <thead>
+                        <tr >
+                            <th scope="col">
+                                <div class="slds-truncate">IVR No</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate"> Beneficiary Name</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate">Recipient Ref</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate">Own Ref</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate">Bank</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate">Account Number</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate">Account Type</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate">Branch Code</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.paginationList}" var="mapKey" indexVar="key">
+                            <tr onclick="{!c.selectedItem}" data-value="{!mapKey.instrRefName}" class="slds-truncate" title="{!mapKey.instrRefName}">  
+                                <td >{!mapKey.ivrNominate}</td>
+                                <td >{!mapKey.instrRefName}</td>
+                                <td>{!mapKey.trgStmtRef}</td>
+                                <td>{!mapKey.srcStmtRef}</td>
+                                <td>{!mapKey.trgInstCode}</td>
+                                <td>{!mapKey.trgAcc}</td>  
+                                <td>{!mapKey.trgAccType}</td>  
+                                <td>{!mapKey.trgClrCode}</td>
+                            </tr> 
+                        </aura:iteration>
+                        <ul class="slds-list_horizontal slds-has-inline-block-links_space">
+                            <li class="slds-p-right_xx-small"><lightning:button label="First" disabled="{!v.start == 0}"  onclick="{!c.first}" /></li>
+                            <li class="slds-p-right_xx-small"><lightning:button label="Previous" disabled="{!v.start == 0}"  onclick="{!c.previous}" /></li>
+                            <li class="slds-p-right_xx-small"><lightning:button label="Next" disabled="{!v.end >= v.totalSize}" onclick="{!c.next}" /></li>
+                            <li><lightning:button label="Last" disabled="{!v.end >= v.totalSize}" onclick="{!c.last}" /></li>
+                        </ul>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div>
+        </div> 
+    </div> 
+    
+    <!--Modal : ADD BENEFICIARY-->
+    <aura:if isTrue="{!v.AddBen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add New Beneficiary</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">                  
+                    
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem padding="around-small" size="10">
+                            <lightning:input aura:id="nameId" label="Name" value="{!v.name}"/>
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem padding="around-small" size="2">
+                            <lightning:input aura:id="IVRNumberId" label="IVR No" type="integer" value="{!v.IVR}"/>
+                        </lightning:layoutItem>
+                        
+                    </lightning:layout>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <!--<lightning:input aura:id="bankId" label="Bank" value="{!v.bank}"/>-->
+                        <label class="slds-float_left" padding="around-small"><span style="color:red;" align="left" label = "{!v.selectedBankName}">*</span>Bank </label>
+                        <c:customLookUp dselectedAccBankName="{!v.selectedBankName}"  IconName="custom:custom17" selectedRecord="{!v.selectedBankName}" />                          
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:input aura:id="accountNumberId" label="Account Number" value="{!v.accountNumber}"/>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <!--<lightning:input aura:id="accTypeId" label="Account Type" value="{!v.accountType}"/>-->
+                        <lightning:select aura:id="targetAccType" value="{!v.accountType}" label="Account type" onchange="{!c.onTargetAccTypeChange}" required ="true">
+                            <option value="">Select type</option>
+                            <aura:iteration items="{!v.targetAccTypeoptions}" var="item">
+                                <option text="{!item.label}" value="{!item.value}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <label class="slds-float_left" padding="around-small" value = "{!v.branchCode}"><span style="color:red;" align="left">*</span>Select Branch Name </label>
+                        <c:dependentCutomLookup dselectedBankName="{!v.selectedBankName}" IconName="custom:custom16" selectedRecord="{!v.branchCode}"  label="" />     
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:input  label="Recipient Reference" value="{!v.recipientRef}"/>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:input  label="Own Reference" value="{!v.ownReference}"/>
+                    </lightning:layoutItem>
+                    
+                </div>
+                
+                
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <div class="slds-m-top_small slds-float--left">
+                        <lightning:button variant="neutral" 
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.cancel }"/>
+                    </div>
+                    <div class="slds-m-top_small slds-float--right">
+                        <lightning:button variant="brand" 
+                                          label="Save"
+                                          title="Save"
+                                          onclick="{! c.addNewBeneficiary}"/>
+                        
+                    </div>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>           
+    </aura:if>
+    <!--Modal : UPDATE BENEFICIARY-->
+    <aura:if isTrue="{!v.updateBeneFiciaryModal}">
+        <!--###### MODAL BOX Start######--> 
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- ###### MODAL BOX HEADER Start ######-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.cancel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Update IVR Beneficiary</h2>
+                </header>
+                <!--###### MODAL BOX BODY Part Start######-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">  
+                    
+                    
+                    <lightning:layout multipleRows="true">
+                        <lightning:layoutItem padding="around-small" size="10">
+                            <lightning:input aura:id="nameId" label="Name" value="{!v.name}"/>
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem padding="around-small" size="2">
+                            <lightning:input aura:id="IVRNumberId" label="IVR No" value="{!v.IVR}" disabled = "true"/>
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                    
+                    <lightning:recordEditForm  aura:id="iLookup" objectApiName="Lookup__c" recordId="{!v.lookupId}"> 
+                        <lightning:layout>
+                            <lightning:layoutItem padding="around-small" size="10">
+                                <!-- Bank Name -->
+                                <label class="slds-form-element__label" for="iBank">Bank Name</label>
+                                <lightning:inputField  aura:id="iBank" fieldName="Bank__c" variant="label-hidden" value="{!v.selectedBankId}"/>
+                            </lightning:layoutItem>
+                        </lightning:layout>
+                        <lightning:layoutItem padding="around-small" size="10">
+                            <!--Branch code-->
+                            <c:strike_lookup
+                                             label="Branch Name" 
+                                             object="Lookup__c" 
+                                             searchField="Name" 
+                                             placeholder="Search Branch" 
+                                             iconName="standard:poll" 
+                                             order="Name" 
+                                             limit="10"  
+                                             showRecentRecords="true"             
+                                             filter="{!v.selectedBankId}"             
+                                             value="{!v.selectedBranchCodeId}" 
+                                             loadingMessage="Loading..." 
+                                             errorMessage="Invalid input"
+                                             valueLabel = "{!v.selectedBranchCodeName}"/>
+                        </lightning:layoutItem>
+                        
+                    </lightning:recordEditForm>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:input aura:id="accountNumberId" label="Account Number" value="{!v.accountNumber}"/>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:select aura:id="targetAccType" value="{!v.accountType}" label="Account type" onchange="{!c.onTargetAccTypeChange}" required ="true">
+                            <option value="">{!v.accountType}</option>
+                            <aura:iteration items="{!v.targetAccTypeoptions}" var="item">
+                                <option text="{!item.label}" value="{!item.value}"/>  
+                            </aura:iteration>
+                        </lightning:select>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:input  label="Recipient Reference" value="{!v.recipientRef}"/>
+                    </lightning:layoutItem>
+                    
+                    <lightning:layoutItem padding="around-small" size="10">
+                        <lightning:input  label="Own Reference" value="{!v.ownReference}"/>
+                    </lightning:layoutItem>
+                    
+                </div>
+                
+                
+                <!--###### MODAL BOX FOOTER Part Start ######-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" 
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{!c.cancel }"/>
+                    <lightning:button variant="brand" 
+                                      label="Delete"
+                                      title="Delete"
+                                      onclick="{!c.actionDelete}"/>
+                    <lightning:button variant="brand" 
+                                      label="Update"
+                                      title="Update"
+                                      onclick="{!c.actionUpdate}"/>
+                    
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <!--###### MODAL BOX Part END Here ######-->            
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showCloseCase}">
+        <lightning:layoutItem size="12" padding="around-small">
+            <div class="slds-m-top_small slds-float--right">
+                <lightning:button  variant="brand" label="Close Case" onclick="{!c.closeCase}" />
+            </div><br/>
+        </lightning:layoutItem>
+    </aura:if>
+</aura:component>

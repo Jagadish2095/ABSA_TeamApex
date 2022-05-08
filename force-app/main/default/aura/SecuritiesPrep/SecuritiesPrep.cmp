@@ -1,0 +1,1148 @@
+<!--Component for handling the Security Prep-->
+<!--@author  Himani Joshi-->
+<!--@since   2020-10-13-->
+
+<aura:component access="global" controller="SecuritiesPrepController" implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction" >
+    <aura:attribute name="existingSecurities" type="List"/>
+    <aura:attribute name="selectedSecurity" type="String" />
+    <aura:attribute name="isAddressChanged" type="Boolean"/>
+    <aura:attribute name="creditRiskCheckRecord" type="Object" />
+    <aura:handler name="init" value="{!this}" action="{! c.doinit }"/>
+    <aura:attribute name="radioValue" type="String" default="Yes"/>
+    <aura:attribute name="radioValue1" type="String" default="No"/>
+    <aura:attribute name="isAdult" type="Boolean" default="false"/>
+    <aura:attribute name="isBond" type="Boolean" default="false"/>
+    <aura:attribute name="nameList" type="List"/>
+    <aura:attribute name="mandatedOfficialsList" type="List"/>
+    <aura:attribute name="emailList" type="List"/>
+    <aura:attribute name="phoneList" type="List"/>
+    <aura:attribute name="selectedListForName" type="List"/>
+    <aura:attribute name="selectedMandatedOfficialds" type="List"/>
+    <aura:attribute name="securityStatus" type="String" />
+    <aura:attribute name="bondType" type="String" />
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Use Existing Address', 'value': 'Yes'},
+                                                        ]"/>
+    <aura:attribute name="options1" type="List" default="[
+                                                        {'label': 'Use New Address', 'value': 'No'}
+                                                        ]"/>
+    <aura:attribute name="isSuretyShip" type="Boolean" default="false"/>
+    <!--aura:attribute name="toAnAdultPerson" type="Boolean" default="false"/-->
+    <aura:attribute name="registeredMail" type="Boolean" default="false"/>
+    <aura:attribute name="trustIsMemberOfCC" type="Boolean" default="false"/>
+    <aura:attribute name="isATrust" type="Boolean" default="false"/>
+    <aura:attribute name="companyRes" type="Boolean" default="false"/> <!-- defect W-010232 - Tinashe-->
+    <aura:attribute name="addresses" type="List"/>
+    <aura:attribute name="selectedRows" type="List" default="" />
+    <aura:attribute name="conselectedRows" type="List" default="" />
+    <aura:attribute name="columns" type="List" default=""/>
+    <aura:attribute name="addressList" type="List" default=""/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="isModalSpinner" type="Boolean" default="false" />
+    <aura:attribute name="onOpp" type="Boolean" default="true" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="errorMessageModal" type="String" />
+    <aura:attribute name="accountData" type="List"/>
+    <aura:attribute name="accountColumns" type="List"/>
+    <aura:attribute name="selectedAccountToLink" type="Object"/>
+    <aura:attribute name="existingSecuritiesWrapper" type="List"/>
+    <aura:attribute name="disableLinkBtn" type="Boolean" default="true" />
+    <aura:attribute name="uploadDocs" type="List"/>
+    <aura:attribute name="isCompany" type="Boolean" default="false" />
+    <aura:attribute name="documentType" type="String" default=""/>
+    <aura:attribute name="fileType" type="List" default="['.png', '.jpg', '.jpeg','.pdf']" />
+    <aura:attribute name="newExistingSecuritiesOffered" type="List"/> <!--added by Manish for W-011371-->
+    <aura:attribute name="newExistingSecuritiesOfferedColumns" type="List"/><!--added by Manish for W-011371-->
+    <aura:attribute name="selectedAccounts" type="List" /><!--added by Manish for W-011371-->
+    <aura:attribute name="selectedAccountIds" type="List" /><!--added by Manish for W-011371-->
+    <aura:attribute name="applicationProductId" type="String"/><!--added by Manish for W-011371-->
+    <aura:attribute name="notApprovedAccounts" type="List"/><!--added by Manish for W-011371-->
+
+    <!--aura:attribute name="showCreditTypeAgreement" type="Boolean" default="false" /-->
+    <aura:attribute name="isExistingAcc" type="Boolean" default="false" />
+    <aura:attribute name="applicant" type="Boolean" default="false" />
+    <aura:attribute name="isCession" type="Boolean" default="false" />
+    <aura:attribute name="debtCause" type="Boolean" default="false" />
+
+    <aura:attribute name="securityProviderName" type="String"/>
+    <aura:attribute name="securityProviderEmail" type="String"/>
+    <aura:attribute name="securityProviderClientType" type="String"/>
+
+    <aura:attribute name="securityDocuments" type="List"/>
+    <aura:attribute name="securityName" type="String"/>
+    <aura:attribute name="isAPartnership" type="Boolean" default="false"/>
+    <aura:attribute name="isGeneralCession" type="Boolean" default="false"/>
+
+    <aura:attribute name="absaCashInvestment" type="Boolean" default="false"/>
+    <aura:attribute name="absaDividentFund" type="Boolean" default="false"/>
+    <aura:attribute name="absaSavingsAccount" type="Boolean" default="false"/>
+    <aura:attribute name="cashInheritance" type="Boolean" default="false"/>
+    <aura:attribute name="cessionOfParticipationBond" type="Boolean" default="false"/>
+    <aura:attribute name="customerForeignCurrencyAccount" type="Boolean" default="false"/>
+    <aura:attribute name="debtorsContractorDebtors" type="Boolean" default="false"/>
+    <aura:attribute name="discretionaryFormContractClause" type="Boolean" default="false"/>
+    <aura:attribute name="investmentAtOtherFinancialInstitutionNoReciept" type="Boolean" default="false"/>
+    <aura:attribute name="investmentAtOtherFinancialInstitutionRecieptIssued" type="Boolean" default="false"/>
+    <aura:attribute name="leaseRentalAgreement" type="Boolean" default="false"/>
+    <aura:attribute name="listedSharesStock" type="Boolean" default="false"/>
+    <aura:attribute name="loanAccount" type="Boolean" default="false"/>
+    <aura:attribute name="membersInterest" type="Boolean" default="false"/>
+    <aura:attribute name="moneyMarket" type="Boolean" default="false"/>
+    <aura:attribute name="multiInvestmentPortfolios" type="Boolean" default="false"/>
+    <aura:attribute name="offshoreInvestmentFunds" type="Boolean" default="false"/>
+    <aura:attribute name="openCessionSiloCertificate" type="Boolean" default="false"/>
+    <aura:attribute name="pledgeOfNedgotiableCertificatesOfDeposit" type="Boolean" default="false"/>
+    <aura:attribute name="proceedsSiloCertificates" type="Boolean" default="false"/>
+    <aura:attribute name="proceedsOfCropDeliveryAgreementExists" type="Boolean" default="false"/>
+    <aura:attribute name="proceedsOfCropDNoeliveryAgreement" type="Boolean" default="false"/>
+    <aura:attribute name="productionAdvanceDeferredPayment" type="Boolean" default="false"/>
+    <aura:attribute name="unitTrusts" type="Boolean" default="false"/>
+    <aura:attribute name="unlistedShares" type="Boolean" default="false"/>
+    <aura:attribute name="waterRightsNoCertificate" type="Boolean" default="false"/>
+    <aura:attribute name="isSecProvIndiv" type="Boolean" default="false"/>
+    <aura:attribute name="waterRightsWithCertificate" type="Boolean" default="false"/>
+    <aura:attribute name="showIndivFields" type="Boolean" default="false"/>
+    <aura:attribute name="resolutionRequired" type="Boolean" default="false"/>
+    <aura:attribute name="accountRecord" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+
+    <force:recordData aura:id="recordLoader"
+                    recordId="{!v.recordId}"
+                    fields="Name,AccountId"
+                    targetFields="{!v.accountRecord}"
+                    targetError="{!v.recordLoadError}" />
+
+    <lightning:messageChannel type="securitiesMessageChannel__c"
+            onMessage="{!c.handlerefreshEvent}" scope="APPLICATION"/>
+
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading..." />
+        </div>
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError"><br/>
+            <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2><br/>
+        </div>
+    </aura:if>
+
+    <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="securitiesOfferedPerEntity">
+        <lightning:accordionSection name="securitiesOfferedPerEntity" label="Securities Offered per Entity">
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th class="" scope="col">
+                                <div class="slds-truncate" title="Security Provider Name">Security Provider Name</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate" title="Security Type">Security Type</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate" title="Security Type">Bond Type</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate" title="Security Description">Security Description</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate" title="Security Amount">Security Amount (R)</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate" title="Nominal Value">Nominal Value (R)</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate" title="ASV %">ASV %</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate" title="ASV R">ASV (R)</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate" title="Specific Amount">Specific Account</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.existingSecuritiesWrapper}" var="securities" indexVar="index">
+                            <tr>
+                                <td  scope="row">
+                                    <div data-id="{!securities.name}" class="slds-truncate">
+                                        <!-- updated by Manish for W-011457 -->
+                                        <aura:if isTrue="{!securities.contactId != null}">
+                                            <a onclick="{!c.redirectToRecord}" id="{!securities.contactId}">{!securities.name}</a>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!and(securities.contactId == null, securities.externalEntityLinked == true)}">
+                                                    <a onclick="{!c.redirectToRecord}" id="{!securities.accountId}">{!securities.name}</a>
+                                                    <aura:set attribute="else">
+                                                        {!securities.name}
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                        <!-- W-011457 end -->
+                                    </div>
+                                </td>
+                                <td>
+                                    <div data-id="{!securities.securityType}" class="slds-truncate">{!securities.securityType}</div>
+                                </td>
+                                <td>
+                                    <div data-id="{!securities.bondType}" class="slds-truncate">{!securities.bondType}</div>
+                                </td>
+                                <td>
+                                    <div data-id="{!securities.securityDescription}" class="slds-truncate">{!securities.securityDescription}</div>
+                                </td>
+                                <td>
+                                    <div data-id="{!securities.securityAmount}" class="slds-truncate">{!securities.securityAmount}</div>
+                                </td>
+                                <td>
+                                    <div data-id="{!securities.nominalValue}" class="slds-truncate">{!securities.nominalValue}</div>
+                                </td>
+                                <td>
+                                    <div data-id="{!securities.ASVApprovedByCredit}" class="slds-truncate">{!securities.ASVApprovedByCredit}</div>
+                                </td>
+                                <td>
+                                    <div data-id="{!securities.approvedSecurityValue}" class="slds-truncate">{!securities.approvedSecurityValue}</div>
+                                </td>
+                                <td>
+                                    <div data-id="{!securities.specificAccount}" class="slds-truncate">{!securities.specificAccount}</div>
+                                </td>
+                                <td>
+                                    <aura:if isTrue="{!not(securities.externalEntityLinked)}">
+                                        <a onclick="{!c.openLinkSecurityForm}" data-index="{!index}" data-idNumber="{!securities.IDRegistrationNumber}" data-accId="{!securities.accountId}" data-secProvName="{!securities.name}" data-secProvEmail="{!securities.secProvEmail}" data-secProvClientType="{!securities.secProvClientType}">Create and link security provider</a>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!or(or(or(or(or(securities.securityType == 'Suretyship', securities.securityType == 'Cession of Life Policy (Link) (Sanlam)'),
+                                                    securities.securityType == 'Cession of Life Policy (Not Link)'), securities.securityType == 'Cession of Fire/Short Term Insurance'),
+                                                    securities.securityType == 'General Cession'), securities.securityType == 'Bonds and 99-year Leasehold')}">
+                                                <a onclick="{!c.openSecuritiesEditForm}" data-index="{!index}" data-securityType="{!securities.securityType}" data-accId="{!securities.accountId}" data-conId="{!securities.contactId}" data-secProvName="{!securities.name}" data-secProvEmail="{!securities.secProvEmail}" data-secProvClientType="{!securities.secProvClientType}">Add Additional Information</a>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </td>
+                            </tr>
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </div>
+            <div role="dialog" tabindex="-1" aria-labelledby="securityModalHeader" aura:id="securityModal" class="slds-modal slds-modal_large">
+                <div class="slds-modal__container slds-var-p-around_medium" style="width: 70%;">
+                    <ui:scrollerWrapper class="scrollerSize">
+                        <lightning:recordEditForm aura:id="securityForm"
+                                                  objectApiName="Security_Offered__c"
+                                                  recordId="{!v.selectedSecurity}"
+                                                  onload="{!c.securityFormOnload}"
+                                                  onsubmit="{!c.securityFormonSubmit}"
+                                                  onsuccess="{!c.securityFormSuccess}"
+                                                  onerror="{!c.securityFormError}">
+                            <div class="slds-modal__header slds-text-heading_small">
+                                Add Additional Information
+                            </div>
+                            <div class="slds-modal__content slds-var-p-around_medium">
+                                <lightning:inputField aura:id="secExternalEntityLinked" fieldName="External_Entity_Linked__c" class="slds-hide"/>
+                                <lightning:inputField aura:id="secContact" fieldName="Contact__c" class="slds-hide"/>
+                                <lightning:layout multipleRows="true">
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:inputField fieldName="Security_Provider_Type__c" aura:id="securityProviderType" onchange="{!c.securityProviderTypeOnChange}" required="true"/>
+                                    </lightning:layoutItem>
+                                    <aura:if isTrue="{!v.isATrust}">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <label for="trust" class="slds-form-element__label">&nbsp;&nbsp;&nbsp;&nbsp;Trust is the sole member of CC or Sectional Title sign for third party.</label>
+                                            <lightning:inputField fieldName="Trust_is_member_of_CC__c" aura:id="trust" variant="label-hidden" onchange="{!c.onTrustChange}" required="true"/>
+                                        </lightning:layoutItem>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.trustIsMemberOfCC}">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <label for="fullNameOfEntity" class="slds-form-element__label">Name of Trust / Sectional title that is a member of the CC.</label>
+                                            <lightning:inputField fieldName="Full_Name_of_Entity__c" variant="label-hidden" aura:id="fullNameOfEntity"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <label for="entityNumber" class="slds-form-element__label">Reference number of the Trust that is a member of the CC.</label>
+                                            <lightning:inputField fieldName="Entity_Number__c" variant="label-hidden" aura:id="entityNumber"/>
+                                        </lightning:layoutItem>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.companyRes}"> <!-- defect W-010232 - Tinashe-->
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <label for="companiesAct" class="slds-form-element__label">Established under Companies act of:</label>
+                                            <lightning:inputField fieldName="Established_under_Companies_act_of__c" variant="label-hidden" aura:id="companiesAct" onchange="{!c.companiesActOnChange}"/>
+                                        </lightning:layoutItem>
+                                    </aura:if>
+                                    <aura:if isTrue="{!not(v.isSecProvIndiv)}">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <label for="dateOfresol" class="slds-form-element__label">Date of Resolution / Power of Attorney.</label>
+                                            <lightning:inputField fieldName="Date_Of_Resolution__c" variant="label-hidden" aura:id="dateOfresol" required="{!v.resolutionRequired}"/>
+                                        </lightning:layoutItem>
+                                    </aura:if>
+								<aura:if isTrue ="{!v.securityName == 'Suretyship'}"><!--added condition based on W-013134-->
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:inputField fieldName="Delivery_Method__c" aura:id="del" onchange="{!c.onDeliveryMethodChange}"/>
+                                    </lightning:layoutItem>
+                                    <!--aura:if isTrue="{!v.toAnAdultPerson}">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Recipient_Name__c" aura:id="recName"/>
+                                        </lightning:layoutItem>
+                                    </aura:if-->
+                                    <lightning:layoutItem padding="around-small" size="12">
+                                        <div class="slds-text-heading_small slds-border_top">
+                                            <br/>Address Details
+                                        </div>
+                                    </lightning:layoutItem>
+                                    <aura:if isTrue="{!!v.isAdult}">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:radioGroup
+                                                                aura:id="mygroup"
+                                                                name="radioButtonGroup"
+                                                                label="Existing/New Address"
+                                                                options="{! v.options }"
+                                                                value="{! v.radioValue }"
+                                                                onchange="{! c.handleChange }"
+                                                                />
+                                        </lightning:layoutItem>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.isAdult}">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:radioGroup
+                                                                aura:id="mygroup1"
+                                                                name="radioButtonGroup1"
+                                                                label="New Address"
+                                                                options="{! v.options1 }"
+                                                                value="{! v.radioValue1 }"
+                                                                />
+                                        </lightning:layoutItem>
+                                    </aura:if>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                    </lightning:layoutItem>
+                                    <aura:if isTrue="{!v.radioValue == 'Yes'}">
+                                        <lightning:datatable data="{! v.addressList }"
+                                        columns="{! v.columns }"
+                                        keyField="Id"
+                                        hideCheckboxColumn="false"
+                                        maxRowSelection="1"
+                                        onrowselection="{!c.UpdateSelectedRows}"
+                                        selectedRows="{! v.selectedRows }"/>
+
+                                        <div class="slds-size_1-of-3">
+                                            <lightning:inputField  aura:id="addressId" fieldName="Address__c" class="slds-hide"/>
+                                        </div>
+
+                                        <aura:set attribute="else">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Physical_Address_line_1__c" aura:id="Address1" required="true"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Physical_Address_line_2__c" aura:id="Address2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Suburb__c" aura:id="sub" required="true"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Zip_Postal_code__c" aura:id="zip" required="true"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="City__c" aura:id="ci" required="true"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Country__c" aura:id="coun" required="true"/>
+                                            </lightning:layoutItem>
+                                        </aura:set>
+                                    </aura:if>
+                                   </aura:if>
+                                </lightning:layout>
+
+                                <aura:if  isTrue="{!v.isCession}">
+                                    <lightning:layout multipleRows="true">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Cause_of_Debt__c" aura:id="causeOfdebt" required="true" onchange="{!c.causeOfdebtOnChange}"/>
+                                        </lightning:layoutItem>
+                                        <aura:if isTrue="{!v.debtCause}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Description_of_Cause_of_Debt__c" aura:id="descriptionOfCauseOfDebt" required="true"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <!-- Added for W-12706 -->
+                                        <aura:if isTrue="{!(v.securityName=='Cession of Unit Trusts')}">
+                                         <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Cession_type__c" aura:id="ucessionType" value="UNIT TRUST"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!(v.securityName=='Cession of Internal Investments')}">
+                                         <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Cession_type__c" aura:id="ucessionType" value="Cash Investment"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+
+                                        <aura:if isTrue="{!(v.securityName=='Cession of Dematerialised Shares')}">
+                                         <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Cession_type__c" aura:id="ucessionType" value="Listed Shares/Stock"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+
+                                        <aura:if isTrue="{!(v.securityName=='Cession of External Investments')}">
+                                         <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Cession_type__c" aura:id="ucessionType" value="Investment at other Financial Institution - Receipt Issued"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <!--lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Ceding_Collateral_for_own_Debt__c" aura:id="cedingCollateralForOwndebt" required="true"/>
+                                        </lightning:layoutItem-->
+                                        <aura:if isTrue ="{!(or(v.securityName=='Cession of Life Policy (Link) (Sanlam)', v.securityName=='Cession of Life Policy (Not Link)'))}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Name_of_the_assured_life__c" aura:id="iNotLinkNameOfAssured"  readonly="true"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue ="{!v.securityName == 'Cession of Fire/Short Term Insurance'}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Description_of_Insured_property__c" aura:id="descriptionOfInsuredProperty" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Sasria_Cover_Included__c" aura:id="sasriaCoverIncluded" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Sasria_Coupon_Policy__c" aura:id="sasriaCouponPolicy" />
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Sasria_Policy_Number__c" aura:id="sasriaPolicyNumber"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Insurance_company__c" aura:id="insuranceCompany" disabled="true"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Insurance_Company_Address_Line_1__c" aura:id="insuranceAddressLine1"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Insurance_Company_Address_Line_2__c" aura:id="insuranceAddressLine2"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Insurance_Company_Suburb__c" aura:id="insuranceAddressSuburb"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Insurance_Company_Town__c" aura:id="insuranceAddressTown"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Insurance_Company_Postal_Code__c" aura:id="insuranceAddressPostalCode"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Insurance_Company_Country__c" aura:id="insuranceAddressCountry"/>
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                </aura:if>
+
+                                <!-- display Suretyship fields Tinashe Shoko-->
+                                <aura:if  isTrue="{!v.isSuretyShip}">
+                                    <lightning:layout multipleRows="true">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Islamic_Suretyship__c" aura:id="islamic"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Is_this_a_CAF_Alliance_Transaction__c" aura:id="cafAlliance"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Select_the_Alliance_Transaction_req__c" aura:id="selectAllianceTransReq"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <label for="suretyshipLimited" class="slds-form-element__label">Is Suretyship Limited.</label>
+                                            <lightning:inputField fieldName="Limited_Cession__c" variant="label-hidden" aura:id="suretyshipLimited" disabled="true"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <label for="specificSecurity" class="slds-form-element__label">Is the suretyship specific to an account.</label>
+                                            <lightning:inputField fieldName="Specific_Security__c" variant="label-hidden" aura:id="specificSecurity" disabled="true"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Securities_Offered_for_Facility__c" aura:id="securitiesOfferedforFacility" disabled="true"/>
+                                        </lightning:layoutItem>
+                                        <!--lightning:layoutItem padding="around-small" size="6">
+                                            <label for="suretyshipLimited" class="slds-form-element__label">Is the suretyship specific to an account, a specific credit agreement type, limited to a specific amount.</label>
+                                            <lightning:inputField fieldName="SrtyshipLtdToAcc_crdt_agrmnt_type_amt__c" variant="label-hidden" aura:id="SrtyshipLtdToAcc" onchange="{!c.SrtyshipLtdToAccOnChange}"/>
+                                        </lightning:layoutItem-->
+                                        <!--aura:if isTrue="{!v.showCreditTypeAgreement}"-->
+                                            <!--lightning:layoutItem padding="around-small" size="6"--> <!--removed because of W-014071-->
+                                                <!--lightning:inputField fieldName="Credit_Agreement_Type__c" aura:id="creditAgreementType" required="{!v.showCreditTypeAgreement}"/>
+                                            </lightning:layoutItem-->
+                                        <!--/aura:if-->
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <label for="securityAmount" class="slds-form-element__label">Amount of the Security.</label>
+                                            <lightning:inputField fieldName="Security_Amount__c" variant="label-hidden" disabled="true" aura:id="securityAmount"/>
+                                        </lightning:layoutItem>
+                                        <!--added by Manish for W-011371-->
+                                        <lightning:layoutItem padding="around-small">
+                                            <lightning:datatable aura:id = "securitiesOfferedDatatable"
+                                                                 keyField="Id"
+                                                                 data="{! v.newExistingSecuritiesOffered }"
+                                                                 columns="{! v.newExistingSecuritiesOfferedColumns }"
+                                                                 onrowselection="{! c.showModal }"
+                                                                 selectedRows="{! v.selectedAccountIds }"
+                                                                 maxRowSelection="1"/>
+                                            <lightning:inputField fieldName="Suretyship_Selected_Accounts__c" aura:id="suretyshipAccs" class="slds-hide"/>
+                                        </lightning:layoutItem>
+                                        <!--<aura:if isTrue="{!v.isExistingAcc}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Reference_Account_Number__c" aura:id="accountNumber" disabled="true"/>
+                                            </lightning:layoutItem>
+                                            <aura:set attribute="else">
+                                                <lightning:layoutItem padding="around-small" size="6">
+                                                    <lightning:inputField fieldName="Unique_Identifier__c" aura:id="accountNumber" disabled="false"/>
+                                                </lightning:layoutItem>
+                                            </aura:set>
+                                        </aura:if>-->
+                                        <!--lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Branch_telephone_number__c" aura:id="branchTelephoneNumber"/>
+                                        </lightning:layoutItem-->
+                                    </lightning:layout>
+                                </aura:if>
+                                <!-- END display Suretyship fields Tinashe Shoko-->
+
+                                <!-- display General Cession fields Tinashe M Shoko W-009089-->
+                                <aura:if  isTrue="{!v.isGeneralCession}">
+                                    <lightning:layout multipleRows="true">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Islamic_Suretyship__c" aura:id="islamic"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Cause_of_Debt__c" aura:id="causeOfdebt" required="true" onchange="{!c.causeOfdebtOnChange}"/>
+                                        </lightning:layoutItem>
+
+                                         <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Cession_type__c" aura:id="cessiontype" disabled="true" />
+                                        </lightning:layoutItem>
+                                        <aura:if isTrue="{!v.debtCause}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Description_of_Cause_of_Debt__c" aura:id="cedingCollateralForOwndebt" required="true"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Collateral_Type__c" aura:id="collateralType" required="true"  onchange="{!c.collateralTypeOnChange}"/>
+                                        </lightning:layoutItem>
+                                        <aura:if isTrue="{!v.absaCashInvestment}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Deposit_Account_Number__c" aura:id="depositAccountNumber"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(or(or(v.absaDividentFund,v.moneyMarket),v.multiInvestmentPortfolios),v.unitTrusts)}"><!-- -->
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Investor_Policy_Company_Name__c" aura:id="investorPolicyCompanyName"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Investment_Policy_Certificate_number__c" aura:id="investmentPolicyCertificateNumber"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine1__c" aura:id="companyAddressLine1"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine2__c" aura:id="companyAddressLine2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressSuburb__c" aura:id="companyAddressSuburb"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressTown__c" aura:id="companyAddressTown"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressPostalCode__c" aura:id="companyAddressPostalCode"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressCountry__c" aura:id="companyAddressCountry"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.absaSavingsAccount}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Absa_Savings_Account_Number__c" aura:id="absaSavingsAccountNumber"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.cashInheritance}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Deceased_Name__c" aura:id="deceasedName"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Deceased_Surname__c" aura:id="deceasedSurname"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.cessionOfParticipationBond}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="participationCertificateNotificationN" class="slds-form-element__label">Participation Certificate/Notification Number.</label>
+                                                <lightning:inputField fieldName="Participation_Certificate_Notification_N__c" aura:id="participationCertificateNotificationN"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Participation_Bond_Number__c" aura:id="participationBondNumber"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Cession_Of_participation_Bond_Amount__c" aura:id="cessionOfParticipationBondAmount"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine1__c" aura:id="companyAddressLine1"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine2__c" aura:id="companyAddressLine2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressSuburb__c" aura:id="companyAddressSuburb"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressTown__c" aura:id="companyAddressTown"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressPostalCode__c" aura:id="companyAddressPostalCode"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressCountry__c" aura:id="companyAddressCountry"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.customerForeignCurrencyAccount}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CFC_Amount__c" aura:id="cfcAmount"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CFC_Amount_in_Words__c" aura:id="cfcAmountInWords"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CFC_Account_Number__c" aura:id="cfcAccountNumber"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.debtorsContractorDebtors}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="fullNameOfDebtorsContractHolderCedent" class="slds-form-element__label">Full Name of debtors Contract Holder(Cedent).</label>
+                                                <lightning:inputField fieldName="Full_Name_of_debtors_Contract_Holder_Ced__c" aura:id="fullNameOfDebtorsContractHolderCedent"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="debtorsContractDescription" class="slds-form-element__label">Debtors contract description.</label>
+                                                <lightning:inputField fieldName="Contract_description__c" aura:id="debtorsContractDescription"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="debtorsContractDate" class="slds-form-element__label">Debtors Contract date.</label>
+                                                <lightning:inputField fieldName="Contract_date__c" aura:id="debtorsContractDate"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.discretionaryFormContractClause}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Beneficiary_Name__c" aura:id="beneficiaryName"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="ContractDescription" class="slds-form-element__label">Contract description.</label>
+                                                <lightning:inputField fieldName="Contract_description__c" aura:id="ContractDescription"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="ContractDate" class="slds-form-element__label">Contract date.</label>
+                                                <lightning:inputField fieldName="Contract_date__c" aura:id="ContractDate"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(v.investmentAtOtherFinancialInstitutionNoReciept,v.investmentAtOtherFinancialInstitutionRecieptIssued)}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Investment_Account_Type__c" aura:id="investmentAccountType"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Other_Financial_Institution_Name__c" aura:id="otherFinancialInstitutionName"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine1__c" aura:id="companyAddressLine1"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine2__c" aura:id="companyAddressLine2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressSuburb__c" aura:id="companyAddressSuburb"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressTown__c" aura:id="companyAddressTown"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressPostalCode__c" aura:id="companyAddressPostalCode"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressCountry__c" aura:id="companyAddressCountry"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.leaseRentalAgreement}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine1__c" aura:id="companyAddressLine1"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine2__c" aura:id="companyAddressLine2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressSuburb__c" aura:id="companyAddressSuburb"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressTown__c" aura:id="companyAddressTown"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressPostalCode__c" aura:id="companyAddressPostalCode"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressCountry__c" aura:id="companyAddressCountry"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.listedSharesStock}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Listed_Shares_Stock_Account_Number__c" aura:id="listedSharesStockAccountNumber"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine1__c" aura:id="companyAddressLine1"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine2__c" aura:id="companyAddressLine2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressSuburb__c" aura:id="companyAddressSuburb"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressTown__c" aura:id="companyAddressTown"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressPostalCode__c" aura:id="companyAddressPostalCode"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressCountry__c" aura:id="companyAddressCountry"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.loanAccount}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Entity_Name_and_Registration_Number__c" aura:id="entityNameAndRegistrationNumber"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.membersInterest}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Members_Interest__c" aura:id="membersInterest"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine1__c" aura:id="companyAddressLine1"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine2__c" aura:id="companyAddressLine2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressSuburb__c" aura:id="companyAddressSuburb"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressTown__c" aura:id="companyAddressTown"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressPostalCode__c" aura:id="companyAddressPostalCode"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressCountry__c" aura:id="companyAddressCountry"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+
+                                        <aura:if isTrue="{!v.offshoreInvestmentFunds}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Foreign_Investment_Description__c" aura:id="foreignInvestmentDescription"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Foreign_Account_Number__c" aura:id="foreignAccountNumber"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine1__c" aura:id="companyAddressLine1"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine2__c" aura:id="companyAddressLine2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressSuburb__c" aura:id="companyAddressSuburb"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressTown__c" aura:id="companyAddressTown"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressPostalCode__c" aura:id="companyAddressPostalCode"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressCountry__c" aura:id="companyAddressCountry"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.openCessionSiloCertificate}"></aura:if>
+                                        <aura:if isTrue="{!v.pledgeOfNedgotiableCertificatesOfDeposit}"></aura:if>
+                                        <aura:if isTrue="{!v.proceedsSiloCertificates}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Name_of_Silo_or_Co_operative__c" aura:id="nameOfSiloOrCooperative"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Type_of_Crop_for_Silo__c" aura:id="typeOfCropForSilo"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.proceedsOfCropDeliveryAgreementExists}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="nameOfCooperative" class="slds-form-element__label">Name of Cooperative.</label>
+                                                <lightning:inputField fieldName="Name_of_Silo_or_Co_operative__c" aura:id="nameOfCooperative"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Year_of_Harvest__c" aura:id="yearOfHarvest"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="typeOfCrop" class="slds-form-element__label">Type of crop.</label>
+                                                <lightning:inputField fieldName="Type_of_Crop_for_Silo__c" aura:id="typeOfCrop"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine1__c" aura:id="companyAddressLine1"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine2__c" aura:id="companyAddressLine2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressSuburb__c" aura:id="companyAddressSuburb"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressTown__c" aura:id="companyAddressTown"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressPostalCode__c" aura:id="companyAddressPostalCode"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressCountry__c" aura:id="companyAddressCountry"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.proceedsOfCropDNoeliveryAgreement}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="yearOfHarvest" class="slds-form-element__label">Year of Harvest - No Delivery Agreement.</label>
+                                                <lightning:inputField fieldName="Year_of_Harvest__c" aura:id="yearOfHarvest"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="typeOfCrop" class="slds-form-element__label">Type of Crop - No Delivery Agreement.</label>
+                                                <lightning:inputField fieldName="Type_of_Crop_for_Silo__c" aura:id="typeOfCrop"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine1__c" aura:id="companyAddressLine1"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine2__c" aura:id="companyAddressLine2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressSuburb__c" aura:id="companyAddressSuburb"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressTown__c" aura:id="companyAddressTown"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressPostalCode__c" aura:id="companyAddressPostalCode"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressCountry__c" aura:id="companyAddressCountry"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.productionAdvanceDeferredPayment}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Cession_Type_Indicator__c" aura:id="cessionTypeIndicator"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="nameOfCooperative" class="slds-form-element__label">Name of Cooperative that made the Advance/deferred payment.</label>
+                                                <lightning:inputField fieldName="Name_of_Silo_or_Co_operative__c" aura:id="nameOfCooperative"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="yearOfHarvest" class="slds-form-element__label">Year of crop - Advance Payment.</label>
+                                                <lightning:inputField fieldName="Year_of_Harvest__c" aura:id="yearOfHarvest"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <label for="typeOfCrop" class="slds-form-element__label">Type of Crop - Advance Payment.</label>
+                                                <lightning:inputField fieldName="Type_of_Crop_for_Silo__c" aura:id="typeOfCrop"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.unlistedShares}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine1__c" aura:id="companyAddressLine1"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressLine2__c" aura:id="companyAddressLine2"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressSuburb__c" aura:id="companyAddressSuburb"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressTown__c" aura:id="companyAddressTown"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressPostalCode__c" aura:id="companyAddressPostalCode"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="CompanyAddressCountry__c" aura:id="companyAddressCountry"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.waterRightsNoCertificate}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Water_Rights_Issued_by__c" aura:id="waterRightsIssuedBy"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Water_Rights_Property_description__c" aura:id="waterRightsPropertydescription"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.waterRightsWithCertificate}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Water_Rights_Issued_by__c" aura:id="waterRightsIssuedBy"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Water_Rights_Property_description__c" aura:id="waterRightsPropertydescription"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Water_Rights_Certificate_number__c" aura:id="waterRightsCertificateNumber"/>
+                                            </lightning:layoutItem>
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:inputField fieldName="Water_Rights_certificate_date__c" aura:id="waterRightsCertificateDaten"/>
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                    </lightning:layout>
+                                </aura:if>
+                                <!-- display General Cession fields Tinashe M Shoko W-009089-->
+
+                                <lightning:layout multipleRows="true">
+                                    <aura:if isTrue="{!not(v.isSecProvIndiv)}">
+                                        <aura:if isTrue="{!v.applicant}">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <lightning:dualListbox name="mandatedOfficials"
+                                                                    label= "Security Mandated official(s)"
+                                                                    sourceLabel="Available"
+                                                                    selectedLabel="Selected"
+                                                                    fieldLevelHelp="Security Mandated official(s)"
+                                                                    value="{!v.selectedMandatedOfficialds}"
+                                                                    options="{!v.mandatedOfficialsList}"
+                                                                    onchange="{!c.handleChangeMandatedOfficials}"
+                                                                    />
+                                            </lightning:layoutItem>
+                                        </aura:if>
+                                        <lightning:layoutItem padding="around-small" size="6" class="slds-hide">
+                                                <lightning:inputField fieldName="Mandated_Officials_List__c" aura:id="mandatedOfficalsList"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Mandated_official__c" aura:id="mandatedOffical"/>
+                                        </lightning:layoutItem>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.showIndivFields}">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Marital_Status__c" aura:id="maritalStatus"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="MaritalContract__c" aura:id="maritalStatusOther"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="MaritalStatusOther__c" aura:id="maritalStatusOther"/>
+                                        </lightning:layoutItem>
+                                    </aura:if>
+                                    <!--lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:inputField fieldName="Client_Capacity_Security_Provider__c" aura:id="clientCapacitySecurityProvider"/>
+                                    </lightning:layoutItem-->
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <label for="fullNameAndSurname" class="slds-form-element__label">Security Provider Name.</label>
+                                        <lightning:input value="{!v.securityProviderName}" aura:id="fullNameAndSurname" readonly="true"/>
+                                    </lightning:layoutItem>
+                                    <!--lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:inputField fieldName="Telephone_Number__c" aura:id="telephoneNumber"/>
+                                    </lightning:layoutItem-->
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <label for="emailAddress" class="slds-form-element__label">Security Provider Email.</label>
+                                        <lightning:input value="{!v.securityProviderEmail}" aura:id="emailAddress" readonly="true"/>
+                                    </lightning:layoutItem>
+                                    <aura:if  isTrue="{!!v.isSuretyShip}">
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <label for="HOC_include" class="slds-form-element__label">Home Owners Comprehensive (HOC) include in Policy.</label>
+                                            <lightning:inputField fieldName="Home_Owners_Comprehensive_HOC_include__c" aura:id="HOC_include" variant="label-hidden"/>
+                                        </lightning:layoutItem>
+                                        <lightning:layoutItem padding="around-small" size="6">
+                                            <lightning:inputField fieldName="Intermediary_Name__c" aura:id="intermediaryName"/>
+                                        </lightning:layoutItem>
+                                    </aura:if>
+                                </lightning:layout>
+
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:button label="Save" class="slds-var-m-top_small" type="submit"/>
+                                </lightning:layoutItem>
+                                <aura:if isTrue ="{!v.isBond}">
+                                    <!--lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:input label="Security Provider Name" value="{!v.securityProviderName}" readonly="true"/>
+                                    </lightning:layoutItem-->
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                        <lightning:input label="Bond Type" value="{!v.bondType}" readonly="true"/>
+                                    </lightning:layoutItem>
+                                    <lightning:layoutItem padding="around-small" size="6">
+                                         <lightning:input label="Status" value="{!v.securityStatus}" readonly="true" />
+                                    </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="6">
+                                    <lightning:button label="Submit to Flight Centre" onclick="{!c.createFlightCentreCase}" />
+                                </lightning:layoutItem>
+                                </aura:if>
+                            </div>
+                        </lightning:recordEditForm>
+                        <!-- Documents to be generated for each security must be parameterised correctly on Security_Documents__mdt-->
+                        <div class="slds-grid slds-wrap slds-gutters_medium slds-modal__content slds-var-p-around_medium">
+                            <aura:if isTrue="{!and(and(not(v.isAdult),(empty(v.addressList))),v.radioValue == 'Yes')}">
+                                <div class="slds-size_1-of-3 slds-var-p-around_medium slds-box">
+                                    <span>
+                                        Please capture correct address details for the security Procider.
+                                    </span>
+                                </div>
+                                <aura:set attribute="else">
+                                    <aura:iteration items="{!v.securityDocuments}" var="docs" indexVar="index">
+                                        <aura:if isTrue="{!docs.Source__c == 'Generate'}">
+                                            <div class="slds-size_1-of-3 slds-var-p-around_medium slds-box">
+                                                <span>
+                                                    <c:documentStub documenttemplate= "{!docs.Document_Type__c}" recordId="{!v.selectedSecurity}"/>
+                                                </span>
+                                            </div>
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <!-- Trust -->
+                                    <aura:if isTrue="{!and(or(or(v.securityName=='Cession of Life Policy (Link) (Sanlam)', v.securityName=='Cession of Life Policy (Not Link)'),
+                                    v.securityName=='Cession of Fire/Short Term Insurance'),v.isATrust)}">
+                                        <div class="slds-size_1-of-3 slds-var-p-around_medium slds-box">
+                                            <span>
+                                                <c:documentStub documenttemplate= "ABSA 6118 EX - Trust Declaration By All Trustees" recordId="{!v.selectedSecurity}"/>
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    <!-- Partnership -->
+                                    <aura:if isTrue="{!and(or(or(v.securityName=='Cession of Life Policy (Link) (Sanlam)', v.securityName=='Cession of Life Policy (Not Link)'),
+                                    v.securityName=='Cession of Fire/Short Term Insurance'),v.isAPartnership)}">
+                                        <div class="slds-size_1-of-3 slds-var-p-around_medium slds-box">
+                                            <span>
+                                                <c:documentStub documenttemplate= "ABSA 6137 EX - Confirmation by the Partners of a Partnership" recordId="{!v.selectedSecurity}"/>
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!or(v.companyRes,v.resolutionRequired)}">
+                                        <div class="slds-size_1-of-3 slds-var-p-around_medium slds-box">
+                                            <span>
+                                                <c:documentStub documenttemplate= "ABSA 6122 EX- Resolution to Provide Security" recordId="{!v.selectedSecurity}"/>
+                                            </span>
+                                        </div>
+                                    </aura:if>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+
+                        <div class="slds-grid slds-wrap slds-gutters_medium slds-modal__content slds-var-p-around_medium">
+                            <div class="slds-size_1-of-3 slds-var-p-around_medium slds-box">
+                                <lightning:card title="Document Type">
+                                    <aura:set attribute="actions">
+                                        <lightning:buttonMenu alternativeText="Show menu">
+                                            <lightning:menuItem value="MenuItemOne" label="View File Details" disabled="true"/>
+                                            <lightning:menuItem value="MenuItemTwo" label="Generate Document" disabled="true"/>
+                                        </lightning:buttonMenu>
+                                    </aura:set>
+                                    <lightning:select name="docTypes" label="Select a Document" required="true" onchange="{!c.docTypesOnChange}">
+                                        <aura:iteration items="{!v.uploadDocs}" var="doc">
+                                                <option text="{!doc.value}"></option>
+                                            </aura:iteration>
+                                    </lightning:select>
+                                    <lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" type="file"
+                                    name="file" label="Select Attachment" multiple="false" />
+                                    <br />
+                                    <button class="slds-button slds-button_brand" onclick="{!c.doSave}">Upload Attachment</button>
+                                    <div class="slds-text-body_small">{!v.fileName} </div>
+                                    <aura:if isTrue="{!v.showLoadingSpinner}">
+                                        <div class="slds-text-body_small slds-text-color_error">Uploading...
+                                            <img src="/auraFW/resources/aura/images/spinner.gif" class="spinner-img"
+                                                alt="Loading" />'
+                                        </div>
+                                    </aura:if>
+                                </lightning:card>
+                            </div>
+                        </div>
+
+                        <div class="slds-modal__footer">
+                            <lightning:button label="Close" onclick="{!c.closeCreditCheckModal}" />
+                        </div>
+                    </ui:scrollerWrapper>
+                </div>
+            </div>
+            <!-- Modal Containing the Email Address for confirmation to be sent to -->
+            <div role="dialog" tabindex="-1" aria-labelledby="linkSecurityProviderModalHeader" aura:id="linkSecurityProviderModal" class="slds-modal slds-modal_large">
+                <div class="slds-modal__container" style="width:50%;">
+                    <div class="slds-modal__header slds-text-heading_small">
+                        Link Security Provider
+                    </div>
+                    <div class="slds-modal__content slds-var-p-around_medium" style="overflow:initial">
+                        <!-- Spinner -->
+                        <aura:if isTrue="{!v.isModalSpinner}">
+                            <lightning:spinner variant="brand" alternativeText="Busy" />
+                        </aura:if>
+                        <!-- Modal Error Message -->
+                        <aura:if isTrue="{!not(empty(v.errorMessageModal))}">
+                            <div class="recordError"><br/>
+                                <h2 class="slds-section__title" style="color: red">{!v.errorMessageModal}</h2><br/>
+                            </div>
+                        </aura:if>
+                        <!-- Body -->
+                        <!--aura:if isTrue="{!not(empty(v.accountData))}"-->
+                            <lightning:datatable    columns="{!v.accountColumns}"
+                                                    data="{!v.accountData}"
+                                                    keyField="Id"
+                                                    hideCheckboxColumn="false"
+                                                    maxRowSelection="1"
+                                                    onrowaction="{!c.handleRowAction}"
+                                                    onrowselection="{!c.handleRowAction}"
+                                                    selectedRows="{! v.conselectedRows }"
+                                                    minColumnWidth="100" />
+                        <!--/aura:if-->
+                        <!-- record Edit Form -->
+                        <lightning:recordEditForm   aura:id="linkSecurityOfferedForm"
+                                                    objectApiName="Security_Offered__c"
+                                                    recordId="{!v.selectedSecurity}"
+                                                    onload="{!c.handleLoad}"
+                                                    onsuccess="{!c.handleSuccess}"
+                                                    onerror="{!c.handleError}">
+                            <!-- Hidden Fields -->
+                            <lightning:inputField aura:id="contactIdField" fieldName="Contact__c" class="slds-hide"/>
+                            <lightning:inputField aura:id="externalEntityLinked" fieldName="External_Entity_Linked__c" class="slds-hide"/>
+                            <lightning:inputField aura:id="clientName" fieldName="Client_Name__c" class="slds-hide"/>
+                    </lightning:recordEditForm>
+                    </div>
+                    <div class="slds-modal__footer">
+                        <lightning:button name='Cancel' label='Cancel' onclick='{!c.closeLinkSecurityForm}'/>
+                        <lightning:button name='Link Security' label='Link Security' variant="brand" aura:id="linkSecurityBtn" onclick="{!c.linkSelectedSecurity}" disabled="{!v.disableLinkBtn}"/>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-backdrop" aura:id="Modalbackdrop">
+            </div>
+            <div role="dialog" tabindex="-1" aria-labelledby="modalHeader" aura:id="detailsModal" class="slds-modal slds-modal_large">
+                <div class="slds-modal__container" style="width: 50%">
+                    <div class="slds-modal__header slds-text-heading_small">Edit Details</div>
+                    <div class="slds-modal__content slds-var-p-around_medium" style="overflow: initial">
+                        <!-- Modal Body -->
+                        <!-- LDS start -->
+                        <lightning:recordEditForm aura:id="applicationProductForm"
+                                                    objectApiName="Application_Product__c"
+                                                    recordId="{!v.applicationProductId}"
+                                                    onsubmit="{!c.applicationProductFormonSubmit}"
+                                                    onsuccess="{!c.applicationProductFormSuccess}"
+                                                    onerror="{!c.applicationProductFormError}">
+
+                            <lightning:layout multipleRows="true">
+                                <!-- fields -->
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:inputField aura:id="prductName" fieldName="Product_Name__c" disabled="true"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:inputField aura:id="productAccountNumber" fieldName="Account_Number__c" required="true"/>
+                                </lightning:layoutItem>
+                                <lightning:layoutItem padding="around-small" size="4">
+                                    <lightning:inputField aura:id="domicileCode" fieldName="Domicible_Branch_Code__c" required="true"/>
+                                </lightning:layoutItem>
+
+                                <lightning:layoutItem size="12" padding="around-small">
+                                    <lightning:button variant="neutral"
+                                                        class="slds-float_right slds-var-m-top_xx-large"
+                                                        label="Close"
+                                                        onclick="{!c.closeModal}" aura:id="closeBtn"/>
+
+                                    <lightning:button variant="brand"
+                                                        class="slds-float_right"
+                                                        label="Save"
+                                                        type="submit" aura:id="saveBtn"
+                                                        disabled="{!empty(v.applicationProductId)}"/>
+                                </lightning:layoutItem>
+
+                            </lightning:layout>
+                        </lightning:recordEditForm>
+                        <!-- LDS end -->
+                    </div>
+                </div>
+            </div>
+            <!-- Modal Back Drop -->
+            <div class="slds-backdrop" aura:id="Modalbackdrop1"></div>
+
+        </lightning:accordionSection>
+
+        <!--Added by Diksha For Flight Centre Case Creation W-007167 -->
+		<!-- commented by Manish for W-011457
+        <div class="slds-p-left_xx-large">
+            <lightning:button label="Refer to Flight Centre" onclick="{!c.createFlightCentreCase}" />
+        </div>-->
+    </lightning:accordion>
+
+</aura:component>

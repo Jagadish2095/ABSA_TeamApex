@@ -1,0 +1,123 @@
+<aura:component implements="flexipage:availableForRecordHome,force:lightningQuickAction,force:hasRecordId,force:hasSObjectName" controller="CaseLinkingActionExt" >
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="caseNr" type="String" />
+    <aura:attribute name="caseSub" type="String" />
+    <aura:attribute name="caseFrom" type="String" />
+    <aura:attribute name="relatedCaseList" type="Object[]" />
+    <aura:attribute name="relatedCaseId" type="String" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    <ui:scrollerWrapper>
+        <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+            <tr class="slds-text-title_caps">
+                <th></th>
+                <th>
+                    <div class="slds-truncate" title="Case Number">Case Number</div>
+                </th>
+                <th>
+                    <div class="slds-truncate" title="Subject">Subject</div>
+                </th>
+                <th>
+                    <div class="slds-truncate" title="Case Owner">Case Owner</div>
+                </th>
+                <th>
+                    <div class="slds-truncate" title="Record Type">Record Type</div>
+                </th>
+            </tr>
+            <aura:iteration var="ca" items="{!v.relatedCaseList}" >
+                <tr>
+                    <td>
+                        <ui:inputRadio text="{!ca.Id}" name="relc" change="{!c.logId}" />
+                    </td>
+                    <td>
+                        <a href="#" style="cursor: pointer">
+                            <ui:outputText value="{!ca.CaseNumber}" title="{!ca.Id}" click="{!c.openNewTab}" />
+                        </a>
+                    </td>
+                    <td>
+                        <div class="tooltip">
+                            <a href="#" style="cursor: help;" title="{!ca.Id}">{!ca.Subject}</a>
+                            <div id="pop">
+                                <table width="50%">
+                                    <tr><td width="50%" style="font-size:10pt;font-weight:bold">{!ca.CaseNumber}</td><td  width="50%" >&nbsp;</td></tr>
+                                    <tr><td width="50%" style="font-size:8pt;font-weight:bold">From Address</td><td style="font-size:8pt;" width="50%">{!ca.Email_From_Address__c}</td></tr>
+                                    <tr><td width="50%" style="font-size:8pt;font-weight:bold">Status</td><td style="font-size:8pt;" width="50%">{!ca.Status}</td></tr>
+                                    <tr><td width="50%" style="font-size:8pt;font-weight:bold">Date Created</td><td style="font-size:8pt;" width="50%">{!ca.CreatedDate}</td></tr>
+                                    <tr><td width="50%" style="font-size:8pt;font-weight:bold">Last Modified</td><td style="font-size:8pt;" width="50%">{!ca.LastModifiedDate}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <ui:outputText value="{!ca.Owner.Name}" />
+                    </td>
+                    <td>
+                        <ui:outputText value="{!ca.RecordType.Name}" />
+                    </td>
+                </tr>
+            </aura:iteration>
+        </table>
+        
+        <lightning:layout horizontalAlign="end">
+            <lightning:layoutItem flexibility="auto" padding="around-small">
+                <lightning:input label="Case Number" name="cnumber" value="{!v.caseNr}"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem flexibility="auto" padding="around-small">
+                <lightning:input label="From Address" name="cfrom" value="{!v.caseFrom}"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem flexibility="auto" padding="around-small">
+                <lightning:input label="Subject" name="csubject" value="{!v.caseSub}"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem flexibility="auto" padding="around-small">
+                <lightning:button label="Search" onclick="{!c.clickSearch}" variant="brand" class="slds-m-top--medium"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem flexibility="auto" padding="around-small">
+                <lightning:button label="Reset" onclick="{!c.doInit}" variant="brand" class="slds-m-top--medium"/>
+            </lightning:layoutItem>
+            <lightning:layoutItem flexibility="auto" padding="around-small">
+                <lightning:button label="Link" onclick="{! c.openModel}" variant="brand" class="slds-m-top--medium"/>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </ui:scrollerWrapper>
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+            <aura:if isTrue="{!v.isOpen}">
+            
+            <!--###### MODAL BOX Start######--> 
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- ###### MODAL BOX HEADER Start ######-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Case Link</h2>
+                    </header>
+                    <!--###### MODAL BOX BODY Part Start######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p>
+                            Linking a Case cannot be reversed, do you want to continue?
+                        </p>
+                    </div>
+                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" 
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeModel }"/>
+                        <lightning:button variant="brand" 
+                                          label="Confirm"
+                                          title="Confirm"
+                                          onclick="{! c.clickLink }"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+            <!--###### MODAL BOX Part END Here ######-->
+            
+        </aura:if>
+</aura:component>

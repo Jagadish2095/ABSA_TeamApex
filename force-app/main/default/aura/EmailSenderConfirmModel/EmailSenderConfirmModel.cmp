@@ -1,0 +1,120 @@
+<!--
+  @description       : 
+  @author            : Vinod.Thupakula@absa.africa
+  @group             : 
+  @last modified on  : 09-02-2021
+  @last modified by  : Vinod.Thupakula@absa.africa
+-->
+<aura:component controller="EmailSenderController">
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="isSaveAddress" type="boolean" default="false"/>
+    <aura:attribute name="toAddress" type="String" default=""/>
+    <aura:attribute name="accId" type="String" default=""/>
+    <aura:attribute name="loadSpinner" type="boolean" default="false"/>
+    <aura:attribute name="editInput" type="boolean" default="false"/>
+    <aura:attribute name="altAddress" type="String" default=""/>
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    <aura:registerEvent name="EmailSenderEvent" type="c:EmailSenderEvent" />
+    <aura:if isTrue="{!v.loadSpinner}">
+        <lightning:spinner alternativeText="Loading" size="medium" />
+    </aura:if>
+    <aura:if isTrue="{!v.isModalOpen}">
+        <!-- Modal/Popup Box starts here-->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container" style="width: 100%;" >
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Confirm?</h2>
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.editInput == false}">
+                        <p>Are you sure you did attach all the relevant compliance documents before sending email to customer?</p>
+                        <br/>
+                        <lightning:icon iconName="utility:user" alternativeText="User Email Address" title="User Email Address" size="small"/>
+                        <b>&nbsp;To&nbsp;: &nbsp;
+                            <span class="slds-pill">{!v.toAddress}</span>
+                            <aura:if isTrue="{!v.altAddress != ''}">
+                                <lightning:pill label="{!v.altAddress}" onremove="{! c.handleRemove}"/>
+                                <aura:set attribute="else">
+                                    <lightning:buttonIcon class="btn_class" iconName="utility:add" variant="border-filled" alternativeText="Add Email Address" title="Add Email Address" size="small" onclick="{!c.openEdit}"/>
+                                </aura:set>
+                            </aura:if>
+                        </b>
+                        &nbsp;
+                        <aura:set attribute="else">
+                            <b>&nbsp;Primary Email&nbsp;</b>: &nbsp;{!v.toAddress}&nbsp;<br/>
+                            <b>&nbsp;Alternate Email&nbsp;</b>: &nbsp;{!v.altAddress}&nbsp;
+                            <lightning:input required="true" type="email" name="email1" value="{!v.altAddress}" label="Email" />
+                            <lightning:button variant="brand"
+                                              label="Save"
+                                              title="Save"
+                                              onclick="{!c.confirmAddress}"/>
+                            <lightning:button variant="neutral"
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{!c.cancelEdit}"/>
+                        </aura:set>
+                    </aura:if>
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="No"
+                                      title="No"
+                                      onclick="{! c.closeModel }" disabled="{!v.editInput}"/>
+                    <lightning:button variant="brand"
+                                      label="Yes"
+                                      title="Yes"
+                                      onclick="{!c.submitDetails}" disabled="{!v.editInput}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <aura:if isTrue="{!v.isSaveAddress}">
+        <!-- Modal/Popup Box starts here-->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container" style="width: 100%;" >
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Confirm?</h2>
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p><b>Please see below instructions before you save the alternate email address.</b></p>
+                    <br/>
+                    <div class="slds-text-longform">
+                        <ul>
+                            <li>Primary email address will be removed from Client/Customer account.</li>
+                            <li>Client/Customer account to use the alternate email address as the primary email address for future communication from Absa.</li>
+                            <li>All future communication from Absa will be sent to alternative email address.</li>
+                        </ul>
+                        <b>'Yes'</b> - Alternate email address will be saved in accounts.
+                        <br/>
+                        <b>'No'</b> - Alternate email address will be added to 'To' address and it will <b>not</b> be saved in accounts.
+                    </div>
+                    <br/>
+                    <b>&nbsp;Alternate Email&nbsp;</b>:&nbsp;{!v.altAddress}
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="No"
+                                      title="No"
+                                      onclick="{!c.saveAddress}"/>
+                    <lightning:button variant="brand"
+                                      label="Yes"
+                                      title="Yes"
+                                      onclick="{!c.saveAddress}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

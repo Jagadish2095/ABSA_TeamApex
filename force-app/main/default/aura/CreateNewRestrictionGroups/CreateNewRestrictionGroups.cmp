@@ -1,0 +1,2571 @@
+<!--
+  @description       : 
+  @author            : muvhuso.nekhubvi@absa.africa
+  @last modified on  : 2021-07-26
+  @last modified by  : muvhuso.nekhubvi@absa.africa
+-->
+<aura:component controller="ROTController" implements="force:hasRecordId,lightning:availableForFlowScreens" access="global">
+	<aura:attribute name="recordId" type="String" access="global" /><!--Acc record Id-->
+
+	<aura:handler name="init" value="{! this }" action="{! c.init }" />
+	<aura:attribute name="clientAccountIdFromFlow" type="String" access="global" />
+	<aura:attribute name="accountNumberFromFlow" type="String" access="global" />
+	<aura:attribute name="caseId" type="String" access="global" />
+	<aura:attribute name="restrictionAccountId" type="String" />
+	<aura:attribute name="restrictionId" type="String" />
+	<aura:attribute name="Description" type="String" />
+	<aura:attribute name="AccountDescription" type="String" />
+	<aura:attribute name="accountNumber" type="String" />
+	<aura:attribute name="OriginalEffectiveStartDate" type="Date" />
+	<aura:attribute name="startDate" type="Date" />
+	<aura:attribute name="endDate" type="Date" />
+	<aura:attribute name="accountEffectiveStartDate" type="Date" />
+	<aura:attribute name="accountEffectiveEndDate" type="Date" />
+	<aura:attribute name="restrictionData" type="List" />
+	<aura:attribute name="columns" type="List" />
+	<aura:attribute name="accounts" type="List" />
+	<aura:attribute name="customers" type="List" />
+	<aura:attribute name="accountsColumns" type="List" />
+	<aura:attribute name="isEditBeneficiaryOpen" type="Boolean" default="false" />
+	<aura:attribute name="creatNewRestrictionAccount" type="Boolean" default="false" />
+	<aura:attribute name="createAccount" type="Boolean" default="false" />
+	<aura:attribute name="HideNodes" type="Boolean" default="false" />
+	<aura:attribute name="isRemoveAccountOpen" type="Boolean" default="false" />
+	<aura:attribute name="closeRemoveAccount" type="Boolean" default="false" />
+	<aura:attribute name="transactionTypes" type="List" />
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="Edit" type="Boolean" default="false" />
+	<aura:attribute name="selectedRowsCount" type="Integer" default="0" />
+	<aura:attribute name="selectedRows" type="List" />
+	<aura:attribute name="selectedRowsAccount" type="List" />
+	<aura:attribute name="responseList" type="List" />
+	<aura:attribute name="selectedRowDetailToShow" type="Object" />
+	<aura:attribute name="selectedRowAccountDetailToShow" type="Object" />
+	<aura:attribute name="maxRowSelection" type="Integer" default="5" />
+	<aura:attribute name="maxRowSelectionAccount" type="Integer" />
+	<aura:attribute name="isInfinity" type="Boolean" default="false" />
+	<aura:attribute name="isUpdate" type="Boolean" default="true" />
+	<aura:attribute name="ChequeAccount" type="String" default="Cheque Account" />
+	<aura:attribute name="today" type="Date" />
+	<aura:attribute name="isAccountSelected" type="boolean" default="false" />
+	<aura:attribute name="isCreateAccounts" type="boolean" default="false" />
+	<aura:attribute
+		name="activeSections"
+		type="List"
+		default="['RestrictionDetails','ExcludedAccounts','IncludedCustomer','IncludedAccounts','IncludedTransactionType']"
+	/>
+	<aura:attribute name="isRemoveRestrictionGroup" type="boolean" default="false" />
+	<aura:attribute name="delGroupRestrictionId" type="String" />
+	<aura:attribute name="delRestrictionId" type="String" />
+
+	<!-- Transaction Type(TT) Attributes -->
+	<aura:attribute name="isTransactionTypeOpen" type="boolean" default="false" />
+	<aura:attribute name="transactionTypesData" type="Object" />
+	<aura:attribute name="selectedTransactionTypesData" type="List" />
+	<aura:attribute name="transactionTypeColumns" type="List" />
+	<aura:attribute name="selectedTransactionTypeColumns" type="List" />
+	<aura:attribute name="maxTTRowSelection" type="Integer" />
+	<aura:attribute name="selectedTTRowsCount" type="Integer" default="0" />
+	<aura:attribute name="selectedTTRows" type="List" />
+	<aura:attribute name="gridExpandedTTRows" type="List" />
+	<aura:attribute name="currentExpandedTTRows" type="String" />
+	<aura:attribute name="transactionTypeEffectiveStartDate" type="Date" />
+	<aura:attribute name="transactioTypeEffectiveEndDate" type="Date" />
+	<aura:attribute name="isTTDate" type="Boolean" default="true" />
+	<!--<aura:attribute name="gridExpandedTTRows" type="Object" />-->
+	<aura:attribute name="isLoadingTT" type="Boolean" default="false" />
+	<aura:attribute name="rowTTData" type="List" access="PRIVATE" />
+	<aura:attribute name="transactionGroupID" type="List" />
+	<aura:attribute name="parentObjectID" type="String" />
+	<aura:attribute name="isLoading" type="Boolean" default="false" />
+	<aura:attribute name="selectedRowsMap" type="Map" />
+	<aura:attribute name="selectedTransactionTypesDataMain" type="List" />
+	<aura:attribute name="isTransactionTypeUpdate" type="Boolean" default="false" />
+	<aura:attribute name="isTTUpdateDate" type="Boolean" default="false" />
+	<aura:attribute name="updateTransactionTypesData" type="List" />
+	<aura:attribute name="updateTransTypeStartDate" type="Date" />
+	<aura:attribute name="updateTransTypeEndDate" type="Date" />
+	<aura:attribute name="transType" type="String" />
+	<aura:attribute name="transDescription" type="String" />
+	<aura:attribute name="ttOriginalEffectiveStartDate" type="Date" />
+	<aura:attribute name="isTransactionTypeDelete" type="Boolean" default="false" />
+	<aura:attribute name="isTTRemoveDate" type="Boolean" default="false" />
+	<aura:attribute name="rtransType" type="String" />
+	<aura:attribute name="rtransDescription" type="String" />
+	<aura:attribute name="rTransTypeStartDate" type="Date" />
+	<aura:attribute name="rTransTypeEndDate" type="Date" />
+	<aura:attribute name="ttRecordId" type="String" />
+	<aura:attribute name="isTTExpireDate" type="Boolean" default="false" />
+	<aura:attribute name="isTransactionTypeExpire" type="Boolean" default="false" />
+	<aura:attribute name="isInfinityTT" type="Boolean" default="false" />
+	<aura:attribute name="expiryDate" type="Date" />
+
+	<!-- ExcludedAccounts Attributes -->
+	<aura:attribute name="excludedAccounts" type="List" />
+	<aura:attribute name="openExcludedAccount" type="Boolean" default="false" />
+	<aura:attribute name="selectedExcludedAccounts" type="List" />
+	<aura:attribute name="editExcludedAccount" type="Boolean" default="false" />
+	<aura:attribute name="isUpdateExcludedAccount" type="Boolean" default="false" />
+	<aura:attribute name="excludedAccountId" type="String" />
+	<aura:attribute name="isRemoveExcludedAccountOpen" type="Boolean" default="false" />
+
+	<!-- Customer Type Attributes -->
+	<aura:attribute name="createCustomer" type="Boolean" default="false" />
+	<aura:attribute name="endDateError" type="Boolean" default="false" />
+	<aura:attribute name="startDateError" type="Boolean" default="false" />
+	<aura:attribute name="customerDescription" type="String" />
+	<aura:attribute name="customerStartDate" type="String" />
+	<aura:attribute name="customerEndDate" type="String" />
+	<aura:attribute name="customerKey" type="String" />
+	<aura:attribute name="responseCustomerList" type="List" />
+
+	<aura:attribute name="customerAccountId" type="String" />
+	<aura:attribute name="isUpdateCustomer" type="Boolean" default="false" />
+	<aura:attribute name="editCustomer" type="Boolean" default="false" />
+	<aura:attribute name="isRemoveCustomerOpen" type="Boolean" default="false" />
+	<aura:attribute name="isInfinityCustomerCheck" type="Boolean" />
+	<aura:attribute name="showIncludedAccountDetails" type="Boolean" default="true" />
+	<aura:attribute name="showExcludedAccountDetails" type="Boolean" default="true" />
+
+	<!-- Bulk DateAdjust Attributes -->
+	<aura:attribute name="isDateAdjustModal" type="Boolean" default="false" />
+	<aura:attribute name="checked" type="Boolean" />
+	<aura:attribute name="dateAdjustTableColumns" type="List" />
+	<aura:attribute name="restrictionGrpData" type="Object" />
+	<aura:attribute name="restrictionGrpDataCopy" type="Object" />
+	<aura:attribute name="selectedRowsDateAdjsut" type="List" />
+	<aura:attribute name="isConfirm" type="Boolean" default="false" />
+	<aura:attribute name="bulkDateUpdateRecords" type="List" />
+	<aura:attribute name="expandedDateAjustRows" type="List" />
+	<aura:attribute name="childRecords" type="List" />
+	<aura:attribute name="currentSelected" type="List" />
+	<aura:attribute name="toggledIds" type="List" />
+	<aura:attribute name="tempData" type="List" />
+
+	<!-- Bulk Delete Nodes Attributes -->
+	<aura:attribute name="isDeleteNodeModal" type="Boolean" default="false" />
+	<aura:attribute name="isConfirmDeleteNode" type="Boolean" default="false" />
+	<aura:attribute name="closeModalConfirmDeleteNode" type="Boolean" default="false" />
+	<aura:attribute name="deleteNodesColumns" type="List" />
+	<aura:attribute name="selectedRowsDelNode" type="List" default="[]" />
+	<aura:attribute name="expandedDelNodeRows" type="List" />
+	<aura:attribute name="bulkDeleteNodeRecords" type="List" />
+
+	<!--Bulk Expire Attributes -->
+	<aura:attribute name="isBulkExpireModal" type="Boolean" default="false" />
+	<aura:attribute name="bulkExpireRecords" type="List" />
+	<aura:attribute name="selectedRowsExpireNode" type="List" default="[]" />
+	<aura:attribute name="dateExpireTableColumns" type="List" />
+
+	<aura:attribute name="caseRecord" type="Object" />
+	<aura:attribute name="recordLoadError" type="String" />
+
+	<!-- Expire Customer Attributes -->
+	<aura:attribute name="isExpireCustomer" type="Boolean" default="false" />
+	<aura:attribute name="customerExpireDate" type="Date" />
+	<aura:attribute name="isConfirmExpireCustomer" type="Boolean" default="false" />
+	<aura:attribute name="customerExpireDateError" type="Boolean" default="false" />
+
+	<!--Expire Excluded Account Attributes -->
+	<aura:attribute name="isExpireExcludedAccountOpen" type="Boolean" default="false" />
+	<aura:attribute name="isConfirmExcludedAccountExpire" type="Boolean" default="false" />
+	<aura:attribute name="excludedAccountExpireDate" type="Date" />
+	<aura:attribute name="isConfirmExpireExcludedAccount" type="Boolean" default="false" />
+	<aura:attribute name="excludedAccountExpireDateError" type="Boolean" default="false" />
+
+	<!--Expire Account Attributes -->
+	<aura:attribute name="isExpireAccountOpen" type="Boolean" default="false" />
+	<aura:attribute name="isConfirmExpireNode" type="Boolean" default="false" />
+	<aura:attribute name="accountExpireDate" type="Date" />
+	<aura:attribute name="isConfirmExpireAccount" type="Boolean" default="false" />
+	<aura:attribute name="accountExpireDateError" type="Boolean" default="false" />
+
+	<!-- To load case Record -->
+	<force:recordData
+		aura:id="recordLoader"
+		recordId="{!v.caseId}"
+		fields="ROT_Approval_Status__c,ROT_Approval_Stage__c"
+		targetFields="{!v.caseRecord}"
+		targetError="{!v.recordLoadError}"
+	/>
+
+	<div class="slds">
+		<lightning:card title="">
+			<h3 class="slds-section__title">
+				<span class="slds-truncate slds-button slds-section__title-action" title="Account Selection"
+					>Select Restriction and Complete Restriction Details</span
+				>
+			</h3>
+			<center style="z-index: 99">
+				<lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large" />
+			</center>
+			<div class="slds-p-bottom_large slds-p-bottom_large">
+				<lightning:button
+					variant="destructive-text"
+					label="Import Restrictions"
+					title="Import Restrictions"
+					onclick="{!c.openImportRestrictionModal}"
+					class="slds-float_right slds-p-right_x-small"
+					disabled="{!or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved')}"
+				/>
+				<!-- Div to append the child component markup -->
+				<div aura:id="showImportRestrictionsModal"></div>
+
+				<lightning:button
+					variant="destructive-text"
+					label="New Restriction"
+					title="New Restriction"
+					onclick="{!c.newRestriction}"
+					class="slds-float_right slds-p-right_x-small"
+					disabled="{!or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved')}"
+				/>
+			</div>
+			<div class="slds-p-top_large"></div>
+			<aura:if isTrue="{!not(empty(v.restrictionData))}">
+				<div>
+					<lightning:datatable
+						columns="{! v.columns }"
+						data="{! v.restrictionData }"
+						keyField="Id"
+						selectedRows="{!v.selectedRows}"
+						maxRowSelection="{! v.maxRowSelection }"
+						onrowselection="{! c.updateSelectedText }"
+						onrowaction="{! c.deleteGroupRestriction}"
+					/>
+				</div>
+				<div class="slds-p-top_large">
+					<lightning:accordion activeSectionName="{!v.activeSections}" allowMultipleSectionsOpen="true">
+						<lightning:accordionSection name="RestrictionDetails" label="Restriction Details">
+							<lightning:layoutItem size="11" padding="around-small">
+								<lightning:button
+									class="slds-float--right"
+									label="Bulk Expire Nodes"
+									title="Bulk Expire Nodes"
+									onclick="{!c.bulkExpireNodes}"
+									disabled="{!or(v.selectedRowDetailToShow.Status__c!='Unchanged',or(v.caseRecord.ROT_Approval_Status__c=='Submitted',v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+								/>
+								<div aura:id="showChildModal"></div>
+								<lightning:button
+									class="slds-float--right"
+									label="Bulk Delete Nodes"
+									title="Bulk Date Adjustment"
+									onclick="{!c.bulkNodeDelete}"
+									disabled="{!or(or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'), v.selectedRowDetailToShow.Status__c=='Unchanged')}"
+								/>
+								<div aura:id="showChildModal"></div>
+								<lightning:button
+									class="slds-float--right"
+									label="Bulk Date Adjustment"
+									title="Bulk Date Adjustment"
+									onclick="{!c.bulkDateupdate}"
+									disabled="{!or(or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'), v.selectedRowDetailToShow.Status__c=='Unchanged')}"
+								/>
+								<div aura:id="showChildModal"></div>
+								<lightning:button
+									class="slds-float--right"
+									label="Update"
+									title="Save Restriction Group"
+									onclick="{!c.updateRestriction}"
+									disabled="{!or(v.selectedRowDetailToShow.Status__c=='Unchanged', or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+								/>
+							</lightning:layoutItem>
+							<br />
+
+							<lightning:layoutItem size="12" padding="around-small">
+								<div class="slds-grid slds-wrap">
+									<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+										<lightning:input
+											value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+											label="Group ID"
+											class="slds-size_6-of-8"
+											disabled="true"
+										/>
+									</div>
+									<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+										<lightning:input value="{!v.selectedRowDetailToShow.Description__c}" label="Description" class="slds-size_6-of-8" />
+									</div>
+
+									<aura:if isTrue="{!v.caseRecord.ROT_Approval_Status__c=='Submitted'}">
+										<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+											<lightning:input
+												value="{!v.caseRecord.ROT_Approval_Stage__c}"
+												label="Approval Level"
+												class="slds-size_6-of-8"
+												disabled="true"
+											/>
+										</div>
+									</aura:if>
+								</div>
+							</lightning:layoutItem>
+						</lightning:accordionSection>
+
+						<!-- ADD CUSTOMER -->
+						<aura:if isTrue="{!v.HideNodes}">
+							<lightning:accordionSection name="IncludedCustomer" label="Included Customers">
+								<lightning:layoutItem size="12" padding="around-small" class="slds-p-bottom_x-small">
+									<lightning:button
+										class="slds-float--right"
+										label="Add Customer"
+										title="Add Customer"
+										onclick="{!c.AddCustomer}"
+										disabled="{!or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved')}"
+									/>
+								</lightning:layoutItem>
+								<div class="slds-p-top_medium"></div>
+
+								<lightning:layoutItem size="12" padding="around-small">
+									<table class="slds-table slds-table--bordered slds-table--cell-buffer">
+										<thead>
+											<tr class="slds-text-title--caps">
+												<th scope="col">
+													<div class="slds-truncate"></div>
+												</th>
+												<th scope="col">
+													<div class="slds-truncate">Customer Key</div>
+												</th>
+												<th scope="col">
+													<div class="slds-truncate">Description</div>
+												</th>
+												<th scope="col">
+													<div class="slds-truncate">Start Date</div>
+												</th>
+												<th scope="col">
+													<div class="slds-truncate">End Date</div>
+												</th>
+												<th scope="col">
+													<div class="slds-truncate">Status</div>
+												</th>
+											</tr>
+										</thead>
+										<tbody>
+											<aura:iteration items="{!v.responseCustomerList}" var="mapKey" indexVar="key">
+												<tr>
+													<td scope="row">
+														<lightning:button
+															value="{!mapKey.Id}"
+															variant="brand"
+															label="Update"
+															title="Update action"
+															onclick="{!c.handleUpdateCustomer}"
+															disabled="{!or(or(mapKey.Status__c=='Unchanged',mapKey.Status__c=='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted',v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+														/>
+														<lightning:button
+															value="{!mapKey.Id}"
+															variant="destructive"
+															label="Remove"
+															title="Remove action"
+															onclick="{!c.handleCustomerRemove}"
+															disabled="{!or(or(mapKey.Status__c=='Unchanged',mapKey.Status__c=='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted',  v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+														/>
+														<lightning:button
+															value="{!mapKey.Id}"
+															variant="destructive"
+															label="Expire"
+															title="Expire action"
+															onclick="{!c.handleCustomerExpire}"
+															disabled="{!or(and(mapKey.Status__c!='Unchanged',mapKey.Status__c!='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted',v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+														/>
+													</td>
+
+													<td scope="row">
+														<div class="slds-truncate">{!mapKey.CustomerKey__c}</div>
+													</td>
+													<td scope="row">
+														<div class="slds-truncate">{!mapKey.Description__c}</div>
+													</td>
+													<td scope="row">
+														<div class="slds-truncate">{!mapKey.EffectiveStartDate__c}</div>
+													</td>
+													<td scope="row">
+														<div class="slds-truncate">{!mapKey.EffectiveEndDate__c}</div>
+													</td>
+													<td scope="row">
+														<div class="slds-truncate">{!mapKey.Status__c}</div>
+													</td>
+												</tr>
+											</aura:iteration>
+										</tbody>
+									</table>
+								</lightning:layoutItem>
+							</lightning:accordionSection>
+							<!-- Add customer Accordion End -->
+
+							<!--- Excluded Accounts Accordion Start -->
+							<aura:if isTrue="{!v.showExcludedAccountDetails}">
+								<lightning:accordionSection name="ExcludedAccounts" label="Excluded Accounts">
+									<lightning:layoutItem size="12" padding="around-small" class="slds-p-bottom_x-small">
+										<lightning:button
+											class="slds-float--right"
+											label="Add Accounts"
+											title="Add Accounts"
+											onclick="{!c.addExcludedAccounts}"
+											disabled="{!or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved')}"
+										/>
+										<lightning:button
+											class="slds-float--right slds-m-right_small"
+											label="Add Account"
+											title="Add Account"
+											onclick="{!c.addExcludedAccount}"
+											disabled="{!or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved')}"
+										/>
+									</lightning:layoutItem>
+									<div class="slds-p-top_medium"></div>
+									<aura:if isTrue="{!not(empty(v.excludedAccounts))}">
+										<lightning:layoutItem size="12" padding="around-small">
+											<table class="slds-table slds-table--bordered slds-table--cell-buffer">
+												<thead>
+													<tr class="slds-text-title--caps">
+														<th scope="col">
+															<div class="slds-truncate"></div>
+														</th>
+														<th scope="col">
+															<div class="slds-truncate">Account Number</div>
+														</th>
+														<th scope="col">
+															<div class="slds-truncate">Description</div>
+														</th>
+														<th scope="col">
+															<div class="slds-truncate">Start date</div>
+														</th>
+														<th scope="col">
+															<div class="slds-truncate">Stop Date</div>
+														</th>
+														<th scope="col">
+															<div class="slds-truncate">Status</div>
+														</th>
+													</tr>
+												</thead>
+												<tbody>
+													<aura:iteration items="{!v.excludedAccounts}" var="mapKey" indexVar="key">
+														<tr>
+															<td scope="row">
+																<lightning:button
+																	value="{!mapKey.Id}"
+																	variant="brand"
+																	label="Update"
+																	title="Update action"
+																	onclick="{! c.handleExcludedAccountUpdate }"
+																	disabled="{!or(or(mapKey.Status__c=='Unchanged',mapKey.Status__c=='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted',v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+																/>
+																<lightning:button
+																	value="{!mapKey.Id}"
+																	variant="destructive"
+																	label="Remove"
+																	title="Remove action"
+																	onclick="{! c.handleExcludedAccountRemove }"
+																	disabled="{!or(or(mapKey.Status__c=='Unchanged',mapKey.Status__c=='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted',v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+																/>
+																<lightning:button
+																	value="{!mapKey.Id}"
+																	variant="destructive"
+																	label="Expire"
+																	title="Expire action"
+																	onclick="{!c.handleExcludedAccountsExpire}"
+																	disabled="{!or(and(mapKey.Status__c!='Unchanged',mapKey.Status__c!='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted',v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+																/>
+															</td>
+															<td scope="row">
+																<div class="slds-truncate">{!mapKey.AccountNumber__c}</div>
+															</td>
+															<td scope="row">
+																<div class="slds-truncate">{!mapKey.Description__c}</div>
+															</td>
+															<td scope="row">
+																<div class="slds-truncate">{!mapKey.EffectiveStartDate__c}</div>
+															</td>
+															<td scope="row">
+																<div class="slds-truncate">{!mapKey.EffectiveEndDate__c}</div>
+															</td>
+															<td scope="row">
+																<div class="slds-truncate">{!mapKey.Status__c}</div>
+															</td>
+														</tr>
+													</aura:iteration>
+												</tbody>
+											</table>
+										</lightning:layoutItem>
+									</aura:if>
+								</lightning:accordionSection>
+							</aura:if>
+
+							<!-- Excluded Accounts Accordion End -->
+
+							<aura:if isTrue="{!v.showIncludedAccountDetails}">
+								<lightning:accordionSection name="IncludedAccounts" label="Included Accounts">
+									<lightning:layoutItem size="12" padding="around-small" class="slds-p-bottom_x-small">
+										<lightning:button
+											class="slds-float--right"
+											label="Add Accounts"
+											title="Add Accounts"
+											onclick="{!c.AddAccounts}"
+											disabled="{!or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved')}"
+										/>
+
+										<lightning:button
+											class="slds-float--right slds-m-right_small"
+											label="Add Account"
+											title="Add Account"
+											onclick="{!c.AddAccount}"
+											disabled="{!or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved')}"
+										/>
+									</lightning:layoutItem>
+									<div class="slds-p-top_medium"></div>
+									<aura:if isTrue="{!not(empty(v.accounts))}">
+										<lightning:layoutItem size="12" padding="around-small">
+											<table class="slds-table slds-table--bordered slds-table--cell-buffer">
+												<thead>
+													<tr class="slds-text-title--caps">
+														<th scope="col">
+															<div class="slds-truncate"></div>
+														</th>
+														<th scope="col">
+															<div class="slds-truncate">Account Number</div>
+														</th>
+														<th scope="col">
+															<div class="slds-truncate">Description</div>
+														</th>
+														<th scope="col">
+															<div class="slds-truncate">Start date</div>
+														</th>
+														<th scope="col">
+															<div class="slds-truncate">End Date</div>
+														</th>
+														<th scope="col">
+															<div class="slds-truncate">Status</div>
+														</th>
+													</tr>
+												</thead>
+												<tbody>
+													<aura:iteration items="{!v.accounts}" var="mapKey" indexVar="key">
+														<tr>
+															<td scope="row">
+																<lightning:button
+																	value="{!mapKey.Id}"
+																	variant="brand"
+																	label="Update"
+																	title="Update action"
+																	onclick="{! c.handleClickUpdate }"
+																	disabled="{!or(or(mapKey.Status__c=='Unchanged',mapKey.Status__c=='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+																/>
+																<lightning:button
+																	value="{!mapKey.Id}"
+																	variant="destructive"
+																	label="Remove"
+																	title="Remove action"
+																	onclick="{! c.handleClickRemove }"
+																	disabled="{!or(or(mapKey.Status__c=='Unchanged', mapKey.Status__c=='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+																/>
+																<lightning:button
+																	value="{!mapKey.Id}"
+																	variant="destructive"
+																	label="Expire"
+																	title="Expire action"
+																	onclick="{! c.handleClickExpire }"
+																	disabled="{!or(and(mapKey.Status__c!='Unchanged',mapKey.Status__c!='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted',v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+																/>
+															</td>
+															<td scope="row">
+																<div class="slds-truncate">{!mapKey.AccountNumber__c}</div>
+															</td>
+															<td scope="row">
+																<div class="slds-truncate">{!mapKey.Description__c}</div>
+															</td>
+															<td scope="row">
+																<div class="slds-truncate">{!mapKey.EffectiveStartDate__c}</div>
+															</td>
+															<td scope="row">
+																<div class="slds-truncate">{!mapKey.EffectiveEndDate__c}</div>
+															</td>
+															<td scope="row">
+																<div class="slds-truncate">{!mapKey.Status__c}</div>
+															</td>
+														</tr>
+													</aura:iteration>
+												</tbody>
+											</table>
+											<!--
+                        <lightning:datatable
+                                     columns="{! v.accountsColumns}"
+                                     data="{! v.accounts }"
+                                     keyField="Id"  selectedRows="{!v.selectedRowsAccount}" 
+                                     maxRowSelection="{! v.maxRowSelectionAccount}"
+                                     onrowselection="{! c.updateSelectedTextAccount}"/> -->
+										</lightning:layoutItem>
+									</aura:if>
+								</lightning:accordionSection>
+							</aura:if>
+							<lightning:accordionSection name="IncludedTransactionType" label="Included Transaction Types">
+								<div class="slds-p-top_medium">
+									<lightning:layoutItem size="12" padding="around-small">
+										<lightning:button
+											class="slds-float--right"
+											label="Add Transaction Type"
+											title="Add Transaction Type"
+											onclick="{!c.openTransactionType}"
+											disabled="{!or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved')}"
+										/>
+									</lightning:layoutItem>
+									<div class="slds-p-top_medium"></div>
+									<div class="slds-p-top_medium"></div>
+
+									<lightning:layoutItem>
+										<table class="slds-table slds-table--bordered slds-table--cell-buffer">
+											<thead>
+												<tr class="slds-text-title--caps">
+													<th scope="col">
+														<div class="slds-truncate"></div>
+													</th>
+													<!--<th scope="col">
+                                    <div class="slds-truncate">Transaction Group</div>
+                                </th>-->
+													<th scope="col">
+														<div class="slds-truncate">Transaction Types</div>
+													</th>
+													<th scope="col">
+														<div class="slds-truncate">Description</div>
+													</th>
+
+													<th scope="col">
+														<div class="slds-truncate">Start date</div>
+													</th>
+													<th scope="col">
+														<div class="slds-truncate">Stop Date</div>
+													</th>
+													<th scope="col">
+														<div class="slds-truncate">Status</div>
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												<aura:iteration items="{!v.selectedTransactionTypesDataMain}" var="mapKeyTT" indexVar="key">
+													<tr>
+														<td scope="row">
+															<lightning:button
+																value="{!mapKeyTT.Id}"
+																variant="brand"
+																label="Update"
+																title="Update action"
+																onclick="{! c.updateTransactionTypes }"
+																disabled="{!or(or(mapKeyTT.Status__c=='Unchanged',mapKeyTT.Status__c=='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+															/>
+															<lightning:button
+																value="{!mapKeyTT.Id}"
+																variant="destructive"
+																label="Remove"
+																title="Remove action"
+																onclick="{! c.deleteTransactionTypes }"
+																disabled="{!or(or(mapKeyTT.Status__c=='Unchanged', mapKeyTT.Status__c=='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted', v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+															/>
+															<lightning:button
+																value="{!mapKeyTT.Id}"
+																variant="destructive"
+																label="Expire"
+																title="Expire action"
+																onclick="{! c.expireTransactionTypes }"
+																disabled="{!or(and(mapKeyTT.Status__c!='Unchanged',mapKeyTT.Status__c!='Expire'),or(v.caseRecord.ROT_Approval_Status__c=='Submitted',v.caseRecord.ROT_Approval_Status__c=='Leg2 Approved'))}"
+															/>
+														</td>
+														<!--<td scope="row">
+                                         <div class="slds-truncate" >{!mapKeyTT.Transaction_Group__c}</div>
+                                    </td>-->
+														<td scope="row">
+															<div class="slds-truncate">{!mapKeyTT.Name}</div>
+														</td>
+
+														<td scope="row">
+															<div class="slds-truncate">{!mapKeyTT.Description__c}</div>
+														</td>
+														<td scope="row">
+															<div class="slds-truncate">{!mapKeyTT.Effective_Start_Date__c}</div>
+														</td>
+														<td scope="row">
+															<div class="slds-truncate">{!mapKeyTT.Effective_End_Date__c}</div>
+														</td>
+														<td scope="row">
+															<div class="slds-truncate">{!mapKeyTT.Status__c}</div>
+														</td>
+													</tr>
+												</aura:iteration>
+											</tbody>
+										</table>
+									</lightning:layoutItem>
+								</div>
+							</lightning:accordionSection>
+						</aura:if>
+					</lightning:accordion>
+				</div>
+			</aura:if>
+			<!--<c:AccDemoCont aura:id="documentSignatoriesCmp" /> -->
+		</lightning:card>
+	</div>
+	<!--Modal : Edit Beneficiary -->
+	<aura:if isTrue="{!v.isEditGroupAccount}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeRemoveBeneficiary }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Import Existing Group Restrictions</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Group Restriction will be displayed here</b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Save" title="Create New Group Restriction" onclick="{! c.CreateNewRestrictionGroup}" />
+					<lightning:button variant="brand" label="Cancel" title="Import Group Restriction" onclick="{! c.actionRemoveBeneficiary }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+	<aura:if isTrue="{!v.creatNewRestrictionAccount}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.close }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add New Group Restriction</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<lightning:layoutItem size="12" padding="around-small">
+						<div class="slds-grid slds-wrap">
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									pattern="[a-zA-Z]*"
+									messageWhenPatternMismatch="Please use only letters."
+									required="true"
+									value="{!v.restrictionId}"
+									label="Group Id"
+									class="slds-size_6-of-8"
+								/>
+							</div>
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input value="{!v.Description}" label="Description" class="slds-size_6-of-8" />
+							</div>
+						</div>
+					</lightning:layoutItem>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Save" title="Create New Group Restriction" onclick="{! c.SaveNewRestrictionGroup}" />
+					<lightning:button variant="brand" label="Cancel" title="Import Group Restriction" onclick="{! c.cancel }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+	<!-- Create Account Pop up -->
+	<aura:if isTrue="{!v.createAccount}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+			style="width: 100%"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeAccount }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Group Restriction Account</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<aura:if isTrue="{!v.isUpdate}">
+						<lightning:layoutItem size="12" padding="around-small">
+							<lightning:datatable
+								columns="{! v.accountsColumns}"
+								data="{! v.responseList }"
+								keyField="Id"
+								maxRowSelection="{! v.maxRowSelectionAccount}"
+								onrowselection="{! c.updateSelectedTextAccount}"
+							/>
+						</lightning:layoutItem>
+						<aura:set attribute="else">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+										disabled="true"
+										label="Restriction Id"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input value="{!v.accountNumber}" label="Account Number" class="slds-size_6-of-8" />
+								</div>
+							</div>
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input value="{!v.AccountDescription}" label="Description" class="slds-size_6-of-8" />
+								</div>
+
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="Date"
+										value="{!v.accountEffectiveStartDate}"
+										min="{!v.today}"
+										label="Effective Start Date"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+							</div>
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="checkbox"
+										aura:id="checkbox"
+										label="No End Date"
+										class="slds-size_6-of-8"
+										onclick="{!c.checkboxSelect}"
+									/>
+								</div>
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="Date"
+										value="{!v.accountEffectiveEndDate}"
+										min="{!v.today}"
+										disabled="{!v.isInfinity}"
+										label="Effective End Date"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+							</div>
+						</aura:set>
+					</aura:if>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Save" title="Save" onclick="{! c.SaveAccount}" />
+					<lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.cancelAccount}" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+	<!-- Create Accounts Pop up -->
+	<aura:if isTrue="{!v.isCreateAccounts}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+			style="width: 100%"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeAccounts }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Group Restriction Account</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<aura:if isTrue="{!v.isUpdate}">
+						<div class="slds-grid slds-wrap">
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+									disabled="true"
+									label="Restriction Id"
+									class="slds-size_6-of-8"
+								/>
+							</div>
+
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									type="Date"
+									value="{!v.accountEffectiveStartDate}"
+									min="{!v.today}"
+									label="Effective Start Date"
+									class="slds-size_6-of-8"
+								/>
+							</div>
+						</div>
+						<div class="slds-grid slds-wrap">
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									type="checkbox"
+									aura:id="checkbox"
+									label="No End Date"
+									class="slds-size_6-of-8"
+									onclick="{!c.checkboxSelect}"
+								/>
+							</div>
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									type="Date"
+									value="{!v.accountEffectiveEndDate}"
+									disabled="{!v.isInfinity}"
+									label="Effective End Date"
+									class="slds-size_6-of-8"
+								/>
+							</div>
+						</div>
+
+						<lightning:layoutItem size="12" padding="around-small">
+							<lightning:datatable
+								columns="{! v.accountsColumns}"
+								data="{! v.responseList }"
+								keyField="Id"
+								maxRowSelection="{! v.maxRowSelectionAccount}"
+								onrowselection="{! c.updateSelectedTextAccount}"
+							/>
+						</lightning:layoutItem>
+					</aura:if>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Save" title="Save" onclick="{! c.saveAccounts}" />
+					<lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.closeAccounts}" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--Modal : Remove Beneficiary -->
+	<aura:if isTrue="{!v.isRemoveAccountOpen}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeRemoveAccount }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Remove Restriction Account</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure you want to remove this Account? </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeRemoveAccount }" />
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{! c.actionRemoveAccount }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--$$$$$$$$$$$$$$$$$$ Add Transaction Types beginning $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  -->
+	<aura:if isTrue="{!v.isTransactionTypeOpen}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ###### -->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeTransactionType }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Transaction Type</h2>
+				</header>
+				<!-- ###### MODAL BOX BODY Part Start###### -->
+
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<aura:if isTrue="{!v.isTTDate}">
+						<aura:set attribute="else">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+										disabled="true"
+										label="Restriction Id"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="Date"
+										value="{!v.transactionTypeEffectiveStartDate}"
+										label="Effective Start Date"
+										min="{!v.today}"
+										required="true"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+							</div>
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="checkbox"
+										aura:id="checkbox"
+										label="No End Date"
+										class="slds-size_6-of-8"
+										onclick="{!c.checkboxSelect}"
+									/>
+								</div>
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="Date"
+										value="{!v.transactioTypeEffectiveEndDate}"
+										disabled="{!v.isInfinity}"
+										label="Effective End Date"
+										min="{!v.today}"
+										required="true"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+							</div>
+						</aura:set>
+					</aura:if>
+
+					<lightning:layoutItem size="12" padding="around-small">
+						<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+							<h1>{! v.selectedTTRowsCount } Item(s) Selected</h1>
+							<lightning:treeGrid
+								aura:id="treeGridTT"
+								columns="{! v.transactionTypeColumns }"
+								data="{! v.transactionTypesData }"
+								keyField="ObjectID"
+								selectedRows="{! v.selectedTTRows }"
+								expandedRows="{! v.gridExpandedTTRows }"
+								onrowselection="{! c.updateSelectedTTRow }"
+							/>
+						</div>
+					</lightning:layoutItem>
+				</div>
+
+				<!-- ###### MODAL BOX FOOTER Part Start ###### -->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Cancel" title="No" onclick="{! c.closeTransactionType }" />
+					<lightning:button variant="brand" label="AddTransactionType" title="Yes" onclick="{! c.actionTransactionType }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+	<!--$$$$$$$$$$$$$$$$$$ Add Transaction Types end $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  -->
+
+	<!-- Create Account Pop up for Excluded Accounts-->
+	<aura:if isTrue="{!v.openExcludedAccount}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+			style="width: 100%"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeExcludedAccount }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Accounts</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<aura:if isTrue="{!v.isUpdateExcludedAccount}">
+						<div class="slds-grid slds-wrap">
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+									disabled="true"
+									label="Restriction Id"
+									class="slds-size_6-of-8"
+								/>
+							</div>
+
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									type="Date"
+									value="{!v.accountEffectiveStartDate}"
+									min="{!v.today}"
+									label="Effective Start Date"
+									class="slds-size_6-of-8"
+								/>
+							</div>
+						</div>
+						<div class="slds-grid slds-wrap">
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									type="checkbox"
+									aura:id="checkbox"
+									label="No End Date"
+									class="slds-size_6-of-8"
+									onclick="{!c.checkboxSelect}"
+								/>
+							</div>
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									type="Date"
+									value="{!v.accountEffectiveEndDate}"
+									disabled="{!v.isInfinity}"
+									label="Effective End Date"
+									min="{!v.today}"
+									class="slds-size_6-of-8"
+								/>
+							</div>
+						</div>
+
+						<lightning:layoutItem size="12" padding="around-small">
+							<lightning:datatable
+								columns="{! v.accountsColumns}"
+								data="{! v.responseList }"
+								keyField="Id"
+								maxRowSelection="{! v.maxRowSelectionAccount}"
+								onrowselection="{! c.selectExcludedAccounts}"
+							/>
+						</lightning:layoutItem>
+						<aura:set attribute="else">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+										disabled="true"
+										label="Restriction Id"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input value="{!v.accountNumber}" label="Account Number" class="slds-size_6-of-8" />
+								</div>
+							</div>
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input value="{!v.AccountDescription}" label="Description" class="slds-size_6-of-8" />
+								</div>
+
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="Date"
+										value="{!v.accountEffectiveStartDate}"
+										min="{!v.today}"
+										label="Effective Start Date"
+										style="white-space: nowrap"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+							</div>
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="checkbox"
+										aura:id="checkbox"
+										label="Is Effective End Date Infinity"
+										class="slds-size_6-of-8"
+										onclick="{!c.checkboxSelect}"
+									/>
+								</div>
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="Date"
+										value="{!v.accountEffectiveEndDate}"
+										min="{!v.today}"
+										disabled="{!v.isInfinity}"
+										label="Effective End Date"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+							</div>
+						</aura:set>
+					</aura:if>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Save" title="Save" onclick="{! c.saveExcludedAccounts}" />
+					<lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.closeExcludedAccount}" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+	<!--Excluded Account Modal End -->
+
+	<!-- confirmation Modal for Exlcuded Account Delete -->
+	<!--Modal : Remove Beneficiary -->
+	<aura:if isTrue="{!v.isRemoveExcludedAccountOpen}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeRemoveAccount }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Remove Excluded Account</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure you want to remove this Account? </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeRemoveAccount }" />
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{! c.actionRemoveExcludedAccount }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--confirmation Modal for Exlcuded Account Delete End-->
+
+	<!-- ADD CUSTOMER MODAL-->
+	<aura:if isTrue="{!v.createCustomer}">
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+			style="width: 100%"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeCustomer}"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Group Restriction Customer</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<aura:if isTrue="{!v.isUpdateCustomer}">
+						<div class="slds-grid slds-wrap">
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+									disabled="true"
+									label="Restriction Id"
+									class="slds-size_6-of-8"
+								/>
+							</div>
+
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									class="slds-size_6-of-8"
+									type="date"
+									label="Start Date"
+									value="{!v.customerStartDate}"
+									name="date"
+									onchange="{!c.onStartDate}"
+									required="true"
+								/>
+
+								<aura:if isTrue="{!v.startDateError}">
+									<div class="slds-text-color_error slds-p-left_x-small">Date must be in future..</div>
+								</aura:if>
+							</div>
+						</div>
+
+						<div class="slds-grid slds-wrap">
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									type="checkbox"
+									aura:id="customerCheckboxId"
+									label="Is Effective End Date Infinity"
+									class="slds-size_6-of-8"
+									onclick="{!c.customerCheckSelect}"
+								/>
+							</div>
+
+							<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+								<lightning:input
+									class="slds-size_6-of-8"
+									type="date"
+									label="End Date"
+									value="{!v.customerEndDate}"
+									name="date"
+									disabled="{!v.isInfinityCustomerCheck}"
+									onchange="{!c.onEndDate}"
+									required="true"
+								/>
+
+								<aura:if isTrue="{!v.endDateError}">
+									<div class="slds-text-color_error slds-p-left_x-small">Date must be in future..</div>
+								</aura:if>
+							</div>
+						</div>
+
+						<lightning:layoutItem size="12" padding="around-small">
+							<lightning:datatable
+								columns="{! v.customerColumns}"
+								data="{! v.responseList }"
+								keyField="Id"
+								maxRowSelection="{! v.maxRowSelectionCustomer}"
+								onrowselection="{! c.selectCustomer}"
+							/>
+						</lightning:layoutItem>
+
+						<aura:set attribute="else">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+										disabled="true"
+										label="Restriction Id"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input value="{!v.customerKey}" label="Customer Key" disabled="true" class="slds-size_6-of-8" />
+								</div>
+							</div>
+
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input value="{!v.customerDescription}" label="Description" class="slds-size_6-of-8" />
+								</div>
+
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										class="slds-size_6-of-8"
+										type="date"
+										label="Start Date"
+										value="{!v.customerStartDate}"
+										name="date"
+										onchange="{!c.onStartDate}"
+										required="true"
+									/>
+
+									<aura:if isTrue="{!v.startDateError}">
+										<div class="slds-text-color_error slds-p-left_x-small">Date must be in future..</div>
+									</aura:if>
+								</div>
+							</div>
+
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="checkbox"
+										aura:id="customerCheckboxId"
+										label="Is Effective End Date Infinity"
+										class="slds-size_6-of-8"
+										onclick="{!c.customerCheckSelect}"
+									/>
+								</div>
+
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										class="slds-size_6-of-8"
+										type="date"
+										label="End Date"
+										value="{!v.customerEndDate}"
+										name="date"
+										disabled="{!v.isInfinityCustomerCheck}"
+										onchange="{!c.onEndDate}"
+										required="true"
+									/>
+
+									<aura:if isTrue="{!v.endDateError}">
+										<div class="slds-text-color_error slds-p-left_x-small">Date must be in future..</div>
+									</aura:if>
+								</div>
+							</div>
+						</aura:set>
+					</aura:if>
+				</div>
+
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Save" title="Save" onclick="{! c.SaveCustomer}" />
+					<lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.cancelCustomer}" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part for Customer END Here ######-->
+	</aura:if>
+
+	<!-- confirmation Modal for Customer Delete -->
+	<!--Modal : Remove Beneficiary -->
+	<aura:if isTrue="{!v.isRemoveCustomerOpen}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeRemoveCustomer }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Remove Customer</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure you want to remove this Customer? </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeRemoveCustomer }" />
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{! c.actionRemoveCustomer }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--Modal : Remove Restriction Group -->
+	<aura:if isTrue="{!v.isRemoveRestrictionGroup}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeRemoveRestrictionGroup }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Remove Restriction Group</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure you want to remove this Group Restriction? </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeRemoveRestrictionGroup }" />
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{! c.actionRemoveRestrictionGroup }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!-- Date Adjust Modal -->
+	<aura:if isTrue="{!v.isDateAdjustModal}">
+		<div>
+			<section
+				role="dialog"
+				tabindex="-1"
+				aria-labelledby="modal-heading-01"
+				aria-modal="true"
+				aria-describedby="modal-content-id-1"
+				class="slds-modal slds-fade-in-open"
+			>
+				<div class="slds-modal__container" style="max-width: 80rem !important; width: 80% !important">
+					<!-- Modal Header -->
+					<header class="slds-modal__header">
+						<lightning:buttonIcon
+							iconName="utility:close"
+							class="slds-modal__close"
+							size="large"
+							variant="bare-inverse"
+							alternativeText="Close"
+							onclick="{! c.closeDateAdjustModal }"
+						/>
+						<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Bulk Date Adjustment</h2>
+					</header>
+
+					<!-- Main Body of Modal -->
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+						<lightning:layout multipleRows="true">
+							<lightning:layoutItem size="8" padding="">
+								<lightning:input
+									type="Date"
+									value="{!v.accountEffectiveStartDate}"
+									label="New Start Date"
+									min="{!v.today}"
+									class="slds-size_8-of-12"
+								/>
+							</lightning:layoutItem>
+							<lightning:layoutItem size="8" padding="">
+								<lightning:input
+									type="Date"
+									value="{!v.accountEffectiveEndDate}"
+									disabled="{!v.isInfinity}"
+									label="New End Date"
+									min="{!v.today}"
+									class="slds-size_8-of-12"
+								/>
+							</lightning:layoutItem>
+							<lightning:layoutItem size="4" padding="">
+								<lightning:input
+									type="checkbox"
+									aura:id="endDateCheck"
+									label="No End Date"
+									class="slds-size_12-of-12"
+									onclick="{!c.onNoEndDateSelect}"
+								/>
+							</lightning:layoutItem>
+							<lightning:layoutItem size="8" padding="">
+								<lightning:input
+									type="text"
+									value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+									label="Group Restriction"
+									disabled="true"
+									class="slds-size_8-of-12"
+								/>
+							</lightning:layoutItem>
+
+							<lightning:layoutItem size="8" padding="">
+								<lightning:input
+									name="search"
+									aura:id="search"
+									label="Filter"
+									type="search"
+									class="slds-size_8-of-12"
+									onchange="{!c.filterRecords}"
+								/>
+							</lightning:layoutItem>
+
+							<lightning:layoutItem size="12" padding="around-small">
+								<lightning:treeGrid
+									columns="{! v.dateAdjustTableColumns }"
+									data="{! v.restrictionGrpData }"
+									keyField="Id"
+									selectedRows="{! v.selectedRowsDateAdjsut }"
+									expandedRows="{! v.expandedDateAjustRows }"
+									onrowselection="{! c.updateSelectedDateAdjustRow }"
+									aura:id="dateAdjustTable"
+									ontoggle="{! c.onToggle}"
+								/>
+							</lightning:layoutItem>
+						</lightning:layout>
+					</div>
+
+					<!-- Footer of Modal -->
+					<footer class="slds-modal__footer">
+						<lightning:button variant="brand" label="Date Adjust" title="Save" onclick="{! c.updateDates }" />
+						<lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.closeDateAdjustModal }" />
+					</footer>
+				</div>
+			</section>
+			<div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+	</aura:if>
+	<!-- Date Adjust Modal End-->
+
+	<aura:if isTrue="{!v.isConfirm}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeModal }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Bulk Date Adjustment</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure you want to Date Adjust the Selected Items(?) </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{! c.confirmModal }" />
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeModal }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+	<!-- Bulk Delete Node Modal -->
+	<aura:if isTrue="{!v.isDeleteNodeModal}">
+		<div>
+			<section
+				role="dialog"
+				tabindex="-1"
+				aria-labelledby="modal-heading-01"
+				aria-modal="true"
+				aria-describedby="modal-content-id-1"
+				class="slds-modal slds-fade-in-open"
+			>
+				<div class="slds-modal__container" style="max-width: 80rem !important; width: 80% !important">
+					<!-- Modal Header -->
+					<header class="slds-modal__header">
+						<lightning:buttonIcon
+							iconName="utility:close"
+							class="slds-modal__close"
+							size="large"
+							variant="bare-inverse"
+							alternativeText="Close"
+							onclick="{! c.closeDeleteNodeModal }"
+						/>
+						<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Bulk Delete Nodes</h2>
+					</header>
+
+					<!-- Main Body of Modal -->
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+						<lightning:layout multipleRows="true">
+							<lightning:layoutItem size="8" padding="">
+								<lightning:input
+									value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+									disabled="true"
+									label="Restriction Id"
+									class="slds-size_6-of-8"
+								/>
+							</lightning:layoutItem>
+
+							<lightning:layoutItem size="12" padding="around-small">
+								<lightning:treeGrid
+									columns="{! v.deleteNodesColumns }"
+									data="{! v.restrictionGrpData }"
+									keyField="Id"
+									selectedRows="{!v.selectedRowsDelNode}"
+									expandedRows="{!v.expandedDelNodeRows}"
+									onrowselection="{!c.updateSelectedDelNodeRow}"
+									aura:id="DelNodeTable"
+									ontoggle="{! c.onToggle}"
+								/>
+							</lightning:layoutItem>
+						</lightning:layout>
+					</div>
+
+					<!-- Footer of Modal -->
+					<footer class="slds-modal__footer">
+						<lightning:button variant="brand" label="Delete" title="Save" onclick="{! c.saveDeleteNode }" />
+						<lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.closeDeleteNodeModal }" />
+					</footer>
+				</div>
+			</section>
+			<div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+	</aura:if>
+	<!-- Bulk Delete Modal End-->
+	<aura:if isTrue="{!v.isConfirmDeleteNode}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{!c.closeModalConfirmDeleteNode}"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Bulk Delete Nodes</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure you want to Delete the Selected Items(?) </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{!c.confirmModalDeleteNode}" />
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeModalConfirmDeleteNode }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--$$$$$$$$$$$$$$$$$$ Update Transaction Types beginning $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  -->
+	<aura:if isTrue="{!v.isTransactionTypeUpdate}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ###### -->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeTransactionType }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Transaction Type</h2>
+				</header>
+				<!-- ###### MODAL BOX BODY Part Start###### -->
+
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<aura:if isTrue="{v.isTTUpdateDate}">
+						<aura:set attribute="else">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+										disabled="true"
+										label="Restriction Id"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+							</div>
+
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input value="{!v.transType}" disabled="true" label="Type" class="slds-size_6-of-8" />
+								</div>
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input value="{!v.transDescription}" disabled="true" label="Type Description" class="slds-size_6-of-8" />
+								</div>
+							</div>
+
+							<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="Date"
+										value="{!v.updateTransTypeStartDate}"
+										label="Effective Start Date"
+										min="{!v.today}"
+										required="true"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="Date"
+										value="{!v.updateTransTypeEndDate}"
+										disabled="{!v.isInfinity}"
+										label="Effective End Date"
+										min="{!v.today}"
+										required="true"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+							</div>
+						</aura:set>
+					</aura:if>
+
+					<lightning:layoutItem size="12" padding="around-small">
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input type="checkbox" aura:id="checkbox" label="No End Date" class="slds-size_6-of-8" onclick="{!c.checkboxSelect}" />
+						</div>
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input
+								type="Date"
+								value="{!v.ttOriginalEffectiveStartDate}"
+								disabled="true"
+								label="Original Effective Start Date"
+								class="slds-size_6-of-8"
+							/>
+						</div>
+					</lightning:layoutItem>
+				</div>
+
+				<!-- ###### MODAL BOX FOOTER Part Start ###### -->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Cancel" title="No" onclick="{! c.closeTransactionType }" />
+					<lightning:button variant="brand" label="Update" title="Yes" onclick="{! c.updateActionTransactionType }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+	<!--$$$$$$$$$$$$$$$$$$ Update Transaction Types end $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  -->
+
+	<!--$$$$$$$$$$$$$$$$$$ Delete Transaction Types beginning $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  -->
+	<aura:if isTrue="{!v.isTransactionTypeDelete}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ###### -->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeTransactionType }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Transaction Type</h2>
+				</header>
+				<!-- ###### MODAL BOX BODY Part Start###### -->
+
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<aura:if isTrue="{v.isTTRemoveDate}">
+						<aura:set attribute="else">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									Are you sure you want to remove this Transaction Type
+								</div>
+							</div>
+						</aura:set>
+					</aura:if>
+				</div>
+
+				<!-- ###### MODAL BOX FOOTER Part Start ###### -->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeTransactionType }" />
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{! c.deleteActionTransactionType }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+	<!--$$$$$$$$$$$$$$$$$$ Remove Transaction Types end $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  -->
+
+	<!-- Bulk Expire Modal -->
+	<aura:if isTrue="{!v.isBulkExpireModal}">
+		<div>
+			<section
+				role="dialog"
+				tabindex="-1"
+				aria-labelledby="modal-heading-01"
+				aria-modal="true"
+				aria-describedby="modal-content-id-1"
+				class="slds-modal slds-fade-in-open"
+			>
+				<div class="slds-modal__container" style="max-width: 80rem !important; width: 80% !important">
+					<!-- Modal Header -->
+					<header class="slds-modal__header">
+						<lightning:buttonIcon
+							iconName="utility:close"
+							class="slds-modal__close"
+							size="large"
+							variant="bare-inverse"
+							alternativeText="Close"
+							onclick="{!c.closeExpireNodes}"
+						/>
+						<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Bulk Expire Nodes</h2>
+					</header>
+
+					<!-- Main Body of Modal -->
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+						<lightning:layout multipleRows="true">
+							<lightning:layoutItem size="8" padding="">
+								<lightning:input type="Date" value="{!v.expiryDate}" label="Expiry Date" min="{!v.today}" class="slds-size_8-of-12" />
+							</lightning:layoutItem>
+
+							<lightning:layoutItem size="8" padding="">
+								<lightning:input
+									type="text"
+									value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+									label="Group Restriction"
+									disabled="true"
+									class="slds-size_8-of-12"
+								/>
+							</lightning:layoutItem>
+
+							<lightning:layoutItem size="8" padding="">
+								<lightning:input
+									name="search"
+									aura:id="search"
+									label="Filter"
+									type="search"
+									class="slds-size_8-of-12"
+									onchange="{!c.filterRecords}"
+								/>
+							</lightning:layoutItem>
+
+							<lightning:layoutItem size="12" padding="around-small">
+								<lightning:treeGrid
+									columns="{! v.dateExpireTableColumns}"
+									data="{! v.restrictionGrpData}"
+									keyField="Id"
+									selectedRows="{!v.selectedRowsExpireNode}"
+									expandedRows="{!v.expandedDateAjustRows}"
+									onrowselection="{! c.updateSelectedExpireNodeRow }"
+									aura:id="dateAdjustTable"
+									ontoggle="{! c.onToggle}"
+								/>
+							</lightning:layoutItem>
+						</lightning:layout>
+					</div>
+
+					<!-- Footer of Modal -->
+					<footer class="slds-modal__footer">
+						<lightning:button variant="brand" label="Save" title="Save" onclick="{!c.saveExpireBulk}" />
+						<lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.closeExpireNodes}" />
+					</footer>
+				</div>
+			</section>
+			<div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+	</aura:if>
+
+	<!-- Date Adjust Modal End-->
+	<aura:if isTrue="{!v.isConfirmExpireNode}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{!c.closeModalExpireNode}"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Bulk Expire Nodes</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure you want to Expire the Selected Items(?) </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{!c.confirmModalExpireNode}" />
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeModalExpireNode }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--Modal : Expire Customer -->
+	<aura:if isTrue="{!v.isExpireCustomer}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeExpireCustomer }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Expire Customer</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<div class="slds-grid slds-wrap">
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input
+								value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+								disabled="true"
+								label="Restriction Id"
+								class="slds-size_6-of-8"
+							/>
+						</div>
+
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input value="{!v.customerKey}" label="Customer Key" disabled="true" class="slds-size_6-of-8" />
+						</div>
+					</div>
+
+					<div class="slds-grid slds-wrap">
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input
+								type="Date"
+								value="{!v.customerStartDate}"
+								disabled="true"
+								min="{!v.today}"
+								label="Effective Start Date"
+								class="slds-size_6-of-8"
+								required="true"
+							/>
+						</div>
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input
+								type="Date"
+								value="{!v.customerExpireDate}"
+								min="{!v.customerExpireDate}"
+								label="Effective End Date"
+								class="slds-size_6-of-8"
+								required="true"
+								onchange="{!c.OnCustomerExpire}"
+							/>
+							<aura:if isTrue="{!v.customerExpireDateError}">
+								<div class="slds-text-color_error slds-p-right_x-small">Date must be in future..</div>
+							</aura:if>
+						</div>
+					</div>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Expire" title="Save" onclick="{! c.SaveExpireCustomer }" />
+					<lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.closeExpireCustomer }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<aura:if isTrue="{!v.isConfirmExpireCustomer}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{!c.closeExpireCustomer}"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Confirmation</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure that you want to expire the specified entity? </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{!c.actionExpireCustomer}" />
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeExpireCustomer }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--Modal : Expire Excluded Account -->
+	<aura:if isTrue="{!v.isExpireExcludedAccountOpen}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeExpireAccount }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Expire Excluded Account</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<div class="slds-grid slds-wrap">
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input
+								value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+								disabled="true"
+								label="Restriction Id"
+								class="slds-size_6-of-8"
+							/>
+						</div>
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input value="{!v.accountNumber}" label="Account Number" disabled="true" class="slds-size_6-of-8" />
+						</div>
+					</div>
+
+					<div class="slds-grid slds-wrap">
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input
+								type="Date"
+								value="{!v.accountEffectiveStartDate}"
+								disabled="true"
+								min="{!v.today}"
+								label="Effective Start Date"
+								class="slds-size_6-of-8"
+								required="true"
+							/>
+						</div>
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input
+								type="Date"
+								value="{!v.excludedAccountExpireDate}"
+								min="{!v.excludedAccountExpireDate}"
+								label="Effective End Date"
+								class="slds-size_6-of-8"
+								required="true"
+								onchange="{!c.onExcludedAccountExpire}"
+							/>
+							<aura:if isTrue="{!v.excludedAccountExpireDateError}">
+								<div class="slds-text-color_error slds-p-right_x-small">Date must be in future..</div>
+							</aura:if>
+						</div>
+					</div>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Expire" title="Save" onclick="{! c.SaveExcludedExpireAccount }" />
+					<lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.closeExpireAccount }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!-- Modal : Expire Account Confirmation -->
+	<aura:if isTrue="{!v.isConfirmExcludedAccountExpire}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{!c.closeExpireAccount}"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Expire Excluded Account</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure that you want to expire the specified entity? </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{!c.actionExcludedExpireAccount}" />
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeExpireAccount }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--Modal : Expire Account -->
+	<aura:if isTrue="{!v.isExpireAccountOpen}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeExpireAccount }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Expire Restriction Account</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<div class="slds-grid slds-wrap">
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input
+								value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+								disabled="true"
+								label="Restriction Id"
+								class="slds-size_6-of-8"
+							/>
+						</div>
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input value="{!v.accountNumber}" label="Account Number" disabled="true" class="slds-size_6-of-8" />
+						</div>
+					</div>
+
+					<div class="slds-grid slds-wrap">
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input
+								type="Date"
+								value="{!v.accountEffectiveStartDate}"
+								disabled="true"
+								min="{!v.today}"
+								label="Effective Start Date"
+								class="slds-size_6-of-8"
+								required="true"
+							/>
+						</div>
+						<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+							<lightning:input
+								type="Date"
+								value="{!v.accountExpireDate}"
+								min="{!v.accountExpireDate}"
+								label="Effective End Date"
+								class="slds-size_6-of-8"
+								required="true"
+								onchange="{!c.onAccountExpire}"
+							/>
+							<aura:if isTrue="{!v.accountExpireDateError}">
+								<div class="slds-text-color_error slds-p-right_x-small">Date must be in future..</div>
+							</aura:if>
+						</div>
+					</div>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Expire" title="Save" onclick="{! c.SaveExpireAccount }" />
+					<lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.closeExpireAccount }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!-- Modal : Expire Account Confirmation -->
+	<aura:if isTrue="{!v.isConfirmExpireAccount}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ######-->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{!c.closeExpireAccount}"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Expire Account</h2>
+				</header>
+				<!--###### MODAL BOX BODY Part Start######-->
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<p>
+						<b> Are you sure that you want to expire the specified entity? </b>
+					</p>
+				</div>
+				<!--###### MODAL BOX FOOTER Part Start ######-->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{!c.actionExpireAccount}" />
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeExpireAccount }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+
+	<!--$$$$$$$$$$$$$$$$$$ Expire Transaction Types beginning $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  -->
+	<aura:if isTrue="{!v.isTransactionTypeExpire}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ###### -->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeTransactionType }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Transaction Type</h2>
+				</header>
+				<!-- ###### MODAL BOX BODY Part Start###### -->
+
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<aura:if isTrue="{v.isTTExpireDate}">
+						<aura:set attribute="else">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										value="{!v.selectedRowDetailToShow.Restriction_ID__c}"
+										disabled="true"
+										label="Restriction Id"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+							</div>
+
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input value="{!v.transType}" disabled="true" label="Type" class="slds-size_6-of-8" />
+								</div>
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input value="{!v.transDescription}" disabled="true" label="Type Description" class="slds-size_6-of-8" />
+								</div>
+							</div>
+
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="Date"
+										value="{!v.updateTransTypeStartDate}"
+										label="Start Date"
+										disabled="true"
+										required="true"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									<lightning:input
+										type="Date"
+										value="{!v.updateTransTypeEndDate}"
+										disabled="{!v.isInfinityTT}"
+										label="End Date"
+										min="{!v.today}"
+										required="true"
+										class="slds-size_6-of-8"
+									/>
+								</div>
+							</div>
+						</aura:set>
+					</aura:if>
+				</div>
+
+				<!-- ###### MODAL BOX FOOTER Part Start ###### -->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="Cancel" title="No" onclick="{! c.closeTransactionType }" />
+					<lightning:button variant="brand" label="Expire" title="Yes" onclick="{! c.expireConfTransactionType }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+	<!--$$$$$$$$$$$$$$$$$$ Expire Transaction Types end $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  -->
+	<aura:attribute name="isExTTPop" type="Boolean" default="false" />
+	<aura:attribute name="isExTTPopDate" type="Boolean" default="false" />
+
+	<!--$$$$$$$$$$$$$$$$$$ Expire Confirmation Transaction Types beginning $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  -->
+	<aura:if isTrue="{!v.isExTTPop}">
+		<!--###### MODAL BOX Start######-->
+		<section
+			role="dialog"
+			tabindex="-1"
+			aria-labelledby="modal-heading-01"
+			aria-modal="true"
+			aria-describedby="modal-content-id-1"
+			class="slds-modal slds-fade-in-open"
+		>
+			<div class="slds-modal__container">
+				<!-- ###### MODAL BOX HEADER Start ###### -->
+				<header class="slds-modal__header">
+					<lightning:buttonIcon
+						iconName="utility:close"
+						onclick="{! c.closeTransactionType }"
+						alternativeText="close"
+						variant="bare-inverse"
+						class="slds-modal__close"
+					/>
+					<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Transaction Type</h2>
+				</header>
+				<!-- ###### MODAL BOX BODY Part Start###### -->
+
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+					<aura:if isTrue="{v.isExTTPopDate}">
+						<aura:set attribute="else">
+							<div class="slds-grid slds-wrap">
+								<div class="slds-size_1-of-2 slds-p-around--medium slds-p-right--x-large">
+									Are you sure you want to Expire this Transaction Type
+								</div>
+							</div>
+						</aura:set>
+					</aura:if>
+				</div>
+
+				<!-- ###### MODAL BOX FOOTER Part Start ###### -->
+				<footer class="slds-modal__footer">
+					<lightning:button variant="neutral" label="No" title="No" onclick="{! c.closeTransactionType }" />
+					<lightning:button variant="brand" label="Yes" title="Yes" onclick="{! c.expireActionTransactionType }" />
+				</footer>
+			</div>
+		</section>
+		<div class="slds-backdrop slds-backdrop_open"></div>
+		<!--###### MODAL BOX Part END Here ######-->
+	</aura:if>
+	<!--$$$$$$$$$$$$$$$$$$ Expire Confirmation Transaction Types end $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  -->
+
+	<aura:if isTrue="{!and(v.caseRecord.ROT_Approval_Status__c!='Submitted', v.caseRecord.ROT_Approval_Status__c!='Leg2 Approved')}">
+		<c:IndemnityForm recordId="{!v.caseId}" />
+		<br />
+		<c:ROTApprovalProcess recordId="{!v.caseId}" caseRecord="{!v.caseRecord}" />
+	</aura:if>
+</aura:component>

@@ -1,0 +1,191 @@
+<!--
+  @description       : 
+  @author            : 
+  @last modified on  : 2021-07-01
+  @last modified by  : 
+  Modifications Log 
+  Ver   Date         Author   Modification
+  1.0   2021-07-01      Initial Version
+-->
+<aura:component  implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="accItem" type="Application_Security_CPF__c" />
+    <aura:attribute name="OpprecordId" type="Id" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="newLimitedGaurantee" type="Application_Security_CPF__c[]" />
+    <aura:attribute name="isActiveRemoveAccount" type="Boolean" default="false" />
+    <aura:attribute name="isLimited" type="string" />
+    <aura:attribute name="isLimitedExisting" type="string" />
+    <aura:attribute name="isUnLimited" type="Boolean" />
+    <aura:attribute name="rowindex" type="String" />
+    <aura:attribute name="showTobeReleasedOptions" type="String" />
+    <aura:attribute name="showIncAddOptions" type="String" />
+    <aura:attribute name="value2" type="String" />
+    <aura:attribute name="tobereleasedoptn" type="String" />
+    <aura:attribute name="incaddoptn" type="String" />
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading..." />
+        </div>
+    </aura:if>
+
+    <!-- Register Application Events-->
+    <aura:registerEvent name="CPFLimitedandUnlimitedGauranteesevent" type="c:CPFLimitedandUnlimitedGauranteesevent"/>
+    <!--<lightning:accordion activeSectionName="Limited Guarantees" allowMultipleSectionsOpen="false">
+        <lightning:accordionSection name="LimitedGuarantees" label="Limited Guarantees" >-->
+    <aura:if isTrue="{!v.isLimited =='Existing'}">
+        <lightning:recordEditForm aura:id="isecurityOfferedCpfRecord" objectApiName="Application_Security_CPF__c"  >
+
+            <div class="slds-grid slds-wrap slds-gutters_medium">
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <p>Limited Suretyship number</p>
+                        <ui:outputText aura:id="uniqueID" value="{!v.rowindex + 1}"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <ui:inputCheckbox class="slds-float_left" label="&nbsp; Remove This Account" aura:id="chkRemoveThisAccount" change="{!c.onCheckedRemoveAccount}" />
+                        <aura:if isTrue="{!v.isActiveRemoveAccount}">
+                            <lightning:button class="slds-float_right" label="Remove Account" variant="brand" onclick="{!c.removeAccount}" />
+                        </aura:if>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Suretyship name</span>
+                            <lightning:helptext icon-name="utility:like" content="Limited Suretyship by [INSERT SURETY NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] for the amount of R[AMOUNT]." />
+                        </label>
+                        <lightning:inputField fieldName="Suretyship_name__c" aura:id="inputSurName" value="{!v.accItem.Suretyship_name__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Suretyship registration number</span>
+                            <lightning:helptext icon-name="utility:like" content="Limited Suretyship by [INSERT SURETY NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] for the amount of R[AMOUNT]." />
+                        </label>
+                        <lightning:inputField fieldName="Suretyship_registration_number__c" aura:id="inpSurRegNmbr" value="{!v.accItem.Suretyship_registration_number__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Amount</span>
+                            <lightning:helptext icon-name="utility:like" content="Limited Suretyship by [INSERT SECURITY PROVIDER NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] for the amount of R [AMOUNT] dated [DATE]" />
+                        </label>
+                        <lightning:inputField fieldName="Amount__c" aura:id="inputAmount" value="{!v.accItem.Amount__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <lightning:inputField fieldName="Session_of_claims_and_loans_accounts__c" aura:id="sessionclaimsloansId" value="{!v.accItem.Session_of_claims_and_loans_accounts__c}" required="true"/>
+                    </span>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Date registered</span>
+                            <lightning:helptext icon-name="utility:like" content="Limited Suretyship by [INSERT SECURITY PROVIDER NAME] (Registration/Identity Number: [INSERT REGISTRATION/IDENTITY NUMBER)] for the amount of R [AMOUNT] dated [DATE]" />
+                        </label>
+                        <lightning:inputField fieldName="Date_registered__c" aura:id="dateReg" value="{!v.accItem.Date_registered__c}" required="true" variant="label-hidden"/>
+                    </span>
+                </div>
+
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">To be released</span>
+                            <lightning:helptext icon-name="utility:like" content="Option: [To be released within [NUMBER] months of Option: [the registration of the Mortgage Bond(s)] / [first drawdown].]" />
+                        </label>
+                        <!--<lightning:inputField fieldName="To_be_released__c" aura:id="InputtoBereleased" value="{!v.accItem.To_be_released__c}" onchange=""/>-->
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                        picklistfieldName="To_be_released__c"
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.To_be_released__c}"
+                                                        />
+                    </span>
+                </div>
+                <aura:if isTrue="{!v.accItem.To_be_released__c =='Yes'}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="When_to_release_months__c" aura:id="Inpwentorelease" value="{!v.accItem.When_to_release_months__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Release_condition__c" aura:id="InpreleaseCondtn" value="{!v.accItem.Release_condition__c}" required="true"/>
+                        </span>
+                    </div>
+                </aura:if>
+                <div class="slds-col slds-size_1-of-2">
+                    <span >
+                        <label class="slds-form-element__label">
+                            <span class="required">* </span>
+                            <span class="slds-m-right_small">Include address</span>
+                            <lightning:helptext icon-name="utility:like" content="Capture domicilium address for Notices." />
+                        </label>
+                        <!--<lightning:inputField fieldName="Include_address__c" aura:id="InputIncAdd" value="{!v.accItem.Include_address__c}" />-->
+                        <c:DynamicPicklistValueRenderer aura:id="DynamicPicklist"
+                                                        picklistfieldName="Include_address__c"
+                                                        objectName="Application_Security_CPF__c"
+                                                        value="{!v.accItem.Include_address__c}"
+                                                        disabled="true"/>
+                    </span>
+                </div>
+                <aura:if isTrue="{!v.accItem.Include_address__c =='Yes'}">
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Suretyship_email_address_for_notices__c" aura:id="Inemailfornotice" value="{!v.accItem.Suretyship_email_address_for_notices__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Address_line_1__c" aura:id="InpAddressLine1" value="{!v.accItem.Address_line_1__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Address_line_2__c" aura:id="InpAddressLine2" value="{!v.accItem.Address_line_2__c}"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Suburb__c" aura:id="InpSuburb" value="{!v.accItem.Suburb__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="City__c" aura:id="InpCity" value="{!v.accItem.City__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Postal_Code__c" aura:id="InpPostalCode" value="{!v.accItem.Postal_Code__c}" required="true"/>
+                        </span>
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <span >
+                            <lightning:inputField fieldName="Country__c" aura:id="InpCountry" value="{!v.accItem.Country__c}" required="true"/>
+                        </span>
+                    </div>
+                </aura:if>
+
+            </div>
+        </lightning:recordEditForm>
+    </aura:if>
+
+
+
+    <!--</lightning:accordionSection>
+    </lightning:accordion>-->
+
+</aura:component>

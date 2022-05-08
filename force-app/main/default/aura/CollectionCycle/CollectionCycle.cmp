@@ -1,0 +1,320 @@
+<aura:component description="CollectionCycle"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+                access="global"
+                controller="CollectionCycleController"
+>
+
+    <aura:attribute name="selectedAccountNumberFromFlow" type="string" access="global"/>
+    <aura:attribute name="errorMessage" type="String"/>
+    <aura:attribute name="caseIdFromFlow" type="String" access="global"/>
+    <aura:attribute name="showSpinner" type="Boolean"/>
+    <aura:attribute name="collectionPhase" type="String"/>
+    <aura:attribute name="collectionCycle" type="String"/>
+    <aura:attribute name="closeCase" type="Boolean" Default="false"/>
+    <aura:attribute name="caseLoaded" type="Boolean" Default="false"/>
+    <aura:attribute name="customerOnPTP" type="String"/>
+    <aura:attribute name="initialPaymentAmount" type="Decimal"/>
+    <aura:attribute name="initialPaymentDate" type="DateTime"/>
+    <aura:attribute name="scheduledStartDate" type="String"/>
+    <aura:attribute name="titleTransactionHistory" type="String" default="Transaction History"/>
+    <aura:attribute name="scheduledPaymentAmount" type="Decimal"/>
+    <aura:attribute name="scheduledNumberOfPayments" type="String"/>
+    <aura:attribute name="paymentFrequency" type="String"/>
+    <aura:attribute name="refund30Days" type="String"/>
+    <aura:attribute name="ptpResponse" type="String"/>
+    <aura:attribute name="Title" type="String" default="Account details"/>
+    <aura:attribute name="paymentFrequencyMonths" type="Integer"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="modalsToDisplay" type="Object" access="global"/>
+    <aura:attribute name="refundObject" type="Case_Transaction__c"/>
+    <aura:attribute name="showRefund" type="Boolean" default="false"/>
+    <aura:attribute name="ptpIsEmpty" type="Boolean" default="false"/>
+    <aura:attribute name="openTransactionHistory" type="Boolean" default="false"/>
+    <aura:attribute name="collectionCycleisSuccess" type="Boolean" default="false"/>
+    <aura:attribute name="cyclePhaseResponse" type="List"/>
+    <aura:attribute name="jsonWithData" type="String" />
+    <aura:attribute name="paymentFrequencyLabel" type="String" />
+    <aura:attribute name="getCycleResponse" type="Boolean" default="false" />
+    <!--Case Recird edit form starts-->
+    <lightning:recordEditForm aura:id="caseEditForm" objectApiName="Case" recordId="{!v.caseIdFromFlow}"
+                              onload="{!c.handleCaseLoad}">
+        <lightning:inputField aura:id="serviceGroupField" fieldName="sd_Service_Group__c" class="slds-hide"/>
+        <lightning:inputField aura:id="cifField" fieldName="CIF__c" class="slds-hide"/>
+        <lightning:inputField aura:id="caseType__cField" fieldName="Type__c" class="slds-hide"/>
+        <!-- InterAccount Sweep w-013364-->
+        <lightning:inputField aura:id="originalServiceGroupId" fieldName="sd_Original_Service_Group__c"
+                              class="slds-hide"/>
+        <lightning:inputField aura:id="statusField" fieldName="Status" class="slds-hide"/>
+        <lightning:inputField aura:id="descriptionField" fieldName="Description" class="slds-hide"/>
+        <lightning:inputField aura:id="type" fieldName="Type__c" class="slds-hide"/>
+
+    </lightning:recordEditForm>
+
+    <article class="slds-card">
+        <!--Declare Spinner-->
+        <aura:if isTrue="{!v.showSpinner}"> <!-- comment why is it there is more than one spinner(SpinnerSetOFF) -->
+            <div class="slds-spinner_container">
+                <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!not(empty(v.errorMessage))}">
+            <lightning:layout>
+                <lightning:layoutItem padding="around-small" size="12">
+                    <ui:message title="Error" severity="error" closable="false">
+                    {!v.errorMessage}
+                    </ui:message>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </aura:if>
+
+
+        <lightning:card title="">
+            <h3 class="slds-section__title">
+                <span class="slds-truncate slds-button slds-section__title-action"
+                      title="Account Selection">{!v.Title}</span>
+            </h3>
+            <lightning:layout multipleRows="true">
+                <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                    <label class="slds-form-element__label" for="colphase">
+                        Collection Phase</label>
+                    <ui:outputText value="{!v.collectionPhase}" aura:id="colphase" class="slds-input slds-output"/>
+
+                </lightning:layoutItem>
+
+                <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                    <label class="slds-form-element__label" for="colcycle">
+                        Collection Cycle</label>
+                    <ui:outputText value="{!v.collectionCycle}" aura:id="colcycle" class="slds-input slds-output"/>
+
+                </lightning:layoutItem>
+                <aura:if isTrue="{!v.modalsToDisplay.Refund}">
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <label class="slds-form-element__label" for="refund30Days">
+                            Refund in last 30 days</label>
+                        <ui:outputText value="{!v.refund30Days}" aura:id="refund30Days" class="slds-input slds-output"/>
+                        <aura:if isTrue="{!v.refund30Days == 'Yes'}">
+                            <p><a onclick="{! c.openRefund }">View refund</a></p>
+                            <aura:if isTrue="{!v.showRefund}">
+                                <section role="dialog" tabindex="-1"
+                                         class="slds-modal slds-fade-in-open slds-modal_small"
+                                         aria-labelledby="modal-heading-01" aria-modal="true"
+                                         aria-describedby="modal-content-id-1">
+                                    <div class="slds-modal__container">
+
+                                        <header class="slds-modal__header">
+                                            <lightning:buttonIcon iconName="utility:close"
+                                                                  onclick="{! c.closeRefund }"
+                                                                  alternativeText="close"
+                                                                  variant="bare-inverse"
+                                                                  class="slds-modal__close"/>
+                                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                                Refund in last 30 days</h2>
+                                        </header>
+                                        <lightning:card>
+
+                                            <div class="slds-p-horizontal&#45;&#45;small">
+                                                <lightning:layout multipleRows="true">
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small"
+                                                                          size="6">
+                                                        <label class="slds-form-element__label" for="colphase">
+                                                            Refunded amount
+                                                        </label>
+                                                        <ui:outputText value="{!v.refundObject.Amount__c}"
+                                                                       aura:id="initialPaymentAmount"
+                                                                       class="slds-input slds-output"/>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small"
+                                                                          size="6">
+                                                        <label class="slds-form-element__label" for="colcycle">
+                                                            Date of prevoius refund
+                                                        </label>
+                                                        <ui:outputText value="{!v.refundObject.Transaction_Date__c}"
+                                                                       aura:id="downPaymentYMDDate"
+                                                                       class="slds-input slds-output"/>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small"
+                                                                          size="6">
+                                                        <label class="slds-form-element__label" for="colphase">
+                                                            Refund reason
+                                                        </label>
+                                                        <ui:outputText value="{!v.refundObject.Reason__c}"
+                                                                       aura:id="scheduledStartDate"
+                                                                       class="slds-input slds-output"/>
+                                                    </lightning:layoutItem>
+
+                                                </lightning:layout>
+                                            </div>
+                                        </lightning:card>
+
+
+                                        <footer class="slds-modal__footer">
+                                            <lightning:button variant="brand"
+                                                              label="Close"
+                                                              title="Close"
+                                                              onclick="{!c.closeRefund}"/>
+                                        </footer>
+                                    </div>
+                                </section>
+                                <div class="slds-backdrop slds-backdrop_open"></div>
+                            </aura:if>
+                        </aura:if>
+                    </lightning:layoutItem>
+                </aura:if>
+                <lightning:layoutItem padding="around-small" size="6">
+                    <label class="slds-form-element__label" for="previousEmployerName">
+                        Is the Customer on a PTP</label>
+                    <ui:outputText value="{!v.customerOnPTP}" aura:id="previousEmployerName"
+                                   class="slds-input slds-output"/>
+                    <aura:if isTrue="{!v.modalsToDisplay.PTP}">
+                        <aura:if isTrue="{!v.customerOnPTP == 'Yes'}">
+                      <!--  <aura:if isTrue="{!v.ptpIsEmpty}">-->
+
+                            <p><a onclick="{! c.openModal }">View Promise to Pay</a></p>
+                        <!--</aura:if>-->
+                            <aura:if isTrue="{!v.isModalOpen}">
+                                <section role="dialog" tabindex="-1"
+                                         class="slds-modal slds-fade-in-open slds-modal_small"
+                                         aria-labelledby="modal-heading-01" aria-modal="true"
+                                         aria-describedby="modal-content-id-1">
+                                    <div class="slds-modal__container">
+
+
+                                        <header class="slds-modal__header">
+                                            <lightning:buttonIcon iconName="utility:close"
+                                                                  onclick="{! c.closeModel }"
+                                                                  alternativeText="close"
+                                                                  variant="bare-inverse"
+                                                                  class="slds-modal__close"/>
+                                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                                View Promise to Pay</h2>
+                                        </header>
+
+
+                                        <lightning:card>
+                                            <aura:if isTrue="{!v.showSpinner}">
+                                                <div class="slds-spinner_container">
+                                                    <lightning:spinner aura:id="spinner" variant="brand" size="medium"/>
+                                                </div>
+                                            </aura:if>
+                                            <div class="slds-p-horizontal&#45;&#45;small">
+                                                <div class="slds-modal__content slds-p-around_medium"
+                                                     id="modal-content-id-1"></div>
+                                                <lightning:layout multipleRows="true">
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small"
+                                                                          size="6">
+                                                        <label class="slds-form-element__label" for="colphase">
+                                                            Initial payment amount
+                                                        </label>
+                                                        <ui:outputText value="{!v.initialPaymentAmount}"
+                                                                       aura:id="initialPaymentAmount"
+                                                                       class="slds-input slds-output"/>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small"
+                                                                          size="6">
+                                                        <label class="slds-form-element__label" for="colcycle">
+                                                            Initial payment date
+                                                        </label>
+                                                        <ui:outputText value="{!v.downPaymentYMDDate}"
+                                                                       aura:id="downPaymentYMDDate"
+                                                                       class="slds-input slds-output"/>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small"
+                                                                          size="6">
+                                                        <label class="slds-form-element__label" for="colphase">
+                                                            Scheduled start date
+                                                        </label>
+                                                        <ui:outputText value="{!v.scheduledStartDate}"
+                                                                       aura:id="scheduledStartDate"
+                                                                       class="slds-input slds-output"/>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small"
+                                                                          size="6">
+                                                        <label class="slds-form-element__label" for="colcycle">
+                                                            Scheduled payment amount
+                                                        </label>
+                                                        <ui:outputText value="{!v.scheduledPaymentAmount}"
+                                                                       aura:id="scheduledPaymentAmount"
+                                                                       class="slds-input slds-output"/>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small"
+                                                                          size="6">
+                                                        <label class="slds-form-element__label" for="colphase">
+                                                            Scheduled number of payments
+                                                        </label>
+                                                        <ui:outputText value="{!v.scheduledNumberOfPayments}"
+                                                                       aura:id="scheduledNumberOfPayments"
+                                                                       class="slds-input slds-output"/>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small"
+                                                                          size="6">
+                                                        <label class="slds-form-element__label" for="colcycle">
+                                                            Payment frequency
+                                                        </label>
+                                                        <ui:outputText value="{!v.paymentFrequency}"
+                                                                       aura:id="paymentFrequency"
+                                                                       class="slds-input slds-output"/>
+                                                    </lightning:layoutItem>
+                                                    <lightning:layoutItem flexibility="auto" padding="around-small"
+                                                                          size="6">
+                                                        <label class="slds-form-element__label" for="colphase">
+                                                           {!v.paymentFrequencyLabel}
+                                                        </label>
+                                                        <ui:outputText value="{!v.paymentFrequencyMonths}"
+                                                                       aura:id="paymentFrequencyMonths"
+                                                                       class="slds-input slds-output"/>
+                                                    </lightning:layoutItem>
+                                                </lightning:layout>
+                                            </div>
+                                        </lightning:card>
+
+
+                                        <footer class="slds-modal__footer">
+                                            <lightning:button variant="brand"
+                                                              label="Close"
+                                                              title="Close"
+                                                              onclick="{!c.closeModel}"/>
+                                        </footer>
+                                    </div>
+                                </section>
+                                <div class="slds-backdrop slds-backdrop_open"></div>
+                            </aura:if>
+                        </aura:if>
+                    </aura:if>
+                    <aura:if isTrue="{!v.modalsToDisplay.TransactionHistory}">
+                        <p><a onclick="{! c.openTransactionHistory }">{!v.titleTransactionHistory}</a></p>
+                        <aura:if isTrue="{!v.openTransactionHistory}">
+                            <section role="dialog" tabindex="-1"
+                                     aria-label="Meaningful description of the modal content" aria-modal="true"
+                                     aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                                <div class="slds-modal__container">
+                                    <header class="slds-modal__header">
+                                        <lightning:buttonIcon iconName="utility:close"
+                                                              onclick="{! c.closeTransactionHistoryModal }"
+                                                              alternativeText="close"
+                                                              variant="bare-inverse"
+                                                              class="slds-modal__close"/>
+                                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                            View Transaction History</h2>
+                                    </header>
+
+                                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                        <c:CardTransactionHistory
+                                                selectedAccountFromFlow="{!v.selectedAccountNumberFromFlow}"
+                                                caseId="{!v.caseIdFromFlow}"/>
+                                    </div>
+                                    <footer class="slds-modal__footer">
+                                        <button class="slds-button slds-button_neutral"
+                                                onclick="{!c.closeTransactionHistory}">Cancel
+                                        </button>
+                                    </footer>
+                                </div>
+                            </section>
+                            <div class="slds-backdrop slds-backdrop_open"></div>
+                        </aura:if>
+                    </aura:if>
+                </lightning:layoutItem>
+            </lightning:layout>
+        </lightning:card>
+
+    </article>
+</aura:component>

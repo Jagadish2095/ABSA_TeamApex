@@ -1,0 +1,347 @@
+<!--
+* Lightning Component for Stop and Replace Credit Card
+*
+* @author  Lulu Rankwe: Absa
+* @version v1.0
+* @since   2019-10-15
+*
+-->
+<aura:component
+	access="global"
+	controller="StopAndReplaceCombiCardController"
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction"
+>
+	<lightning:workspaceAPI aura:id="workspace" />
+	<!--DBOOYSEN. W-008831-->
+
+	<!--Handler Declaration-->
+	<aura:handler name="selectedJobEvent" event="c:selectedJobEvent" action="{!c.handleSelectedJobEvent}" />
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+	<aura:handler name="oSelectedRecordEvent" event="c:selectedsObjectRecordEvent" action="{!c.handleComponentEvent}" />
+
+	<aura:attribute name="combiCardsAccounts" type="List" />
+	<aura:attribute name="clientAccountIdFromFlow" type="String" access="global" />
+	<aura:attribute name="clientAccountId" type="String" access="global" />
+	<aura:attribute name="caseIdFromFlow" type="String" access="global" />
+	<aura:attribute name="stopCardNumbersToFlow" type="String" access="global" />
+	<aura:attribute name="selectedCombiCard" type="String" access="global" />
+	<aura:attribute name="reasonToStop" type="List" />
+	<aura:attribute name="placeLost" type="List" />
+	<aura:attribute name="subReason" type="List" />
+	<aura:attribute name="reason" type="List" />
+	<aura:attribute name="selectedAccountNumber" type="String" />
+	<aura:attribute name="autoLink" type="String" />
+	<aura:attribute name="personalize" type="String" default="Y"/>
+
+	<aura:attribute name="segmentCode" type="String" default="" />
+	<aura:attribute name="clientName" type="String" />
+	<aura:attribute name="clientCode" type="String" />
+	<aura:attribute name="responseList" type="List" />
+	<aura:attribute name="expDate" type="String" />
+	<aura:attribute name="combiCardNo" type="String" />
+	<aura:attribute name="selectedReason" type="String" />
+	<aura:attribute name="selectedSubReason" type="String" />
+	<aura:attribute name="combiNumber" type="String" />
+	<aura:attribute name="siteCode" type="Object" />
+	<aura:attribute name="showStatusErrorMsg" type="String" />
+	<aura:attribute name="showStopButton" type="boolean" default="true" />
+	<aura:attribute name="selectedSiteCode" type="string" />
+	<aura:attribute name="showStopCardOpt" type="boolean" default="false" />
+	<aura:attribute name="showSelectedCardDetails" type="boolean" default="false" />
+	<aura:attribute name="selectCombiCard" type="boolean" default="false" />
+	<aura:attribute name="showSuccessMsg" type="boolean" default="false" />
+	<aura:attribute name="showCloseSuccessMsg" type="boolean" default="false" />
+	<aura:attribute name="showErrorMsg" type="boolean" default="false" />
+	<aura:attribute name="noCombiMsg" type="boolean" default="false" />
+
+	<!-- Replace combi card attribute declaration SECTION-->
+	<aura:attribute name="selectedSiteRecord" type="Object" />
+	<aura:attribute name="accountNumber" type="List" />
+	<aura:attribute name="name" type="String" />
+	<aura:attribute name="brandList" type="List" />
+	<aura:attribute name="brandNr" type="String" />
+	<aura:attribute name="responseAccList" type="List" />
+	<aura:attribute name="accNumList" type="List" />
+	<aura:attribute name="showReplaceCardOpt" type="boolean" default="false" />
+	<aura:attribute name="showAccountDetails" type="boolean" default="false" />
+	<aura:attribute name="selectedProductValue" type="String" access="global" />
+	<aura:attribute name="prodTypesList" type="List" />
+	<aura:attribute name="isSpinner" type="boolean" default="false" />
+
+	<!--Start  SMath. W-010961. 1 June 2021-->
+	<aura:attribute name="serviceGroupFromFlow" type="String" access="global" />
+	<aura:attribute name="cifFromFlow" type="String" access="global" />
+	<aura:attribute name="nomSavs" type="String" access="global" default="0" />
+	<aura:attribute name="nomCred" type="String" access="global" default="0" />
+	<aura:attribute name="nomCheq" type="String" access="global" default="0" />
+	<!--End  SMath. W-010961. 1 June 2021 -->
+
+	<!--Start of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+	<aura:handler name="change" value="{!v.clientIDnVObjectParent}" action="{!c.handleObjectChange}" />
+	<aura:attribute name="clientIDnVObjectParent" type="Map" default="{}" />
+	<aura:attribute name="allowClientIDnVPolling" type="Boolean" default="false" />
+	<aura:attribute name="clientCifCodeParent" type="Boolean" default="false" />
+
+	<aura:if isTrue="{!v.allowClientIDnVPolling}">
+		<c:ClientIDnVPolling clientIDnVObject="{!v.clientIDnVObjectParent}" cifCodeFromParentCmp="{!v.clientCifCodeParent}" />
+	</aura:if>
+
+	<lightning:recordEditForm
+		aura:id="caseEditFormIDnV"
+		objectApiName="Case"
+		recordId="{!v.caseIdFromFlow}"
+		onload="{!c.handleCaseLoadIDnV}"
+		onsuccess="{!c.handleCaseSuccessIDnV}"
+	>
+		<lightning:inputField aura:id="statusFieldIDnV" fieldName="Status" class="slds-hide" />
+		<lightning:inputField aura:id="serviceGroupFieldIDnV" fieldName="sd_Service_Group__c" class="slds-hide" />
+		<lightning:inputField aura:id="clientCIFFieldIDnV" fieldName="Client_CIF_Number__c" class="slds-hide" />
+		<lightning:inputField aura:id="caseNumberFieldIDnV" fieldName="CaseNumber" class="slds-hide" />
+	</lightning:recordEditForm>
+	<!--End of ClientIDnVPolling. DBOOYSEN. W-008831. 2021/03/05-->
+
+	<aura:if isTrue="{!v.isSpinner}">
+		<center>
+			<lightning:spinner aura:id="theSpinner" variant="brand" size="large" />
+		</center>
+	</aura:if>
+
+	<aura:if isTrue="{!v.noCombiMsg}">
+		<lightning:layoutItem padding="around-small" size="4">
+			<!-- Show the message to ui -->
+			<div class="slds-notify slds-notify_toast slds-theme_error slds-size_12-of-12">
+				<span class="slds-assistive-text">error</span>
+				<div class="slds-notify__content">
+					<p class="slds-align_absolute-right">No combi card</p>
+					<h5 class="slds-text-heading_small slds-align_absolute-right">There's no combi card for this profile</h5>
+					<br />
+				</div>
+			</div>
+		</lightning:layoutItem>
+	</aura:if>
+
+	<aura:if isTrue="{!v.showSelectedCardDetails}">
+		<lightning:layout multipleRows="true">
+			<lightning:layoutItem padding="around-small" size="6">
+				<div class="slds-box slds-box_x-small slds-m-around_x-small filterStyle" style="color: white; height: 146px; width: 60%">
+					<div class="slds-notify__content">
+						<h5 class="slds-text-heading_small slds-align_absolute-right">Card Holder</h5>
+						<br />
+						<div class="slds-truncate" title="">{!v.clientName}</div>
+						<br />
+						<div class="slds-truncate" title="">{!v.combiNumber} <br /> Expires :{!v.expDate}<br /></div>
+					</div>
+				</div>
+			</lightning:layoutItem>
+		</lightning:layout>
+
+		<!--STOP COMBI CARD -->
+		<aura:if isTrue="{!v.showStopButton}">
+			<h3 class="slds-section__title" size="12">
+				<span class="slds-truncate slds-button slds-section__title-action" title="Account Selection">Stop Card</span>
+			</h3>
+			<br />
+			<lightning:layout multipleRows="true">
+				<lightning:layoutItem padding="around-small" size="6">
+					<lightning:select label="Reason for stopping card" value="{!v.selectedReason}" onchange="{!c.onSelectReasonOpt}" required="true">
+						<option value="">--None--</option>
+						<aura:iteration items="{!v.reason}" var="item">
+							<option text="{!item.label}" value="{!item.value}" />
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<lightning:select label="Place Of lost or theft" value="{!v.selectedSubReason}" required="true">
+						<option value="">--None--</option>
+						<aura:iteration items="{!v.subReason}" var="item">
+							<option text="{!item.label}" value="{!item.value}" />
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+				<lightning:layoutItem size="12" padding="around-small">
+					<div class="slds-m-top_small slds-float--right">
+						<lightning:button
+							aura:id="submitButton"
+							class="slds-m-top_small slds-float--right"
+							iconName="utility:check"
+							variant="brand"
+							type="submit"
+							name="add"
+							label="Stop selected card"
+							onclick="{!c.submit}"
+						/>
+					</div>
+				</lightning:layoutItem>
+			</lightning:layout>
+		</aura:if>
+
+		<!-- REPLACE CARD DETAILS-->
+
+		<lightning:layoutItem padding="around-small" size="12">
+			<lightning:input aura:id="replaceCardCheck" type="checkbox" label="Replace Card" onchange="{!c.onReplaceCard}" /> </lightning:layoutItem
+		><br />
+
+		<aura:if isTrue="{!v.showReplaceCardOpt}">
+			<h3 class="slds-section__title" size="12">
+				<span class="slds-truncate slds-button slds-section__title-action" title="Account Selection">Replace Card</span>
+			</h3>
+			<br />
+			<lightning:layout multipleRows="true">
+				<lightning:layoutItem padding="around-small" size="6">
+					<lightning:select
+						value="{!v.selectedProductValue}"
+						class="select-auto-width"
+						aura:id="myProductselection"
+						onchange="{!c.getAccountNumbers}"
+						label="Select the Product Type"
+						required="true"
+					>
+						<option value="">--None--</option>
+						<aura:iteration items="{!v.prodTypesList}" var="prod" indexVar="key">
+							<option value="{!prod}">{!prod}</option>
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<lightning:select
+						value="{!v.selectedAccountNumber}"
+						class="select-auto-width"
+						aura:id="myAccountselection"
+						onchange="{!c.getSelectedAccount}"
+						label="Select the Account"
+						required="true"
+					>
+						<option value="">--None--</option>
+						<aura:iteration items="{!v.accNumList}" var="acc" indexVar="key">
+							<option value="{!acc}">{!acc}</option>
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<lightning:select label="Brand" required="true" value="{!v.brandNr}">
+						<option value="">--None--</option>
+						<aura:iteration items="{!v.brandList}" var="item">
+							<option text="{!item.label}" value="{!item.value}" />
+						</aura:iteration>
+					</lightning:select>
+				</lightning:layoutItem>
+				<lightning:layoutItem padding="around-small" size="6">
+					<label class="slds-float_left" padding="around-small"><span style="color: red" align="left">*</span>Site </label>
+					<c:SiteLookup objectAPIName="Site__c" IconName="custom:custom85" selectedRecord="{!v.selectedSiteRecord}" aura:id="siteID" />
+				</lightning:layoutItem>
+			</lightning:layout>
+
+			<lightning:layout multipleRows="true">
+				<!--
+                <lightning:layoutItem padding="around-small" size="6">  
+                    <label class="slds-float_left" padding="around-small" value = "{!v.siteCode}"><span style="color:red;" align="left">*</span>Site Code </label>
+                    <c:SiteLookup placeholder="{!$Label.c.Site_Code}" objectAPIName="Absa_Branch_Site_Code__mdt" />
+                </lightning:layoutItem> -->
+
+				<lightning:layoutItem padding="around-small" size="6">
+					<lightning:select value="{!v.autoLink}" label="AutoLink" required="true">
+						<option value="">None...</option>
+						<option value="Y">Yes</option>
+						<option value="N">No</option>
+					</lightning:select>
+				</lightning:layoutItem>
+
+				<!--<lightning:layoutItem padding="around-small" size="6">
+					<lightning:select value="{!v.personalize}" label="Persornalize" onchange="{!c.onPersonalize}" required="true">
+						<option value="">None...</option>
+						<option value="Y">Yes</option>
+						<option value="N">No</option>
+					</lightning:select>
+				</lightning:layoutItem>-->
+			</lightning:layout>
+
+			<!-- SHOW DETAILS OF ACCOUNT DETAILS AFTER SELECTION -->
+			<!--<aura:if isTrue="{!v.showAccountDetails}">-->
+				<lightning:layout multipleRows="true">
+					<lightning:layoutItem padding="around-small" size="6">
+						<ui:inputText label="Name" value="{!v.name}" required="true" />
+					</lightning:layoutItem>
+
+					<lightning:layoutItem padding="around-small" size="6">
+						<ui:inputText label="Surname " value="{!v.surname}" required="true" />
+					</lightning:layoutItem>
+				</lightning:layout>
+
+				<lightning:layout multipleRows="true">
+					<lightning:layoutItem padding="around-small" size="6">
+						<ui:inputText label="Initial" value="{!v.initials}" required="true" />
+					</lightning:layoutItem>
+
+					<lightning:layoutItem padding="around-small" size="6">
+						<ui:inputText label="Title" value="{!v.title}" required="true" />
+					</lightning:layoutItem>
+				</lightning:layout>
+			<!--</aura:if>-->
+
+			<lightning:layoutItem size="12" padding="around-small">
+				<div class="slds-m-top_small slds-float--right">
+					<lightning:button aura:id="submitButton" variant="brand" label="Replace" onclick="{!c.submitReplace}" />
+				</div>
+				<br /><br />
+			</lightning:layoutItem>
+		</aura:if>
+
+		<aura:if isTrue="{!v.showSuccessMsg}">
+			<lightning:layoutItem padding="around-small" size="6">
+				<div class="slds-notify slds-notify_toast slds-theme--success slds-size_12-of-12">
+					<span class="slds-assistive-text"> </span>
+					<div class="slds-notify__content">
+						<h5 class="slds-text-heading_small slds-align_absolute-right">Successful Transaction</h5>
+						<br />
+						<p class="slds-align_absolute-center">Status : Card replacement has been successful</p>
+					</div>
+				</div>
+			</lightning:layoutItem>
+		</aura:if>
+
+		<aura:if isTrue="{!v.showErrorMsg}">
+			<lightning:layoutItem padding="around-small" size="12">
+				<div class="slds-notify slds-notify_toast slds-theme_error slds-size_12-of-12">
+					<span class="slds-assistive-text">error</span>
+					<div class="slds-notify__content">
+						<p class="slds-align_absolute-right">STATUS : Unsuccessful</p>
+						<h5 class="slds-text-heading_small slds-align_absolute-right">{!v.showStatusErrorMsg}</h5>
+						<br />
+					</div>
+				</div>
+			</lightning:layoutItem>
+		</aura:if>
+	</aura:if>
+
+	<!--LOAD ALL COMBI CARD/CHEQUE LINKED TO CLIENT-->
+	<aura:if isTrue="{!v.selectCombiCard}">
+		<table style="width: 100%">
+			<aura:iteration items="{!v.combiCardsAccounts}" var="selectedCombiCard" indexVar="key">
+				<tr>
+					<td style="width: 2%">
+						<lightning:input
+							type="Radio"
+							value="{!selectedCombiCard}"
+							label=""
+							aura:id="cardCheck"
+							name="selectCard"
+							onchange="{!c.showTransactionDetails}"
+						/>
+					</td>
+
+					<td align="left" style="width: 30%">
+						<div class="slds-box slds-box_x-small slds-m-around_x-small filterStyle" style="color: white; height: 140px">
+							Card Number
+							<br />
+							<div class="slds-truncate" title="">{!selectedCombiCard}</div>
+						</div>
+					</td>
+					<td></td>
+				</tr>
+			</aura:iteration>
+		</table>
+	</aura:if>
+</aura:component>

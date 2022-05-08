@@ -1,0 +1,232 @@
+<aura:component controller="ClientSecuritiesControllerNew" implements="flexipage:availableForAllPageTypes,force:hasRecordId,lightning:isUrlAddressable" access="global">
+
+	<aura:handler name="init" value="{!this}" action="{!c.initComp}"/> 
+
+	<aura:attribute name="recordId" type="String" /> 
+    <aura:attribute name="OppId" type="String" />
+	<aura:attribute name="listOfSearchRecords" type="List" description="Use,for store the list of search records which returns from apex class"/>
+	<aura:attribute name="minimunListRecords" type="List"/>
+	<aura:attribute name="searchRecordsSize" type="Integer"/>
+	<aura:attribute name="message" type="string"/>
+	<aura:attribute name="errorMessage" type="string"/>
+	<aura:attribute name="isOpen" type="boolean" default = "false"/>
+	<aura:attribute name="isGenerated" type="boolean" default = "false"/>
+	<aura:attribute name="isHide" type="Boolean" default="false" />
+	<aura:attribute name="showTable" type="Boolean" default="false" />
+	<aura:attribute name="showErrors" type="Boolean" default="false" />
+	<aura:attribute name="isSecurityEmpty" type="Boolean" default="false" />
+	<aura:attribute name="isBondOpen" type="Boolean" default="false" /> 
+	<aura:attribute name="popupFlag" type="Boolean" default="false" />
+	<aura:attribute name="paginationList" type="List"/>
+	<aura:attribute name="pageSize" type="Integer" default="10"/>
+	<aura:attribute name="totalSize" type="Integer"/>
+	<aura:attribute name="start" type="Integer" />
+	<aura:attribute name="end" type="Integer"/>
+	<aura:attribute name="oBonds" type="sObject"/>
+	<aura:attribute name="isPagination" type="Boolean" default="false" />
+	<aura:attribute name="isLastPage" type="Boolean" default="false"/>
+
+
+	<!--
+	<lightning:button
+	variant="success" disabled="{!v.isHide}"
+	label="View Securities"
+	title="View Securities"
+	onclick="{! c.handleClick }"
+	/>-->
+	<!--<aura:if isTrue="{!v.isGenerated}">-->
+	<div class="slds-card slds-card_boundary slds-m-top--medium">
+		<div class="slds-card slds-card_boundary" style="background: #f1f1ed;">   
+			<header class="slds-card__header slds-grid">
+				<div class="slds-media slds-media--center slds-has-flexi-truncate">
+					<div class="slds-media__figure">
+						<lightning:icon iconName="custom:custom45" alternativeText="Absa Products" size="small" />
+					</div>
+					<div class="slds-media__body slds-truncate">
+						<h2>
+							<a href="javascript:void(0);" class="slds-text-link--reset">
+								<span class="slds-text-heading--small">Cession of life policy(Not Linked)</span>
+								<!--<span class="slds-card__header-title slds-shrink-none slds-m-rightxx-small" title="(0)" >({!v.searchRecordsSize})</span>-->
+							</a>
+						</h2>
+					</div>
+				</div>
+			</header>
+              <span class="slds-shrink-none slds-p-around_medium slds-p-bottom_small slds-m-rightxx-small" style="font-size: 0.75vw;" title="(0)" >{!v.searchRecordsSize} items 
+             <!--   <span class="dot"></span> Sorted by Security Name <span class="dot"></span> Filtered by security types <span class="dot"></span> Updates a few seconds ago 
+			<div class="alignclass" style="padding-right: 1vw;"><lightning:buttonIcon iconName="utility:refresh"  variant="border-filled" alternativeText="Refresh" title="Refresh"/></div>
+            <lightning:buttonMenu class="alignclass paddingRight" alternativeText="Show menu" variant="border-filled" iconName="utility:settings"
+            onselect="{! c.handleSelect }">
+                <lightning:menuItem value="MenuItemOne" label="Menu Item One" />
+                <lightning:menuItem value="MenuItemTwo" label="Menu Item Two" />
+                <lightning:menuItem value="MenuItemThree" label="Menu Item Three" />
+                <lightning:menuItem value="MenuItemFour" label="Menu Item Four" />
+            </lightning:buttonMenu>&nbsp;&nbsp;
+            
+            <br/><br/>--> </span>
+		</div>
+		<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" >
+			<aura:if isTrue="{!v.showErrors}">
+				<!--<div class="slds-notify slds-notify_toast slds-theme_error">
+                <span class="slds-assistive-text">error</span>-->
+                <div class="slds-notify__content">
+                  <!--  <h6 class="slds-text-heading_small">Error Message </h6>-->
+                    <br/>
+                    <p class="slds-align_absolute-center">{!v.errorMessage}</p>                
+                </div>
+           <!-- </div>-->
+				<aura:set attribute="else">
+					<div class="slds-scrollable_x">
+					<table class="slds-table slds-table_cell-buffer slds-table_bordered slds-scrollable_x">
+						<thead>
+							
+                            <th  class="" scope="col">
+								<div class="slds-truncate" title="Client Name">Client Name</div>
+							</th>
+                            <th  class="" scope="col">
+								<div class="slds-truncate" title="Code">Code</div>
+							</th>
+                            <th  class="" scope="col">
+								<div class="slds-truncate" title="Policy Number">Policy Number</div>
+							</th>
+							<th  class="" scope="col">
+								<div class="slds-truncate" title="Status">Status / Sub Status</div>
+							</th>
+							<th  class="" scope="col">
+								<div class="slds-truncate" title="Insurance Company/Code">Insurance Company/Code</div>
+							</th>
+							<th  class="" scope="col">
+								<div class="slds-truncate" title="Policy Amount">Policy Amount</div>
+							</th>
+                            <th  class="" scope="col">
+								<div class="slds-truncate" title="Nominal Value">Nominal Value</div>
+							</th>
+							<th  class="" scope="col">
+								<div class="slds-truncate" title="ASV/MASV">ASV/MASV</div>
+							</th>
+						</thead>
+						<tbody>
+							<aura:iteration items="{!v.minimunListRecords}" var="row">
+								<tr class="slds-hint-parent">
+									
+                                    <td>
+										<div class="slds-truncate" title="Client Name">{!row.seqnoOut}</div>
+									</td>
+                                    <td>
+										<div class="slds-truncate" title="Code">{!row.clcd}</div>
+									</td>
+                                    <td data-label="Policy Number" scope="row">
+										<div onclick="{!c.selectedItem}" data-value="{!row.ApplicationId}" class="slds-truncate" title="bondRegistration">
+											<a href="javascript:void(0);" value="{!row.ApplicationId}" tabindex="-1">{!row.polnoOut}</a>
+										</div>
+									</td>
+									<td>
+										<div class="slds-truncate" title="Status">{!row.statusOut}</div>
+									</td>
+									<td>
+										<div class="slds-truncate" title="Insurance Company/Code">{!row.institOut}</div>
+									</td>
+									<td>
+										<div class="slds-truncate" title="Policy Amount">R {!row.polamtOut}</div>
+									</td>
+                                    <td>
+										<div class="slds-truncate" title="Nominal value">R {!row.nomvalOut}</div>
+									</td>
+									<td>
+										<div class="slds-truncate" title="ASV/MASV">R {!row.asvamtOut}</div>
+									</td>
+								</tr>
+							</aura:iteration>
+						</tbody>
+					</table>
+                    </div>
+				</aura:set>
+			</aura:if>    
+			<aura:if isTrue="{!v.isSecurityEmpty}">
+				<div class="slds-notify__content">
+					<p>No Securities found</p>
+				</div>
+			</aura:if>
+		</div> 
+		<footer class="slds-card__footer">
+			<aura:if isTrue="{!v.isPagination}">
+				<lightning:button label="First" disabled="{!v.start == 0}"  onclick="{!c.first}" /> 
+				<lightning:button label="Next" disabled="{!v.isLastPage}" onclick="{!c.next}" />
+				<aura:set attribute="else">
+					<a class="slds-card__footer-action" href="javascript:void(0);" onclick="{!c.viewAllCessionofNoLink}">View All	
+					<!--	<span class="slds-card__header-title slds-shrink-none slds-m-rightxx-small" title="(0)" >({!v.searchRecordsSize})</span>-->
+					</a>
+				</aura:set>
+			</aura:if>  
+		</footer>
+	</div>
+
+	<!--</aura:if> -->
+
+	<aura:if isTrue="{!v.isBondOpen}">
+		<section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container" >
+				<div class="slds-card slds-card_boundary" style="width:1000px"> 
+					<div class="slds-card slds-card_boundary">   
+						<header class="slds-card__header slds-grid">
+							<div class="slds-media slds-media--center slds-has-flexi-truncate">
+								<div class="slds-media__figure">
+									<lightning:icon iconName="custom:custom45" alternativeText="Absa Products" size="small" />
+								</div>
+								<div class="slds-media__body slds-truncate">
+									<h2>
+										<a href="javascript:void(0);" class="slds-text-link--reset">
+											<span class="slds-text-heading--small">Cession Of Policy(Not Linked) Record Details</span>
+										</a>
+									</h2>
+								</div>
+							</div>
+						</header>
+					</div>
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" > 
+						<table>
+							<tr>
+								<td><b>Insurance Company/Code</b>
+									<div>{!v.oBonds.institOut}</div>   
+								</td>
+								<td><b>Status</b>
+									<div>{!v.oBonds.statusOut}</div> 
+								</td>
+							</tr>
+							<tr>
+								<td><b>Policy Number</b>
+									<div>{!v.oBonds.polnoOut}</div> 
+								</td>
+								<td><b>Policy Amount</b>
+									<div>R {!v.oBonds.polamtOut}</div>   
+								</td>
+							</tr>
+							<tr>
+								<td><b>Nett Cash Value</b> 
+									<div>{!v.oBonds.netvalOut}</div>
+								</td>
+                                <td><b>Life Assured</b> 
+									<div>{!v.oBonds.lifassOut}</div>
+								</td>
+							</tr>
+							<tr>
+								<td><b>Specific</b> 
+									<div>{!v.oBonds.specifOut}</div>
+								</td>
+                                <td><b>Reference Account</b> 
+									<div>{!v.oBonds.refaccOut}</div>
+								</td>
+							</tr>
+						</table>
+					</div>    
+					<footer class="slds-modal__footer">
+						<lightning:button variant="neutral" 
+											label="Close"
+											title="Close"
+											onclick="{! c.closeBondsDetailsModel }"/>
+					</footer>
+				</div>
+			</div>     
+		</section>
+	</aura:if>
+</aura:component>

@@ -1,0 +1,90 @@
+<!--
+* Lightning Component for Validating Origination Details and making PowerCurve  calls 1 to 7
+* PowerCurveValidationScoring
+* @author  Saurabh : Absa
+* @version v1.0
+* @since   2020-12-07
+* @UserStory : W4925
+-->
+
+
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+    controller = "PowerCurveOutputController" access="global" >
+
+    <!-- Event Handler Decleration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler event="force:refreshView" action="{!c.doInit}" />
+
+    <!-- Attributes-->
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="record" type="Object"/>
+    <aura:attribute name="isSpinner" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="currentODLimit" type="Double" default="0"/>
+    <aura:attribute name="additionalODLimit" type="Double" default="0"/>
+    <aura:attribute name="preApprovedAmount" type="Double" default="0"/>
+    <aura:attribute name="reprocessLowerLimit" type="boolean" default="false"/>
+    <aura:attribute name="reprocessLowerLimitDisable" type="boolean" default="true"/>
+    <aura:attribute name="appProductRecId" type="Id" />
+
+     <!-- Spinner -->
+    <aura:if isTrue="{!v.isSpinner}">
+        <lightning:spinner variant="brand" alternativeText="Busy" />
+    </aura:if>
+
+    <!-- Error Message -->
+    <aura:if isTrue="{!not(empty(v.errorMessage))}">
+        <div class="recordError">
+            <br />
+            <h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+            <br />
+        </div>
+    </aura:if>
+    <lightning:recordEditForm aura:id="reprocessLowerLimitForm"
+    objectApiName="Application_Product__c"
+    recordId="{!v.appProductRecId}"
+    onsubmit="{!c.handleOnSubmit}"
+    onsuccess="{!c.handleSuccess}"
+    onerror="{!c.handleRecordError}">
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem padding="around-small" size="6">
+            <lightning:input aura:id="preApprovedField" disabled="true" label="Pre-Approved" value="{!v.record.preApproved}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="6">
+            <!--lightning:input aura:id="preApprovedAmountField" disabled="true" label="Pre-Approved Amount" value="{!v.record.preApprovedAmount}"/-->
+            <lightning:input aura:id="preApprovedAmountField" disabled="true" label="Pre-Approved Amount" value="{!v.preApprovedAmount}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="6">
+            <lightning:input aura:id="reprocessLowerLimitField" disabled="true" label="Reprocess Lower Limit" value="{!v.record.reprocessLowerLimit}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="6">
+            <lightning:input aura:id="overdraftLimitNewAmountField" disabled="{!v.reprocessLowerLimitDisable}" label="Overdraft Limit New Amount" value="{!v.record.overdraftLimitNewAmount}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="6">
+            <lightning:input aura:id="financialStatementRequiredField" disabled="true" label="Financial Statement Required" value="{!v.record.financialStatementRequired}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="6">
+            <lightning:input aura:id="spouseDetailsRequiredField" disabled="true" label="Spouse Details Required" value="{!v.record.spouseDetailsRequired}"/>
+        </lightning:layoutItem>
+        <!--lightning:layoutItem padding="around-small" size="6">
+            <lightning:input aura:id="financialIncludedField" disabled="true" label="Financial Included" value="{!v.record.financialIncluded}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="6">
+            <lightning:input aura:id="financialAvailableField" disabled="true" label="Financial Available" value="{!v.record.financialAvailable}"/>
+        </lightning:layoutItem-->
+        <lightning:layoutItem padding="around-small" size="6">
+            <lightning:input aura:id="versionField" disabled="true" label="Version" value="{!v.record.version}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem padding="around-small" size="6">
+            <lightning:input aura:id="lastSubmittedField" disabled="true" label="Last Submitted" value="{!v.record.lastSubmitted}"/>
+        </lightning:layoutItem>
+    </lightning:layout>
+
+    <aura:if isTrue="{!v.reprocessLowerLimit}">
+            <lightning:layoutItem padding="around-small" size="6">
+                <lightning:button aura:id="savebtn" type="submit" label="Resubmit With New Lower OD Limit" variant="brand" class="slds-align_absolute-center slds-m-top_xx-small" />
+            </lightning:layoutItem>
+    </aura:if>
+        </lightning:recordEditForm>
+
+</aura:component>

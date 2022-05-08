@@ -1,0 +1,99 @@
+<!--
+* Lightning Component handling to send the selected AVAF Audit Certificate via the SAP system (AVAFAuditCertificate)
+*
+* @author  Bhanumurty Rayala
+* @version v1.0
+* @since   2021-06-29
+*
+-->
+<aura:component controller="AVAFAuditCertificateController"
+	implements="lightning:availableForFlowScreens,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+	access="global">
+	<!--Handler Declaration-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+
+	<!--Attribute Declaration-->
+	<!--Global Attributes-->
+	<aura:attribute name="caseIdFromFlow" type="String" access="global" />
+	<aura:attribute name="caseAccountIdFromFlow" type="String" access="global" />
+	<aura:attribute name="isBusinessAccountFromFlow" type="String" access="global" />
+	<aura:attribute name="selectedAVAFAccountFromFlow" type="String" access="global" />
+	<!--Local Attributes-->
+	<aura:attribute name="clientEmail" type="string" />
+	<aura:attribute name="isSpinner" type="Boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="optionsMonth" type="List" />
+	<aura:attribute name="selectedMonth" type="String" />
+	<aura:attribute name="optionsYear" type="List" />
+	<aura:attribute name="selectedYear" type="String" />
+
+	<!-- changes made for Ford/Avaf Indicator by Mradul  W-016021 for Audit Certificate-->
+	<c:FordAvafIndicator aura:id="fordAvaf" caseId="{!v.caseIdFromFlow}"
+		accountNumber="{!v.selectedAVAFAccountFromFlow}" />
+
+
+
+	<!-- Error Message -->
+	<aura:if isTrue="{!not(empty(v.errorMessage))}">
+		<div class="recordError">
+			<br />
+			<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+			<br />
+		</div>
+	</aura:if>
+	<article>
+		<!-- Spinner -->
+		<aura:if isTrue="{!v.isSpinner}">
+			<lightning:spinner variant="brand" alternativeText="Busy" />
+		</aura:if>
+
+		<lightning:layout multipleRows="true">
+			<lightning:layoutItem padding="around-small" size="6">
+				<lightning:select name="monthId" label="Select a month:" aura:id="monthId"
+					value="{!v.selectedMonth}">
+					<aura:iteration items="{!v.optionsMonth}" var="month">
+						<option value="{!month.value}">{!month.label}</option>
+					</aura:iteration>
+				</lightning:select>
+			</lightning:layoutItem>
+			<lightning:layoutItem padding="around-small" size="6">
+				<lightning:select name="yearId" label="Select a year:" aura:id="yearId" value="{!v.selectedYear}">
+					<aura:iteration items="{!v.optionsYear}" var="year">
+						<option value="{!year}">{!year}</option>
+					</aura:iteration>
+				</lightning:select>
+			</lightning:layoutItem>
+		</lightning:layout>
+
+		<lightning:layout multipleRows="true">
+			<!-- Account Record Edit From -->
+			<lightning:recordEditForm aura:id="accountEditForm" objectApiName="Account"
+				recordId="{!v.caseAccountIdFromFlow}">
+				<lightning:inputField aura:id="accNameField" fieldName="Name" class="slds-hide" />
+				<lightning:layoutItem padding="around-small" size="12">
+					<p>
+						The account statement will be delivered to the email address linked to this account. But
+						you can change the email address to a preferred
+						one below:
+					</p>
+				</lightning:layoutItem>
+
+				<aura:if isTrue="{!v.isBusinessAccountFromFlow}">
+					<lightning:layoutItem padding="around-small" size="12">
+						<lightning:inputField aura:id="activeEmailField" fieldName="Active_Email__c" />
+					</lightning:layoutItem>
+					<aura:set attribute="else">
+						<lightning:layoutItem padding="around-small" size="12">
+							<lightning:inputField aura:id="personEmailField" fieldName="PersonEmail" />
+						</lightning:layoutItem>
+					</aura:set>
+				</aura:if>
+			</lightning:recordEditForm>
+
+			<lightning:layoutItem padding="around-small" size="6">
+				<lightning:button class="slds-float_right" label="Send Email" onclick="{!c.sendAuditCertificate}"
+					variant="brand" />
+			</lightning:layoutItem>
+		</lightning:layout>
+	</article>
+</aura:component>

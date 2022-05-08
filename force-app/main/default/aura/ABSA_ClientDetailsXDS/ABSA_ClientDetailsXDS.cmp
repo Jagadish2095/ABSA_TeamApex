@@ -1,0 +1,160 @@
+<aura:component controller = "OnboardingClientDetailsController" implements="lightning:isUrlAddressable,lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,lightning:actionOverride" access="global" >
+<aura:attribute name="recordId" type="Id"/>
+<aura:attribute name="selectedValue" type="String" />
+<aura:attribute name="EntityType" type="String" />
+<aura:attribute name="blockedPerson" type="String" />    
+<aura:attribute name="showNextbutton" type="boolean" access="global" default="true"/>  
+<aura:attribute name="ContactId" type="Id" access="public"/>
+<aura:attribute name="conlist" type="List"/>
+<aura:attribute name="accId" type="String"/>
+<aura:attribute name="verificationType" type="String"/>
+
+<aura:attribute name="isOpen" type="boolean" default="false"/>
+<aura:handler name="cmpEvent" 
+                event="c:getAuthStatus" 
+                action="{!c.handleEvent}"/>
+<!--To store the value recieved from the child component-->    
+<aura:attribute name="eventValue" type="String"/>
+<aura:attribute name="opportunity" type="Object"/>
+<aura:attribute name="opportunityRecord" type="Object"/>
+<aura:attribute name="recordLoadError" type="String"/> 
+<force:recordData aura:id="recordLoader"
+      fields="Id,Name,Entity_Type__c,AccountId"
+      recordId="{!v.recordId}"
+      targetFields="{!v.opportunityRecord}"
+      targetError="{!v.recordLoadError}"
+      />          
+   
+<aura:attribute name="idNumber" type="String"/>
+<aura:attribute name="surname" type="String"/>
+<aura:attribute name="xdsverificationstatus" type="List"/>
+<aura:handler name="init" value="{!this}" action="{!c.myAction}" />    
+<div class="c-container">
+<lightning:card>
+    <div class="slds-m-around_xx-large">
+        
+
+
+   <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute]  <aura:if isTrue="{!v.isOpen}"> -->   
+  
+     <aura:if  isTrue="{!and(v.isOpen, v.selectedValue != '')}"> 
+ 
+    <!--###### MODAL BOX Start######--> 
+    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container">
+            <!-- ###### MODAL BOX HEADER Start ######-->
+            <header class="slds-modal__header">
+                <lightning:buttonIcon iconName="utility:close"
+                                      onclick="{! c.closeModel }"
+                                      alternativeText="close"
+                                      variant="bare-inverse"
+                                      class="slds-modal__close"/>
+            </header>
+            
+            
+            <!--###### MODAL BOX BODY Part Start######-->
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+            <lightning:button variant="brand" 
+                                  label="Confirm Manual Verification"
+                                  title="Confirm Manual Verification"
+                                  onclick="{! c.setManualVerification }"/>
+            
+            <lightning:button variant="brand" 
+                                  label="XDS Verification"
+                                  title="XDS Verification"
+                                  onclick="{! c.setXDSVerification }"/>
+            </div>
+            
+            <aura:if isTrue="{!v.verificationType == 'Manual'}">
+            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                <c:XDSManunalVerification aura:id="ManualVerificationComp" recordId="{!v.opportunityRecord.AccountId}"  />
+                
+            </div>
+            </aura:if>
+       	<aura:if isTrue="{!v.verificationType == 'XDS'}">
+        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+             <!--   <c:ABSA_XDSQnADirectors aura:id="QnSComp" recordId="{!v.recordId}" idNumber="{!v.idNumber}" surname="{!v.surname}" />  -->
+            <c:XDSQnS_2B_Env aura:id="QnSComp" recordId="{!v.selectedValue}" showNextbutton="{!v.showNextbutton}" />
+				<!-- <c:XDSQnAComponent aura:id="QnSComp" recordId="{!v.recordId}" idNumber="{!v.idNumber}" surname="{!v.surname}" />    -->        	
+				                
+            </div>
+             </aura:if>
+            <!--###### MODAL BOX FOOTER Part Start ######-->
+            <footer class="slds-modal__footer">
+                <lightning:button variant="neutral" 
+                                  label="Cancel"
+                                  title="Cancel"
+                                  onclick="{! c.closeModel }"/>
+
+               <lightning:button variant="brand" 
+                                  label="Done"
+                                  title="Done"
+                                  onclick="{! c.likenClose }"/>
+            </footer>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+    <!--###### MODAL BOX Part END Here ######-->
+    
+</aura:if>
+    </div>
+
+<div>
+  
+        <!-- Use the Apex model and controller to fetch server side data -->
+    <table class="slds-table slds-table--bordered slds-table--striped slds-table--cell-buffer">
+        
+        <thead>          
+            <tr class="slds-text-heading--small"> 
+                <th scope="col"><span class="slds-truncate">FirstName  </span></th>
+                <th scope="col"><span class="slds-truncate">LastName</span></th>
+                <th scope="col"><span class="slds-truncate">IdNumber</span></th>
+                <th scope="col"><span class="slds-truncate">XDS Status</span></th>
+ 
+                
+            </tr>
+            
+        </thead>
+       <tbody>
+            <aura:iteration items="{!v.conlist}" var="contact">
+               <aura:if isTrue="{!and(contact.AuthMessage != null,contact.AuthMessage !='',contact.AuthMessage !='undefined')}">
+                <tr>
+                   
+                    <th scope="row">{!contact.FirstName}</th> 
+                   
+                    <td>{!contact.LastName}</td>
+                	<td>{!contact.IDNumber}</td>  
+                    <td>{!contact.AuthMessage}</td>                
+
+                   
+                </tr>
+                 </aura:if>
+            </aura:iteration>
+        </tbody>
+        </table>  
+</div>
+<br></br><br></br>
+<lightning:accordion  allowMultipleSectionsOpen="true">
+<lightning:accordionSection name="XDSInformation" label="XDS Information">
+
+<lightning:select aura:id="relatedParties" label="Select Related Party for this document if any" onchange="{!c.getParty}">
+<option aura:id="relatedParty" value="">---None---</option>    
+<aura:iteration items="{!v.conlist}" var="party" >
+<Aura:If isTrue="{!party.FirstName != null}">
+<option value="{!party.Id}">{!party.FirstName} &nbsp; {!party.LastName} - {!party.AuthMessage}</option>
+</Aura:If>
+<Aura:If isTrue="{!party.FirstName == null}">
+<option value="{!party.Id}">{!party.AccountId}</option>
+</Aura:If>
+</aura:iteration>
+</lightning:select>
+<!-- <lightning:button label="Next"  variant="brand"  onclick="{!c.navigateToForm}" disabled="{!v.showNextbutton}" />  -->
+<lightning:button label="Next"  variant="brand"  onclick="{!c.navigateToForm}" disabled="{!v.showNextbutton}" />
+</lightning:accordionSection>
+</lightning:accordion>
+<br></br>
+<!-- <c:XDSQnAComponent recordId="{!v.recordId}"/> -->
+<c:DocumentManagement recordId="{!v.recordId}"/>
+</lightning:card>
+</div>
+</aura:component>

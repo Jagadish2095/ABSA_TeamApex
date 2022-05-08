@@ -1,0 +1,193 @@
+<!--
+* Lightning Component for Credit Card (CreditCard)
+*
+* @author  Ephetehe Mokgopanyane
+* @version v1.0
+* @since   2020-09-01
+*
+-->
+
+<aura:component access="global" 
+                controller="CreditCardCtrl"
+    			implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome">
+
+    <!-- Event Handler Declaration -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	
+    <!-- Event Register--><!--W-012191-->
+    <aura:registerEvent name="creditOriginationEvent" type="c:creditOriginationEvent"/>
+    
+    <!-- Attribute Declaration -->
+    <aura:attribute name="recordId" type="String" default=""/>
+    <aura:attribute name="opportunityId" type="String" default=""/>
+    <aura:attribute name="manageAccounts" type="boolean" default="false" access="private"/>
+    <aura:attribute name="enableSlctdAccBtn" type="boolean" default="true" access="private"/>
+    <aura:attribute name="existingCreditCards" type="Integer" default="0" access="private"/>
+    <aura:attribute name="mngdExistingCreditCards" type="Integer" default="0" access="private"/>
+    <aura:attribute name="newCreditCards" type="Integer" default="0" access="private"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false" access="private"/>
+    <aura:attribute name="rendered" type="boolean" default="false" access="private"/>
+	<aura:attribute name="existingAccounts" type="List" default="" access="private"/>
+	<aura:attribute name="managedAccounts" type="List" default="" access="private"/>
+	<aura:attribute name="newAccounts" type="List" default="[]" access="private"/>
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    <lightning:accordion allowMultipleSectionsOpen="true">
+        <lightning:accordionSection name="approvedFacility" label="{!'Credit Cards - Existing(' + v.existingCreditCards + ')'}">
+            <p style="font-weight: 00;">
+                Account Selection for Settlement
+            </p>
+            <p style="font-weight: 300;">
+                Select the Credit Card accounts to be added for settlement.
+            </p><br/>
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped">
+                <thead>
+                    <tr class="slds-var-m-top_small slds-line-height_reset headerRow">
+                        <th scope="col">
+                            <div class="slds-truncate" title="ClientName">Account Number</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="ClientName">Credit Card Limit</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="ClientName">Allocated Limit</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="ClientName">Account Balance</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="ClientName">Account Status</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="ClientName">Account Status Description</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="ClientName">Manage Account</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="accountsTableBody">
+                    <aura:iteration items="{!v.existingAccounts}" var="existingAccount" indexVar="index">
+                        <tr>
+                            <td>
+                                <ui:outputText value="{!existingAccount.accountNumber}" />
+                            </td>
+                            <td>
+                                <ui:outputText value="{!existingAccount.creditCardLimit}" />
+                            </td>
+                            <td>
+                                <ui:outputText value="{!existingAccount.allocatedLimit}" />
+                            </td>
+                            <td>
+                                <ui:outputText value="{!existingAccount.accBalance}" />
+                            </td>
+                            <td>
+                                <ui:outputText value="{!existingAccount.accStatus}" />
+                            </td>
+                            <td>
+                                <ui:outputText value="{!existingAccount.accStatusDesc}" />
+                            </td>
+                            <td>
+                                <aura:if isTrue="{!existingAccount.isSelected == 'true'}">
+                                    <input type="checkbox" id="{!existingAccount.accountNumber + '|' + index}" onclick="{!c.onCheckManageAcc}" checked="true"/>
+        
+                                    <aura:set attribute="else">
+                                        <input type="checkbox" id="{!existingAccount.accountNumber + '|' + index}" onclick="{!c.onCheckManageAcc}"/>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table> <br/>
+
+            <lightning:button label="Proceed with selected account(s)" variant="brand" disabled="{!v.enableSlctdAccBtn}" onclick="{!c.manageSelectedAccounts}"/>
+        </lightning:accordionSection>
+
+        <aura:if isTrue="{!v.manageAccounts}">
+            <lightning:accordionSection name="approvedFacility" label="{!'Existing Credit Card Accounts(' + v.mngdExistingCreditCards + ')'}">
+                <aura:iteration items="{!v.managedAccounts}" var="managedAccount" indexVar="index">
+                    <p style="border-bottom: 2px solid rgb(132, 58, 84);">{!managedAccount.accountNumber}</p>
+                    <table>
+                        <tr>
+                            <td>
+                                <lightning:input readonly="true" label="Account Number" value="{!managedAccount.accountNumber}" />
+                            </td>
+                            <td>
+                                <lightning:input readonly="true" label="Allocated limit" value="{!managedAccount.allocatedLimit}" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <lightning:input readonly="true" label="Current credit card limit" value="{!managedAccount.creditCardLimit}" />
+                            </td>
+                            <td>
+                                <lightning:input label="Requested credit card limit" required="true" type="number" value="{!managedAccount.requestedCreditCardLimit}" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <lightning:input readonly="true" label="Account Balance" value="{!managedAccount.accBalance}" />
+                            </td>
+                            <td>
+                                <lightning:input label="Campaign code" required="true" type="text" value="{!managedAccount.campaignCode}" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <lightning:input readonly="true" label="Account status" value="{!managedAccount.accStatus}" />
+                            </td>
+                            <td>
+                                <lightning:input readonly="true" label="Account status description" value="{!managedAccount.accStatusDesc}" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <lightning:input readonly="true" label="Instalment" value="{!managedAccount.instalment}"/>
+                            </td>
+                            <td>
+                                <lightning:input readonly="true" label="Service fee amount" value="{!managedAccount.serviceFeeAmnt}"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <lightning:input readonly="true" label="Interest rate" value="{!managedAccount.interestRate}"/>
+                            </td>
+                            <td>
+                                <lightning:input readonly="true" label="Interest type" value="{!managedAccount.interestType}"/>
+                            </td>
+                        </tr>
+                    </table><br/>
+                </aura:iteration>
+            </lightning:accordionSection>
+        </aura:if>
+
+        <lightning:accordionSection name="approvedFacility" label="{!'Credit Cards - New(' + v.newCreditCards + ')'}">
+            <table>
+                <tr>
+                    <td>
+                        <span style="padding-left: 24px;">Add a new Business Credit Card</span>
+                    </td>
+                    <td>
+                        <lightning:button label="Add a New Account" variant="brand" onclick="{!c.addNewAccount}"/>
+                    </td>
+                </tr>
+            </table><br/>
+            <aura:if isTrue="{!v.newCreditCards > 0}">
+                <c:CreditCardNewAccount newAccounts="{!v.newAccounts}" newCreditCards="{!v.newCreditCards}" showSpinner="{!v.showSpinner}"/>
+            </aura:if>
+        </lightning:accordionSection>
+        <br/>
+        
+        <center>
+            <lightning:button label="Save &amp; Validate" variant="brand" onclick="{!c.saveAndValidate}" />
+        </center>
+    </lightning:accordion>
+
+</aura:component>

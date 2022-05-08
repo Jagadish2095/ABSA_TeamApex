@@ -1,0 +1,113 @@
+<!--
+ * @description This is the Component for origination NonScoredApprovedFacilities
+ *
+ * @author  Englarmerdge Mongwe
+ * @since   2020-08-27
+ *
+ * @UserStory W-007274
+ **/ -->
+
+
+<aura:component controller="NonScoredApprovedFacilitiesCtrl"
+    implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable"
+    access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="recordId" type="Id" />
+
+    <aura:attribute name="nonfacData" type="Map[]" />
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="value" type="String" default="No"/>
+    <aura:attribute name="isAppFacInstNonScored" type="Boolean" default="false"/>
+    <aura:attribute name="lastRefresh" type="Date" />
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+
+    <aura:registerEvent name="creditOriginationEvent" type="c:creditOriginationEvent"/>
+
+    <!-- Handle Application Event -->
+    <aura:handler event="c:creditOriginationEvent" action="{!c.handleApplicationEvent}" />
+
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+
+    <!--lightning:accordion allowMultipleSectionsOpen="true">
+        <lightning:accordionSection name="approvedFacility" label="Approved Facility"-->
+            <lightning:layoutItem size="12" padding="around-small">
+                <lightning:radioGroup name="radioButtonGroup"
+                                    label="Any non-scored approved faclities not yet paid out"
+                                    options="{!v.options}"
+                                    value="{!v.value}"
+                                    onchange="{!c.onRadioChange}"
+                                    type="button"/>
+            </lightning:layoutItem>
+            <aura:if isTrue="{!v.isAppFacInstNonScored}">
+                <lightning:layoutItem size="12" padding="around-small">
+                    <p>Approved Facility &amp; Installments Non-Scored - Last Refresh: <ui:outputDateTime value="{!v.lastRefresh}" /></p>
+                    <table class="slds-table slds-table_cell-buffer">
+                        <thead>
+                            <tr class="slds-var-m-top_small slds-line-height_reset">
+                                <th scope="col">
+                                    <div class="slds-truncate" title="ClientName">Client Name</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="ApprovedFacility">Approved Facility</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="ExposureNonScored">Exposure Non-Scored</div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="InstallmentsNonScored">Installments Non-Scored</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <aura:iteration items="{!v.nonfacData}" var="fac">
+                            <tr>
+                                <aura:if isTrue="{!fac.IsInput}">
+                                    <td class="tdWidth slds-cell-wrap">
+                                        <aura:if isTrue="{!fac.IsFirstInPVis == false}">
+                                            <ui:outputText value="{!fac.ClientName}" />
+                                        </aura:if>
+                                    </td>
+                                    <td>
+                                        <ui:outputText value="{!fac.ApprovedFacility}" />
+                                    </td>
+                                    <td>
+                                        <lightning:input aura:id="inputFac" name="ExposureNonScored" type="number" value="{!fac.ExposureNonScored}" onchange="{!c.onAmtChange}" step="0.01" />
+                                    </td>
+                                    <aura:if isTrue="{!fac.IsFirstInPVis}">
+                                        <td>
+                                            <lightning:input aura:id="inputFac" name="InstallmentsNonScored" type="number" value="{!fac.InstallmentsNonScored}" onchange="{!c.onAmtChange}" step="0.01" />
+                                        </td>
+                                    </aura:if>
+                                </aura:if>
+                                <aura:if isTrue="{!fac.IsOutput}">
+                                    <td></td>
+                                    <td>
+                                        <b><ui:outputText value="{!fac.ApprovedFacility}" /></b>
+                                    </td>
+                                    <td>
+                                        <b><ui:outputCurrency value="{!fac.ExposureNonScoredTotal}" /></b>
+                                    </td>
+                                    <td>
+                                        <b><ui:outputCurrency value="{!fac.InstallmentsNonScoredTotal}" /></b>
+                                    </td>
+                                </aura:if>
+                            </tr>
+                        </aura:iteration>
+                        </tbody>
+                    </table>
+                </lightning:layoutItem>
+            </aura:if>
+        <!--/lightning:accordionSection>
+    </lightning:accordion-->
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem size="12" padding="around-small">
+            <lightning:button class="slds-float_right" label="Save and Validate" variant="brand"
+                onclick="{!c.saveFacilities}" />
+        </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

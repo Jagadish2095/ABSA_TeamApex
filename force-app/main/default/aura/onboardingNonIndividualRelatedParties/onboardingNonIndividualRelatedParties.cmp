@@ -1,0 +1,424 @@
+<!--
+*Lightning component for Adding Non-Individual Entities as Related Parties.
+* @author  Diksha Wasekar
+* @version v1.0
+* @since   2020-07-07
+*
+-->
+<aura:component controller="onboardingNonIndividualRelatedPartiesCon"
+                implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global"  >
+    
+    
+    <aura:attribute name="accrecordId" type="String" />
+    <aura:attribute name="showRecordEditForm" type="Boolean" default="false" />
+    <aura:attribute name="showAccRecordId" type="Boolean" default="false" />
+    <aura:attribute name="showConsent" type="Boolean" default="true" />
+    <aura:attribute name="parentId" type="String"  />
+    <aura:attribute name="clientgroup" type="String" />
+    <aura:attribute name="clienttype" type="String" />
+    <aura:attribute name="placeofresidence" type="String" />
+    <aura:attribute name="searchvalue" type="String" />
+    <aura:attribute name="finserverole" type="String" />
+    <aura:attribute name="primaryEntityId" type="String" />  <!--Chandra 07142020  against 4945-->
+    <aura:attribute name="parentRelationshipId" type="String" />
+    <aura:attribute name="selectedAccountRecordId" type="String" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="processType" type="String" />
+    <aura:Attribute name="sicCategoryValue" type="String" />
+    <aura:attribute name="showRegulatoryQ4SubSection" type="boolean" default="false"/>
+    <aura:attribute name="showRegulatoryQ4SubSection2" type="boolean" default="false"/>
+
+    <!--GOLDEN SOURCE ATTRIBUTES -->
+    <aura:attribute name="isExperianModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="accountRecordId" type="String" />
+    <aura:attribute name="registrationNumber" type="String"/>
+    <aura:attribute name="businessProspectRecordTypeId" type="Id"/>
+    <aura:attribute name="accountRecord" type="Account" default="{sobjectType:'Account'}"/>
+    <aura:Attribute name="disableConsentCheckbox" type="boolean" default="true"/>
+    <aura:Attribute name="goldenSourceConsentGiven" type="boolean" default="true"/>
+    <aura:attribute name="companyDetails" type="object"/>
+    <aura:attribute name="experianResponse" type="ExperianBusinessDetailsGet_Resp_IB_v1"/>
+    <aura:attribute name="activeSections" type="List" default="['Consent','Golden Source Documents']" />
+    <aura:attribute name="defaultActiveSections" type="List" default="['Consent','Golden Source Documents','Account','IDV','commmunication','BusinessInfo','BusinessAdd','Financial','Regulatory','Relationships', 'sicCodeClassification', 'tradingAsName']" /> 
+    <aura:Attribute name="showLimitedAccountInfoModal" type="boolean" default="false"/>
+    <!--END OF GOLDEN SOURCE ATTRIBUTES -->
+    
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.parentId}"
+                      fields="Client_Type__c"
+                      targetFields="{!v.accountRecord}"
+                      targetError="{!v.recordLoadError}"
+                      />
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="TheSpinner" variant="brand" size="medium"/>
+        </div>
+    </aura:if>
+    <center style="z-index:99">
+        <lightning:spinner aura:id="TheSpinner" class="slds-hide" variant="brand" size="large"/>
+    </center>
+    
+    <aura:if isTrue="{!and(or(or(or(or(or(or(or(v.clienttype =='Public Listed Company',or(or(v.clienttype == 'Private Company',v.clienttype == 'Close Corporation'),v.clienttype == 'Foreign Listed Company')),v.clienttype == 'Foreign Company'),v.clienttype == 'Co-operative'),v.clienttype == 'Incorporated Company'),v.clienttype == 'Non Profit Organizations (NGO)'),v.clienttype == 'Clubs/Societies/Associations/Other Informal Bodies'),v.clienttype == 'Non Profit Companies'),v.showConsent)}">
+        
+        <lightning:card title="Consent Declaration for Client and Related Parties">
+            
+            <lightning:recordEditForm aura:id="recordNewAccount"
+                                      recordId="{!v.accRecordId}"
+                                      recordTypeId="{!v.businessProspectRecordTypeId}"
+                                      objectApiName="Account">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                        <lightning:inputField fieldName="Client_Group__c" aura:id="clientGroup1"  required="true" value="{!v.clientgroup}"/>
+                        <div aura:id="errclientGroup" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Please select Client Group as Non Individual</div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                        <lightning:inputField fieldName="Client_Type__c" aura:id="idClientType2" required="true" value="{!v.clienttype}" onchange="{!c.handleConsent}"/>
+                        <div aura:id="errclientType" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Please select Client Type as Private Company</div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6">
+                        <lightning:inputField fieldName="Place_of_Residence__c" aura:id="placeOfResidence" required="true" value="{!v.placeofresidence}" />
+                        <div aura:id="errPlaceOfResindence" class="slds-hide" style="color: var(--lwc-colorTextError,rgb(194, 57, 52)) !important;">Please select Place of Residence</div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="" size="6" smallDeviceSize="12" mediumDeviceSize="6" >                        
+                        <div class="slds-form-element" aura:id="regNumberError">
+                            <div class="slds-form-element__control">
+                                <lightning:input name="regNumberC" aura:id="regNumberC" label="Registration/ID Number" placeholder="Type here..." value="{!v.searchvalue}"/>
+                            </div>
+                            <div class="slds-form-element__help slds-hide" id="form-error-01 ">This field is required</div>
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:recordEditForm>           
+            <lightning:input disabled="{!v.disableConsentCheckbox}" type="checkbox" label="I AGREE TO ABSA BANK ACCESSING MY RECORDS ON GOLDEN SOURCES" name="Agree Golden Sources"
+                             onclick="{!c.showPopulateDetailsButton}" aura:id="agreed"/>
+            <div class="c-container">
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem padding="around-small" size="12" class="slds-align_absolute-center">
+                        <lightning:button disabled="{!v.goldenSourceConsentGiven}" variant="brand" class="slds-m-top_xx-large" label="Populate Details from Golden Sources"
+                                          title="Populate Details from Golden Sources" onclick="{! c.populateDetails }"/>
+                        <lightning:button disabled="{!not(v.goldenSourceConsentGiven)}" variant="brand" class=" slds-m-top_xx-large" label="Capture Information Manually"
+                                          title="No Consent Given" onclick="{! c.openLimitedAccDetailsModal }"/>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </div> 
+        </lightning:card>
+        <aura:if isTrue="{!v.isExperianModalOpen}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                
+                <!--MODEL POPUP TO SHOW SUMMARY INFO FROM EXPERIAN -->
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Golden Sources Preview</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-grid slds-wrap slds-gutters">
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                <span>Name</span><br /><span>{!v.companyDetails.companyName}</span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                <span>Registration/ID Number</span><br /><span>{!v.companyDetails.registrationNumber}</span>
+                            </div><br /><br />
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                <span>Entity Type</span><br /><span>{!v.companyDetails.entity}</span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-bottom_medium">
+                                <span>Status</span><br /><span>{!v.companyDetails.status}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer slds-modal__footer_directional">
+                        
+                        <lightning:button variant="neutral" class=""
+                                          label="Incorrect Info? Try searching again." title="Save" aura:id="incorrectInfo"
+                                          onclick="{!c.closeExperianModal}" />
+                        <lightning:button variant="brand" class=""
+                                          label="This info is correct. Proceed" title="Save" aura:id="correctInfo"
+                                          onclick="{!c.proceedExperian}" />
+                        
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </aura:if>    
+    
+    <lightning:overlayLibrary aura:id="popuplib"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <!--CALL THE GOLDEN SOURCE -->
+    <!--  <aura:if isTrue ="{!v.clienttype == 'Private Company'}">
+        <c:nonIndividualGoldenSourceSearch/>
+    </aura:if>-->
+    <!--END GOLDEN SOURCE CALL -->
+    
+    <aura:if isTrue="{!v.showRecordEditForm}">
+        <lightning:recordEditForm aura:id="editForm" 
+                                  objectApiName="Account"
+                                  onsuccess="{!c.handleOnSuccess}"
+                                  onsubmit="{!c.handleOnAcctSubmit}"
+                                  recordId="{!v.selectedAccountRecordId}"
+                                  >
+            <lightning:messages  />
+
+            <div>
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Main Account Details</span>
+                </h3>
+                <div>
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <aura:if isTrue="{!or(or(v.clienttype == 'Trusts',v.clienttype == 'Foreign Trust'),!v.showConsent)}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <span class="required">* </span>
+                                    <label for="trustname">Client Full Name</label>
+                                    <lightning:inputField aura:id="trustname" fieldName="Name" required="true"  variant="label-hidden" />
+                                </span></div>
+                                <aura:set attribute="else">
+                                    <div class="slds-col slds-size_1-of-2">
+                                    <span>
+                                        <lightning:inputField aura:id="companyname" fieldName="Name" required="true"/>
+                                    </span></div>
+                                </aura:set>
+                        </aura:if>
+
+                        <!-- Added by Mbuyiseni Mbhokane -->
+                        <aura:if isTrue="{!or(v.clienttype == 'Trusts',v.clienttype == 'Foreign Trust')}">          
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                   <span class="required">* </span>
+                                    <lightning:inputField aura:id="trustnumber" fieldName="Trust_Number__c" />
+                                </span></div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField aura:id="trustNumberNewformat" fieldName="Trust_Number_New_format__c" />
+                                </span></div>
+                       <aura:set attribute="else"> 
+                            <aura:if isTrue="{!or(or(or(v.clienttype == 'Non Profit Organizations (NGO)',v.clienttype == 'Schools'),v.clienttype == 'Clubs/Societies/Associations/Other Informal Bodies'),v.clienttype=='Central Bank or Regulator')}">
+                            <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField aura:id="registrationNumber" fieldName="Registration_Number__c" />
+                                </span></div>
+                            <aura:set attribute="else">                                
+                                <div class="slds-col slds-size_1-of-2">
+                                <span>
+                                    <lightning:inputField aura:id="registrationNumber" fieldName="Registration_Number__c"  required="true"/>
+                                </span></div>
+                            </aura:set>
+                            </aura:if>
+                           </aura:set>
+                        </aura:if> 
+                        
+                        <!--Added by Mbuyiseni Mbhokane-->
+                        <!-- <aura:if isTrue="{!or(v.clienttype == 'Private Company',v.clienttype == 'Close Corporation')}">-->
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField aura:id="iDType" fieldName="ID_Type__c" required="true"/>
+                            </span></div>
+                        <!--  </aura:if>-->                   
+                        
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField aura:id="clientGroup" fieldName="Client_Group__c"  value="{!v.clientgroup}" required="true"/>
+                            </span></div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField aura:id="clientType" fieldName="Client_Type__c"  value="{!v.clienttype}" required="true"/>
+                            </span></div>
+                        
+                        <aura:if isTrue="{!v.processType != 'Lite Onboarding'}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField aura:id="dateEstablished" fieldName="Date_Established__c" />
+                            </span></div>
+                        </aura:if>
+                        
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField aura:id="countryofIncorporation" fieldName="Country_of_Incorporation__c" required="true" />
+                            </span></div>
+                        <aura:if isTrue="{!v.processType != 'Lite Onboarding'}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField aura:id="prefCommMtd" fieldName="Preferred_Communication_Method__c" required="true"/>
+                            </span></div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField aura:id="prefCommInfo" fieldName="Preferred_Communication_Info__c" required="true"/>
+                            </span></div>
+                        </aura:if>
+                        
+                    </div>  
+                </div>
+            </div>
+            
+           <!-- <aura:if isTrue="{!v.processType == 'Lite Onboarding'}">
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Business Information</span>
+                </h3>
+                <div class="slds-p-horizontal-small">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Standard_Industry_SIC_Category__c" aura:id="iSicCategory" required="true" />
+                            </span>
+                        </div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Standard_Industry_SIC_Code__c" aura:id="iSicCode" required="true" />
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+                <h3 class="slds-section__title">
+                    <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Regulatory 3(i)f</span>
+                </h3>
+                <div class="slds-p-horizontal-small">
+                    <div class="slds-grid slds-wrap slds-gutters_medium">
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <label for="iTempResident" class="slds-form-element__label">4) Are there any temporary resident or non-resident shareholders who combined shareholding is more than 75%?</label>
+                                <lightning:inputField fieldName="Q4_Are_there_any_temporary_non_resident__c" variant="label-hidden" aura:id="iTempResident" onchange="{!c.regulatoryQ4SubSection}"/>
+                            </span>
+                        </div>
+                        <aura:if isTrue="{!v.showRegulatoryQ4SubSection}">
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <label for="iEntityRegisteredOutsideRSA_Q4a" class="slds-form-element__label">4a) Client affected by Regulation 3(1)F?</label>
+                                <lightning:inputField fieldName="Q4a_Client_affected_by_Regulation_3_1_F__c" variant="label-hidden" aura:id="iEntityRegisteredOutsideRSA_Q4a" onchange="{!c.regulatoryQ4SubSection2}"/>
+                            </span>
+                        </div>
+                        </aura:if>
+                        <aura:if isTrue="{!v.showRegulatoryQ4SubSection2}">
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Q4b_How_is_the_Client_Affected__c" aura:id="iEntityRegisteredOutsideRSA_Q4b"/>
+                            </span>
+                        </div>
+                            <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField fieldName="Q4c_Exchange_Control_Expiry_date__c" aura:id="iEntityRegisteredOutsideRSA_Q4c"/>
+                            </span>
+                        </div>
+                        </aura:if>
+
+                    </div>
+                </div>
+            </aura:if> -->
+            
+            <aura:if isTrue="{!v.selectedAccountRecordId == null}">
+ 
+                        <span class="slds-m-top_medium; slds-align_absolute-center">
+                            <lightning:button type="submit" label="Save" variant="brand"/>
+                        </span>
+                        </aura:if> 
+        </lightning:recordEditForm>
+        
+        
+        <lightning:recordEditForm aura:id="accountAccountEditForm" 
+                                  objectApiName="FinServ__AccountAccountRelation__c"
+                                  onerror="{!c.handleOnError}"
+                                  > 
+            
+            <div class="slds-col slds-size_1-of-1">
+                <span>
+                    
+                    <h3 class="slds-section__title">
+                        <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Trading Name</span>
+                    </h3> <br/>
+                    <aura:if isTrue="{!v.showAccRecordId}">
+                        <!--BUSINESS ADDRESS START-->
+                        <c:OnboardingTradingAsName  aura:id="tradingAsNameComp"/>
+                        <!--BUSINESS ADDRESS END-->
+                    </aura:if> 
+                </span></div> 
+            
+            
+            <div class="slds-col slds-size_1-of-1">
+                <span>
+                    
+                    <h3 class="slds-section__title">
+                        <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Address Details</span>
+                    </h3> <br/>
+                    <aura:if isTrue="{!v.showAccRecordId}">
+                        <!--BUSINESS ADDRESS START-->
+                        <c:OnboardingClientBusAdd isFromNonIndividualRelatedParty="true" aura:id="addressComp"/>
+                        <!--BUSINESS ADDRESS END-->
+                    </aura:if>
+                </span></div> 
+            
+            <lightning:messages  aura:id="acctacctError"/>
+            <h3 class="slds-section__title">
+                <span class="slds-truncate slds-button slds-section__title-action" title="Section Title">Relationship Information</span>
+            </h3>
+            <div class="slds-p-horizontal--small">
+                <div class="slds-grid slds-wrap slds-gutters_medium">
+                    
+                    <aura:if isTrue="{!v.showAccRecordId}">
+                        
+                        <div class="slds-col slds-size_1-of-1">
+                            <span>
+                                <lightning:inputField aura:id="primaryClientType" fieldName="Client_Type__c"  class="slds-hide" value="{!v.accountRecord.Client_Type__c}"/> 
+                                <!--     <lightning:inputField fieldName="Client_Entity_Type__c" class="slds-hide" value="{!v.Client_Entity_Type__c}"/>-->
+                                <lightning:inputField aura:id="roles" fieldName="Roles__c"  onchange="{!c.selectRole}" required="true"/> 
+                            </span></div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField aura:id="shareholdingpercentage" fieldName="Shareholding_Percentage__c" />
+                            </span></div>
+                       <!-- <aura:if isTrue="{!v.processType == 'Lite Onboarding'}">
+                         <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <lightning:inputField aura:id="dateMonthsShareholding" fieldName="Date_Months_since_Shareholding__c" />
+                            </span></div>
+                        </aura:if> -->
+                        <div class="slds-col slds-size_1-of-2 slds-hide">
+                            <span>
+                                <lightning:inputField aura:id="finservacct"  fieldName="FinServ__Account__c" value="{!v.parentId}" />
+                            </span></div>
+                        <div class="slds-col slds-size_1-of-2 slds-hide">
+                            <span>
+                                <lightning:inputField aura:id="finServRelatedAccount" fieldName="FinServ__RelatedAccount__c" value="{!v.accrecordId}"  />
+                            </span></div>
+                        <div class="slds-col slds-size_1-of-2 slds-hide">
+                            <span>
+                                <lightning:inputField aura:id="finServRole" fieldName="FinServ__Role__c"  value="{!v.finserverole}" />
+                            </span></div>
+                        <div class="slds-col slds-size_1-of-2 slds-hide">
+                            <span>
+                                <lightning:inputField aura:id="primaryEntityId" fieldName="Primary_Entity_Id__c" value="{!v.primaryEntityId}" />
+                            </span></div>
+                        <div class="slds-col slds-size_1-of-2 slds-hide">
+                            <span>
+                                <lightning:inputField aura:id="parentRelationshipId" fieldName="ParentRelationshipId__c" value="{!v.parentRelationshipId}" />
+                            </span></div>
+                    </aura:if>
+                    
+                </div>  
+            </div>
+            
+        </lightning:recordEditForm>
+        <footer class="slds-modal__footer">
+            
+            <div class="slds-col slds-size_1-of-1">
+                <span class="slds-m-top_medium; slds-align_absolute-center">
+                    <lightning:button variant="neutral" label="Cancel" title="Cancel" type="text" onclick="{!c.handleCancel}"/>
+                    <lightning:button  label="Create NonIndividual Related Party" variant="brand" onclick="{!c.handleOnSubmit}"/>
+                </span></div>
+            
+        </footer>
+        
+    </aura:if> 
+    
+    
+</aura:component>

@@ -1,0 +1,79 @@
+<!--
+    * Lightning Component for Debit Order 
+    * 
+    * @author  Himanshu Nimje
+    * @version v1.0
+    * @since   2020-11-30
+    * @UserStory W-008017
+  * @updated by Almas Aleem
+  * @updateddate : 2020-12-15
+    -->
+<aura:component access="global" controller="creditdebitordercntrllr"
+                implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasRecordId,lightning:isUrlAddressable">
+    
+    <aura:attribute name="activeSections" type="List" default="['Debit Order']" />
+    <aura:attribute name="isCaseDecision" type="boolean" default="false" />    
+    <aura:attribute name="showSpinner" type="boolean" default="false" />
+    <aura:attribute name="sourceAccount" type="Integer"  />
+    <aura:attribute name="sourceClearanceCode" type="Integer"  />
+    <aura:attribute name="amount" type="Currency"  />
+    <aura:attribute name="DebitOrderType" type="String"  />
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="appProduct" type="object" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!--Spinner-->
+    <aura:if isTrue="{!v.showSpinner}">
+        <div class="slds-spinner_container">
+            <lightning:spinner aura:id="spinner" variant="brand" size="medium" alternativeText="Loading...." />
+        </div>
+    </aura:if>
+    
+    <!-- Displays a toast notification -->
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    
+    <!-- Read Case Record-->
+    <aura:attribute name="caseRecord" type="Object"/>
+    <force:recordData aura:id="recordLoader"
+                      fields="Opportunity__c,Product__c,Application_Product_Id__c"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.caseRecord}"/>
+    
+    <aura:if isTrue="{!v.caseRecord}" >
+        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{! v.activeSections }">
+            <lightning:accordionSection name="Debit Order"  label="Debit Order">
+                <lightning:recordEditForm recordId="{!v.caseRecord.Application_Product_Id__c}" objectApiName="Application_Product__c"> 
+                    <lightning:layout multipleRows="true" >
+                        <lightning:layoutItem size="6">
+                            <p>Debit Order Required</p> <lightning:inputField aura:id="DebitOrderRequired" variant="label-hidden" fieldName="Debit_Order_Required__c" disabled="{!v.isCaseDecision}"/>
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <p>Source Account</p> <lightning:inputField aura:id="SourceAccount" variant="label-hidden" fieldName="Source_Account__c" disabled="{!v.isCaseDecision}"/>  
+                        </lightning:layoutItem> 
+                        
+                        <lightning:layoutItem size="6">
+                            <p>Debit Order Type</p> <lightning:inputField aura:id="DebitOrderTypeId" variant="label-hidden" fieldName="Debit_Order_Type__c" onchange="{!c.decisionChanged}" disabled="{!v.isCaseDecision}" />
+                        </lightning:layoutItem>
+                        
+                        <lightning:layoutItem size="6" padding="around-small">
+                            <p>Source Clearance Code</p> <lightning:inputField aura:id="clearnceCode" variant="label-hidden" fieldName="Source_Clearance_Code__c" disabled="{!v.isCaseDecision}"/>  
+                        </lightning:layoutItem>
+                        
+                        <aura:if  isTrue="{!v.DebitOrderType == 'Fixed'}"> 
+                            <lightning:layoutItem size="6" padding="around-small">
+                                <p>Amount</p> <lightning:inputField aura:id="amount" variant="label-hidden" fieldName="Fixed_Debit_Order_Amount__c" disabled="{!v.isCaseDecision}"/>  
+                            </lightning:layoutItem>
+                            
+                        </aura:if>  
+                        
+                        <aura:if isTrue="{!not(v.isCaseDecision)}">
+                            <lightning:layoutItem size="12" class="slds-p-top_large">
+                                <lightning:button variant="brand" type="submit" label="Save" onclick="{!c.save}"/>
+                            </lightning:layoutItem>
+                        </aura:if>
+                    </lightning:layout>
+                </lightning:recordEditForm>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </aura:if>   
+</aura:component>
