@@ -16,6 +16,7 @@
 		var collectionInformation = new Map();
 		collectionInformation['identityInformation'] = component.get('v.creditIdentityInformation');
 		collectionInformation['residentialInformation'] = component.get('v.creditResidentialInformation');
+        collectionInformation['validatedResidentialInformation'] = component.get('v.creditcardValidatedResidentialInformation');        
 		collectionInformation['contactInformation'] = component.get('v.creditContactInformation');
 		collectionInformation['nextKinInformation'] = component.get('v.creditNextKinInformation');
 		collectionInformation['maritalInformation'] = component.get('v.creditMaritalInformation');
