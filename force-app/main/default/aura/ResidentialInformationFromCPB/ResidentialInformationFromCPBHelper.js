@@ -71,8 +71,8 @@
         component.set('v.residentialAddressline2',CPBaddress.Line2);
         component.set('v.residentialAddressline4',CPBaddress.Line4);
         }else{
-            this.getToast("Error", "Unable to reach CPB ", "error");
-             component.set("v.errorMessage", "Unable to reach CPB, please capture the Residential information");
+            this.getToast("Error", "No data found" , "error");
+             component.set("v.errorMessage", "No data found, please capture the Residential information");
         }
     },
 	//Data captured from the consultant
