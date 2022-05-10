@@ -18,26 +18,20 @@ public without sharing class CreditCardCustomerDetailsController {
     * @return CPBValidate_Resp_IB_v1.ResidentialAddress Object
     */
     @AuraEnabled
-    public static CPBValidate_Resp_IB_v1.ResidentialAddress getCPBInfoById(Id accountId) {
+    public static CPBValidate_Resp_IB_v1 getCPBInfoById(Id accountId) {
         String idNumber, lastName;
         Account acctRecord = new AccountsSelector().selectAllById(accountId);
-        //[select id ,ID_Number__pc,LastName  from Account where Id=:accountId]; //USe account selector class
         
         if( acctRecord != null ){
             idNumber= acctRecord.ID_Number__pc;
             lastName= acctRecord.LastName;
         }
-        String CPBResponse = OnboardingIndividualDetailsController.callCPBService(idNumber, lastName);
-        CPBValidate_Resp_IB_v1 cpbDataClass = (CPBValidate_Resp_IB_v1)JSON.deserialize(CPBResponse, CPBValidate_Resp_IB_v1.class);
-        
-        CPBValidate_Resp_IB_v1.ResidentialAddress cpbResidentialDataClass;
-        
-        if (cpbDataClass != null && cpbDataClass.Person != null) {
-            if (cpbDataClass.Person.AddressInformation != null) {
-                cpbResidentialDataClass = cpbDataClass.Person.AddressInformation.ResidentialAddress;
-            }
-        }
-        return cpbResidentialDataClass;
+        Map<CPBValidate_Resp_IB_v1, List<Sys_Log_Integration__c>> responseMap = CPBValidate_IH_v1.CPBValidate(idNumber, lastName);
+		CPBValidate_Resp_IB_v1 responseBean = (new List<CPBValidate_Resp_IB_v1>(responseMap.keySet()))[0];
+		List<Sys_Log_Integration__c> cpbLogs = responseMap.values()[0];
+
+		return responseBean;
+       
     }
 
     /**
@@ -154,6 +148,23 @@ public without sharing class CreditCardCustomerDetailsController {
                 Next_of_Kin_Telephone_Number__pc,
                 Next_of_Kin_Email_Address__pc,
                 Next_of_Kin_Cellphone_Number__pc,
+            	//Added Kabelo
+            	Occupation_Status__pc,
+                Employer_Sector__pc,
+                Occupation_Category__pc,
+                Occupation_Level__pc,
+                Number_Of_YearIn_The_Specific_Industry__c,
+                Has_Post_Matric_Qualification__pc,
+                Income_Source__pc,
+                Highest_Qualification__pc,
+                Number_of_dependants__c,
+                DD_Source_of_Funds__pc,
+                Employer_Name__pc,
+                Employer_Phone__c,
+                Business_Address_Line_1__c,
+                Physical_Address_Suburb__c,
+                Physical_Address_City__c,
+                Postal_Code__c,
                 (SELECT Id, Account__c, Account__r.Name, Shipping_City__c, Shipping_Country__c, Shipping_State_Province__c, Shipping_Street__c, Shipping_Suburb__c, Shipping_Zip_Postal_Code__c, Shipping_Street_2__c, Address_Type__c FROM Addresses__r WHERE Address_Type__c = 'Residential')	
                 FROM Account WHERE Id =: accountId];
     }

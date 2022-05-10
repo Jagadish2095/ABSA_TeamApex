@@ -1,0 +1,207 @@
+<!--
+  @description       : 
+  @author            : Innocent.Zondo@absa.africa
+  @group             : 
+  @last modified on  : 05-04-2022
+  @last modified by  : Innocent.Zondo@absa.africa
+-->
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+                access="global"
+                controller="PackageProductController">
+    <aura:attribute name="scoringResult" type="String" default="03"/>
+    <aura:attribute name="applicationInfoResponse" type="String" />
+    <aura:attribute name="isReferred" type="Boolean" default="false" />
+    <aura:attribute name="referredWithCheque" type="Boolean" default="true" />
+    <aura:attribute name="referredSelection" type="String" default="" />
+    <aura:attribute name="quotationResult" type="String" />
+    <aura:attribute name="annualIncreasesValue" type="string" />
+    <aura:attribute name="noticeDeliveryValue" type="string" />
+    <aura:attribute name="annualIncreasesOptions" type="List" />
+    <aura:attribute name="noticeDeliveryOptions" type="List" />
+    <aura:attribute name="activeSections" type="List" default="['CreditCard']" />
+    <aura:attribute name="creditCardSectionLabel" type="String" default="" />
+    <aura:attribute name="chequeCardSectionLabel" type="String" default="" />
+    <aura:attribute name="creditLimitApproved" type="String" default="" />
+    <aura:attribute name="updateCreditLimit" type="String" default="" />
+    <aura:attribute name="minimumCreditLimit" type="String" default="" />
+    <aura:attribute name="maximumCreditLimit" type="String" default="" />
+    <aura:attribute name="creditLimitInstalAmount" type="String" default="" />
+    <aura:attribute name="creditLimitInterestRate" type="String" default="" />
+    <aura:attribute name="monthlyAccountFee" type="String" default="" />
+    <aura:attribute name="monthlyFacilityFee" type="String" default="" />
+    <aura:attribute name="initiationFee" type="String" default="" />
+    <aura:attribute name="wkFiid" type="String" default="" />
+    <aura:attribute name="wkAcctProd" type="String" default="" />
+    <aura:attribute name="wkAcctType" type="String" default="" />
+    <aura:attribute name="calculationLimit" type="Integer" default='3'/>
+    <aura:attribute name="currentCount" type="Integer" default='0'/>
+    <aura:attribute name="isLimitReached" type="Boolean" default="false"/>
+    <aura:attribute name="updatingLimit" type="boolean" default="true"/>
+    <aura:attribute name="updating" type="Boolean" default="false"/>
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <div class="slds-is-relative" >
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="horizontal-medium">
+                <lightning:layout>
+                    <lightning:layoutitem size="12">
+                        <div >
+                            <c:BranchMessage mediaBody='In Package products' iconName='standard:account' mediaTheme='' mediaBodyClass='slds-text-heading_small slds-var-p-vertical_medium' />
+                        </div>
+                    </lightning:layoutitem>
+                </lightning:layout>
+                <lightning:layout >
+                    <lightning:layoutitem padding="horizontal-medium" size="12">
+                        <div >
+                            <c:BranchMessage mediaBody='Available Credit Accounts' iconName='standard:account' mediaTheme='' mediaBodyClass='slds-text-heading_small slds-var-p-vertical_medium' />
+                        </div>
+                        <lightning:layout>
+                            <lightning:layoutitem size="12">
+                                <div class="slds-box slds-theme_default">
+                                    <lightning:accordion aura:id="accordionCreditCard"
+                                                         allowMultipleSectionsOpen="true"
+                                                         activeSectionName="{! v.activeSections }" >
+                                        <lightning:accordionSection name="CreditCard" label="{! v.creditCardSectionLabel }" >
+                                            <aura:set attribute="actions">
+                                                <lightning:buttonIcon iconName="utility:success" size="large" variant="bare" alternativeText="" title="" />
+                                            </aura:set>
+                                            <aura:set attribute="body">
+                                                <div class="slds-border_top slds-var-p-around_x-small">
+                                                    <lightning:layout >
+                                                        <lightning:layoutItem >
+                                                            <div class="slds-m-top_x-small slds-m-bottom_x-small">
+                                                                <label>Provisionally approved for credit limit of  <b><lightning:formattedNumber style="currency" currencyCode="ZAR" value="{! v.creditLimitApproved }" /></b></label>
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                    </lightning:layout>
+                                                    <lightning:layout >
+                                                        <lightning:layoutItem >
+                                                            <div class="slds-m-bottom_medium">
+                                                                <c:BranchMessage mediaBody='Credit card and limit has been provisionally approved and is still subject to the verification of the customer&#8217;s documentation.' />
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                    </lightning:layout>
+                                                    <lightning:layout >
+                                                        <lightning:layoutitem size="6">
+                                                            <div id="{! globalId + '_CreditLimit' }" class="slds-m-bottom_large">
+                                                                <label for="CreditLimit" >Adjust credit limit up to three times</label>
+                                                                <lightning:layout verticalAlign="end">
+                                                                    <lightning:layoutitem flexibility="grow">
+                                                                        <lightning:input aura:id="CreditLimit" type="number" value="{! v.updateCreditLimit }" variant="label-hidden" formatter="currency" step="0.01" disabled="{!v.isLimitReached}" />
+                                                                    </lightning:layoutitem>
+                                                                    <lightning:layoutitem padding="horizontal-small">
+                                                                        <lightning:button aura:id="updateLimit" label="Update limit" onclick="{! c.updateLimit }" disabled="{!v.isLimitReached}"/>
+                                                                    </lightning:layoutitem>
+                                                                </lightning:layout>
+                                                                <div class="inputSubText">Min credit limit amount R {! v.minimumCreditLimit }</div>
+                                                            </div>
+                                                        </lightning:layoutitem>
+                                                    </lightning:layout>
+                                                    <lightning:layout >
+                                                        <lightning:layoutItem >
+                                                            <div class="slds-m-bottom_medium">
+                                                                <label>Estimated monthly repayment based on the customer&#8217;s limit <b><lightning:formattedNumber style="currency" currencyCode="ZAR" value="{! v.creditLimitInstalAmount }" />pm</b></label>
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                    </lightning:layout>
+                                                    <lightning:layout >
+                                                        <lightning:layoutItem size="2">
+                                                            <div class="slds-m-bottom_medium">
+                                                                <label>Monthly account fee:</label>
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                        <lightning:layoutItem size="2">
+                                                            <div class="slds-m-bottom_medium">
+                                                                <label><b>R{! v.monthlyAccountFee }</b></label>
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                        <lightning:layoutItem size="2">
+                                                            <div class="slds-m-bottom_medium">
+                                                                <label>Interest rate:</label>
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                        <lightning:layoutItem size="2">
+                                                            <div class="slds-m-bottom_medium">
+                                                                <label><b><lightning:formattedNumber value="{! v.creditLimitInterestRate }" style="decimal" minimum-integer-digits="5"/>%</b><i> (contract + repo)</i></label>
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                    </lightning:layout>
+                                                    <lightning:layout >
+                                                        <lightning:layoutItem size="2">
+                                                            <div class="slds-m-bottom_medium">
+                                                                <label>Monthly facility fee:</label>
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                        <lightning:layoutItem size="2">
+                                                            <div class="slds-m-bottom_medium">
+                                                                <label><b>R{! v.monthlyFacilityFee }</b></label>
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                        <lightning:layoutItem size="2">
+                                                            <div class="slds-m-bottom_medium">
+                                                                <label>Initiation rate:</label>
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                        <lightning:layoutItem size="2">
+                                                            <div class="slds-m-bottom_medium">
+                                                                <label><b>R{! v.initiationFee }</b></label>
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                    </lightning:layout>
+                                                    <lightning:layout >
+                                                        <lightning:layoutItem >
+                                                            <div class="slds-m-bottom_medium">
+                                                                <c:BranchMessage mediaBody='This amount is the minimum amount due per month if the full limit is used up within that month' />
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                    </lightning:layout>
+                                                    <lightning:layout >
+                                                        <lightning:layoutItem >
+                                                            <div id="{! globalId + '_AnnualIncreases' }" class="slds-m-bottom_medium">
+                                                                <lightning:radioGroup aura:id="AnnualIncreases"
+                                                                                      name="radioGroupAnnualIncreases"
+                                                                                      label="I/We do want Absa to automatically increase my credit limit(s) once a year, subject to a credit assessment, for the facilities on my Absa accounts that I hold:"
+                                                                                      options="{! v.annualIncreasesOptions }"
+                                                                                      value="{! v.annualIncreasesValue }"
+                                                                                      type="radio"
+                                                                                      />
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                    </lightning:layout>
+                                                    <lightning:layout >
+                                                        <lightning:layoutItem >
+                                                            <div id="{! globalId + '_NoticeDelivery' }" class="slds-m-bottom_medium">
+                                                                <lightning:radioGroup aura:id="NoticeDelivery"
+                                                                                      name="radioGroupNoticeDelivery"
+                                                                                      label="If I am in default under any credit agreement with the bank that is governed by the NCA, I choose that the prescribed notice to inform me of my default and rights, be delivered to me:"
+                                                                                      options="{! v.noticeDeliveryOptions }"
+                                                                                      value="{! v.noticeDeliveryValue }"
+                                                                                      type="radio"
+                                                                                      />
+                                                            </div>
+                                                        </lightning:layoutItem>
+                                                    </lightning:layout>
+                                                    <aura:if isTrue="{! v.updatingLimit }">
+                                                        <lightning:spinner alternativeText="Loading" />
+                                                    </aura:if>
+                                                </div>
+                                            </aura:set>
+                                        </lightning:accordionSection>
+                                    </lightning:accordion>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                    </lightning:layoutitem>
+                </lightning:layout>
+                
+            </lightning:layoutItem>
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <div>
+                    <c:BranchFlowFooter aura:id="branchFlowFooter"
+                                        availableActions="{! v.availableActions }"
+                                        navigateFlowEvent="{! c.handleNavigate }"/>
+                </div>
+            </lightning:layoutItem>
+            
+        </lightning:layout>
+    </div>
+</aura:component>

@@ -1,0 +1,48 @@
+<!-- W-015748
+  @description       : Monitor IDnv, update opportunity on IDnv status change
+  @author            : Lehlohonolo.Matsoso@absa.africa
+  @last modified on  : 2022-04-28
+  @last modified by  : Lehlohonolo.Matsoso@absa.africa
+-->
+<aura:component controller="ClientIDnvWatcherController" implements="flexipage:availableForAllPageTypes,force:hasRecordId" access="global">
+    <!-- Fields -->
+    <aura:attribute name="allowClientIDnVPolling" type="Boolean" default="false" />
+    <aura:attribute name="clientIDnVObject" type="Map" default="{}" />
+    <aura:attribute name="clientIDnVObjectString" type="String" default="" />
+    <aura:attribute name="opportunityId" type="String" default="" />
+    <aura:attribute name="cifNumber" type="String" default="" />
+    <aura:attribute name="wasOnceAuthenticated" type="Boolean" default="false" />
+
+    <!-- Handlers -->
+    <aura:handler name="change" value="{!v.clientIDnVObject}" action="{!c.handleIDnvStatusChange}" />
+
+    <!-- Polling -->
+    <aura:if isTrue="{!v.allowClientIDnVPolling}">
+        <c:ClientIDnVPolling clientIDnVObject="{!v.clientIDnVObject}" cifCodeFromParentCmp="{!v.cifNumber}" />
+    </aura:if>
+
+    <!-- Indicates call status: Dropped -->
+    <aura:if isTrue="{!and(empty(v.clientIDnVObjectString), (v.wasOnceAuthenticated == true))}">
+        <div class="slds-box" style="background-color: #ffbf00">
+			<p><lightning:icon iconName="utility:error" /><b> Call Dropped</b> - Opportunities Sales Sub Status updated to 'Call Dropped', so can be Found in the relevant Dropped Calls list view</p>
+		</div>
+        <aura:set attribute="else">
+                <!-- Inactive -->
+                <aura:if isTrue="{!empty(v.clientIDnVObjectString)}">
+                    <div class="slds-box" style="background-color: #ffbf00">
+		                <p><lightning:icon iconName="utility:error" /><b> Inactive</b> - No call being tracked.</p>
+                    </div>
+                    <aura:set attribute="else">
+                        <!-- Authenticated -->
+                        <div class="slds-box slds-theme_success">
+                            <p><lightning:icon iconName="action:approval" /><b> Authenticated</b> - Call Active</p>
+                        </div>
+                    </aura:set>
+                </aura:if>
+        </aura:set>
+    </aura:if>
+
+    <lightning:recordEditForm objectApiName="Opportunity" recordId="{!v.recordId}" onload="{!c.oppLoadedHandler}">
+		<lightning:inputField aura:id="hiddenOppCif" fieldName="CIF__c" class="slds-hide" />
+	</lightning:recordEditForm>
+</aura:component>

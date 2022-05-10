@@ -1,0 +1,128 @@
+<aura:component controller="HRTTab2Controller" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="displaySuccessPanel" type="boolean" default="false"/>
+    <aura:attribute name="displayLandingPanel" type="boolean" default="false"/>
+    <aura:attribute name="twoFAAuthUnSuccessfullPanel" type="boolean" default="false"/>
+    <aura:attribute name="isDisabled" type="boolean" default="false"/>
+    <aura:attribute name="parentCaseId" type="String"/>
+    <aura:attribute name="respMessage" type="String"/>
+    
+    <aura:if isTrue="{!v.displayLandingPanel}">
+        
+        
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"                                          
+                                          alternativeText="close"
+                                          variant="bare-inverse"                                          
+                                          class="slds-modal__close"/>                    
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p style="font-size:16px" class="field-title"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /><b> {!v.respMessage}</b></p> 
+                    <p>Do you need to perform another Transaction in this account</p>					
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">                        
+                    <lightning:button variant="brand"
+                                      label="Yes"
+                                      title="Yes"                                         
+                                      onclick="{!c.handleClick}"/>
+                    <lightning:button variant="neutral"
+                                      label="No"
+                                      title="No"                                      
+                                      onclick="{!c.handleClick}"/>
+                </footer>
+            </div>
+        </section>
+    </aura:if>
+    
+    <!-- W -014938 Start-->
+    <aura:if isTrue="{!v.isModalOpen}">
+        <!-- Modal/Popup Box starts here-->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Awaiting 2FA Authentication</h2>
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:card iconName="log_event">
+                        <center style="z-index: 99">
+                            <lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+                        </center>  
+                    </lightning:card>
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">                        
+                    <lightning:button variant="brand"
+                                      label="Cancel 2FA Request"
+                                      title="Cancel 2FA Request"                                         
+                                      onclick="{! c.closeModel }"/>
+                    <lightning:button variant="neutral"
+                                      label="Resend 2FA Request"
+                                      title="Resend 2FA Request"
+                                      onclick="{! c.reSend2FA }"/>
+                </footer>
+            </div>
+        </section>
+    </aura:if>
+    <!-- W -014938 End-->
+    
+    <!-- on 2FA Successfull Start-->
+    <aura:if isTrue="{!v.displaySuccessPanel}">
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem size="12">
+                <p style="font-size:16px" class="field-title"><lightning:icon size="xx-small" iconName="action:approval" alternativeText="Done" /><b> 2FA Authentication successful.</b></p>            
+            </lightning:layoutItem>
+        </lightning:layout>
+        <lightning:layout>
+            <c:cmpWhatDoYouWantToDoToday />
+        </lightning:layout>
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="around-small" size="12">
+                <div class="slds-m-top_small slds-float--right">
+                    <lightning:button variant="brand" disabled="{!v.isDisabled}" label="Proceed To Create New Case" onclick="{!c.handle}" />
+                </div>
+            </lightning:layoutItem>
+        </lightning:layout>	
+    </aura:if>
+    <!-- on 2FA Successfull End-->
+    <!--START: Anka changes-Un Successul 2FA-->
+    <aura:if isTrue="{!v.twoFAAuthUnSuccessfullPanel}">        
+        
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container slds-border">
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"                                          
+                                          alternativeText="close"
+                                          variant="bare-inverse"                                          
+                                          class="slds-modal__close"/>                    
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    
+                    <p style="font-size:16px;color:orange" class="field-title"><lightning:icon size="xx-medium" iconName="utility:warning" alternativeText="Warning!" title="Warning"/><b> {!v.respMessage}</b></p> 								
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Okay"
+                                      title="Okay" 
+                                      class="slds-align_absolute-center"
+                                      onclick="{!c.handleClick}"/>
+                </footer>
+            </div>
+        </section>
+    </aura:if>
+    <!--END:Anka changes-->
+</aura:component>

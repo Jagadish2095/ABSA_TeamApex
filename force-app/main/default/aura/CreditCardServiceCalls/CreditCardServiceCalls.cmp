@@ -1,0 +1,84 @@
+<!--
+  @description       : CMP to sequence service call components
+  @author            : Innocent.Zondo@absa.africa
+  @group             : 
+  @last modified on  : 05-02-2022
+  @last modified by  : Innocent.Zondo@absa.africa
+-->
+<aura:component 
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+	access="global"
+>
+	<aura:attribute name="currentCall" type="string" default="" />
+	<aura:attribute name="accountId" type="string" default="" />
+	<aura:attribute name="isCreate" type="boolean" default="true"/>
+	<aura:attribute name="accId" type="string" default="" />
+	<aura:attribute name="listOfCalls" type="String[]" />
+	<aura:attribute name="isCasaScreeningIncluded" type="boolean" default="false" />
+	<aura:attribute name="isRiskProfilingIncluded" type="boolean" default="false" />
+	<aura:attribute name="isCVSCreateUpdateIncluded" type="boolean" default="false" />
+	<aura:attribute name="callCasaScreening" type="boolean" default="false" />
+	<aura:attribute name="callRiskProfiling" type="boolean" default="false" />
+	<aura:attribute name="callCVS" type="boolean" default="false" />
+	<aura:attribute name="isStepComplete" type="boolean" default="false" />
+	<aura:attribute name="showDialog" type="boolean" default="false" />
+	<aura:attribute name="dialogHeading" type="string" default="Please Note:" />
+	<aura:attribute name="dialogMessage" type="string" default="" />
+	<aura:attribute name="hasProcessStopped" type="boolean" default="false" />
+	<aura:attribute name="isNextDisabled" type="boolean" default="true" />
+	<aura:attribute name="enablePause" type="boolean" default="false" />
+	<aura:attribute name="isPausedDisabled" type="boolean" default="true" />
+	<aura:attribute name="showMessageDialog" type="boolean" default="false" />
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+	<aura:handler name="change" value="{! v.isStepComplete }" action="{! c.nextCmp }" />
+	<aura:handler name="change" value="{! v.hasProcessStopped }" action="{! c.handleProcessStop }" />
+	<aura:handler name="change" value="{! v.showDialog }" action="{! c.showMessageDialog }" />
+	<aura:handler name="change" value="{! v.enablePause }" action="{! c.handlePauseEnable }" />
+
+	<!-- W-015408 Hloni Matsoso: Casa SCreening -->
+	<aura:if isTrue="{! v.callCasaScreening }">
+		<c:CreditCardCasaScreening accountId="{!v.accountId}"
+			isSuccessful="{! v.isStepComplete}"
+			isCalledFromFlow="false"
+			errorDisplay="{! v.showDialog }"
+			errorMessage="{! v.dialogMessage }"
+			hasProcessStopped="{! v.hasProcessStopped }"
+		/>
+	</aura:if>
+
+	<aura:if isTrue="{! v.callRiskProfiling }">
+		<c:CCRiskProfiling
+			recordId="{! v.recordId }"
+			isSuccessful="{! v.isStepComplete}"
+			isCalledFromFlow="false"
+			errorDisplay="{! v.showDialog }"
+			errorMessage="{! v.dialogMessage }"
+			hasProcessStopped="{! v.hasProcessStopped }"
+		/>
+	</aura:if>
+
+	<aura:if isTrue="{! v.callCVS }">
+		<c:CCCreateUpdateCIF
+			recordId="{! v.recordId }"
+			isSuccessful="{! v.isStepComplete}"
+			isCalledFromFlow="false"
+			errorDisplay="{! v.showDialog }"
+			errorMessage="{! v.dialogMessage }"
+			hasProcessStopped="{! v.hasProcessStopped }"
+		/>
+	</aura:if>
+
+	<lightning:layoutItem padding="horizontal-small" size="12">
+		<div>
+			<c:BranchFlowFooter
+				aura:id="branchFlowFooter"
+				availableActions="{! v.availableActions }"
+				navigateFlowEvent="{! c.handleNavigate }"
+				nextDisabled="{! v.isNextDisabled }"
+				pauseDisabled="{! v.isPausedDisabled }"
+				finishDisabled="{! v.isNextDisabled }"
+			/>
+		</div>
+	</lightning:layoutItem>
+
+</aura:component>

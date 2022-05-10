@@ -1,0 +1,658 @@
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName"
+                access="global"
+                 >
+    <aura:attribute name="occupationStatusOptions" type="List" />
+    <aura:attribute name="occupationLevelOptions" type="List" />
+    <aura:attribute name="occupationCategoryOptions" type="List" />
+    <aura:attribute name="incomeTaxReasonOptions" type="List" />
+    <aura:attribute name="qualificationOptions" type="List" />
+    <aura:attribute name="employerSectorOptions" type="List" />
+    <aura:attribute name="hasQualificationOptions" type="List" />
+    <aura:attribute name="incomeTaxOptions" type="List" />
+    <aura:attribute name="foreignTaxOptions" type="List" />
+    <aura:attribute name="occupationStatus" type="string" />
+    <aura:attribute name="occupationLevel" type="string" />
+    <aura:attribute name="occupationCategory" type="string" />
+    <aura:attribute name="hasQualification" type="String" default="false" />
+    <aura:attribute name="qualification" type="string" />
+    <aura:attribute name="employerSector" type="string" />
+    <aura:attribute name="employerName" type="string" />
+    <aura:attribute name="employerPhone" type="string" />
+    <aura:attribute name="incomeTaxNumber" type="string" default="" />
+    <aura:attribute name="incomeTaxReason" type="string" default="" />
+    <aura:attribute name="incomeTaxValue" type="String" default="false" />
+    <aura:attribute name="foreignTaxValue" type="String" default="false" />
+    <aura:attribute name="errorMap" type="Map" />
+    <aura:attribute name="updating" type="Boolean" default="true"/>
+    <aura:attribute name="recordLoaded" type="Boolean" default="false"/>
+    <aura:attribute name="addressLoaded" type="Boolean" default="false"/>
+    <aura:attribute name="disabled" type="Boolean" default="false"/>
+    <aura:attribute name="actionClicked" type="string" default=""/>
+    <aura:handler name="change" value="{! v.occupationStatus }" action="{! c.occupationStatusChange }" />
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <!--<aura:handler name="addressRecordEvent" event="c:BranchAddressRecordEvent" action="{! c.handleRecordEvent }"/>-->
+    <div class="slds-is-relative" >
+        <lightning:layout multipleRows="true">
+            <lightning:layoutItem padding="horizontal-small" size="12">
+                <lightning:recordEditForm aura:id = "EmploymentDetail"
+                                          recordId="{! v.recordId }"
+                                          objectApiName="{Account}"
+                                          density="comfy"
+                                          onload="{! c.employmentRecordLoaded }"
+                                          onsubmit="{! c.employmentRecordSubmit }"
+                                          onerror="{! c.employmentRecordError }"
+                                          onsuccess="{! c.employmentRecordSuccess }">
+                    <!-- Needs one field on RecordEdit to fire onsubmit() -->
+                    <lightning:inputField fieldName="Occupation_Status__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Occupation_Level__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Occupation_Category__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Has_Post_Matric_Qualification__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Post_Matric_Qualification__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Employer_Sector__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Employer_Name__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Employer_Phone__c" class="hidden_field"/>
+                    <lightning:inputField fieldName="Is_customer_registered_for_income_tax__c" class="hidden_field"/>
+                    <lightning:inputField fieldName="Is_customer_registered_for_foreign_tax__c" class="hidden_field"/>
+                    <lightning:inputField fieldName="Income_Tax_Number__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Income_Tax_Number_Reason__pc" class="hidden_field"/>
+                    <lightning:inputField fieldName="Valid_Update_Bypass__c" class="hidden_field"/>
+                    <!-- Submit button needed so that onsubmit is fired from flow to save attribute values -->
+                    <button id="{! globalId + '_employment_submit' }" type="submit" class="hidden_field"/>
+                </lightning:recordEditForm>
+                <lightning:layout >
+                    <lightning:layoutItem padding="horizontal-medium" size="6">
+                        <legend class="slds-text-heading_small slds-var-p-vertical_medium">
+                            <b>Capture Employment Information</b>
+                        </legend>
+                        <lightning:layout>
+                            <lightning:layoutitem size="6">
+                                <div class="slds-var-p-around_x-small">
+                                    <label for="OccupationStatus" >Employment status</label>
+                                    <lightning:select aura:id="OccupationStatus"
+                                                      name="OccupationStatus"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.occupationStatus }"
+                                                      required="true">
+                                    </lightning:select>
+                                </div>
+                                <div id="{! globalId + '_OccupationLevel' }" class="slds-var-p-around_x-small">
+                                    <label for="OccupationLevel" >Occupation level</label>
+                                    <lightning:select aura:id="OccupationLevel"
+                                                      name="OccupationLevel"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.occupationLevel }"
+                                                      disabled="{! v.disabled }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.occupationLevelOptions }" var="oLevel">
+                                            <option value="{!oLevel}" selected="{!oLevel==v.occupationLevel}">{!oLevel}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem size="6">
+                                <div id="{! globalId + '_OccupationCategory' }" class="slds-var-p-around_x-small">
+                                    <label for="OccupationCategory" >Occupation</label>
+                                    <lightning:select aura:id="OccupationCategory"
+                                                      name="OccupationCategory"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.occupationCategory }"
+                                                      disabled="{! v.disabled }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.occupationCategoryOptions }" var="oCat">
+                                            <option value="{!oCat}" selected="{!oCat==v.occupationCategory}">{!oCat}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                                <div id="{! globalId + '_Industry' }" class="slds-var-p-around_x-small">
+                                    <label for="Industry" >Employment Sector</label>
+                                    <lightning:select aura:id="Industry"
+                                                      name="Industry"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.employerSector }"
+                                                      disabled="{! v.disabled }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.employerSectorOptions }" var="e">
+                                            <option value="{!e}" selected="{!e==v.employerSector}">{!e}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+
+                        <lightning:layout>
+                            <lightning:layoutitem size="6">
+                                <div id="{! globalId + '_OccupationStatus' }" class="slds-var-p-around_x-small">
+                                    <label for="OccupationStatus" >Time with present employer(years)</label>
+                                    <lightning:select aura:id="OccupationStatus"
+                                                      name="OccupationStatus"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.occupationStatus }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.occupationStatusOptions }" var="oStatus">
+                                            <option value="{!oStatus}" selected="{!oStatus==v.occupationStatus}">{!oStatus}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+
+                                <div id="{! globalId + '_Industry' }" class="slds-var-p-around_x-small">
+                                    <label for="Industry" >Source of Income</label>
+                                    <lightning:select aura:id="Industry"
+                                                      name="Industry"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.employerSector }"
+                                                      disabled="{! v.disabled }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.employerSectorOptions }" var="e">
+                                            <option value="{!e}" selected="{!e==v.employerSector}">{!e}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+
+                                <div id="{! globalId + '_OccupationLevel' }" class="slds-var-p-around_x-small">
+                                    <label for="OccupationLevel" >Number of Dependents</label>
+                                    <lightning:select aura:id="OccupationLevel"
+                                                      name="OccupationLevel"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.occupationLevel }"
+                                                      disabled="{! v.disabled }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.occupationLevelOptions }" var="oLevel">
+                                            <option value="{!oLevel}" selected="{!oLevel==v.occupationLevel}">{!oLevel}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                            <lightning:layoutitem size="6">
+                                <div id="{! globalId + '_OccupationCategory' }" class="slds-var-p-around_x-small">
+                                    <label for="OccupationCategory" >Highest Qualification</label>
+                                    <lightning:select aura:id="OccupationCategory"
+                                                      name="OccupationCategory"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.occupationCategory }"
+                                                      disabled="{! v.disabled }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.occupationCategoryOptions }" var="oCat">
+                                            <option value="{!oCat}" selected="{!oCat==v.occupationCategory}">{!oCat}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                                <div id="{! globalId + '_Industry' }" class="slds-var-p-around_x-small">
+                                    <label for="Industry" >Source of Funds</label>
+                                    <lightning:select aura:id="Industry"
+                                                      name="Industry"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.employerSector }"
+                                                      disabled="{! v.disabled }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.employerSectorOptions }" var="e">
+                                            <option value="{!e}" selected="{!e==v.employerSector}">{!e}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+
+                                <div id="{! globalId + '_PostMatricQualification' }" class="slds-var-p-around_x-small">
+                                    <label for="PostMatricQualification" >Post Matric Qualification</label>
+                                    <lightning:select aura:id="PostMatricQualification"
+                                                      name="PostMatricQualification"
+                                                      label=""
+                                                      class="label-hidden"
+                                                      value="{! v.qualification }"
+                                                      required="true">
+                                        <option value="">please select...</option>
+                                        <aura:iteration items="{! v.qualificationOptions }" var="q">
+                                            <option value="{!q}" selected="{!q==v.qualification}">{!q}</option>
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </div>
+                            </lightning:layoutitem>
+                        </lightning:layout>
+                        <lightning:layout>
+                            <lightning:layoutitem size="6" >
+                                
+                                <div id="{! globalId + '_HasPostMatricQualificationRadioGroup' }" class="slds-var-p-around_x-small" >
+                                    <lightning:radioGroup aura:id="HasPostMatricQualificationRadioGroup"
+                                                        type="radio"
+                                                        name="HasPostMatricQualificationRadioGroup"
+                                                        label="Does the Customer have a Post Matric Qualification?"
+                                                        options="{! v.hasQualificationOptions }"
+                                                        value="{! v.hasQualification }"
+                                                        required="true" />
+                                </div>
+                                
+                            </lightning:layoutitem>
+                        </lightning:layout>
+
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:layoutItem>
+        </lightning:layout>
+    </div>
+
+    <lightning:layout >
+                    <lightning:layoutItem padding="horizontal-medium" size="6">
+                        <legend class="slds-text-heading_small slds-var-p-vertical_medium">
+                            <b>Employer Information </b>
+                        </legend>
+                        <div class="slds-is-relative" >
+                            <lightning:layout multipleRows="true">
+                                <lightning:layoutItem padding="horizontal-small" size="12">
+                                    <lightning:recordEditForm aura:id = "EmploymentDetail"
+                                                              recordId="{! v.recordId }"
+                                                              objectApiName="{Account}"
+                                                              density="comfy"
+                                                              onload="{! c.employmentRecordLoaded }"
+                                                              onsubmit="{! c.employmentRecordSubmit }"
+                                                              onerror="{! c.employmentRecordError }"
+                                                              onsuccess="{! c.employmentRecordSuccess }">
+                                        <!-- Needs one field on RecordEdit to fire onsubmit() -->
+                                        <lightning:inputField fieldName="Occupation_Status__pc" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Occupation_Level__pc" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Occupation_Category__pc" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Has_Post_Matric_Qualification__pc" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Post_Matric_Qualification__pc" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Employer_Sector__pc" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Employer_Name__pc" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Employer_Phone__c" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Is_customer_registered_for_income_tax__c" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Is_customer_registered_for_foreign_tax__c" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Income_Tax_Number__pc" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Income_Tax_Number_Reason__pc" class="hidden_field"/>
+                                        <lightning:inputField fieldName="Valid_Update_Bypass__c" class="hidden_field"/>
+                                        <!-- Submit button needed so that onsubmit is fired from flow to save attribute values -->
+                                        <button id="{! globalId + '_employment_submit' }" type="submit" class="hidden_field"/>
+                                    </lightning:recordEditForm>
+                                    <lightning:layout >
+                                        <lightning:layoutItem padding="horizontal-medium" size="6">
+                                            <legend class="slds-text-heading_small slds-var-p-vertical_medium">
+                                                <b>Capture Employment Information</b>
+                                            </legend>
+                                            <lightning:layout>
+                                                <lightning:layoutitem size="6">
+                                                    <div class="slds-var-p-around_x-small">
+                                                        <label for="OccupationStatus" >Employment Name</label>
+                                                        <lightning:select aura:id="OccupationStatus"
+                                                                          name="OccupationStatus"
+                                                                          label=""
+                                                                          class="label-hidden"
+                                                                          value="{! v.occupationStatus }"
+                                                                          required="true">
+                                                        </lightning:select>
+                                                    </div>
+                                                    <div id="{! globalId + '_OccupationLevel' }" class="slds-var-p-around_x-small">
+                                                        <label for="OccupationLevel" >Employers Address Line 1</label>
+                                                        <lightning:select aura:id="OccupationLevel"
+                                                                          name="OccupationLevel"
+                                                                          label=""
+                                                                          class="label-hidden"
+                                                                          value="{! v.occupationLevel }"
+                                                                          disabled="{! v.disabled }"
+                                                                          required="true">
+                                                            <option value="">please select...</option>
+                                                            <aura:iteration items="{! v.occupationLevelOptions }" var="oLevel">
+                                                                <option value="{!oLevel}" selected="{!oLevel==v.occupationLevel}">{!oLevel}</option>
+                                                            </aura:iteration>
+                                                        </lightning:select>
+                                                    </div>
+                                                </lightning:layoutitem>
+                                                <lightning:layoutitem size="6">
+                                                    <div id="{! globalId + '_OccupationCategory' }" class="slds-var-p-around_x-small">
+                                                        <label for="OccupationCategory" >Occupation</label>
+                                                        <lightning:select aura:id="OccupationCategory"
+                                                                          name="OccupationCategory"
+                                                                          label=""
+                                                                          class="label-hidden"
+                                                                          value="{! v.occupationCategory }"
+                                                                          disabled="{! v.disabled }"
+                                                                          required="true">
+                                                            <option value="">please select...</option>
+                                                            <aura:iteration items="{! v.occupationCategoryOptions }" var="oCat">
+                                                                <option value="{!oCat}" selected="{!oCat==v.occupationCategory}">{!oCat}</option>
+                                                            </aura:iteration>
+                                                        </lightning:select>
+                                                    </div>
+                                                    <div id="{! globalId + '_Industry' }" class="slds-var-p-around_x-small">
+                                                        <label for="Industry" >Employers City/Town/Foreign Country</label>
+                                                        <lightning:select aura:id="Industry"
+                                                                          name="Industry"
+                                                                          label=""
+                                                                          class="label-hidden"
+                                                                          value="{! v.employerSector }"
+                                                                          disabled="{! v.disabled }"
+                                                                          required="true">
+                                                            <option value="">please select...</option>
+                                                            <aura:iteration items="{! v.employerSectorOptions }" var="e">
+                                                                <option value="{!e}" selected="{!e==v.employerSector}">{!e}</option>
+                                                            </aura:iteration>
+                                                        </lightning:select>
+                                                    </div>
+                                                </lightning:layoutitem>
+                                            </lightning:layout>
+                    
+                                            <lightning:layout>
+                                                <lightning:layoutitem size="6">
+                                                    <div id="{! globalId + '_OccupationStatus' }" class="slds-var-p-around_x-small">
+                                                        <label for="OccupationStatus" >Employer Contact Number</label>
+                                                        <lightning:select aura:id="OccupationStatus"
+                                                                          name="OccupationStatus"
+                                                                          label=""
+                                                                          class="label-hidden"
+                                                                          value="{! v.occupationStatus }"
+                                                                          required="true">
+                                                            <option value="">please select...</option>
+                                                            <aura:iteration items="{! v.occupationStatusOptions }" var="oStatus">
+                                                                <option value="{!oStatus}" selected="{!oStatus==v.occupationStatus}">{!oStatus}</option>
+                                                            </aura:iteration>
+                                                        </lightning:select>
+                                                    </div>
+                    
+                                                    <div id="{! globalId + '_Industry' }" class="slds-var-p-around_x-small">
+                                                        <label for="Industry" >Employers Suburb/Foreign</label>
+                                                        <lightning:select aura:id="Industry"
+                                                                          name="Industry"
+                                                                          label=""
+                                                                          class="label-hidden"
+                                                                          value="{! v.employerSector }"
+                                                                          disabled="{! v.disabled }"
+                                                                          required="true">
+                                                            <option value="">please select...</option>
+                                                            <aura:iteration items="{! v.employerSectorOptions }" var="e">
+                                                                <option value="{!e}" selected="{!e==v.employerSector}">{!e}</option>
+                                                            </aura:iteration>
+                                                        </lightning:select>
+                                                    </div>
+                    
+                                                    <div id="{! globalId + '_OccupationLevel' }" class="slds-var-p-around_x-small">
+                                                        <label for="OccupationLevel" >Employers Postcode</label>
+                                                        <lightning:select aura:id="OccupationLevel"
+                                                                          name="OccupationLevel"
+                                                                          label=""
+                                                                          class="label-hidden"
+                                                                          value="{! v.occupationLevel }"
+                                                                          disabled="{! v.disabled }"
+                                                                          required="true">
+                                                            <option value="">please select...</option>
+                                                            <aura:iteration items="{! v.occupationLevelOptions }" var="oLevel">
+                                                                <option value="{!oLevel}" selected="{!oLevel==v.occupationLevel}">{!oLevel}</option>
+                                                            </aura:iteration>
+                                                        </lightning:select>
+                                                    </div>
+                                                </lightning:layoutitem>
+                                                
+                                            </lightning:layout>
+                                            
+                    
+                                        </lightning:layoutItem>
+                                    </lightning:layout>
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </div>
+                    </lightning:layoutItem>
+    </lightning:layout>  
+
+
+
+
+    
+    
+
+
+    <aura:handler name="change" value="{!v.identityInfo}" action="{!c.assignInformation}" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="identityInformation" type="Object" access="public" default="{}" />
+    <aura:attribute name="gender" type="List" default="[]" />
+    <aura:attribute name="idTypeList" type="List" default="[]" />
+    <aura:attribute name="basicIdentityInformation" type="Map" default="" access="public" />
+    <aura:attribute name="today" type="Date" />
+    <aura:attribute name="identityValidity" type="Boolean"/> 
+    <aura:attribute name="onclick" type="Aura.Action" />
+    <aura:method name="validateFields" action="{!c.validateInput}" description="A method to validate the fields">
+    </aura:method>
+    <aura:method name="collectInformation" action="{!c.getInformation}"
+        description="A method to collect the Identity Information">
+    </aura:method>
+    <!-- identityInformation -->
+    <div class="c-container">
+        <aura:if isTrue="{!v.isEdit}">
+            <lightning:layout>
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <div class="custom-box">
+                        <label for="title">Title</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" value="{!v.identityInfo.PersonTitle}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Title">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="Name">Name</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" value="{!v.identityInfo.FirstName}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="First Name">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="idnumber">ID Number</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" class="required" value="{!v.identityInfo.ID_Number__pc}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Id Number">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="gender">Gender</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" value="{!v.identityInfo.Gender__pc}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Gender">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="nationality">Nationality</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" value="{!v.identityInfo.Nationality__pc}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Nationality">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="countryofresidency">Country of Residency</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" value="{!v.identityInfo.Country_of_Residence__pc}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Country of residency">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                </lightning:layoutItem>
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <div class="custom-box">
+                        <label for="initials">initials</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" value="{!v.identityInfo.Initials__pc}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Initials">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="surname">Surname</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" value="{!v.identityInfo.LastName}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="LastName">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="dob">Date of Birth</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" value="{!v.identityInfo.PersonBirthdate}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Birthdate">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="idtype">ID Type</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" value="{!v.identityInfo.ID_Type__pc}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Id Type">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                    <div class="custom-box">
+                        <label for="countryofbirth">Country of Birth</label>
+                    </div>
+                    <div class="custom-box slds-border_bottom">
+                        <lightning:formattedText aura:id="inputFld" value="{!v.identityInfo.Country_of_Birth__pc}" />
+                        <button onclick="{!v.onclick}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_xx-large edit-button"
+                            tabindex="0" title="Country of birth">
+                            <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                        </button>
+                    </div>
+                </lightning:layoutItem>
+            </lightning:layout>
+            <aura:set attribute="else">
+                <lightning:layout>
+                    <lightning:layoutItem flexibility="auto" padding="around-small">
+                        <div class="custom-box">
+                            <label for="title">Title</label>
+                        </div>
+                        <div class="custom-box">
+                            <lightning:input type="text" aura:id="inputFld" name="title" variant="label-hidden"
+                                label="Text field with predefined value" value="{!v.personTitle}" />
+                        </div>
+                        <div class="custom-box">
+                            <label for="title">Name</label>
+                        </div>
+                        <div class="custom-box">
+                            <lightning:input type="text" aura:id="inputFld" name="name" variant="label-hidden"
+                                label="Text field with predefined value" value="{!v.firstName}" />
+                        </div>
+                        <div class="custom-box">
+                            <label for="idNumber">ID Number</label>
+                        </div>
+                        <div class="custom-box">
+                            <lightning:input type="text" aura:id="inputFld" name="idNumber" variant="label-hidden"
+                                required="true" label="" value="{!v.idNumber}" />
+                        </div>
+                        <!-- <div class="custom-box">
+                            <label for="gender">Gender</label>
+                        </div> -->
+                        <div class="custom-box">
+                            <lightning:select name="gender" aura:id="inputFlds" label="Gender" required="true"
+                                value="{!v.genderValue}" onchange="{!c.onFieldchange}">
+                                <aura:iteration items="{!v.gender}" var="gender">
+                                    <option text="{!gender}"></option>
+                                </aura:iteration>
+                            </lightning:select>
+                            <!-- <lightning:input type="text" onchange="{!c.onFieldchange}" name="gender" variant="label-hidden" label="" value="{!v.basicIdentityInformation.gender}" /> -->
+                        </div>
+                        <div class="custom-box">
+                            <label for="nationality">Nationality</label>
+                        </div>
+                        <div class="custom-box">
+                            <lightning:input type="text" aura:id="inputFld" name="nationality" variant="label-hidden"
+                                label="" value="{!v.nationality}" />
+                        </div>
+                        <div class="custom-box">
+                            <label for="countryofResidence">Country of Residence</label>
+                        </div>
+                        <div class="custom-box">
+                            <lightning:input type="text" aura:id="inputFld" name="countryOfResidence"
+                                variant="label-hidden" label="" value="{!v.countryOfResidence}" />
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem flexibility="auto" padding="around-small">
+                        <div class="custom-box">
+                            <label for="fullname">initials</label>
+                        </div>
+                        <div class="custom-box">
+                            <lightning:input type="text" aura:id="inputFld" name="initials" variant="label-hidden"
+                                label="" value="{!v.initials}" />
+                        </div>
+                        <div class="custom-box">
+                            <label for="surname">Surname</label>
+                        </div>
+                        <div class="custom-box">
+                            <lightning:input type="text" aura:id="inputFld" name="surname" variant="label-hidden"
+                                label="" value="{!v.lastName}" />
+                        </div>
+                        <div class="custom-box">
+                            <label for="dob">Date of Birth</label>
+                        </div>
+                        <div class="custom-box">
+                            <lightning:input type="date" aura:id="inputFld" name="dob" variant="label-hidden" label=""
+                                max="{!v.today}" value="{!v.personBirthDate}" />
+                        </div>
+                        <!-- <div class="custom-box">
+                            <label for="idType">ID Type</label>
+                        </div> -->
+                        <div class="custom-box">                            
+                            <lightning:select name="idType" aura:id="inputFlds" label="ID Type" required="true"
+                                value="{!v.idType}">
+                                <aura:iteration items="{!v.idTypeList}" var="idType">
+                                    <option text="{!idType}"></option>
+                                </aura:iteration>
+                            </lightning:select>
+                            <!-- <lightning:input type="text" aura:id="inputFld" name="idType" variant="label-hidden"
+                                label="" value="{!v.idType}" /> -->
+                        </div>
+                        <div class="custom-box">
+                            <label for="countryOfBirth">Country of Birth</label>
+                        </div>
+                        <div class="custom-box">
+                            <lightning:input type="text" aura:id="inputFld" name="countryOfBirth" variant="label-hidden"
+                                label="" value="{!v.countryOfBirth}" />
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </aura:set>
+        </aura:if>
+    </div>
+</aura:component>

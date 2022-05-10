@@ -1,0 +1,98 @@
+<!--This is the VoiceProductOnboardingCancelApplication for Voice Credit Onboarding-->
+<!--@author  Simangaliso Mathenjwa-->
+<!--@Created Date 20 April 2022 -->
+<!--@Work Id: W-020515 and W-015749 -->
+<aura:component
+	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithoutHeader"
+	controller="VoiceCancelCreditApplicationCTRL"
+>
+	<!--Attributes-->
+	<aura:attribute name="showSpinner" type="Boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="selectedReasonId" type="String" />
+	<aura:attribute name="cancelReasonList" type="Object" />
+	<aura:attribute name="disableButton" type="boolean" />
+	<aura:attribute name="applicationRecord" type="Object"/>
+
+	<!--Handlers-->
+	<aura:handler action="{!c.doInit}" name="init" value="{!this}" />
+	<div role="dialog">
+		<lightning:recordEditForm
+			recordId="{!v.recordId}"
+			objectApiName="Opportunity"
+			aura:id="recordEditForm"
+			onload="{!c.handleLoad}"
+			onsuccess="{!c.handleSuccess}"
+		>
+			<lightning:messages />
+			<lightning:inputField fieldName="StageName" class="slds-hide" aura:id="StageField" value="Canceled" />
+			<lightning:inputField aura:id="applicationNumberField" fieldName="Application_Number__c" class="slds-hide" />
+			<lightning:inputField aura:id="descriptionField" fieldName="Description" class="slds-hide" />
+			<button type="submit" name="submitButton" aura:id="submitButton" id="submitButton" class="slds-hide" />
+		</lightning:recordEditForm>
+		<header class="slds-modal__header">
+			<lightning:buttonIcon
+				iconName="utility:close"
+				onclick="{!c.accountClosureConfirmation}"
+				alternativeText="close"
+				variant="bare-inverse"
+				class="slds-modal__close"
+			/>
+			<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"><b>Cancel Application</b></h2>
+		</header>
+		<div>
+			<aura:if isTrue="{!v.showSpinner}">
+				<center style="z-index: 99">
+					<lightning:spinner aura:id="TheSpinnerTest" variant="brand" size="large" />
+				</center>
+			</aura:if>
+			<aura:if isTrue="{!not(empty(v.errorMessage))}">
+				<div class="recordError">
+					<br />
+					<h2 class="slds-section__title" style="color: red">{!v.errorMessage}</h2>
+					<br />
+				</div>
+			</aura:if>
+			<lightning:layout verticalAlign="start" horizontalAlign="start" multipleRows="true">
+				<lightning:layoutItem size="12" class="slds-form__item">
+					<p>
+						Cancelling an application will result in having to create a new application as you will not be able to resume the current application.
+					</p> </lightning:layoutItem
+				><br />
+				<lightning:layoutItem size="12" class="slds-form__item">
+					<div class="slds-form-element slds-form-element_readonly slds-form-element_stacked slds-hint-parent">
+						<div class="slds-form-element__control">
+							<div class="slds-form-element__static">
+								<lightning:select
+									aura:id="cancelReason"
+									value="{!v.selectedReasonId}"
+									class="slds-float--left slds-m-right_small"
+									label="Reason for Application cancellation:"
+									required="true"
+								>
+									<option value="">--None--</option>
+									<aura:iteration items="{!v.cancelReasonList}" var="item">
+										<option text="{!item.value}" value="{!item.Id}" />
+									</aura:iteration>
+								</lightning:select>
+							</div>
+						</div>
+					</div>
+				</lightning:layoutItem>
+			</lightning:layout>
+			<div aura:id="actionButtonBar" class="slds-clearfix slds-p-top_medium">
+				<div class="slds-float_right">
+					<lightning:button
+						aura:id="cancelApplicationButton"
+						variant="brand"
+						label="Cancel Application"
+						title="Cancel Application"
+						onclick="{!c.handleCancelApplication}"
+						class="slds-float_right"
+						disabled="{!or(empty(v.selectedReasonId),v.disableButton)}"
+					/>
+				</div>
+			</div>
+		</div>
+	</div>
+</aura:component>

@@ -1,14 +1,12 @@
 <!--
   @description       : Voice Knockout Questions cmp, but this 1 pulls questions from Questionnaire Question.
   @author            : Lehlohonolo.Matsoso@absa.africa
-  @last modified on  : 2022-02-18
-  @last modified by  : Lehlohonolo.Matsoso@absa.africa
+  @last modified on  : 06-05-2022
+  @last modified by  : Mradul Maheshwari
 -->
 <aura:component
 	implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
-	access="global"
-	controller="VoiceKnockoutQuestionsController"
->
+	access="global" controller="VoiceKnockoutQuestionsController">
 	<aura:attribute name="questionList" type="String" />
 	<aura:attribute name="questionnaireTemplateName" type="String" />
 	<aura:attribute name="knockoutQuestionResult" type="String" />
@@ -19,93 +17,107 @@
 	<aura:attribute name="casaClauseChecked" type="Boolean" default="false" />
 	<aura:attribute name="urlStoredValue" type="string" default="{! $Resource.CASA_Clause}" />
 	<aura:attribute name="isCheckBoxOn" type="Boolean" default="true" />
-    <aura:attribute name="isAllClausesSet" type="Boolean" default="false" />
-    <aura:attribute name="recordId" type="String"/>
+	<aura:attribute name="isAllClausesSet" type="Boolean" default="false" />
+	<aura:attribute name="opportunityId" type="String" access="public" />
 	<aura:attribute name="canSave" type="Boolean" default="false" />
+	<aura:attribute name="cifDataMap" type="String" />
+	<aura:attribute name="ccApplicationDataMap" type="String" />
+	<aura:attribute name="cifNumber" type="String" />
 
 
-	<aura:attribute
-		name="atestationOptions"
-		type="List"
-		default="[
-                                                                  {'label': 'You hereby accept all of the above.', 'value': 'accept'},
-                                                                  {'label': 'You do not accept all of the above.', 'value': 'decline'}
-                                                                  ]"
-	/>
+
+	<aura:attribute name="atestationOptions" type="List" default="[{'label': 'You hereby accept all of the above.', 'value': 'accept'},
+				{'label': 'You do not accept all of the above.', 'value': 'decline'}]" />
 	<aura:attribute name="atestationValue" type="List" />
+	<aura:attribute name="CanNavigate" type="Boolean" default="true" />
 
-	<lightning:layout>
-		<lightning:layoutItem padding="around-medium" size="6">
-			<ui:outputRichText class="slds-text-longform" value="{!v.questionList}" />
+	<aura:attribute name="accountRecord" type="Account" />
+	<aura:attribute name="opportunityRecord" type="Opportunity" />
 
-			<lightning:radioGroup
-				name="rgAttestation"
-				label=""
-				options="{! v.atestationOptions }"
-				value="{! v.atestationValue }"
-				onchange="{! c.atestationChange }"
-				type="radio"
-			/>
-			<br />
-			<aura:if isTrue="{!v.knockoutQuestionResultAccept}">
-				<lightning:layoutItem>
-					<p><b>I, the sales consultant, hereby confirm</b></p>
-					<br />
-					<div id="{! globalId + '_RequireIDPORDiv' }" class="slds-form-element">
-						<div class="slds-form-element__control">
-							<div class="slds-checkbox">
-								<input type="checkbox" name="RequireIDPOR" id="{! globalId + '_RequireIDPOR' }" checked="" onchange="{!c.RequireIDPORChange}" />
-								<label class="slds-checkbox__label" for="{! globalId + '_RequireIDPOR' }">
-									<span class="slds-checkbox_faux"></span>
-									<span class="slds-form-element__label"
-										>I have advised the customer that they will need their original ID and proof of residence on hand to complete this
-										application.</span
-									>
-								</label>
+	<!--Listen out for dropped calls. Blocked. Hloni Matsoso.  W-015748. 2022/04/06 -->
+	<!-- <c:ClientIDnVWatcher cifNumber="{!v.cifNumber}" opportunityId="{!v.opportunityId}" allowClientIDnVPolling="true"/> -->
+
+	<!-- Added by Mradul Maheshwari for W-019971 in May 2022-->
+	<force:recordData recordId="{!v.recordId}"
+		fields="Account.ID_Type__pc,Account.Initials__pc,Account.Name,Account.FirstName,Account.LastName,Account.Salutation,Account.Id,Account.Date_Issued__pc,Account.PersonBirthdate,Account.Place_of_Residence__c,Account.Phone,Name,ID_Number__c,ID_Type__c"
+		targetFields="{!v.opportunityRecord}" />
+
+	<lightning:recordEditForm aura:id="opportunityCloseEditForm" objectApiName="Opportunity" recordId="{!v.recordId}"
+		onsuccess="{!c.onsuccess}" onerror="{!c.handleError}">
+		<lightning:inputField aura:id="statusField" fieldName="StageName" class="slds-hide" />
+		<lightning:inputField aura:id="applicationNumberField" fieldName="Application_Number__c" class="slds-hide" />
+<lightning:inputField aura:id="descriptionField" fieldName="Description" class="slds-hide" />
+	</lightning:recordEditForm>
+
+	<article class="slds-card">
+		<lightning:layout multipleRows="true">
+			<!-- <div class="slds-backdrop slds-backdrop_open"></div> -->
+			<lightning:spinner aura:id="TheSpinner" alternativeText="Loading" class="slds-hide" variant="brand"
+				size="large" />
+
+			<lightning:layoutItem padding="around-small" size="12">
+				<ui:outputRichText class="slds-text-longform" value="{!v.questionList}" />
+
+				<lightning:radioGroup aura:id="rgAttestation" label="" options="{! v.atestationOptions }"
+					value="{! v.atestationValue }" onchange="{! c.atestationChange }" type="radio" />
+				<br />
+				<aura:if isTrue="{!v.knockoutQuestionResultAccept}">
+					<lightning:layoutItem>
+						<p><b>I, the sales consultant, hereby confirm</b></p>
+						<br />
+						<div id="{! globalId + '_RequireIDPORDiv' }" class="slds-form-element">
+							<div class="slds-form-element__control">
+								<div class="slds-checkbox">
+									<input type="checkbox" name="RequireIDPOR"
+										id="{! globalId + '_RequireIDPOR' }" checked=""
+										onchange="{!c.RequireIDPORChange}" />
+									<label class="slds-checkbox__label" for="{! globalId + '_RequireIDPOR' }">
+										<span class="slds-checkbox_faux"></span>
+										<span class="slds-form-element__label">I have advised the customer
+											that
+											they will need their original ID and proof of residence on hand
+											to
+											complete this
+											application.</span>
+									</label>
+								</div>
 							</div>
 						</div>
-					</div>
 
-					<div id="{! globalId + '_CasaClauseDiv' }" class="slds-form-element">
-						<div class="slds-form-element__control">
-							<div class="slds-checkbox">
-								<input
-									type="checkbox"
-									name="CasaClause"
-									id="{! globalId + '_CasaClause' }"
-									checked=""
-									disabled="{!v.isCheckBoxOn}"
-									onchange="{!c.CasaClauseChange}"
-								/>
-								<label class="slds-checkbox__label" for="{! globalId + '_CasaClause' }">
-									<span class="slds-checkbox_faux"></span>
-									<span class="slds-form-element__label"
-										>I have read the <a href="{!v.urlStoredValue}" target="_blank" onclick="{!c.ReadCasaClause}">CASA clause</a> to the
-										customer.</span
-									>
-								</label>
+						<div id="{! globalId + '_CasaClauseDiv' }" class="slds-form-element">
+							<div class="slds-form-element__control">
+								<div class="slds-checkbox">
+									<input type="checkbox" name="CasaClause" id="{! globalId + '_CasaClause' }"
+										checked="" disabled="{!v.isCheckBoxOn}"
+										onchange="{!c.CasaClauseChange}" />
+									<label class="slds-checkbox__label" for="{! globalId + '_CasaClause' }">
+										<span class="slds-checkbox_faux"></span>
+										<span class="slds-form-element__label">I have read the <a
+												href="{!v.urlStoredValue}" target="_blank"
+												onclick="{!c.ReadCasaClause}">CASA clause</a> to the
+											customer.</span>
+									</label>
+								</div>
 							</div>
 						</div>
-					</div>
-				</lightning:layoutItem>
-			</aura:if>
-            <div class="slds-var-p-around_x-small slds-float_right">
-                <!-- <c:BranchFlowFooter aura:id="branchFlowFooter" availableActions="{! v.availableActions }" navigateFlowEvent="{!c.handleNavigate}"/> -->
-                <lightning:button aura:id="BACK" 
-                                    label="Save"
-                                    variant="brand-outline" 
-                                    disabled="{!(!v.canSave) }"
-                                    onclick="{! c.save }" />
-            </div>
-		</lightning:layoutItem>
-	</lightning:layout>
-    <aura:if isTrue="{! v.updating }">
-        <div class="slds-spinner_container" >
-            <div role="status" aria-hidden="false" class="slds-spinner slds-spinner_medium slds-spinner_brand" >
-                <span class="slds-assistive-text">Loading</span>
-                <div class="slds-spinner__dot-a" />
-                <div class="slds-spinner__dot-b" />
-            </div>
-        </div>
-    </aura:if>
+					</lightning:layoutItem>
+				</aura:if>
+				<div class="slds-float_right">
+					<lightning:button aura:id="Save" label="Save" variant="brand" disabled="{!(!v.canSave) }"
+						onclick="{! c.save }" />
+				</div>
+			</lightning:layoutItem>
+			<lightning:layoutItem size="12" padding="around-small">
+				<hr>
+				</hr>
+				<div class="slds-float_right">
+					<c:BranchFlowFooter aura:id="branchFlowFooter" availableActions="{! v.availableActions }"
+						navigateFlowEvent="{! c.handleNavigate }" />
+				</div>
+			</lightning:layoutItem>
+		</lightning:layout>
+	</article>
+	<!-- <center style="z-index: 99"> -->
+
+	<!-- </center> -->
 </aura:component>

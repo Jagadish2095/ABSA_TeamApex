@@ -1,0 +1,148 @@
+<!--This is the ABSACreditProtectionPlan Component to display credit life protection-->
+<!--@author  Chandra-->
+<!--@since   2022-04-07-->
+<!--@Work Id: W-015288-->
+
+<aura:component implements="lightning:availableForFlowScreens,force:appHostable,flexipage:availableForAllPageTypes"
+                access="global">
+    
+    <!--Attribute Declaration-->
+    <aura:attribute name="isPPCheck" type="Boolean" />
+    <aura:attribute name="isPPConfirmationCheck" type="Boolean" />
+    <aura:attribute name="activeSections" type="List" />
+    <aura:attribute name="showPPBenefitsModal" type="Boolean" />
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="selectedValue" type="String" />
+    <aura:attribute name="monthlyFee" type="Decimal" default="19.92"/>
+    
+    <!--Handler Declaration-->
+    <aura:handler name="init" value="{!this}" action="{!c.init}" />
+    
+    <!--Body Start-->
+    <lightning:card>
+        <lightning:accordion
+                             allowMultipleSectionsOpen="true"
+                             onsectiontoggle="{! c.handleSectionToggle }"
+                             activeSectionName="{! v.activeSections }"
+                             >
+            <lightning:accordionSection name="ABSA Credit Protection Plan" label="ABSA Credit Protection Plan">
+                <aura:set attribute="actions">
+                    <lightning:input type="checkbox" label="" name="Protection Plan Check" checked="{!v.isPPCheck}" onchange="{!c.handlePPCheck}"/>
+                </aura:set>
+                <aura:set attribute="body">
+                    <div class="slds-p-horizontal_small">
+                        An Absa Credit Protection Plan will alleviate your family's financial burden if you are permanently or temporarily disabled,<br/>
+                        diagnosed with a critical illness, loss of income or at the event of your death.
+                    </div>
+                    <div class="slds-m-top_large slds-m-left_medium">
+                        Monthly Fee: <b>R{!v.monthlyFee}pm</b>&nbsp;&nbsp;&nbsp;
+                        <lightning:helptext content="The premium will be calculated as a percentage of the average outstanding balance per month. The maximum monthly premium rate is 0.41% of the average outstanding balance." />
+                    </div>
+                    <div class="slds-m-top_large slds-m-left_medium">
+                        <div class="slds-grid slds-wrap">
+                            <div class="slds-col slds-size_0-of-12">
+                                <lightning:input aura:id="ccid" 
+                                                 type="checkbox" 
+                                                 variant="label-hidden" 
+                                                 name="Confirmation Check" 
+                                                 checked="{!v.isPPConfirmationCheck}" 
+                                                 onchange="{!c.handleChange}"/>
+                            </div>
+                            <div class="slds-col slds-size_11-of-12">
+                                <b>I, the sales consultant hereby confirm that I have read the</b>
+                                <a href="javascript:void(0)" onclick="{!c.showModal}">
+                                    ABSA Credit Protection Plan benefits, exclusions and limitations 
+                                </a>&nbsp;<b>to the customer.</b>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-m-top_large slds-m-left_medium">
+                        <lightning:select name="selectInterest" label="Customer interested in recommended product?" aura:id="selectInterestId" value="{!v.selectedValue}">
+                            <aura:iteration items="{!v.options}" var="option">
+                                <option text="{!option.label}" value="{!option.id}" selected="{!option.selected}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                    </div>
+                </aura:set>
+            </lightning:accordionSection>
+        </lightning:accordion>
+    </lightning:card>
+    
+    <aura:if isTrue="{!v.showPPBenefitsModal}">
+        <section
+                 role="dialog"
+                 tabindex="-1"
+                 aria-labelledby="modal-heading-01"
+                 aria-modal="true"
+                 class="slds-modal slds-fade-in-open"
+                 >
+            <div class="slds-modal__container">
+                <lightning:buttonIcon
+                                      iconName="utility:close"
+                                      onclick="{! c.closeModal}"
+                                      alternativeText="close"
+                                      variant="brand"
+                                      class="slds-modal__close"
+                                      />
+                <div class="slds-modal__header">
+                    
+                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">ABSA Credit Protection Plan benefits, exclusions and limitations</h2>
+                </div>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:button variant="brand" label="Cancel" title="Cancel" onclick="{! c.handleCancel }" />
+                    <lightning:button class="slds-float_right" variant="brand" label="Accept" title="Accept" onclick="{! c.handleAccept }" />
+                    
+                    <div class="slds-card slds-has-bottom-magnet">
+                        <div class="slds-p-around_medium slds-text-heading_medium slds-m-top_x-small slds-border_top slds-border_right slds-border_left slds-text-align_center">Credit Life benefits, exclusions and limitations</div>
+                    </div>
+                    <div class="slds-card slds-has-top-magnet">
+                        <div class="slds-p-around_medium slds-border_top slds-border_right slds-border_left slds-border_bottom">
+                            <div>
+                                <div><b>Credit Protection Plan Benefits:</b></div>
+                                
+                                <div class="slds-m-top_medium"><b>Plan A -</b> Death, Permanent Disability, Temporary Disability, Critical illness and Loss of Income.</div>
+                                <div><b>Plan B -</b> Death, Permanent Disability, Temporary Disability and Critical illness.</div>
+                                
+                                <div class="slds-m-top_medium slds-m-left_small">
+                                    1. This Credit Protection Plan is underwritten by Absa Life Limited (Absa Life”), a licenced long term insurer FSP 36116.<br/>
+                                    2. This Credit Protection Plan is optional.<br/>
+                                    3. The full details are contained in the Credit Protection Plan terms and conditions. Please ensure you are familiar with the plan you have purchased and all exclusions that apply.<br/>
+                                    4. Cooling off period: If no claim was made, you can cancel the policy within 31 (thirty-one) from date of receipt of policy document. Premium will be returned.<br/>
+                                    5. You may cancel the policy at any time during the duration of the policy. Premiums will not be returned.<br/>
+                                    6. If you are not in fulltime employment or older than 63 years of age at the cover start date you will not be eligible for the Loss of Income benefit.<br/>
+                                    7. You will automatically be converted from Plan A to Plan B when you turn 65 (sixty-five) years old, as the Loss of Income Benefit will not be an Insured Event anymore. Your premium will similarly reduce at this time.
+                                </div>
+                                
+                                <div class="slds-m-top_medium"><b>Exclusions:</b></div>
+                                <div class="slds-m-top_medium">1. Absa Life will not pay a benefit if your Death or Disability or Critical Illness was caused by among other:<br/>
+                                    <ul class="slds-list_dotted">
+                                        <li class="slds-m-left_medium">Pre-existing condition;</li>
+                                        <li class="slds-m-left_medium">The abuse of alcohol, drugs or narcotics;</li>
+                                        <li class="slds-m-left_medium">Willful self-inflicted injury or suicide, within two years of the policy start date;</li>
+                                        <li class="slds-m-left_medium">Active participation in war;</li>
+                                        <li class="slds-m-left_medium">Use of nuclear, biological / chemical weapons or any radioactive contamination.</li>
+                                        <li class="slds-m-left_medium">Participation in criminal activities;</li>
+                                        <li class="slds-m-left_medium">Participation in hazardous activities.</li>
+                                    </ul>
+                                </div>
+                                <div class="slds-m-top_medium">2. No loss of income will be paid if caused by:<br/>
+                                    <ul class="slds-list_dotted">
+                                        <li class="slds-m-left_medium">Termination of employment in first 3 months;</li>
+                                        <li class="slds-m-left_medium">Lawful dismissal;</li>
+                                        <li class="slds-m-left_medium">Voluntary forfeiture of employment income;</li>
+                                        <li class="slds-m-left_medium">Voluntary termination of employment;</li>
+                                        <li class="slds-m-left_medium">Resignation or retirement;</li>
+                                        <li class="slds-m-left_medium">Participation in unprotected strike;</li>
+                                        <li class="slds-m-left_medium">Retrenchment you were aware of 3 months before policy start date.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <!--Body End-->
+</aura:component>
