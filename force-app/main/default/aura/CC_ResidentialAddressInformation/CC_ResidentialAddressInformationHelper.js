@@ -1,10 +1,10 @@
 ({
     helperAssignCIFValues: function (component, event) {
-        var responseData = component.get('v.identityInfo');
-        this.mappingTheResponseValue(component, event, responseData);
-    },
+		var responseData = component.get('v.identityInfo');
+		this.mappingTheResponseValue(component, event, responseData);
+	},
     helperGetInformation: function (component, event) {
-        var residentialInformation = new Map();
+		var residentialInformation = new Map();
         residentialInformation['cpbYes'] = component.get('v.cpbYes');
         residentialInformation['cpbNo'] = component.get('v.cpbNo');
         residentialInformation['timeLivedInAddress'] = component.get('v.timeLivedInAddress');
@@ -16,13 +16,13 @@
         residentialInformation['postalAddress2'] = component.get('v.postalAddress2');
         residentialInformation['postalCountry'] = component.get('v.postalCountry');
         component.set('v.residentialInformation', residentialInformation);
-    },
-    mappingTheResponseValue: function (component, event, responseData) {
+	},
+	mappingTheResponseValue: function (component, event, responseData) {
         // Shipping_State_Province__c
         component.set('v.postalAddress1', responseData.Shipping_Street__c);
         component.set('v.postalAddress2', responseData.Shipping_Street_2__c);
         component.set('v.postalForeignTown', responseData.Shipping_Suburb__c);
         component.set('v.postalCode', responseData.Shipping_Zip_Postal_Code__c);
         component.set('v.postalCountry', responseData.Shipping_Country__c);
-    },
+	},
 })
