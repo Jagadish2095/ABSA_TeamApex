@@ -14,9 +14,5 @@
     },
     getCPBaddress: function (component, event, helper){
         helper.helperCPBaddress(component, event);
-    },
-    saveInformation: function (component, event, helper){
-        helper.saveFinalResidentialAddress(component, event);
     }
-
 })
